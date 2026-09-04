@@ -1,0 +1,15 @@
+{
+  "name": "Inazuma Eleven Roguelike (fan game no oficial)",
+  "short_name": "IE Roguelike",
+  "description": "Roguelike de fútbol por turnos con datos reales de Inazuma Eleven. Fan game no oficial, gratis, sin descargas.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0d1512",
+  "theme_color": "#0d1512",
+  "lang": "es",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

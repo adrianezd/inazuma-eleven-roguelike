@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Inazuma Eleven Roguelike — fan game de fútbol por turnos, gratis</title>
+<meta name="description" content="Roguelike de fútbol por turnos con personajes, elementos y jugadas hissatsu reales de Inazuma Eleven. Fan game no oficial, gratis, sin descargar, jugable en el móvil desde el navegador. Elige tu capitán, sube el mapa de la temporada y vence a los jefes usando la rueda elemental real de la franquicia.">
+<meta name="keywords" content="inazuma eleven, roguelike de fútbol, fan game, juego gratis, sin descargar, juego de navegador, juego móvil, hissatsu, elementos, futbol por turnos, no oficial">
+<link rel="canonical" href="https://adrianezd.github.io/inazuma-eleven-roguelike/">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d1512">
+
+<!-- Open Graph -->
+<meta property="og:title" content="Inazuma Eleven Roguelike (fan game no oficial)">
+<meta property="og:description" content="Roguelike de fútbol por turnos con personajes y jugadas hissatsu reales de Inazuma Eleven. Gratis, en el navegador, sin descargas. Fan game no oficial.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://adrianezd.github.io/inazuma-eleven-roguelike/">
+<meta property="og:image" content="https://adrianezd.github.io/inazuma-eleven-roguelike/favicon.svg">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Inazuma Eleven Roguelike (fan game no oficial)">
+<meta name="twitter:description" content="Roguelike de fútbol por turnos con personajes y jugadas hissatsu reales de Inazuma Eleven. Juega gratis en el navegador, sin descargas.">
+<meta name="twitter:image" content="https://adrianezd.github.io/inazuma-eleven-roguelike/favicon.svg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoGame",
+  "name": "Inazuma Eleven Roguelike (fan game no oficial)",
+  "description": "Roguelike de fútbol por turnos, hecho por un fan, que usa personajes, elementos y jugadas hissatsu reales de la franquicia Inazuma Eleven como datos de texto. Sin artwork ni audio oficiales. Forma tu equipo, sube un mapa de partidos generado al azar y usa la rueda elemental real (Fuego, Bosque, Viento, Montaña) para ganar.",
+  "genre": ["Roguelike", "Sports", "Turn-based strategy"],
+  "applicationCategory": "Game",
+  "gamePlatform": "Web Browser",
+  "isFamilyFriendly": true,
+  "url": "https://adrianezd.github.io/inazuma-eleven-roguelike/"
+}
+</script>
+</head>
+<body>
+<a class="skip-link" href="#app">Ir al juego</a>
+<header class="site-header">
+  <h1>Inazuma Eleven <span class="hl">Roguelike</span></h1>
+  <p class="tagline">Fan game no oficial · fútbol por turnos con datos reales de la franquicia</p>
+</header>
+
+<main id="app" aria-live="polite">
+  <!-- El juego se renderiza aquí mediante script.js -->
+</main>
+
+<section class="how-to-play" id="como-jugar">
+  <h2>Cómo jugar</h2>
+  <ol>
+    <li><strong>Elige tu capitán:</strong> al empezar una partida se te ofrecen 3 jugadores reales de Inazuma Eleven al azar, cada uno con su elemento, su posición y sus jugadas "hissatsu" reales.</li>
+    <li><strong>Recorre el mapa:</strong> avanza por un camino ramificado con nodos de Partido, Entrenamiento, Fichaje, Descanso y Jefe, generado de forma distinta cada partida.</li>
+    <li><strong>Juega los partidos:</strong> en cada turno elige Tiro, Pase o tu Jugada Especial (el hissatsu real de tu jugador). Los cuatro elementos reales de la franquicia se hacen ventaja entre sí: Fuego vence a Bosque, Bosque vence a Viento, Viento vence a Montaña y Montaña vence a Fuego.</li>
+    <li><strong>Gestiona tu plantilla:</strong> ficha nuevos jugadores del plantel real (hasta 4), mejora estadísticas en los entrenamientos y descansa para quitar la fatiga.</li>
+    <li><strong>Cuidado con la muerte permanente:</strong> si pierdes un partido, la temporada termina ahí. Ganarás Puntos de Espíritu según tu progreso.</li>
+    <li><strong>Progresión entre partidas:</strong> gasta tus Puntos de Espíritu en el Vestuario para desbloquear más jugadores para futuras partidas.</li>
+  </ol>
+</section>
+
+<footer class="site-footer">
+  <p><strong>Proyecto de fan no oficial.</strong> No afiliado a Level-5 ni a los editores de Inazuma Eleven. Nombres y datos usados con fines de homenaje, sin artwork ni audio oficiales.</p>
+</footer>
+
+<script src="roster-data.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
