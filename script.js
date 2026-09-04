@@ -21,7 +21,7 @@ var POSITION_TEMPLATES = {
 };
 
 var MAX_SQUAD = 4;
-var MATCH_TURNS = 6;
+var MATCH_TURNS = 10; // 5 ataques para cada equipo (antes 3; con 3 nunca daba tiempo a llenar el medidor especial)
 var SPIRIT_PER_NODE = 4;
 var SPIRIT_PER_MATCH = 10;
 var SPIRIT_PER_BOSS = 30;
@@ -292,7 +292,8 @@ function newRun() {
     matchesWon: 0,
     spiritEarned: 0,
     victory: false,
-    startedAt: Date.now()
+    startedAt: Date.now(),
+    meterPlayer: 0
   };
 }
 
@@ -667,7 +668,7 @@ function startMatch(nodeId, isBoss) {
     order: buildTurnOrder(),
     playerScore: 0,
     oppScore: 0,
-    meterPlayer: 0,
+    meterPlayer: G.run.meterPlayer || 0,
     meterOpp: 0,
     log: [],
     selectedAttackerId: null,
@@ -912,6 +913,12 @@ function renderMatchEnd() {
 
 function afterMatchWin() {
   var wasFinalBoss = mapDepth(G.run.currentNodeId, G.run.map) === G.run.map.rows.length - 1;
+  // The special-move meter carries over between matches within a run (see startMatch)
+  // rather than resetting to 0 every match: with only ~3 player turns per match and a
+  // max meter gain of 25/turn, it was mathematically impossible to ever reach 100 within
+  // a single match, so "Jugada Especial" could never be used. Persisting progress here
+  // lets it build up across the run instead.
+  G.run.meterPlayer = G.match.meterPlayer;
   G.match = null;
   clearCurrentNode();
   if (wasFinalBoss) {
@@ -982,7 +989,7 @@ function renderVestuario() {
           avatarHtml(c) + ' <strong>' + escapeHtml(c.nombre) + '</strong> ' + typeBadge(c.tipo) + '<br>' +
           '<span class="dim small">' + c.posicion + ' · ' + escapeHtml(c.desc) + '</span>' +
         '</div>' +
-        '<div class="cost">' + (unlocked ? '' : meta.points + ' pts. ') + right + '</div>' +
+        '<div class="cost">' + (unlocked ? '' : c.cost + ' pts. ') + right + '</div>' +
       '</div>'
     );
   }).join('');
