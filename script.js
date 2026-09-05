@@ -167,7 +167,11 @@ function generateRecruitOptions() {
    5. PERSISTENCIA (localStorage)
    --------------------------------------------------------------------- */
 
-var STORAGE_KEY = 'inazumaRoguelike_v1';
+// v2: subida de costes de desbloqueo + solo 4 personajes iniciales (antes 12).
+// Cambiar la clave de almacenamiento resetea Puntos de Espíritu y
+// desbloqueos de TODOS los jugadores (los datos de v1 quedan huérfanos),
+// pedido explícitamente al cambiar el sistema de desbloqueo.
+var STORAGE_KEY = 'inazumaRoguelike_v2';
 
 function loadMeta() {
   try {
