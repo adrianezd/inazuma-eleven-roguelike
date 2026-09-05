@@ -1085,12 +1085,8 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
     }
   }
 
-  // Para que se note QUIÉN defiende (y por tanto para qué sirve tener
-  // portero/defensa reales), se nombra siempre al defensor cuando el
-  // rival es quien ataca, con su posición.
-  var defenderTag = (!isPlayerAttacking && (action === 'tiro' || action === 'especial' || action === 'regate'))
-    ? (' (' + escapeHtml(defenderRaw.nombre) + ', tu ' + defenderRaw.posicion + ')')
-    : '';
+  // (Se probó a nombrar al defensor aquí, pero el jugador pidió quitarlo.)
+  var defenderTag = '';
 
   // La "ventaja/desventaja elemental" solo se muestra en el resumen pequeño
   // de abajo (el log), no en el mensaje grande de arriba bajo el turno.
