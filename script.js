@@ -754,6 +754,7 @@ function startMatch(nodeId, isBoss) {
     oppCooldownNeeded: rand(2, 3),
     oppCooldownBoost: 0,
     oppLastSpecialMove: null,
+    pendingOpp: null,
     log: [],
     selectedAttackerId: null,
     lastEvent: null,
@@ -838,7 +839,17 @@ function renderMatch() {
   } else if (isPlayerTurn) {
     body = renderPlayerTurn();
   } else {
-    body = '<div class="panel center-text"><p>El rival está atacando…</p><button class="btn btn-primary btn-block" onclick="resolveOpponentTurn()">Continuar</button></div>';
+    var pend = prepareOpponentTurn();
+    var defender = pend.defenderRaw;
+    if (pend.defHasSpecialist) {
+      body = '<div class="panel center-text">' +
+        '<p>' + escapeHtml(pend.attackerRaw.nombre) + ' (rival) se prepara para atacar.</p>' +
+        '<button class="btn btn-primary btn-block" onclick="resolveOpponentTurn(true)">Defensa activa de ' + escapeHtml(defender.nombre) + ' (' + defender.posicion + ')<small>Baja mucho su probabilidad de gol, pero retrasa tu Especial 1 turno</small></button>' +
+        '<button class="btn btn-block mt" onclick="resolveOpponentTurn(false)">Dejar defensa normal</button>' +
+      '</div>';
+    } else {
+      body = '<div class="panel center-text"><p>El rival está atacando… (no tienes un portero/defensa real para defender activamente)</p><button class="btn btn-primary btn-block" onclick="resolveOpponentTurn(false)">Continuar</button></div>';
+    }
   }
 
   return (
@@ -929,8 +940,11 @@ function playAction(action) {
   advanceTurn();
 }
 
-function resolveOpponentTurn() {
+// Decide la jugada rival SIN resolverla todavía, para poder ofrecerle al
+// jugador la opción de defensa activa antes de saber el resultado.
+function prepareOpponentTurn() {
   var m = G.match;
+  if (m.pendingOpp) return m.pendingOpp;
   var attackerRaw = choice(m.oppSquad);
   // La ventaja elemental para decidir la jugada se calcula contra el rival
   // "probable" (el portero del jugador, ya que tiro/especial siempre lo
@@ -948,11 +962,24 @@ function resolveOpponentTurn() {
   }
   var defenderRaw = pickDefender(G.run.squad, action);
   var defHasSpecialist = hasDefensiveSpecialist(G.run.squad, action);
-  resolveAttack(attackerRaw, defenderRaw, action, false, defHasSpecialist);
+  m.pendingOpp = { attackerRaw: attackerRaw, action: action, defenderRaw: defenderRaw, defHasSpecialist: defHasSpecialist };
+  return m.pendingOpp;
+}
+
+// Resuelve la jugada rival ya decidida. Si el jugador tiene un especialista
+// real (portero para tiro/especial, defensa para regate) puede activar una
+// "defensa activa": baja bastante la probabilidad de que le marquen esta
+// jugada, a cambio de retrasar un turno la recarga de su propia Especial.
+function resolveOpponentTurn(useActiveDefense) {
+  var m = G.match;
+  var p = m.pendingOpp || prepareOpponentTurn();
+  m.pendingOpp = null;
+  if (useActiveDefense) m.playerCooldownBoost -= 1;
+  resolveAttack(p.attackerRaw, p.defenderRaw, p.action, false, p.defHasSpecialist, !!useActiveDefense);
   advanceTurn();
 }
 
-function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defenderHasSpecialist) {
+function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defenderHasSpecialist, activeDefense) {
   var m = G.match;
   var attacker = effectiveStats(attackerRaw);
   var defender = effectiveStats(defenderRaw);
@@ -981,6 +1008,10 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
   // El equipo rival marca muchos menos goles en general (bajado a petición
   // explícita tras varias partidas injustamente duras para el jugador).
   if (!isPlayerAttacking) chance -= 22;
+  // Defensa activa: el jugador ha elegido defender con su portero/defensa
+  // real (solo posible si tiene uno de verdad), a cambio de retrasar un
+  // turno la recarga de su propia Especial (ver resolveOpponentTurn).
+  if (!isPlayerAttacking && activeDefense) chance -= 20;
 
   var maxChance = (action === 'especial' && isPlayerAttacking) ? 99 : (isPlayerAttacking ? 95 : 65);
   var minChance = (action === 'especial' && isPlayerAttacking) ? 85 : 5;
