@@ -86,8 +86,8 @@ function avatarHtml(p) {
    3. GENERACIÓN DE RIVALES (equipos genéricos, no personajes reales)
    --------------------------------------------------------------------- */
 
-function generateRivalPlayer(depth) {
-  var posicion = choice(POSITIONS);
+function generateRivalPlayer(depth, forcedPosition) {
+  var posicion = forcedPosition || choice(POSITIONS);
   var tipo = choice(TYPES);
   var t = POSITION_TEMPLATES[posicion];
   var scale = 1 + (depth || 0) * 0.015;
@@ -110,7 +110,12 @@ function generateOpponentSquad(depth, isBoss) {
   var squad = [];
   var bonus = bossBonusRange(depth);
   for (var i = 0; i < 4; i++) {
-    var p = generateRivalPlayer(depth);
+    // Slot 0 se fuerza siempre a Portero: antes cada jugador rival tenía una
+    // posición 100% aleatoria e independiente, así que un equipo rival podía
+    // (por azar) no tener NINGÚN portero. Eso rompía la mecánica de que los
+    // tiros y especiales del jugador siempre se enfrenten al portero rival
+    // (ver pickDefender), así que garantizamos exactamente 1 portero por equipo.
+    var p = generateRivalPlayer(depth, i === 0 ? 'Portero' : null);
     if (isBoss) {
       p.tiro = clamp(p.tiro + rand(bonus.statMin, bonus.statMax), 15, 99);
       p.pase = clamp(p.pase + rand(bonus.statMin, bonus.statMax), 15, 99);
@@ -189,6 +194,7 @@ var NODE_LABELS = {
   entrenamiento: 'Entrenamiento',
   fichaje: 'Fichaje',
   descanso: 'Descanso',
+  evento: 'Evento Especial',
   jefe: 'Jefe'
 };
 
@@ -245,10 +251,11 @@ function generateMap() {
 
 function weightedNodeType() {
   var roll = Math.random() * 100;
-  if (roll < 45) return 'partido';
-  if (roll < 65) return 'entrenamiento';
-  if (roll < 80) return 'fichaje';
-  return 'descanso';
+  if (roll < 40) return 'partido';
+  if (roll < 58) return 'entrenamiento';
+  if (roll < 72) return 'fichaje';
+  if (roll < 87) return 'descanso';
+  return 'evento';
 }
 
 function mapDepth(nodeId, map) {
@@ -292,8 +299,7 @@ function newRun() {
     matchesWon: 0,
     spiritEarned: 0,
     victory: false,
-    startedAt: Date.now(),
-    meterPlayer: 0
+    startedAt: Date.now()
   };
 }
 
@@ -314,6 +320,7 @@ function render() {
     case 'entrenamiento': html = renderTraining(); break;
     case 'fichaje': html = renderRecruit(); break;
     case 'descanso': html = renderRest(); break;
+    case 'evento': html = renderEvento(); break;
     case 'summary': html = renderSummary(); break;
     case 'vestuario': html = renderVestuario(); break;
     default: html = renderMenu();
@@ -424,6 +431,7 @@ function nodeIconSvg(type) {
     case 'entrenamiento': return '<svg viewBox="0 0 24 24"><rect x="3" y="10" width="4" height="4" fill="currentColor"/><rect x="17" y="10" width="4" height="4" fill="currentColor"/><rect x="7" y="11" width="10" height="2" fill="currentColor"/></svg>';
     case 'fichaje': return '<svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
     case 'descanso': return '<svg viewBox="0 0 24 24"><path d="M5 13a7 7 0 1 0 12.6-6.1A8 8 0 1 1 5 13Z" fill="currentColor"/></svg>';
+    case 'evento': return '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><rect x="11" y="6" width="2" height="8" fill="currentColor"/><rect x="11" y="16" width="2" height="2" fill="currentColor"/></svg>';
     case 'jefe': return '<svg viewBox="0 0 24 24"><path d="M4 8 L8 11 L12 5 L16 11 L20 8 L18 17 L6 17 Z" fill="currentColor"/></svg>';
     default: return '';
   }
@@ -473,6 +481,7 @@ function renderMap() {
         '<span>' + nodeIconSvg('entrenamiento') + ' Entrenamiento</span>' +
         '<span>' + nodeIconSvg('fichaje') + ' Fichaje</span>' +
         '<span>' + nodeIconSvg('descanso') + ' Descanso</span>' +
+        '<span>' + nodeIconSvg('evento') + ' Evento Especial</span>' +
         '<span>' + nodeIconSvg('jefe') + ' Jefe</span>' +
       '</div>' +
     '</div>'
@@ -523,6 +532,7 @@ function enterNode(nodeId) {
     case 'entrenamiento': G.pendingTraining = generateTrainingOptions(); G.screen = 'entrenamiento'; render(); break;
     case 'fichaje': G.pendingRecruits = generateRecruitOptions(); G.screen = 'fichaje'; render(); break;
     case 'descanso': G.screen = 'descanso'; render(); break;
+    case 'evento': G.pendingEventResult = resolveEventoNode(); G.screen = 'evento'; render(); break;
   }
 }
 
@@ -653,6 +663,61 @@ function applyRest() {
 }
 
 /* ---------------------------------------------------------------------
+   12b. EVENTOS ESPECIALES (nodo nuevo: resultado aleatorio entre 3 opciones)
+   --------------------------------------------------------------------- */
+
+function resolveEventoNode() {
+  var squad = G.run.squad;
+  var roll = rand(1, 3);
+  if (roll === 1) {
+    var p = choice(squad);
+    var amount = rand(10, 18);
+    p.especial = clamp(p.especial + amount, 0, 99);
+    return { type: 'tecnica', text: escapeHtml(p.nombre) + ' aprende una nueva técnica en un entrenamiento especial: +' + amount + ' a Especial.' };
+  }
+  if (roll === 2) {
+    if (squad.length >= MAX_SQUAD) {
+      return { type: 'fichaje', text: 'Un jugador prometedor se ofrece a unirse al equipo, pero tu plantilla ya está completa.' };
+    }
+    var squadIds = squad.map(function (x) { return x.id; });
+    var unlocked = getUnlockedIds();
+    var pool = ROSTER.filter(function (x) {
+      if (squadIds.indexOf(x.id) !== -1) return false;
+      if (x.locked && unlocked.indexOf(x.id) === -1) return false;
+      return true;
+    });
+    if (pool.length === 0) {
+      return { type: 'fichaje', text: 'No hay ningún jugador disponible para unirse ahora mismo.' };
+    }
+    var newPlayer = rosterInstance(choice(pool));
+    squad.push(newPlayer);
+    return { type: 'fichaje', text: escapeHtml(newPlayer.nombre) + ' se une a tu plantilla gratis tras el evento.' };
+  }
+  var p2 = choice(squad);
+  p2.fatigado = true;
+  return { type: 'fatiga', text: escapeHtml(p2.nombre) + ' vuelve agotado del evento y queda fatigado (-10 a todo hasta el próximo descanso).' };
+}
+
+function renderEvento() {
+  var result = G.pendingEventResult || { text: '' };
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<h2 class="panel-title">Evento Especial</h2>' +
+        '<p>' + result.text + '</p>' +
+        '<div class="card-grid">' + G.run.squad.map(function (p) { return playerCardHtml(p, '', false, true); }).join('') + '</div>' +
+        '<button class="btn btn-primary btn-block mt" onclick="applyEvento()">Continuar</button>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function applyEvento() {
+  G.run.spiritEarned += SPIRIT_PER_NODE;
+  returnToMap();
+}
+
+/* ---------------------------------------------------------------------
    13. SISTEMA DE PARTIDO
    --------------------------------------------------------------------- */
 
@@ -668,8 +733,15 @@ function startMatch(nodeId, isBoss) {
     order: buildTurnOrder(),
     playerScore: 0,
     oppScore: 0,
-    meterPlayer: G.run.meterPlayer || 0,
-    meterOpp: 0,
+    // La Especial ya no depende de un medidor de carga lenta: se rige por un
+    // cooldown de "cada 2 ataques propios" (ver specialStatus/resolveAttack),
+    // usable a partir del 2º ataque del jugador y de nuevo 2 ataques después
+    // de cada uso. Se reinicia cada partido: con ~7 ataques por partido sobra
+    // margen para usarla varias veces sin necesidad de arrastrarla entre partidos.
+    playerAtkCount: 0,
+    playerLastSpecialAt: 0,
+    oppAtkCount: 0,
+    oppLastSpecialAt: 0,
     log: [],
     selectedAttackerId: null,
     lastEvent: null,
@@ -698,11 +770,40 @@ function currentAttacker() {
   return G.match.order[G.match.turn - 1];
 }
 
+// Cooldown de la Especial: lista a partir del 2º ataque propio, y de nuevo
+// cada 2 ataques propios tras cada uso (en vez del antiguo medidor de carga).
+function specialStatus(atkCount, lastSpecialAt) {
+  var atkNum = atkCount + 1; // número del próximo ataque de este bando
+  var since = atkNum - lastSpecialAt;
+  var ready = since >= 2;
+  return {
+    ready: ready,
+    turnsLeft: ready ? 0 : (2 - since),
+    pct: clamp(Math.round((Math.min(since, 2) / 2) * 100), 0, 100)
+  };
+}
+
+// Elige quién defiende según la jugada: Tiro y Especial (disparos a puerta)
+// los enfrenta el Portero rival si el equipo tiene uno; Pase prefiere un
+// Defensa; si esa posición no está en la plantilla, cae a una elección
+// aleatoria. Esto es lo que hace que tener portero/defensas importe de verdad.
+function pickDefender(squad, action) {
+  if (action === 'tiro' || action === 'especial') {
+    var gk = squad.find(function (p) { return p.posicion === 'Portero'; });
+    if (gk) return gk;
+  } else if (action === 'pase') {
+    var def = squad.find(function (p) { return p.posicion === 'Defensa'; });
+    if (def) return def;
+  }
+  return choice(squad);
+}
+
 function renderMatch() {
   var m = G.match;
   if (!m) return '';
   var isPlayerTurn = currentAttacker() === 'jugador' && !m.finished;
   var fieldClass = 'field' + (m.lastEventClass ? ' ' + m.lastEventClass : '');
+  var pStatus = specialStatus(m.playerAtkCount, m.playerLastSpecialAt);
 
   var body = '';
   if (m.finished) {
@@ -724,8 +825,8 @@ function renderMatch() {
       (m.suddenDeath && !m.finished ? '<p class="dim small center-text">Gana quien marque más goles en esta ronda; si sigue empatado, continúa otra ronda.</p>' : '') +
       '<div class="' + fieldClass + '"><div class="field-event">' + (m.lastEvent || (isPlayerTurn ? 'Elige a tu jugador y tu jugada' : '')) + '</div></div>' +
       '<div class="meter-wrap">' +
-        '<div class="meter-label"><span>Medidor de jugada especial</span><span>' + m.meterPlayer + '/100</span></div>' +
-        '<div class="meter-track"><div class="meter-fill' + (m.meterPlayer >= 100 ? ' full' : '') + '" style="width:' + m.meterPlayer + '%"></div></div>' +
+        '<div class="meter-label"><span>Especial</span><span>' + (pStatus.ready ? '¡Lista!' : 'Disponible en ' + pStatus.turnsLeft + ' turno' + (pStatus.turnsLeft === 1 ? '' : 's')) + '</span></div>' +
+        '<div class="meter-track"><div class="meter-fill' + (pStatus.ready ? ' full' : '') + '" style="width:' + pStatus.pct + '%"></div></div>' +
       '</div>' +
       body +
       '<div class="log-panel">' + m.log.slice(-6).map(function (l) { return '<p>' + l + '</p>'; }).join('') + '</div>' +
@@ -741,15 +842,25 @@ function renderPlayerTurn() {
     return playerCardHtml(p, 'selectAttacker(\'' + p.instanceId + '\')', selected === p.instanceId, false);
   }).join('');
 
-  var canSpecial = m.meterPlayer >= 100 && selected;
+  var pStatus = specialStatus(m.playerAtkCount, m.playerLastSpecialAt);
+  var canSpecial = pStatus.ready && selected;
   var selectedPlayer = selected ? squad.find(function (p) { return p.instanceId === selected; }) : null;
   var specialLabel = selectedPlayer && selectedPlayer.hissatsu ? selectedPlayer.hissatsu[0] : 'Especial';
+  var specialHint = pStatus.ready ? '¡Lista!' : ('Disponible en ' + pStatus.turnsLeft + ' turno' + (pStatus.turnsLeft === 1 ? '' : 's'));
+
+  var matchupHtml = '';
+  if (selectedPlayer) {
+    var oppGk = m.oppSquad.find(function (p) { return p.posicion === 'Portero'; }) || m.oppSquad[0];
+    var adv = typeAdvantage(selectedPlayer.tipo, oppGk.tipo);
+    var advWord = adv === 1 ? 'ventaja elemental' : (adv === -1 ? 'desventaja elemental' : 'sin ventaja elemental');
+    matchupHtml = '<p class="dim small matchup-info">' + selectedPlayer.tipo + ' vs ' + oppGk.tipo + ' (portero rival): ' + advWord + '</p>';
+  }
 
   var actions = (
     '<div class="action-row">' +
       '<button class="btn action-btn" ' + (selected ? '' : 'disabled') + ' onclick="playAction(\'tiro\')">Tiro<small>Directo a puerta</small></button>' +
-      '<button class="btn action-btn" ' + (selected ? '' : 'disabled') + ' onclick="playAction(\'pase\')">Pase<small>Seguro, carga el medidor</small></button>' +
-      '<button class="btn action-btn btn-primary" ' + (canSpecial ? '' : 'disabled') + ' onclick="playAction(\'especial\')">' + escapeHtml(specialLabel) + '<small>' + (canSpecial ? '¡Lista!' : 'Requiere medidor lleno') + '</small></button>' +
+      '<button class="btn action-btn" ' + (selected ? '' : 'disabled') + ' onclick="playAction(\'pase\')">Pase<small>Seguro, prepara la especial</small></button>' +
+      '<button class="btn action-btn btn-primary" ' + (canSpecial ? '' : 'disabled') + ' onclick="playAction(\'especial\')">' + escapeHtml(specialLabel) + '<small>' + specialHint + '</small></button>' +
     '</div>'
   );
 
@@ -757,6 +868,7 @@ function renderPlayerTurn() {
     '<div class="panel">' +
       '<h3 style="margin-bottom:8px">Elige jugador</h3>' +
       '<div class="card-grid">' + cards + '</div>' +
+      matchupHtml +
       actions +
     '</div>'
   );
@@ -781,7 +893,7 @@ function playAction(action) {
   var m = G.match;
   var attackerRaw = G.run.squad.find(function (p) { return p.instanceId === m.selectedAttackerId; });
   if (!attackerRaw) return;
-  var defenderRaw = choice(m.oppSquad);
+  var defenderRaw = pickDefender(m.oppSquad, action);
   resolveAttack(attackerRaw, defenderRaw, action, true);
   advanceTurn();
 }
@@ -789,14 +901,19 @@ function playAction(action) {
 function resolveOpponentTurn() {
   var m = G.match;
   var attackerRaw = choice(m.oppSquad);
-  var defenderRaw = choice(G.run.squad);
-  var adv = typeAdvantage(attackerRaw.tipo, defenderRaw.tipo);
+  // La ventaja elemental para decidir la jugada se calcula contra el rival
+  // "probable" (el portero del jugador, ya que tiro/especial siempre lo
+  // enfrentan) para que la IA decida con la misma info que se le mostraría al jugador.
+  var likelyDefender = G.run.squad.find(function (p) { return p.posicion === 'Portero'; }) || choice(G.run.squad);
+  var adv = typeAdvantage(attackerRaw.tipo, likelyDefender.tipo);
+  var oppStatus = specialStatus(m.oppAtkCount, m.oppLastSpecialAt);
   var action;
-  if (m.meterOpp >= 100 && (adv >= 0 || Math.random() < 0.6)) {
+  if (oppStatus.ready && (adv >= 0 || Math.random() < 0.6)) {
     action = 'especial';
   } else {
     action = Math.random() < 0.65 ? 'tiro' : 'pase';
   }
+  var defenderRaw = pickDefender(G.run.squad, action);
   resolveAttack(attackerRaw, defenderRaw, action, false);
   advanceTurn();
 }
@@ -807,27 +924,37 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking) {
   var defender = effectiveStats(defenderRaw);
   var adv = typeAdvantage(attacker.tipo, defender.tipo);
 
-  var atkStat, meterGainBase, chance;
-  if (action === 'tiro') { atkStat = attacker.tiro; meterGainBase = 15; chance = 50 + (atkStat - defender.defensa) * 0.6; }
-  else if (action === 'pase') { atkStat = attacker.pase; meterGainBase = 25; chance = 30 + (atkStat - defender.defensa) * 0.5; }
-  else { atkStat = attacker.especial; meterGainBase = 0; chance = 62 + (atkStat - defender.defensa) * 0.6; }
+  var atkStat, chance;
+  if (action === 'tiro') { atkStat = attacker.tiro; chance = 50 + (atkStat - defender.defensa) * 0.6; }
+  else if (action === 'pase') { atkStat = attacker.pase; chance = 30 + (atkStat - defender.defensa) * 0.5; }
+  else {
+    // La Especial es ahora un gol casi garantizado: base muy alta y el
+    // estatus defensivo del rival solo la penaliza levemente (peso 0.15 en
+    // vez de 0.6), así que ni un portero legendario la baja de ~85%.
+    atkStat = attacker.especial;
+    chance = 94 + (atkStat - defender.defensa) * 0.15;
+  }
 
-  chance += adv * (action === 'especial' ? 22 : 14);
-  chance = clamp(Math.round(chance), 5, 95);
+  chance += adv * (action === 'especial' ? 8 : 14);
+  chance = action === 'especial' ? clamp(Math.round(chance), 85, 99) : clamp(Math.round(chance), 5, 95);
 
   var roll = rand(1, 100);
   var success = roll <= chance;
 
-  var meterKey = isPlayerAttacking ? 'meterPlayer' : 'meterOpp';
   var scoreKey = isPlayerAttacking ? 'playerScore' : 'oppScore';
   var actorLabel = isPlayerAttacking ? escapeHtml(attackerRaw.nombre) : escapeHtml(attackerRaw.nombre) + ' (rival)';
-  var advText = adv === 1 ? ' ¡Ventaja elemental!' : (adv === -1 ? ' Desventaja elemental.' : '');
+  var advText = adv === 1 ? (' ¡Ventaja elemental (' + attacker.tipo + ' vs ' + defender.tipo + ')!') :
+    (adv === -1 ? (' Desventaja elemental (' + attacker.tipo + ' vs ' + defender.tipo + ').') : '');
   var moveName = action === 'especial' && attacker.hissatsu ? attacker.hissatsu[0] : null;
 
-  if (action === 'especial') {
-    m[meterKey] = 0;
+  // Cooldown de la Especial (cada 2 ataques propios, ver specialStatus): se
+  // reinicia al usarla, sea gol o parada, ya que "usarla" ya consumió el turno.
+  if (isPlayerAttacking) {
+    m.playerAtkCount++;
+    if (action === 'especial') m.playerLastSpecialAt = m.playerAtkCount;
   } else {
-    m[meterKey] = clamp(m[meterKey] + (success ? meterGainBase : Math.round(meterGainBase / 2)), 0, 100);
+    m.oppAtkCount++;
+    if (action === 'especial') m.oppLastSpecialAt = m.oppAtkCount;
   }
 
   if (success) {
@@ -913,12 +1040,6 @@ function renderMatchEnd() {
 
 function afterMatchWin() {
   var wasFinalBoss = mapDepth(G.run.currentNodeId, G.run.map) === G.run.map.rows.length - 1;
-  // The special-move meter carries over between matches within a run (see startMatch)
-  // rather than resetting to 0 every match: with only ~3 player turns per match and a
-  // max meter gain of 25/turn, it was mathematically impossible to ever reach 100 within
-  // a single match, so "Jugada Especial" could never be used. Persisting progress here
-  // lets it build up across the run instead.
-  G.run.meterPlayer = G.match.meterPlayer;
   G.match = null;
   clearCurrentNode();
   if (wasFinalBoss) {
