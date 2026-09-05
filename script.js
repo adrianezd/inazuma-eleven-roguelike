@@ -860,7 +860,7 @@ function renderMatch() {
         '<div class="score-vs">VS</div>' +
         '<div class="score-side"><div class="score-name">' + escapeHtml(m.oppName) + '</div><div class="score-num">' + m.oppScore + '</div></div>' +
       '</div>' +
-      '<div class="turn-indicator">' + (m.suddenDeath ? 'Muerte súbita — ronda ' + m.sdRound : 'Turno ' + m.turn + ' de ' + MATCH_TURNS) + (m.finished ? '' : (isPlayerTurn ? ' · Tu ataque' : ' · Ataque rival')) + '</div>' +
+      '<div class="turn-indicator">' + (m.suddenDeath ? 'Muerte súbita — ronda ' + m.sdRound : 'Turno ' + Math.min(m.turn, MATCH_TURNS) + ' de ' + MATCH_TURNS) + (m.finished ? '' : (isPlayerTurn ? ' · Tu ataque' : ' · Ataque rival')) + '</div>' +
       (m.suddenDeath && !m.finished ? '<p class="dim small center-text">Gana quien marque más goles en esta ronda; si sigue empatado, continúa otra ronda.</p>' : '') +
       '<div class="' + fieldClass + '"><div class="field-event">' + (m.lastEvent || (isPlayerTurn ? 'Elige a tu jugador y tu jugada' : '')) + '</div></div>' +
       '<div class="meter-wrap">' +
@@ -1057,17 +1057,19 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
     ? (' (' + escapeHtml(defenderRaw.nombre) + ', tu ' + defenderRaw.posicion + ')')
     : '';
 
+  // La "ventaja/desventaja elemental" solo se muestra en el resumen pequeño
+  // de abajo (el log), no en el mensaje grande de arriba bajo el turno.
   if (success) {
     m[scoreKey]++;
     var verb = action === 'especial' ? ('¡' + escapeHtml(moveName || 'jugada especial') + ' imparable!') : (action === 'tiro' ? '¡GOL!' : '¡Gol tras un gran pase!');
-    m.lastEvent = actorLabel + ': ' + verb + defenderTag + advText;
+    m.lastEvent = actorLabel + ': ' + verb + defenderTag;
     m.lastEventClass = 'goal';
-    m.log.push(m.lastEvent);
+    m.log.push(m.lastEvent + advText);
   } else {
     var missVerb = action === 'regate' ? 'el regate es cortado.' : (action === 'especial' ? (escapeHtml(moveName || 'la jugada especial') + ' es bloqueada.') : 'el tiro es bloqueado.');
-    m.lastEvent = actorLabel + ': ' + missVerb + defenderTag + advText;
+    m.lastEvent = actorLabel + ': ' + missVerb + defenderTag;
     m.lastEventClass = 'block';
-    m.log.push(m.lastEvent);
+    m.log.push(m.lastEvent + advText);
   }
   m.selectedAttackerId = null;
 }
