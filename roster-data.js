@@ -351,5 +351,29 @@ var ROSTER = [
     hissatsu: ['Remate Gafas'],
     desc: 'Delantero elegante y preciso, con un toque de magia en sus pies.',
     locked: false
+  },
+  {
+    id: 'r41', nombre: 'Paul Peabody', original: "Goro Tamaro",
+    posicion: 'Portero', tipo: 'Bosque',
+    tiro: 48, pase: 52, defensa: 76, especial: 72,
+    hissatsu: ['Mano Celestial'],
+    desc: 'Portero experimentado con una visión única del juego.',
+    locked: false
+  },
+  {
+    id: 'r42', nombre: 'Thor Stoutberg', original: "Raiden Hijikata",
+    posicion: 'Defensa', tipo: 'Aire',
+    tiro: 38, pase: 50, defensa: 80, especial: 60,
+    hissatsu: ['Pisotón de Sumo'],
+    desc: 'Defensa robusto y disciplinado, con un estilo de juego imponente.',
+    locked: false
+  },
+  {
+    id: 'r43', nombre: 'Larry Pogue', original: "Saginuma Osamu",
+    posicion: 'Centrocampista', tipo: 'Bosque',
+    tiro: 70, pase: 70, defensa: 50, especial: 68,
+    hissatsu: ['Chut draconiano'],
+    desc: 'Centrocampista creativo, capaz de cambiar el rumbo del partido.',
+    locked: false
   }
 ];
