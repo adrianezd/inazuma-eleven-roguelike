@@ -200,7 +200,9 @@ var NODE_LABELS = {
 };
 
 function generateMap() {
-  var rowDefs = [3, 3, 3, 3, 1, 3, 3, 1, 3, 1];
+  // Nº de nodos por fila variable (2 o 3), como un mapa de rutas ramificadas
+  // real, en vez de siempre 3; las filas de jefe (1) se mantienen fijas.
+  var rowDefs = [rand(2, 3), rand(2, 3), rand(2, 3), rand(2, 3), 1, rand(2, 3), rand(2, 3), 1, rand(2, 3), 1];
   var rows = [];
   var idCounter = 0;
 
