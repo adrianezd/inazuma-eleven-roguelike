@@ -848,7 +848,8 @@ function renderMatch() {
         '<button class="btn btn-block mt" onclick="resolveOpponentTurn(false)">Dejar defensa normal</button>' +
       '</div>';
     } else {
-      body = '<div class="panel center-text"><p>El rival está atacando… (no tienes un portero/defensa real para defender activamente)</p><button class="btn btn-primary btn-block" onclick="resolveOpponentTurn(false)">Continuar</button></div>';
+      var neededPos = pend.action === 'regate' ? 'Defensa' : 'Portero';
+      body = '<div class="panel center-text"><p>El rival está atacando… (no tienes un ' + neededPos + ' real en el campo, así que no puedes defender activamente esta jugada)</p><button class="btn btn-primary btn-block" onclick="resolveOpponentTurn(false)">Continuar</button></div>';
     }
   }
 
