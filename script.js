@@ -686,7 +686,25 @@ function applyRest() {
 
 function resolveEventoNode() {
   var squad = G.run.squad;
-  var roll = rand(1, 3);
+  var roll = rand(1, 5);
+  if (roll === 4) {
+    squad.forEach(function (p) {
+      p.tiro = clamp(p.tiro + 5, 0, 99);
+      p.pase = clamp(p.pase + 5, 0, 99);
+      p.defensa = clamp(p.defensa + 5, 0, 99);
+      p.especial = clamp(p.especial + 5, 0, 99);
+    });
+    return { type: 'bonus', text: 'Silvia os ha preparado bolas de arroz. ¡Todo el equipo sube +5 en todos los atributos (solo esta partida)!' };
+  }
+  if (roll === 5) {
+    squad.forEach(function (p) {
+      p.tiro = clamp(p.tiro - 5, 0, 99);
+      p.pase = clamp(p.pase - 5, 0, 99);
+      p.defensa = clamp(p.defensa - 5, 0, 99);
+      p.especial = clamp(p.especial - 5, 0, 99);
+    });
+    return { type: 'malus', text: 'Sector Quinto os ha cerrado la escuela. Todo el equipo pierde 5 puntos en todas las estadísticas.' };
+  }
   if (roll === 1) {
     var p = choice(squad);
     var amount = rand(10, 18);
