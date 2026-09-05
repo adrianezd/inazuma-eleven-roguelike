@@ -1047,7 +1047,10 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
   if (!isPlayerAttacking && activeDefense) chance -= 20;
 
   var maxChance = (action === 'especial' && isPlayerAttacking) ? 99 : (isPlayerAttacking ? 95 : 65);
-  var minChance = (action === 'especial' && isPlayerAttacking) ? 85 : 5;
+  // El suelo del rival sube de 5 a 18: con un portero muy fuerte (88-99 de
+  // defensa) el cálculo podía dejarlo casi imbatible (~5% constante). Un
+  // suelo más alto asegura que siempre tenga una posibilidad real de marcar.
+  var minChance = (action === 'especial' && isPlayerAttacking) ? 85 : (isPlayerAttacking ? 5 : 18);
   chance = clamp(Math.round(chance), minChance, maxChance);
 
   var roll = rand(1, 100);
