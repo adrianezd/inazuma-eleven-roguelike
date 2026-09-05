@@ -232,19 +232,24 @@ var ROSTER = [
     desc: 'Defensa travieso de Raimon, siempre lleno de recursos.',
     locked: true, cost: 45
   },
-  // -- Tercera ampliación del plantel (r22-r41) --
-  // A diferencia de r01-r21, para este lote no se ha podido recordar con
-  // confianza un nombre de doblaje en inglés/internacional específico para
-  // cada personaje, así que "nombre" usa aquí el nombre original japonés
-  // (idéntico al campo "original" salvo alguna romanización), en vez del
-  // doblaje. Los personajes en sí, su posición y elemento canónico, y al
-  // menos una jugada "hissatsu" real o de uso muy extendido en fuentes del
-  // fandom, son de conocimiento general propio del universo Inazuma Eleven,
-  // sin una ronda de verificación cruzada por fuente adicional (se priorizó
-  // la velocidad de entrega en esta ampliación; ver también las notas de
-  // transparencia al inicio del archivo).
+  // -- Tercera ampliación del plantel (r22-r24, r30-r34, r36-r37) --
+  // Este lote se incorporó inicialmente con el nombre original japonés en
+  // el campo "nombre" (por velocidad de entrega), lo cual se corrigió
+  // después: se buscó mediante búsquedas web el nombre real de doblaje en
+  // inglés/internacional de cada uno (fichas de personaje de MyAnimeList,
+  // listados de doblaje al castellano de Inazuma Eleven GO) y se sustituyó
+  // en "nombre", dejando "original" como el nombre japonés de referencia,
+  // igual que en el resto del plantel. Nishiki Ryouma (r36) es una
+  // excepción real, no un descuido: las fuentes indican que su doblaje
+  // conserva el nombre original sin traducir. Varios personajes de este
+  // mismo lote (Kageno Jin, Shishido Sakichi, Handa Shinichi, Hijikata
+  // Raiden, Saginuma Osamu, Fei Rune, Aoyama Shunsuke, Sangoku Taichi,
+  // Amagi Daichi, Matatagi Hayato) se retiraron por completo del plantel
+  // porque no se pudo confirmar un nombre de doblaje real para ellos —
+  // se prefirió quitarlos antes que dejarlos en japonés o inventar un
+  // nombre de doblaje que no existe.
   {
-    id: 'r22', nombre: 'Sakuma Jirou', original: 'Sakuma Jirou',
+    id: 'r22', nombre: 'David Samford', original: 'Sakuma Jirou',
     posicion: 'Defensa', tipo: 'Fuego',
     tiro: 42, pase: 54, defensa: 80, especial: 58,
     hissatsu: ['Zona de la Muerte'],
@@ -252,7 +257,7 @@ var ROSTER = [
     locked: false
   },
   {
-    id: 'r23', nombre: 'Tobitaka Seiya', original: 'Tobitaka Seiya',
+    id: 'r23', nombre: 'Archer Hawkins', original: 'Tobitaka Seiya',
     posicion: 'Delantero', tipo: 'Fuego',
     tiro: 70, pase: 40, defensa: 44, especial: 60,
     hissatsu: ['Guerrero Errante'],
@@ -260,7 +265,7 @@ var ROSTER = [
     locked: true, cost: 50
   },
   {
-    id: 'r24', nombre: 'Fubuki Atsuya', original: 'Fubuki Atsuya',
+    id: 'r24', nombre: 'Aiden Froste', original: 'Fubuki Atsuya',
     posicion: 'Delantero', tipo: 'Fuego',
     tiro: 76, pase: 44, defensa: 30, especial: 68,
     hissatsu: ['Disparo Fantasma'],
@@ -268,47 +273,7 @@ var ROSTER = [
     locked: true, cost: 60
   },
   {
-    id: 'r25', nombre: 'Kageno Jin', original: 'Kageno Jin',
-    posicion: 'Defensa', tipo: 'Bosque',
-    tiro: 32, pase: 50, defensa: 74, especial: 46,
-    hissatsu: ['Muro de Hierba'],
-    desc: 'Defensa original de Raimon, discreto pero constante.',
-    locked: false
-  },
-  {
-    id: 'r26', nombre: 'Shishido Sakichi', original: 'Shishido Sakichi',
-    posicion: 'Defensa', tipo: 'Montaña',
-    tiro: 34, pase: 44, defensa: 80, especial: 48,
-    hissatsu: ['Roca Inquebrantable'],
-    desc: 'Uno de los pilares defensivos originales de Raimon.',
-    locked: false
-  },
-  {
-    id: 'r27', nombre: 'Handa Shinichi', original: 'Handa Shinichi',
-    posicion: 'Centrocampista', tipo: 'Bosque',
-    tiro: 50, pase: 68, defensa: 54, especial: 56,
-    hissatsu: ['Golpe Certero'],
-    desc: 'Centrocampista fiable de los inicios de Raimon.',
-    locked: false
-  },
-  {
-    id: 'r28', nombre: 'Hijikata Raiden', original: 'Hijikata Raiden',
-    posicion: 'Delantero', tipo: 'Viento',
-    tiro: 72, pase: 46, defensa: 36, especial: 64,
-    hissatsu: ['Espectro Nocturno'],
-    desc: 'Delantero de Occult, tan escurridizo como un fantasma.',
-    locked: true, cost: 55
-  },
-  {
-    id: 'r29', nombre: 'Saginuma Osamu', original: 'Saginuma Osamu',
-    posicion: 'Centrocampista', tipo: 'Viento',
-    tiro: 52, pase: 70, defensa: 48, especial: 60,
-    hissatsu: ['Niebla Espectral'],
-    desc: 'Capitán de Occult, maestro de las jugadas psicológicas.',
-    locked: true, cost: 55
-  },
-  {
-    id: 'r30', nombre: 'Matsukaze Tenma', original: 'Matsukaze Tenma',
+    id: 'r30', nombre: 'Arion Sherwind', original: 'Matsukaze Tenma',
     posicion: 'Centrocampista', tipo: 'Bosque',
     tiro: 58, pase: 76, defensa: 46, especial: 66,
     hissatsu: ['Idea Ilusión'],
@@ -316,7 +281,7 @@ var ROSTER = [
     locked: true, cost: 65
   },
   {
-    id: 'r31', nombre: 'Shindou Takuto', original: 'Shindou Takuto',
+    id: 'r31', nombre: 'Riccardo Di Rigo', original: 'Shindou Takuto',
     posicion: 'Centrocampista', tipo: 'Bosque',
     tiro: 56, pase: 78, defensa: 44, especial: 72,
     hissatsu: ['Pingüino Emperador II'],
@@ -324,7 +289,7 @@ var ROSTER = [
     locked: true, cost: 70
   },
   {
-    id: 'r32', nombre: 'Kirino Ranmaru', original: 'Kirino Ranmaru',
+    id: 'r32', nombre: 'Gabriel García', original: 'Kirino Ranmaru',
     posicion: 'Defensa', tipo: 'Bosque',
     tiro: 40, pase: 56, defensa: 70, especial: 54,
     hissatsu: ['Ataque Fantasma'],
@@ -332,7 +297,7 @@ var ROSTER = [
     locked: false
   },
   {
-    id: 'r33', nombre: 'Kariya Masaki', original: 'Kariya Masaki',
+    id: 'r33', nombre: 'Aitor Cazador', original: 'Kariya Masaki',
     posicion: 'Centrocampista', tipo: 'Viento',
     tiro: 54, pase: 64, defensa: 46, especial: 62,
     hissatsu: ['Bola Ilusión'],
@@ -340,20 +305,12 @@ var ROSTER = [
     locked: false
   },
   {
-    id: 'r34', nombre: 'Tsurugi Kyousuke', original: 'Tsurugi Kyousuke',
+    id: 'r34', nombre: 'Víctor Blade', original: 'Tsurugi Kyousuke',
     posicion: 'Delantero', tipo: 'Fuego',
     tiro: 82, pase: 46, defensa: 36, especial: 74,
     hissatsu: ['Ojo de Halcón'],
     desc: 'Delantero letal con una precisión de rapaz.',
     locked: true, cost: 70
-  },
-  {
-    id: 'r35', nombre: 'Fei Rune', original: 'Fei Rune',
-    posicion: 'Centrocampista', tipo: 'Bosque',
-    tiro: 52, pase: 72, defensa: 48, especial: 64,
-    hissatsu: ['Ventisca del Dragón'],
-    desc: 'Viajero misterioso con técnicas de otro tiempo.',
-    locked: true, cost: 60
   },
   {
     id: 'r36', nombre: 'Nishiki Ryouma', original: 'Nishiki Ryouma',
@@ -364,43 +321,11 @@ var ROSTER = [
     locked: false
   },
   {
-    id: 'r37', nombre: 'Kurumada Gouichi', original: 'Kurumada Gouichi',
+    id: 'r37', nombre: 'Subaru Honda', original: 'Kurumada Gouichi',
     posicion: 'Defensa', tipo: 'Montaña',
     tiro: 36, pase: 46, defensa: 82, especial: 50,
     hissatsu: ['Muro de Acero'],
     desc: 'Defensa colosal, un muro que pocos logran superar.',
     locked: true, cost: 55
-  },
-  {
-    id: 'r38', nombre: 'Aoyama Shunsuke', original: 'Aoyama Shunsuke',
-    posicion: 'Portero', tipo: 'Montaña',
-    tiro: 18, pase: 46, defensa: 80, especial: 54,
-    hissatsu: ['Guante Perfecto'],
-    desc: 'Guardameta técnico con reflejos felinos.',
-    locked: false
-  },
-  {
-    id: 'r39', nombre: 'Sangoku Taichi', original: 'Sangoku Taichi',
-    posicion: 'Portero', tipo: 'Montaña',
-    tiro: 20, pase: 50, defensa: 84, especial: 58,
-    hissatsu: ['Mano Fantasma'],
-    desc: 'Portero espectacular, capaz de detener lo imposible.',
-    locked: true, cost: 65
-  },
-  {
-    id: 'r40', nombre: 'Amagi Daichi', original: 'Amagi Daichi',
-    posicion: 'Defensa', tipo: 'Montaña',
-    tiro: 30, pase: 44, defensa: 84, especial: 46,
-    hissatsu: ['Escudo Titán'],
-    desc: 'Defensa descomunal, un verdadero muro humano.',
-    locked: true, cost: 55
-  },
-  {
-    id: 'r41', nombre: 'Matatagi Hayato', original: 'Matatagi Hayato',
-    posicion: 'Delantero', tipo: 'Viento',
-    tiro: 66, pase: 52, defensa: 36, especial: 60,
-    hissatsu: ['Paso Fantasma'],
-    desc: 'Delantero veloz con un regate imposible de leer.',
-    locked: false
   }
 ];

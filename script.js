@@ -798,6 +798,19 @@ function pickDefender(squad, action) {
   return choice(squad);
 }
 
+// ¿Tiene este plantel un especialista real (portero para tiro/especial,
+// defensa para pase) para la acción dada? Se usa para saber si el equipo
+// del JUGADOR está jugando "desnudo" de portero/defensa, y compensarlo.
+function hasDefensiveSpecialist(squad, action) {
+  if (action === 'tiro' || action === 'especial') {
+    return squad.some(function (p) { return p.posicion === 'Portero'; });
+  }
+  if (action === 'pase') {
+    return squad.some(function (p) { return p.posicion === 'Defensa'; });
+  }
+  return true;
+}
+
 function renderMatch() {
   var m = G.match;
   if (!m) return '';
@@ -914,29 +927,50 @@ function resolveOpponentTurn() {
     action = Math.random() < 0.65 ? 'tiro' : 'pase';
   }
   var defenderRaw = pickDefender(G.run.squad, action);
-  resolveAttack(attackerRaw, defenderRaw, action, false);
+  var defHasSpecialist = hasDefensiveSpecialist(G.run.squad, action);
+  resolveAttack(attackerRaw, defenderRaw, action, false, defHasSpecialist);
   advanceTurn();
 }
 
-function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking) {
+function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defenderHasSpecialist) {
   var m = G.match;
   var attacker = effectiveStats(attackerRaw);
   var defender = effectiveStats(defenderRaw);
+  if (!isPlayerAttacking && defenderHasSpecialist === false) {
+    // Tu equipo no tiene portero (tiro/especial) o defensa (pase) real: se
+    // compensa con un bono defensivo de "emergencia" para que jugar sin
+    // esas posiciones sea más difícil pero no una derrota casi garantizada.
+    defender = Object.assign({}, defender, { defensa: defender.defensa + 22 });
+  }
   var adv = typeAdvantage(attacker.tipo, defender.tipo);
 
   var atkStat, chance;
   if (action === 'tiro') { atkStat = attacker.tiro; chance = 50 + (atkStat - defender.defensa) * 0.6; }
   else if (action === 'pase') { atkStat = attacker.pase; chance = 30 + (atkStat - defender.defensa) * 0.5; }
-  else {
-    // La Especial es ahora un gol casi garantizado: base muy alta y el
-    // estatus defensivo del rival solo la penaliza levemente (peso 0.15 en
-    // vez de 0.6), así que ni un portero legendario la baja de ~85%.
+  else if (isPlayerAttacking) {
+    // Tu Especial es un gol casi garantizado: base muy alta y el estatus
+    // defensivo del rival solo la penaliza levemente (peso 0.15 en vez de
+    // 0.6), así que ni un portero legendario la baja de ~85%.
     atkStat = attacker.especial;
     chance = 94 + (atkStat - defender.defensa) * 0.15;
+  } else {
+    // La Especial rival es peligrosa pero NO casi-garantizada como la tuya:
+    // si no fuera así, un equipo rival podía marcar en prácticamente todos
+    // sus turnos contra un equipo sin portero/defensa reales (reportado:
+    // 7 goles rivales en 7 turnos).
+    atkStat = attacker.especial;
+    chance = 58 + (atkStat - defender.defensa) * 0.35;
   }
 
   chance += adv * (action === 'especial' ? 8 : 14);
-  chance = action === 'especial' ? clamp(Math.round(chance), 85, 99) : clamp(Math.round(chance), 5, 95);
+
+  // El equipo rival marca muchos menos goles en general (bajado a petición
+  // explícita tras varias partidas injustamente duras para el jugador).
+  if (!isPlayerAttacking) chance -= 22;
+
+  var maxChance = (action === 'especial' && isPlayerAttacking) ? 99 : (isPlayerAttacking ? 95 : 65);
+  var minChance = (action === 'especial' && isPlayerAttacking) ? 85 : 5;
+  chance = clamp(Math.round(chance), minChance, maxChance);
 
   var roll = rand(1, 100);
   var success = roll <= chance;
