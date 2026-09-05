@@ -52,9 +52,9 @@ var TYPE_MARK = { Fuego: 'F', Bosque: 'B', Viento: 'V', 'Montaña': 'M' };
 // esos equipos NO usan nombres de personajes reales para no atribuir
 // incorrectamente datos de jugadores concretos a plantillas ficticias).
 var RIVAL_TEAM_NAMES = [
-  'Teikoku Gakuen', 'Zeus', 'Occult', 'Instituto Osaka', 'Kidokawa Seishuu',
-  'Hakuren', 'Instituto Aliea', 'Unicorn', 'Emperadores Oscuros', 'Big Waves',
-  'Genesis', 'Prominence', 'Diamond Dust', 'Gemini Storm'
+  'Royal Academy', 'Zeus', 'Occult', 'Instituto Osaka', 'Academia Ogre',
+  'Alpino', 'Instituto Alius', 'Unicorn', 'Emperadores Oscuros', 'Big Waves',
+  'Genesis', 'Prominence', 'Polvo de Diamante', 'Tormenta de Géminis'
 ];
 
 // El plantel real: 16 personajes de Inazuma Eleven. "nombre" usa el nombre
@@ -66,7 +66,7 @@ var ROSTER = [
     id: 'r01', nombre: 'Mark Evans', original: 'Endou Mamoru',
     posicion: 'Portero', tipo: 'Montaña',
     tiro: 22, pase: 55, defensa: 88, especial: 62,
-    hissatsu: ['Mano de Dios'],
+    hissatsu: ['Mano Mágica'],
     desc: 'Portero legendario y capitán de corazón indomable.',
     locked: false
   },
@@ -82,8 +82,8 @@ var ROSTER = [
     id: 'r03', nombre: 'Nathan Swift', original: 'Kazemaru Ichirouta',
     posicion: 'Defensa', tipo: 'Viento',
     tiro: 44, pase: 62, defensa: 70, especial: 58,
-    hissatsu: ['Viento Mach'],
-    desc: 'El jugador más veloz de Raimon.',
+    hissatsu: ['Huracán Multiple'],
+    desc: 'El jugador más veloz del Raimon.',
     locked: false
   },
   {
@@ -164,7 +164,7 @@ var ROSTER = [
     posicion: 'Portero', tipo: 'Fuego',
     tiro: 24, pase: 52, defensa: 82, especial: 60,
     hissatsu: ['Escudo de Fuerza'],
-    desc: 'Guardameta de Teikoku, orgulloso e inquebrantable.',
+    desc: 'Guardameta de la Royal, orgulloso e inquebrantable.',
     locked: true, cost: 55
   },
   {
@@ -313,7 +313,7 @@ var ROSTER = [
     locked: true, cost: 70
   },
   {
-    id: 'r36', nombre: 'Nishiki Ryouma', original: 'Nishiki Ryouma',
+    id: 'r36', nombre: 'Ryoma Nishiki', original: 'Nishiki Ryouma',
     posicion: 'Mediocentro', tipo: 'Montaña',
     tiro: 68, pase: 68, defensa: 34, especial: 58,
     hissatsu: ['Guardia acrobática'],
