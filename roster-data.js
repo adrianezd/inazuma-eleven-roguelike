@@ -294,7 +294,7 @@ var ROSTER = [
     tiro: 40, pase: 56, defensa: 74, especial: 54,
     hissatsu: ['Niebla Mística'],
     desc: 'Defensa técnico y mejor amigo de Shindou.',
-    locked: False
+    locked: false
   },
   {
     id: 'r33', nombre: 'Aitor Cazador', original: 'Kariya Masaki',
