@@ -116,7 +116,11 @@ function generateOpponentSquad(depth, isBoss, isFinalBoss) {
     // (por azar) no tener NINGÚN portero. Eso rompía la mecánica de que los
     // tiros y especiales del jugador siempre se enfrenten al portero rival
     // (ver pickDefender), así que garantizamos exactamente 1 portero por equipo.
-    var p = generateRivalPlayer(depth, i === 0 ? 'Portero' : null);
+    // Las plazas 1-3 NUNCA pueden salir Portero (antes usaban choice(POSITIONS)
+    // sin restricción, así que un equipo podía acabar con 2, 3 o hasta 4
+    // porteros por azar -- nada realista, y hacía que "Portero rival ataca"
+    // saliera muchísimo más de lo que debería).
+    var p = generateRivalPlayer(depth, i === 0 ? 'Portero' : choice(['Defensa', 'Centrocampista', 'Delantero']));
     if (isBoss) {
       p.tiro = clamp(Math.round((p.tiro + rand(bonus.statMin, bonus.statMax)) * finalMultiplier), 15, 99);
       p.pase = clamp(Math.round((p.pase + rand(bonus.statMin, bonus.statMax)) * finalMultiplier), 15, 99);
@@ -690,7 +694,14 @@ function applyRest() {
 
 function resolveEventoNode() {
   var squad = G.run.squad;
-  var roll = rand(1, 5);
+  var roll = rand(1, 6);
+  if (roll === 6) {
+    squad.forEach(function (p) {
+      p.fatigado = false;
+      p.tiro = clamp(p.tiro + 10, 0, 99);
+    });
+    return { type: 'bonus', text: 'Un entrenador invitado os da una charla motivadora: se os quita toda la fatiga y todo el equipo sube +10 a Tiro (solo esta partida).' };
+  }
   if (roll === 4) {
     squad.forEach(function (p) {
       p.tiro = clamp(p.tiro + 5, 0, 99);
@@ -982,7 +993,10 @@ function playAction(action) {
 function prepareOpponentTurn() {
   var m = G.match;
   if (m.pendingOpp) return m.pendingOpp;
-  var attackerRaw = choice(m.oppSquad);
+  // El portero rival nunca ataca (en fútbol real el guardameta no remata a
+  // puerta): se elige siempre entre el resto del equipo.
+  var attackers = m.oppSquad.filter(function (p) { return p.posicion !== 'Portero'; });
+  var attackerRaw = choice(attackers.length ? attackers : m.oppSquad);
   // La ventaja elemental para decidir la jugada se calcula contra el rival
   // "probable" (el portero del jugador, ya que tiro/especial siempre lo
   // enfrentan) para que la IA decida con la misma info que se le mostraría al jugador.
@@ -1177,6 +1191,10 @@ function renderMatchEnd() {
 
 function afterMatchWin() {
   var wasFinalBoss = mapDepth(G.run.currentNodeId, G.run.map) === G.run.map.rows.length - 1;
+  if (G.match.isBoss) {
+    // Vencer a un jefe (cualquiera de los 3) quita la fatiga a todo el equipo.
+    G.run.squad.forEach(function (p) { p.fatigado = false; });
+  }
   G.match = null;
   clearCurrentNode();
   if (wasFinalBoss) {
