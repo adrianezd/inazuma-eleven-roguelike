@@ -987,7 +987,7 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
   var adv = typeAdvantage(attacker.tipo, defender.tipo);
 
   var atkStat, chance;
-  if (action === 'tiro') { atkStat = attacker.tiro; chance = 50 + (atkStat - defender.defensa) * 0.6; }
+  if (action === 'tiro') { atkStat = attacker.tiro; chance = 50 + (atkStat - defender.defensa) * 0.5; }
   else if (action === 'regate') { atkStat = attacker.pase; chance = 30 + (atkStat - defender.defensa) * 0.5; }
   else if (isPlayerAttacking) {
     // Tu Especial es un gol casi garantizado: base muy alta y el estatus
@@ -1004,7 +1004,7 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
     chance = 58 + (atkStat - defender.defensa) * 0.35;
   }
 
-  chance += adv * (action === 'especial' ? 8 : 14);
+  chance += adv * (action === 'especial' ? 8 : 10);
 
   // El equipo rival marca muchos menos goles en general (bajado a petición
   // explícita tras varias partidas injustamente duras para el jugador).
