@@ -202,7 +202,7 @@ var NODE_LABELS = {
 function generateMap() {
   // Nº de nodos por fila variable (2 o 3), como un mapa de rutas ramificadas
   // real, en vez de siempre 3; las filas de jefe (1) se mantienen fijas.
-  var rowDefs = [rand(2, 3), rand(2, 3), rand(2, 3), rand(2, 3), 1, rand(2, 3), rand(2, 3), 1, rand(2, 3), 1];
+  var rowDefs = [rand(2, 4), rand(2, 4), rand(2, 4), rand(2, 4), 1, rand(2, 4), rand(2, 4), 1, rand(2, 4), 1];
   var rows = [];
   var idCounter = 0;
 
@@ -230,10 +230,16 @@ function generateMap() {
         targets = nextRow.map(function (n) { return n.id; });
       } else {
         var idx = node.col;
+        var candidates = [];
         [idx - 1, idx, idx + 1].forEach(function (t) {
-          if (t >= 0 && t < nextRow.length) targets.push(nextRow[t].id);
+          if (t >= 0 && t < nextRow.length) candidates.push(nextRow[t].id);
         });
-        if (targets.length === 0) targets.push(nextRow[Math.min(idx, nextRow.length - 1)].id);
+        if (candidates.length === 0) candidates.push(nextRow[Math.min(idx, nextRow.length - 1)].id);
+        // No se puede ir a TODOS los nodos siguientes: solo a 1 o 2 al azar
+        // (antes se conectaba a los hasta 3 adyacentes siempre).
+        var howMany = Math.min(candidates.length, rand(1, 2));
+        var shuffled = candidates.slice().sort(function () { return Math.random() - 0.5; });
+        targets = shuffled.slice(0, howMany);
       }
       edges[node.id] = targets;
     });
