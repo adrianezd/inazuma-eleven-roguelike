@@ -106,9 +106,10 @@ function generateRivalPlayer(depth, forcedPosition) {
   };
 }
 
-function generateOpponentSquad(depth, isBoss) {
+function generateOpponentSquad(depth, isBoss, isFinalBoss) {
   var squad = [];
   var bonus = bossBonusRange(depth);
+  var finalMultiplier = isFinalBoss ? 1.5 : 1; // jefe final 50% más fuerte
   for (var i = 0; i < 4; i++) {
     // Slot 0 se fuerza siempre a Portero: antes cada jugador rival tenía una
     // posición 100% aleatoria e independiente, así que un equipo rival podía
@@ -117,10 +118,10 @@ function generateOpponentSquad(depth, isBoss) {
     // (ver pickDefender), así que garantizamos exactamente 1 portero por equipo.
     var p = generateRivalPlayer(depth, i === 0 ? 'Portero' : null);
     if (isBoss) {
-      p.tiro = clamp(p.tiro + rand(bonus.statMin, bonus.statMax), 15, 99);
-      p.pase = clamp(p.pase + rand(bonus.statMin, bonus.statMax), 15, 99);
-      p.defensa = clamp(p.defensa + rand(bonus.statMin, bonus.statMax), 15, 99);
-      p.especial = clamp(p.especial + rand(bonus.specialMin, bonus.specialMax), 15, 99);
+      p.tiro = clamp(Math.round((p.tiro + rand(bonus.statMin, bonus.statMax)) * finalMultiplier), 15, 99);
+      p.pase = clamp(Math.round((p.pase + rand(bonus.statMin, bonus.statMax)) * finalMultiplier), 15, 99);
+      p.defensa = clamp(Math.round((p.defensa + rand(bonus.statMin, bonus.statMax)) * finalMultiplier), 15, 99);
+      p.especial = clamp(Math.round((p.especial + rand(bonus.specialMin, bonus.specialMax)) * finalMultiplier), 15, 99);
     }
     squad.push(p);
   }
@@ -199,7 +200,7 @@ var NODE_LABELS = {
 };
 
 function generateMap() {
-  var rowDefs = [3, 3, 3, 3, 1, 3, 3, 3, 3, 1];
+  var rowDefs = [3, 3, 3, 3, 1, 3, 3, 1, 3, 1];
   var rows = [];
   var idCounter = 0;
 
@@ -726,7 +727,8 @@ function applyEvento() {
 
 function startMatch(nodeId, isBoss) {
   var depth = mapDepth(nodeId, G.run.map);
-  var oppSquad = generateOpponentSquad(depth, isBoss);
+  var isFinalBoss = isBoss && depth === 9; // jefe en profundidad 9 es el final
+  var oppSquad = generateOpponentSquad(depth, isBoss, isFinalBoss);
   var oppName = (isBoss ? 'Jefe: ' : '') + randomTeamName();
   G.match = {
     isBoss: isBoss,
@@ -803,7 +805,7 @@ function pickDefender(squad, action) {
   if (action === 'tiro' || action === 'especial') {
     var gk = squad.find(function (p) { return p.posicion === 'Portero'; });
     if (gk) return gk;
-  } else if (action === 'pase') {
+  } else if (action === 'regate') {
     var def = squad.find(function (p) { return p.posicion === 'Defensa'; });
     if (def) return def;
   }
@@ -817,7 +819,7 @@ function hasDefensiveSpecialist(squad, action) {
   if (action === 'tiro' || action === 'especial') {
     return squad.some(function (p) { return p.posicion === 'Portero'; });
   }
-  if (action === 'pase') {
+  if (action === 'regate') {
     return squad.some(function (p) { return p.posicion === 'Defensa'; });
   }
   return true;
@@ -888,7 +890,7 @@ function renderPlayerTurn() {
   var actions = (
     '<div class="action-row">' +
       '<button class="btn action-btn" ' + (selected ? '' : 'disabled') + ' onclick="playAction(\'tiro\')">Tiro<small>Directo a puerta</small></button>' +
-      '<button class="btn action-btn" ' + (selected ? '' : 'disabled') + ' onclick="playAction(\'pase\')">Pase<small>Seguro, prepara la especial</small></button>' +
+      '<button class="btn action-btn" ' + (selected ? '' : 'disabled') + ' onclick="playAction(\'regate\')">Regate<small>Seguro, prepara la especial</small></button>' +
       '<button class="btn action-btn btn-primary" ' + (canSpecial ? '' : 'disabled') + ' onclick="playAction(\'especial\')">' + escapeHtml(specialLabel) + '<small>' + specialHint + '</small></button>' +
     '</div>'
   );
@@ -942,7 +944,7 @@ function resolveOpponentTurn() {
   if (oppStatus.ready && !oppIsRepeat && (adv >= 0 || Math.random() < 0.6)) {
     action = 'especial';
   } else {
-    action = Math.random() < 0.65 ? 'tiro' : 'pase';
+    action = Math.random() < 0.65 ? 'tiro' : 'regate';
   }
   var defenderRaw = pickDefender(G.run.squad, action);
   var defHasSpecialist = hasDefensiveSpecialist(G.run.squad, action);
@@ -958,7 +960,7 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
 
   var atkStat, chance;
   if (action === 'tiro') { atkStat = attacker.tiro; chance = 50 + (atkStat - defender.defensa) * 0.6; }
-  else if (action === 'pase') { atkStat = attacker.pase; chance = 30 + (atkStat - defender.defensa) * 0.5; }
+  else if (action === 'regate') { atkStat = attacker.pase; chance = 30 + (atkStat - defender.defensa) * 0.5; }
   else if (isPlayerAttacking) {
     // Tu Especial es un gol casi garantizado: base muy alta y el estatus
     // defensivo del rival solo la penaliza levemente (peso 0.15 en vez de
@@ -998,7 +1000,7 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
   // el contador un ataque extra (su utilidad ahora que no hay medidor).
   if (isPlayerAttacking) {
     m.playerAtkCount++;
-    if (action === 'pase') m.playerCooldownBoost++;
+    if (action === 'regate') m.playerCooldownBoost++;
     if (action === 'especial') {
       m.playerLastSpecialAt = m.playerAtkCount;
       m.playerCooldownBoost = 0;
@@ -1007,7 +1009,7 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
     }
   } else {
     m.oppAtkCount++;
-    if (action === 'pase') m.oppCooldownBoost++;
+    if (action === 'regate') m.oppCooldownBoost++;
     if (action === 'especial') {
       m.oppLastSpecialAt = m.oppAtkCount;
       m.oppCooldownBoost = 0;
@@ -1019,7 +1021,7 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
   // Para que se note QUIÉN defiende (y por tanto para qué sirve tener
   // portero/defensa reales), se nombra siempre al defensor cuando el
   // rival es quien ataca, con su posición.
-  var defenderTag = (!isPlayerAttacking && (action === 'tiro' || action === 'especial' || action === 'pase'))
+  var defenderTag = (!isPlayerAttacking && (action === 'tiro' || action === 'especial' || action === 'regate'))
     ? (' (' + escapeHtml(defenderRaw.nombre) + ', tu ' + defenderRaw.posicion + ')')
     : '';
 
@@ -1030,7 +1032,7 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
     m.lastEventClass = 'goal';
     m.log.push(m.lastEvent);
   } else {
-    var missVerb = action === 'pase' ? 'el pase se corta.' : (action === 'especial' ? (escapeHtml(moveName || 'la jugada especial') + ' es bloqueada.') : 'el tiro es bloqueado.');
+    var missVerb = action === 'regate' ? 'el regate es cortado.' : (action === 'especial' ? (escapeHtml(moveName || 'la jugada especial') + ' es bloqueada.') : 'el tiro es bloqueado.');
     m.lastEvent = actorLabel + ': ' + missVerb + defenderTag + advText;
     m.lastEventClass = 'block';
     m.log.push(m.lastEvent);
