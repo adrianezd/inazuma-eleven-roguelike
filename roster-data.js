@@ -98,7 +98,7 @@ var ROSTER = [
     id: 'r05', nombre: 'Kevin Dragonfly', original: 'Someoka Ryuugo',
     posicion: 'Delantero', tipo: 'Bosque',
     tiro: 78, pase: 44, defensa: 40, especial: 62,
-    hissatsu: ['Reamte Dragón'],
+    hissatsu: ['Remate Dragón'],
     desc: 'Delantero fogoso, uno de los fundadores del club.',
     locked: false
   },
@@ -253,12 +253,12 @@ var ROSTER = [
     posicion: 'Delantero', tipo: 'Bosque',
     tiro: 76, pase: 61, defensa: 30, especial: 58,
     hissatsu: ['Pinguino Emperador II'],
-    desc: 'Defensa de Teikoku, implacable y sin piedad en el choque.',
+    desc: 'Delantero de la royal, implacable y sin piedad en el choque.',
     locked: true, cost: 225
   },
   {
     id: 'r23', nombre: 'Archer Hawkins', original: 'Tobitaka Seiya',
-    posicion: 'Delantero', tipo: 'Fuego',
+    posicion: 'Defensa', tipo: 'Aire',
     tiro: 30, pase: 40, defensa: 79, especial: 60,
     hissatsu: ['Corte de vacío'],
     desc: 'Guerrero solitario que rechazó el once titular por orgullo.',
