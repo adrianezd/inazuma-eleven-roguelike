@@ -68,7 +68,7 @@ var ROSTER = [
     tiro: 22, pase: 55, defensa: 88, especial: 62,
     hissatsu: ['Mano Mágica'],
     desc: 'Portero legendario y capitán de corazón indomable.',
-    locked: false
+    locked: true, cost: 280
   },
   {
     id: 'r02', nombre: 'Axel Blaze', original: 'Gouenji Shuuya',
@@ -76,7 +76,7 @@ var ROSTER = [
     tiro: 88, pase: 50, defensa: 34, especial: 70,
     hissatsu: ['Tornado de Fuego', 'Tormenta de fuego'],
     desc: 'El delantero estrella, el mejor rematador del equipo.',
-    locked: false
+    locked: true, cost: 380
   },
   {
     id: 'r03', nombre: 'Nathan Swift', original: 'Kazemaru Ichirouta',
@@ -84,7 +84,7 @@ var ROSTER = [
     tiro: 44, pase: 62, defensa: 70, especial: 58,
     hissatsu: ['Huracán Multiple'],
     desc: 'El jugador más veloz del Raimon.',
-    locked: false
+    locked: true, cost: 150
   },
   {
     id: 'r04', nombre: 'Jude Sharp', original: 'Kidou Yuuto',
@@ -92,7 +92,7 @@ var ROSTER = [
     tiro: 54, pase: 78, defensa: 54, especial: 74,
     hissatsu: ['Pingüino Emperador'],
     desc: 'Estratega frío y calculador, el cerebro del equipo.',
-    locked: false
+    locked: true, cost: 150
   },
   {
     id: 'r05', nombre: 'Kevin Dragonfly', original: 'Someoka Ryuugo',
@@ -100,7 +100,7 @@ var ROSTER = [
     tiro: 78, pase: 44, defensa: 40, especial: 62,
     hissatsu: ['Reamte Dragón'],
     desc: 'Delantero fogoso, uno de los fundadores del club.',
-    locked: true, cost: 222
+    locked: false
   },
   {
     id: 'r06', nombre: 'Jack Wallside', original: 'Kabeyama Heigorou',
@@ -156,7 +156,7 @@ var ROSTER = [
     tiro: 34, pase: 48, defensa: 72, especial: 48,
     hissatsu: ['Corte Giratorio'],
     desc: 'Defensa fornido con un don inesperado para el regate.',
-    locked: true, cost: 156
+    locked: false
   },
   // -- Personajes desbloqueables con Puntos de Espíritu en el Vestuario --
   {
@@ -291,10 +291,10 @@ var ROSTER = [
   {
     id: 'r32', nombre: 'Gabriel García', original: 'Kirino Ranmaru',
     posicion: 'Defensa', tipo: 'Bosque',
-    tiro: 40, pase: 56, defensa: 70, especial: 54,
+    tiro: 40, pase: 56, defensa: 74, especial: 54,
     hissatsu: ['Niebla Mística'],
     desc: 'Defensa técnico y mejor amigo de Shindou.',
-    locked: true, cost: 210
+    locked: False
   },
   {
     id: 'r33', nombre: 'Aitor Cazador', original: 'Kariya Masaki',
@@ -314,11 +314,11 @@ var ROSTER = [
   },
   {
     id: 'r36', nombre: 'Ryoma Nishiki', original: 'Nishiki Ryouma',
-    posicion: 'Centrocampista', tipo: 'Montaña',
+    posicion: 'Delantero', tipo: 'Montaña',
     tiro: 68, pase: 68, defensa: 34, especial: 58,
-    hissatsu: ['Guardia acrobática'],
+    hissatsu: ['Chut ancestal'],
     desc: 'Centrocampista desenfadado con un don natural para el gol.',
-    locked: true, cost: 234
+    locked: false
   },
   {
     id: 'r37', nombre: 'Subaru Honda', original: 'Kurumada Gouichi',
@@ -327,5 +327,29 @@ var ROSTER = [
     hissatsu: ['A todo vapor'],
     desc: 'Defensa colosal, un muro que pocos logran superar.',
     locked: true, cost: 192
+  },
+  {
+    id: 'r38', nombre: 'Samguk Han', original: "Sangoku Taichi",
+    posicion: 'Portero', tipo: 'Fuego',
+    tiro: 22, pase: 50, defensa: 75, especial: 60,
+    hissatsu: ['Captura ardiente'],
+    desc: 'Portero del raimon, con reflejos felinos y un corazón ardiente.',
+    locked: false
+  },
+  {
+    id: 'r39', nombre: 'Shadow Cimmerian', original: "Kageto Yamino",
+    posicion: 'Delantero', tipo: 'Bosque',
+    tiro: 80, pase: 48, defensa: 32, especial: 70,
+    hissatsu: ['Tornado oscuro'],
+    desc: 'Delantero misterioso, capaz de desaparecer entre las sombras.',
+    locked: true, cost: 240
+  },
+  {
+    id: 'r40', nombre: 'William Glass', original: "Kakeru Megane",
+    posicion: 'Delantero', tipo: 'Bosque',
+    tiro: 65, pase: 60, defensa: 34, especial: 68,
+    hissatsu: ['Remate Gafas'],
+    desc: 'Delantero elegante y preciso, con un toque de magia en sus pies.',
+    locked: false
   }
 ];
