@@ -286,7 +286,7 @@ var ROSTER = [
     tiro: 66, pase: 78, defensa: 44, especial: 72,
     hissatsu: ['Pentagrama'],
     desc: 'Estratega de piano y balón, heredero del legado de Jude Sharp.',
-    locked: true, cost: 330
+    locked: false
   },
   {
     id: 'r32', nombre: 'Gabriel García', original: 'Kirino Ranmaru',
@@ -342,7 +342,7 @@ var ROSTER = [
     tiro: 80, pase: 48, defensa: 32, especial: 70,
     hissatsu: ['Tornado oscuro'],
     desc: 'Delantero misterioso, capaz de desaparecer entre las sombras.',
-    locked: true, cost: 240
+    locked: false
   },
   {
     id: 'r40', nombre: 'William Glass', original: "Kakeru Megane",
