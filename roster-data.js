@@ -10,13 +10,19 @@
    es original (formas geométricas / SVG, color por elemento, iniciales).
 
    NOTA DE TRANSPARENCIA SOBRE LAS FUENTES (ver también README.md):
-   - Los 16 personajes de este archivo, su posición, su nombre de doblaje
+   - Los 21 personajes de este archivo, su posición, su nombre de doblaje
      (se usa el nombre del doblaje en inglés/internacional, que es el mismo
      que usó el doblaje de España, confirmado mediante búsqueda) y al menos
      una jugada "hissatsu" real atribuida correctamente a cada uno han sido
      verificados mediante búsquedas específicas en wikis especializadas del
      universo Inazuma Eleven (Fandom, MyAnimeList, etc.) durante la
-     construcción de este proyecto.
+     construcción de este proyecto (los 16 primeros) y en una ronda
+     posterior de ampliación (r17-r21). En esa segunda ronda se investigaron
+     más de 10 personajes secundarios adicionales (p. ej. Sakuma Jirou,
+     Tobitaka Seiya, Handa Shinichi, Shishido Sakichi, Hijikata Raiden,
+     Fubuki Atsuya, Saginuma Osamu) que finalmente NO se incluyeron por no
+     poder confirmar con confianza y sin contradicciones entre fuentes su
+     posición, elemento o jugada "hissatsu" individual real.
    - La rueda de elementos (Fuego > Bosque > Viento > Montaña > Fuego) es la
      relación real de la franquicia, también confirmada por búsqueda.
    - Las estadísticas numéricas de juego (tiro/pase/defensa/especial) son
@@ -184,5 +190,46 @@ var ROSTER = [
     hissatsu: ['Corte Volcánico'],
     desc: 'Defensor disciplinado, siempre el primero en el barro.',
     locked: true, cost: 55
+  },
+  // -- Ampliación del plantel (segunda ronda de verificación, ver README) --
+  {
+    id: 'r17', nombre: 'Bryce Withingale', original: 'Suzuno Fuusuke',
+    posicion: 'Delantero', tipo: 'Viento',
+    tiro: 76, pase: 50, defensa: 38, especial: 70,
+    hissatsu: ['Balón Iceberg'],
+    desc: 'Capitán de Diamond Dust, frío y calculador frente a la portería.',
+    locked: false
+  },
+  {
+    id: 'r18', nombre: 'Hurley Kane', original: 'Tsunami Jousuke',
+    posicion: 'Defensa', tipo: 'Viento',
+    tiro: 46, pase: 54, defensa: 66, especial: 56,
+    hissatsu: ['Impulso Tsunami'],
+    desc: 'Surfista y defensa de Big Waves, imparable con el viento a favor.',
+    locked: false
+  },
+  {
+    id: 'r19', nombre: 'Claude Beacons', original: 'Nagumo Haruya',
+    posicion: 'Delantero', tipo: 'Fuego',
+    tiro: 80, pase: 42, defensa: 32, especial: 66,
+    hissatsu: ['Bengala Atómica'],
+    desc: 'Capitán de Prominence, ambicioso y ardiente ante el gol.',
+    locked: true, cost: 60
+  },
+  {
+    id: 'r20', nombre: 'Byron Love', original: 'Afuro Terumi',
+    posicion: 'Centrocampista', tipo: 'Viento',
+    tiro: 66, pase: 74, defensa: 42, especial: 76,
+    hissatsu: ['Dios lo Sabe'],
+    desc: 'Capitán de Zeus, el centrocampista más elegante y letal.',
+    locked: true, cost: 70
+  },
+  {
+    id: 'r21', nombre: 'Scott Banyan', original: 'Kogure Yuuya',
+    posicion: 'Defensa', tipo: 'Viento',
+    tiro: 38, pase: 50, defensa: 68, especial: 50,
+    hissatsu: ['Formación Torbellino'],
+    desc: 'Defensa travieso de Raimon, siempre lleno de recursos.',
+    locked: true, cost: 45
   }
 ];

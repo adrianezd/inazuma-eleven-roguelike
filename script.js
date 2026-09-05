@@ -21,7 +21,7 @@ var POSITION_TEMPLATES = {
 };
 
 var MAX_SQUAD = 4;
-var MATCH_TURNS = 10; // 5 ataques para cada equipo (antes 3; con 3 nunca daba tiempo a llenar el medidor especial)
+var MATCH_TURNS = 14; // 7 ataques para cada equipo (antes 10/5; cada turno es una interacción rápida sin animaciones bloqueantes, así que un partido más largo sigue siendo ágil en móvil y deja mucho más margen para usar la especial)
 var SPIRIT_PER_NODE = 4;
 var SPIRIT_PER_MATCH = 10;
 var SPIRIT_PER_BOSS = 30;
@@ -39,7 +39,7 @@ function bossBonusRange(depth) {
     statMin: 2 + Math.floor(d * 0.25),
     statMax: 5 + Math.floor(d * 0.35),
     specialMin: 3 + Math.floor(d * 0.3),
-    specialMax: 7 + Math.floor(d * 0.4)
+    specialMax: 6 + Math.floor(d * 0.4) // -1 desde el original (7): pequeño ajuste a la baja del techo del bonus especial de los jefes, para que sean "un pelín" más fáciles sin tocar el resto del diseño ya validado por simulación
   };
 }
 
