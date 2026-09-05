@@ -936,12 +936,6 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
   var m = G.match;
   var attacker = effectiveStats(attackerRaw);
   var defender = effectiveStats(defenderRaw);
-  if (!isPlayerAttacking && defenderHasSpecialist === false) {
-    // Tu equipo no tiene portero (tiro/especial) o defensa (pase) real: se
-    // compensa con un bono defensivo de "emergencia" para que jugar sin
-    // esas posiciones sea más difícil pero no una derrota casi garantizada.
-    defender = Object.assign({}, defender, { defensa: defender.defensa + 22 });
-  }
   var adv = typeAdvantage(attacker.tipo, defender.tipo);
 
   var atkStat, chance;
