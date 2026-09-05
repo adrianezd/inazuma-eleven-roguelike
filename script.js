@@ -229,15 +229,20 @@ function generateMap() {
       } else if (curRow.length === 1) {
         targets = nextRow.map(function (n) { return n.id; });
       } else {
-        var idx = node.col;
+        // Posición PROPORCIONAL (no índice bruto) para que la ventana de
+        // vecinos tenga sentido aunque las dos filas tengan distinto nº de
+        // nodos (2 a 4): evita saltos "de un lado al otro" del mapa.
+        var propTarget = curRow.length > 1
+          ? (node.col / (curRow.length - 1)) * (nextRow.length - 1)
+          : (nextRow.length - 1) / 2;
         var candidates = [];
-        [idx - 1, idx, idx + 1].forEach(function (t) {
-          if (t >= 0 && t < nextRow.length) candidates.push(nextRow[t].id);
-        });
-        if (candidates.length === 0) candidates.push(nextRow[Math.min(idx, nextRow.length - 1)].id);
-        // No se puede ir a TODOS los nodos siguientes: solo a 1 o 2 al azar
-        // (antes se conectaba a los hasta 3 adyacentes siempre).
-        var howMany = Math.min(candidates.length, rand(1, 2));
+        for (var t = 0; t < nextRow.length; t++) {
+          if (Math.abs(t - propTarget) <= 1.5) candidates.push(nextRow[t].id);
+        }
+        if (candidates.length === 0) candidates.push(nextRow[Math.round(propTarget)].id);
+        // No se puede ir a TODOS los nodos siguientes: entre 1 y 4 al azar
+        // (nunca más de los candidatos cercanos que existan de verdad).
+        var howMany = Math.min(candidates.length, rand(1, 4));
         var shuffled = candidates.slice().sort(function () { return Math.random() - 0.5; });
         targets = shuffled.slice(0, howMany);
       }
