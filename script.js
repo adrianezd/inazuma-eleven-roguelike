@@ -349,6 +349,7 @@ function render() {
     case 'evento': html = renderEvento(); break;
     case 'summary': html = renderSummary(); break;
     case 'vestuario': html = renderVestuario(); break;
+    case 'coleccion': html = renderColeccion(); break;
     default: html = renderMenu();
   }
   appEl.innerHTML = html;
@@ -371,6 +372,9 @@ function renderMenu() {
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-block" onclick="actionGoVestuario()">Vestuario</button>' +
         '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-outline btn-block" onclick="actionGoColeccion()">Colección de personajes</button>' +
+        '</div>' +
       '</div>' +
       '<div class="panel">' +
         '<h2 class="panel-title">La rueda elemental</h2>' +
@@ -385,6 +389,35 @@ function spiritIcon() { return '<svg class="icon-inline" viewBox="0 0 24 24" ari
 
 function actionStartRun() { G.pendingCaptainOffers = offerCaptains(); G.screen = 'captainSelect'; render(); }
 function actionGoVestuario() { G.screen = 'vestuario'; render(); }
+function actionGoColeccion() { G.screen = 'coleccion'; render(); }
+
+function renderColeccion() {
+  var meta = G.meta;
+  var isUnlocked = function (c) { return !c.locked || meta.unlocked.indexOf(c.id) !== -1; };
+  var unlockedCount = ROSTER.filter(isUnlocked).length;
+  var items = ROSTER.map(function (c) {
+    var unlocked = isUnlocked(c);
+    return (
+      '<div class="shop-item" style="' + (unlocked ? '' : 'opacity:.55;') + '">' +
+        '<div>' +
+          avatarHtml(c) + ' <strong>' + escapeHtml(c.nombre) + '</strong> ' + typeBadge(c.tipo) + '<br>' +
+          '<span class="dim small">' + c.posicion + ' · ' + escapeHtml(c.desc) + '</span>' +
+        '</div>' +
+        '<div class="cost">' + (unlocked ? '<span class="pill">Desbloqueado</span>' : '<span class="dim">Bloqueado</span>') + '</div>' +
+      '</div>'
+    );
+  }).join('');
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<h2 class="panel-title">Colección de personajes</h2>' +
+        '<p class="dim small">' + unlockedCount + ' de ' + ROSTER.length + ' personajes desbloqueados hasta ahora.</p>' +
+      '</div>' +
+      items +
+      '<button class="btn btn-block mt" onclick="actionBackToMenu()">Volver</button>' +
+    '</div>'
+  );
+}
 function actionBackToMenu() { G.screen = 'menu'; render(); }
 
 function renderCaptainSelect() {
