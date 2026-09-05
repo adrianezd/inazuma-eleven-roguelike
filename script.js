@@ -202,7 +202,8 @@ var NODE_LABELS = {
 function generateMap() {
   // Nº de nodos por fila variable (2 o 3), como un mapa de rutas ramificadas
   // real, en vez de siempre 3; las filas de jefe (1) se mantienen fijas.
-  var rowDefs = [rand(2, 4), rand(2, 4), rand(2, 4), rand(2, 4), 1, rand(2, 4), rand(2, 4), 1, rand(2, 4), 1];
+  // 3 nodos -> jefe -> 3 nodos -> jefe -> 2 nodos -> jefe final (antes 4-2-1).
+  var rowDefs = [rand(2, 4), rand(2, 4), rand(2, 4), 1, rand(2, 4), rand(2, 4), rand(2, 4), 1, rand(2, 4), rand(2, 4), 1];
   var rows = [];
   var idCounter = 0;
 
@@ -740,7 +741,7 @@ function applyEvento() {
 
 function startMatch(nodeId, isBoss) {
   var depth = mapDepth(nodeId, G.run.map);
-  var isFinalBoss = isBoss && depth === 9; // jefe en profundidad 9 es el final
+  var isFinalBoss = isBoss && depth === 10; // jefe en profundidad 10 (última fila) es el final
   var oppSquad = generateOpponentSquad(depth, isBoss, isFinalBoss);
   var oppName = (isBoss ? 'Jefe: ' : '') + randomTeamName();
   G.match = {
