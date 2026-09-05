@@ -207,7 +207,10 @@ function generateMap() {
     var isBoss = count === 1;
     var nodes = [];
     for (var c = 0; c < count; c++) {
-      var type = isBoss ? 'jefe' : weightedNodeType();
+      // La primera fila siempre es Fichaje o Entrenamiento: nunca un partido
+      // (ni evento/descanso) nada más empezar la partida con un plantel de
+      // un solo jugador, para dar margen a prepararse antes del primer choque.
+      var type = isBoss ? 'jefe' : (rowIndex === 0 ? choice(['fichaje', 'entrenamiento']) : weightedNodeType());
       nodes.push({ id: 'n' + (idCounter++), row: rowIndex, col: c, type: type, cleared: false });
     }
     rows.push(nodes);
@@ -734,14 +737,21 @@ function startMatch(nodeId, isBoss) {
     playerScore: 0,
     oppScore: 0,
     // La Especial ya no depende de un medidor de carga lenta: se rige por un
-    // cooldown de "cada 2 ataques propios" (ver specialStatus/resolveAttack),
-    // usable a partir del 2º ataque del jugador y de nuevo 2 ataques después
-    // de cada uso. Se reinicia cada partido: con ~7 ataques por partido sobra
-    // margen para usarla varias veces sin necesidad de arrastrarla entre partidos.
+    // cooldown aleatorio de 2 o 3 ataques propios (ver specialStatus), que se
+    // vuelve a sortear cada vez que se usa. El Pase adelanta la recarga un
+    // ataque extra (su motivo de ser ahora que ya no existe el medidor), y no
+    // se puede repetir la misma técnica (mismo nombre de "hissatsu") dos
+    // veces seguidas: hay que cambiar de jugador o esperar a la siguiente vez.
     playerAtkCount: 0,
     playerLastSpecialAt: 0,
+    playerCooldownNeeded: rand(2, 3),
+    playerCooldownBoost: 0,
+    playerLastSpecialMove: null,
     oppAtkCount: 0,
     oppLastSpecialAt: 0,
+    oppCooldownNeeded: rand(2, 3),
+    oppCooldownBoost: 0,
+    oppLastSpecialMove: null,
     log: [],
     selectedAttackerId: null,
     lastEvent: null,
@@ -770,16 +780,18 @@ function currentAttacker() {
   return G.match.order[G.match.turn - 1];
 }
 
-// Cooldown de la Especial: lista a partir del 2º ataque propio, y de nuevo
-// cada 2 ataques propios tras cada uso (en vez del antiguo medidor de carga).
-function specialStatus(atkCount, lastSpecialAt) {
+// Cooldown de la Especial: lista tras "needed" ataques propios (2 o 3,
+// sorteado al azar cada vez que se usa), con el Pase adelantando el
+// contador un ataque extra ("boost") como su razón de ser en este sistema.
+function specialStatus(atkCount, lastSpecialAt, boost, needed) {
+  var need = needed || 2;
   var atkNum = atkCount + 1; // número del próximo ataque de este bando
-  var since = atkNum - lastSpecialAt;
-  var ready = since >= 2;
+  var since = (atkNum - lastSpecialAt) + (boost || 0);
+  var ready = since >= need;
   return {
     ready: ready,
-    turnsLeft: ready ? 0 : (2 - since),
-    pct: clamp(Math.round((Math.min(since, 2) / 2) * 100), 0, 100)
+    turnsLeft: ready ? 0 : (need - since),
+    pct: clamp(Math.round((Math.min(since, need) / need) * 100), 0, 100)
   };
 }
 
@@ -816,7 +828,7 @@ function renderMatch() {
   if (!m) return '';
   var isPlayerTurn = currentAttacker() === 'jugador' && !m.finished;
   var fieldClass = 'field' + (m.lastEventClass ? ' ' + m.lastEventClass : '');
-  var pStatus = specialStatus(m.playerAtkCount, m.playerLastSpecialAt);
+  var pStatus = specialStatus(m.playerAtkCount, m.playerLastSpecialAt, m.playerCooldownBoost, m.playerCooldownNeeded);
 
   var body = '';
   if (m.finished) {
@@ -855,11 +867,15 @@ function renderPlayerTurn() {
     return playerCardHtml(p, 'selectAttacker(\'' + p.instanceId + '\')', selected === p.instanceId, false);
   }).join('');
 
-  var pStatus = specialStatus(m.playerAtkCount, m.playerLastSpecialAt);
-  var canSpecial = pStatus.ready && selected;
+  var pStatus = specialStatus(m.playerAtkCount, m.playerLastSpecialAt, m.playerCooldownBoost, m.playerCooldownNeeded);
   var selectedPlayer = selected ? squad.find(function (p) { return p.instanceId === selected; }) : null;
   var specialLabel = selectedPlayer && selectedPlayer.hissatsu ? selectedPlayer.hissatsu[0] : 'Especial';
-  var specialHint = pStatus.ready ? '¡Lista!' : ('Disponible en ' + pStatus.turnsLeft + ' turno' + (pStatus.turnsLeft === 1 ? '' : 's'));
+  // No se puede repetir la misma técnica dos veces seguidas: si el jugador
+  // seleccionado tiene la misma "hissatsu" que se usó la última vez, hay que
+  // cambiar de jugador (o esperar a que ese cooldown se reinicie con otro).
+  var isRepeat = selectedPlayer && specialLabel === m.playerLastSpecialMove;
+  var canSpecial = pStatus.ready && selected && !isRepeat;
+  var specialHint = isRepeat ? 'Repetida: cambia de jugador' : (pStatus.ready ? '¡Lista!' : ('Disponible en ' + pStatus.turnsLeft + ' turno' + (pStatus.turnsLeft === 1 ? '' : 's')));
 
   var matchupHtml = '';
   if (selectedPlayer) {
@@ -919,9 +935,11 @@ function resolveOpponentTurn() {
   // enfrentan) para que la IA decida con la misma info que se le mostraría al jugador.
   var likelyDefender = G.run.squad.find(function (p) { return p.posicion === 'Portero'; }) || choice(G.run.squad);
   var adv = typeAdvantage(attackerRaw.tipo, likelyDefender.tipo);
-  var oppStatus = specialStatus(m.oppAtkCount, m.oppLastSpecialAt);
+  var oppStatus = specialStatus(m.oppAtkCount, m.oppLastSpecialAt, m.oppCooldownBoost, m.oppCooldownNeeded);
+  var oppMoveName = attackerRaw.hissatsu ? attackerRaw.hissatsu[0] : null;
+  var oppIsRepeat = oppMoveName && oppMoveName === m.oppLastSpecialMove;
   var action;
-  if (oppStatus.ready && (adv >= 0 || Math.random() < 0.6)) {
+  if (oppStatus.ready && !oppIsRepeat && (adv >= 0 || Math.random() < 0.6)) {
     action = 'especial';
   } else {
     action = Math.random() < 0.65 ? 'tiro' : 'pase';
@@ -975,25 +993,45 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
     (adv === -1 ? (' Desventaja elemental (' + attacker.tipo + ' vs ' + defender.tipo + ').') : '');
   var moveName = action === 'especial' && attacker.hissatsu ? attacker.hissatsu[0] : null;
 
-  // Cooldown de la Especial (cada 2 ataques propios, ver specialStatus): se
-  // reinicia al usarla, sea gol o parada, ya que "usarla" ya consumió el turno.
+  // Cooldown de la Especial (ver specialStatus): se reinicia y se vuelve a
+  // sortear (2 o 3 ataques) al usarla, sea gol o parada. El Pase adelanta
+  // el contador un ataque extra (su utilidad ahora que no hay medidor).
   if (isPlayerAttacking) {
     m.playerAtkCount++;
-    if (action === 'especial') m.playerLastSpecialAt = m.playerAtkCount;
+    if (action === 'pase') m.playerCooldownBoost++;
+    if (action === 'especial') {
+      m.playerLastSpecialAt = m.playerAtkCount;
+      m.playerCooldownBoost = 0;
+      m.playerCooldownNeeded = rand(2, 3);
+      m.playerLastSpecialMove = moveName;
+    }
   } else {
     m.oppAtkCount++;
-    if (action === 'especial') m.oppLastSpecialAt = m.oppAtkCount;
+    if (action === 'pase') m.oppCooldownBoost++;
+    if (action === 'especial') {
+      m.oppLastSpecialAt = m.oppAtkCount;
+      m.oppCooldownBoost = 0;
+      m.oppCooldownNeeded = rand(2, 3);
+      m.oppLastSpecialMove = moveName;
+    }
   }
+
+  // Para que se note QUIÉN defiende (y por tanto para qué sirve tener
+  // portero/defensa reales), se nombra siempre al defensor cuando el
+  // rival es quien ataca, con su posición.
+  var defenderTag = (!isPlayerAttacking && (action === 'tiro' || action === 'especial' || action === 'pase'))
+    ? (' (' + escapeHtml(defenderRaw.nombre) + ', tu ' + defenderRaw.posicion + ')')
+    : '';
 
   if (success) {
     m[scoreKey]++;
     var verb = action === 'especial' ? ('¡' + escapeHtml(moveName || 'jugada especial') + ' imparable!') : (action === 'tiro' ? '¡GOL!' : '¡Gol tras un gran pase!');
-    m.lastEvent = actorLabel + ': ' + verb + advText;
+    m.lastEvent = actorLabel + ': ' + verb + defenderTag + advText;
     m.lastEventClass = 'goal';
     m.log.push(m.lastEvent);
   } else {
     var missVerb = action === 'pase' ? 'el pase se corta.' : (action === 'especial' ? (escapeHtml(moveName || 'la jugada especial') + ' es bloqueada.') : 'el tiro es bloqueado.');
-    m.lastEvent = actorLabel + ': ' + missVerb + advText;
+    m.lastEvent = actorLabel + ': ' + missVerb + defenderTag + advText;
     m.lastEventClass = 'block';
     m.log.push(m.lastEvent);
   }
