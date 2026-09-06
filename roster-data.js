@@ -52,10 +52,19 @@ var TYPE_MARK = { Fuego: 'F', Bosque: 'B', Viento: 'V', 'Montaña': 'M' };
 // esos equipos NO usan nombres de personajes reales para no atribuir
 // incorrectamente datos de jugadores concretos a plantillas ficticias).
 var RIVAL_TEAM_NAMES = [
-  'Royal Academy', 'Zeus', 'Occult', 'Instituto Osaka', 'Academia Ogre',
-  'Alpino', 'Instituto Alius', 'Unicorn', 'Emperadores Oscuros', 'Big Waves',
-  'Genesis', 'Prominence', 'Polvo de Diamante', 'Tormenta de Géminis'
+  'Royal Academy', 'Zeus', 'Occult', 'Instituto Osaka',
+  'Alpino', 'Unicorn', 'Big Waves',
+  'Brain', 'Wild', 'Shuriken', 'Kirkwwood', 'Umbrella',
+  'Tarjeteros', 'Occult', 'Veteranos Inazuma'
 ];
+
+var RIVAL_TEAM_BOSSES = [
+  'Royal Academy', 'Zeus', 'Academia Ogre',
+  'Instituto Alius','Emperadores Oscuros',
+  'Genesis', 'Prominence', 'Polvo de Diamante', 'Tormenta de Géminis', 'Dragones de Fuego',
+  'Pequeños Gigantes', 'Épsilon', 'Los Emperadores', 'Os Reis', 'Neo Japón'
+];
+
 
 // El plantel real: 16 personajes de Inazuma Eleven. "nombre" usa el nombre
 // del doblaje en inglés/internacional (idéntico al usado en el doblaje de
@@ -552,5 +561,45 @@ var ROSTER = [
     desc: 'Defensa técnica de Orfeo con gran capacidad para combinar.',
     locked: false, cost: 105
   },
+  {
+    id: 'r66', nombre: 'Jimmy Mach', original: 'Maya Hayami',
+    posicion: 'Delantero', tipo: 'Aire',
+    tiro: 72, pase: 65, defensa: 34, especial: 70,
+    hissatsu: ['Tiro Giratorio'],
+    desc: 'Alcanza la velocidad del sonido y es capaz de rematar desde cualquier ángulo.',
+    locked: false, cost: 110
+  },
+  {
+    id: 'r67', nombre: 'Balt Decker', original: 'Balt Decker',
+    posicion: 'Defensa', tipo: 'Aire',
+    tiro: 40, pase: 50, defensa: 75, especial: 75,
+    hissatsu: ['Ciclón'],
+    desc: 'Defensa de pequeño tamaño pero gran capacidad defensiva.',
+    locked: false, cost: 120
+  },
+  {
+    id: 'r68', nombre: 'Fei Rune', original: 'Fei Rune',
+    posicion: 'Delantero', tipo: 'Bosque',
+    tiro: 85, pase: 60, defensa: 32, especial: 68,
+    hissatsu: ['Remate Rebotado'],
+    desc: 'Viajero del tiempo que ayudó a Arion a salvar el fútbol.',
+    locked: true, cost: 99999
+  },
+  {
+    id: 'r69', nombre: 'Vladimir Blade', original: 'Yuichi Tsurugi',
+    posicion: 'Delantero', tipo: 'Fuego',
+    tiro: 88, pase: 64, defensa: 36, especial: 80,
+    hissatsu: ['Aguijón Escarlata'],
+    desc: 'Hermano de Víctor Blade, un delantero letal con una precisión de rayo.',
+    locked: true, cost: 99999
+  },
+  {
+    id: 'r70', nombre: 'WonderBot', original: 'WonderBot',
+    posicion: 'Portero', tipo: 'Montaña',
+    tiro: 20, pase: 40, defensa: 90, especial: 80,
+    hissatsu: ['Defensa Automática'],
+    desc: 'Portero robotizado con reflejos sobrehumanos y una programación impecable.',
+    locked: true, cost: 99999
+  }
 
 ];

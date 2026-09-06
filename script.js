@@ -132,7 +132,7 @@ function generateOpponentSquad(depth, isBoss, isFinalBoss) {
   return squad;
 }
 
-function randomTeamName() { return choice(RIVAL_TEAM_NAMES); }
+function randomTeamName(isBoss) { return choice(isBoss ? RIVAL_TEAM_BOSSES : RIVAL_TEAM_NAMES); }
 
 /* ---------------------------------------------------------------------
    4. SELECCIÓN DE CAPITÁN / FICHAJES (plantel real)
@@ -152,7 +152,7 @@ function offerCaptains() {
     if (unlocked.indexOf(p.id) !== -1) pool.push(p);
   });
   var shuffled = pool.slice().sort(function () { return Math.random() - 0.5; });
-  return shuffled.slice(0, 3).map(rosterInstance);
+  return shuffled.slice(0, 4).map(rosterInstance);
 }
 
 function generateRecruitOptions() {
@@ -218,7 +218,7 @@ function generateMap() {
   // Nº de nodos por fila variable (2 o 3), como un mapa de rutas ramificadas
   // real, en vez de siempre 3; las filas de jefe (1) se mantienen fijas.
   // 3 nodos -> jefe -> 3 nodos -> jefe -> 2 nodos -> jefe final (antes 4-2-1).
-  var rowDefs = [rand(2, 4), rand(2, 4), rand(2, 4), 1, rand(2, 4), rand(2, 4), rand(2, 4), 1, rand(2, 4), rand(2, 4), 1];
+  var rowDefs = [rand(3, 5), rand(3, 5), rand(3, 5), 1, rand(3, 5), rand(3, 5), rand(3, 5), 1, rand(3, 5), rand(3, 5), 1];
   var rows = [];
   var idCounter = 0;
 
@@ -285,9 +285,9 @@ function generateMap() {
 function weightedNodeType() {
   var roll = Math.random() * 100;
   if (roll < 40) return 'partido';
-  if (roll < 58) return 'entrenamiento';
-  if (roll < 72) return 'fichaje';
-  if (roll < 87) return 'descanso';
+  if (roll < 56) return 'entrenamiento';
+  if (roll < 67) return 'fichaje';
+  if (roll < 82) return 'descanso';
   return 'evento';
 }
 
@@ -410,7 +410,7 @@ function renderColeccion() {
           avatarHtml(c) + ' <strong>' + escapeHtml(c.nombre) + '</strong> ' + typeBadge(c.tipo) + '<br>' +
           '<span class="dim small">' + c.posicion + ' · ' + escapeHtml(c.desc) + '</span>' +
         '</div>' +
-        '<div class="cost">' + (unlocked ? '<span class="pill">Desbloqueado</span>' : '<span class="dim">Bloqueado</span>') + '</div>' +
+        '<div class="cost">' + (unlocked ? '<span class="pill">Desbloqueado</span>' : (c.cost === 99999 ? '<span class="dim">Secreto</span>' : '<span class="dim">Bloqueado</span>')) + '</div>' +
       '</div>'
     );
   }).join('');
@@ -734,7 +734,42 @@ function applyRest() {
 
 function resolveEventoNode() {
   var squad = G.run.squad;
-  var roll = rand(1, 6);
+  var roll = rand(1, 10);
+  if (roll === 3) {
+    var p3 = choice(squad);
+    p3.fatigado = true;
+    return { type: 'fatiga', text: escapeHtml(p3.nombre) + ' vuelve agotado del evento y queda fatigado (-10 a todo hasta el próximo descanso).' };
+  }
+  if (roll === 7) {
+    squad.forEach(function (p) {
+      p.especial = clamp(p.especial + 10, 0, 99);
+    });
+    return { type: 'bonus', text: 'Subís a la Torre Inazuma a entrenar en altura. Todo el equipo sube +10 a Especial (solo esta partida).' };
+  }
+  if (roll === 8) {
+    var stats = ['tiro', 'pase', 'defensa', 'especial'];
+    var pSab = choice(squad);
+    var statKey = choice(stats);
+    pSab[statKey] = clamp(pSab[statKey] - 20, 0, 99);
+    return { type: 'malus', text: 'Sabotaje del autobús: ' + escapeHtml(pSab.nombre) + ' llega dolorido por el viaje y pierde 20 puntos en ' + statKey.charAt(0).toUpperCase() + statKey.slice(1) + '.' };
+  }
+  if (roll === 9) {
+    if (squad.length >= MAX_SQUAD) {
+      return { type: 'fichaje', text: 'Un jugador legendario se ofrece a uniros, pero tu plantilla ya está completa.' };
+    }
+    var squadIdsSecret = squad.map(function (x) { return x.id; });
+    var secretPool = ROSTER.filter(function (x) { return x.cost === 99999 && squadIdsSecret.indexOf(x.id) === -1; });
+    if (secretPool.length === 0) {
+      return { type: 'fichaje', text: 'No hay ningún jugador secreto disponible para unirse ahora mismo.' };
+    }
+    var secretPlayer = rosterInstance(choice(secretPool));
+    squad.push(secretPlayer);
+    return { type: 'fichaje', text: '¡' + escapeHtml(secretPlayer.nombre) + ' se une a tu plantilla! Un fichaje secreto muy especial.' };
+  }
+  if (roll === 10) {
+    squad.forEach(function (p) { p.fatigado = false; });
+    return { type: 'bonus', text: 'Visitáis el hospital del Raimon. Todo el equipo se cura de la fatiga.' };
+  }
   if (roll === 6) {
     squad.forEach(function (p) {
       p.fatigado = false;
@@ -784,9 +819,6 @@ function resolveEventoNode() {
     squad.push(newPlayer);
     return { type: 'fichaje', text: escapeHtml(newPlayer.nombre) + ' se une a tu plantilla gratis tras el evento.' };
   }
-  var p2 = choice(squad);
-  p2.fatigado = true;
-  return { type: 'fatiga', text: escapeHtml(p2.nombre) + ' vuelve agotado del evento y queda fatigado (-10 a todo hasta el próximo descanso).' };
 }
 
 function renderEvento() {
@@ -816,7 +848,7 @@ function startMatch(nodeId, isBoss) {
   var depth = mapDepth(nodeId, G.run.map);
   var isFinalBoss = isBoss && depth === 10; // jefe en profundidad 10 (última fila) es el final
   var oppSquad = generateOpponentSquad(depth, isBoss, isFinalBoss);
-  var oppName = (isBoss ? 'Jefe: ' : '') + randomTeamName();
+  var oppName = (isBoss ? 'Jefe: ' : '') + randomTeamName(isBoss);
   G.match = {
     isBoss: isBoss,
     oppName: oppName,
@@ -1337,7 +1369,7 @@ function renderSummary() {
 
 function renderVestuario() {
   var meta = G.meta;
-  var locked = ROSTER.filter(function (p) { return p.locked; });
+  var locked = ROSTER.filter(function (p) { return p.locked && p.cost !== 99999; });
   var items = locked.map(function (c) {
     var unlocked = meta.unlocked.indexOf(c.id) !== -1;
     var right = unlocked
