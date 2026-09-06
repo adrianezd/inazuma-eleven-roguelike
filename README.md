@@ -23,7 +23,7 @@ Este proyecto usa nombres reales de personajes, equipos, elementos y jugadas "hi
 
 ## Cómo jugar
 
-1. **Elige tu capitán** entre 3 jugadores reales ofrecidos al azar, cada uno con su elemento, su posición y su(s) jugada(s) especial(es) reales.
+1. **Elige tu capitán** entre 4 jugadores reales ofrecidos al azar, cada uno con su elemento, su posición y su(s) jugada(s) especial(es) reales.
 2. **Recorre el mapa**, un camino ramificado con nodos de:
    - **Partido** — combate por turnos contra un equipo rival.
    - **Entrenamiento** — elige una mejora de estadística para un jugador.

@@ -433,7 +433,7 @@ function spiritIcon() { return '<svg class="icon-inline" viewBox="0 0 24 24" ari
 function hardModeUnlocked() {
   var meta = G.meta;
   var totalUnlocked = ROSTER.filter(function (p) { return !p.locked || meta.unlocked.indexOf(p.id) !== -1; }).length;
-  return (meta.normalWins || 0) > 5 && totalUnlocked > 10;
+  return (meta.normalWins || 0) >= 3 && totalUnlocked > 10;
 }
 
 function actionStartRun() { G.screen = 'modeSelect'; render(); }
@@ -463,7 +463,7 @@ function renderModeSelect() {
         '</div>' +
         (unlocked
           ? '<p class="dim small">Los rivales meten algún gol más y paran algo más. El mapa tiene 4 jefes en vez de 3 (el último, muy difícil), y en los eventos especiales puede aparecer un jefe por sorpresa.</p>'
-          : '<p class="dim small">Se desbloquea ganando el Modo Normal más de 5 veces y teniendo más de 10 personajes desbloqueados. Progreso: ' + (meta.normalWins || 0) + '/6 victorias, ' + totalUnlocked + '/11 personajes.</p>') +
+          : '<p class="dim small">Se desbloquea ganando el Modo Normal 3 veces y teniendo más de 10 personajes desbloqueados. Progreso: ' + (meta.normalWins || 0) + '/3 victorias, ' + totalUnlocked + '/11 personajes.</p>') +
         '<button class="btn btn-outline btn-block mt" onclick="actionBackToMenu()">Volver</button>' +
       '</div>' +
     '</div>'
@@ -1086,7 +1086,7 @@ function renderMatch() {
         '<div class="score-side"><div class="score-name">' + escapeHtml(m.oppName) + '</div><div class="score-num">' + m.oppScore + '</div></div>' +
       '</div>' +
       '<div class="turn-indicator">' + (m.suddenDeath ? 'Muerte súbita — ronda ' + m.sdRound : 'Turno ' + Math.min(m.turn, MATCH_TURNS) + ' de ' + MATCH_TURNS) + (m.finished ? '' : (isPlayerTurn ? ' · Tu ataque' : ' · Ataque rival')) + '</div>' +
-      (m.suddenDeath && !m.finished ? '<p class="dim small center-text">Gana quien marque más goles en esta ronda; si sigue empatado, continúa otra ronda.</p>' : '') +
+      (m.suddenDeath && !m.finished ? '<p class="dim small center-text">Gol de oro: gana quien marque primero. Si nadie marca esta ronda, continúa otra.</p>' : '') +
       '<div class="' + fieldClass + '"><div class="field-event">' + (m.lastEvent || (isPlayerTurn ? 'Elige a tu jugador y tu jugada' : '')) + '</div></div>' +
       '<div class="meter-wrap">' +
         '<div class="meter-label"><span>Especial</span><span>' + (pStatus.ready ? '¡Lista!' : 'Disponible en ' + pStatus.turnsLeft + ' turno' + (pStatus.turnsLeft === 1 ? '' : 's')) + '</span></div>' +
@@ -1338,8 +1338,13 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
 function advanceTurn() {
   var m = G.match;
   if (m.suddenDeath) {
-    if (m.sdStage === 'jugador') { m.sdStage = 'rival'; render(); return; }
+    // Gol de oro real: el partido termina en cuanto CUALQUIERA de los dos
+    // marca, sin esperar a que el otro responda (antes solo se comprobaba
+    // tras el turno rival, así que un gol tuyo nunca acababa el partido en
+    // el momento -- siempre le daba al rival una respuesta gratis antes de
+    // poder ganar).
     if (m.playerScore !== m.oppScore) { finishMatch(); return; }
+    if (m.sdStage === 'jugador') { m.sdStage = 'rival'; render(); return; }
     m.sdRound++;
     if (m.sdRound > 5) {
       if (Math.random() < 0.5) m.playerScore++; else m.oppScore++;
