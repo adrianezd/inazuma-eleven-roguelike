@@ -121,8 +121,8 @@ var ROSTER = [
   {
     id: 'r08', nombre: 'Shawn Froste', original: 'Fubuki Shirou',
     posicion: 'Defensa', tipo: 'Viento',
-    tiro: 74, pase: 56, defensa: 44, especial: 72,
-    hissatsu: ['Ventisca Eterna'],
+    tiro: 73, pase: 56, defensa: 76, especial: 72,
+    hissatsu: ['Paisaje Helado'],
     desc: 'Frío como el hielo, letal frente a la portería.',
     locked: true, cost: 144
   },
@@ -138,7 +138,7 @@ var ROSTER = [
     id: 'r10', nombre: 'Erik Eagle', original: 'Ichinose Kazuya',
     posicion: 'Centrocampista', tipo: 'Viento',
     tiro: 66, pase: 79, defensa: 50, especial: 60,
-    hissatsu: ['El Fénix'],
+    hissatsu: ['Fénix'],
     desc: 'Líder nato, siempre listo para resurgir.',
     locked: true, cost: 158
   },

@@ -161,10 +161,13 @@ function generateRecruitOptions() {
   // No se puede tener dos porteros en el mismo equipo real: si ya tienes uno,
   // no se ofrecen más porteros para fichar.
   var alreadyHasPortero = G.run.squad.some(function (p) { return p.posicion === 'Portero'; });
+  // Igual que el portero (máx. 1), máximo 2 defensas por equipo.
+  var defensaCount = G.run.squad.filter(function (p) { return p.posicion === 'Defensa'; }).length;
   var pool = ROSTER.filter(function (p) {
     if (squadRosterIds.indexOf(p.id) !== -1) return false;
     if (p.locked && unlocked.indexOf(p.id) === -1) return false;
     if (alreadyHasPortero && p.posicion === 'Portero') return false;
+    if (defensaCount >= 2 && p.posicion === 'Defensa') return false;
     return true;
   });
   var shuffled = pool.slice().sort(function () { return Math.random() - 0.5; });
@@ -839,7 +842,10 @@ function startMatch(nodeId, isBoss) {
     oppCooldownBoost: 0,
     oppLastSpecialMove: null,
     pendingOpp: null,
-    defenseTechniqueUsed: false, // técnica defensiva: solo 1 vez por partido (ver resolveOpponentTurn)
+    // Técnica defensiva: 1 vez por partido POR POSICIÓN -- si tienes portero
+    // y defensa, cada uno tiene su propio uso independiente (antes era un
+    // único flag global que bloqueaba ambas técnicas con solo usar una).
+    defenseTechniqueUsedByPos: { Portero: false, Defensa: false },
     log: [],
     selectedAttackerId: null,
     lastEvent: null,
@@ -888,12 +894,16 @@ function specialStatus(atkCount, lastSpecialAt, boost, needed) {
 // Defensa; si esa posición no está en la plantilla, cae a una elección
 // aleatoria. Esto es lo que hace que tener portero/defensas importe de verdad.
 function pickDefender(squad, action) {
+  // .filter + choice() en vez de .find(): con .find() el primer defensa del
+  // array salía SIEMPRE si había 2, y el segundo nunca aparecía. Ahora se
+  // elige al azar entre todos los que cumplen la posición (máx. 1 portero,
+  // máx. 2 defensas por equipo, así que normalmente son 1-2 candidatos).
   if (action === 'tiro' || action === 'especial') {
-    var gk = squad.find(function (p) { return p.posicion === 'Portero'; });
-    if (gk) return gk;
+    var gks = squad.filter(function (p) { return p.posicion === 'Portero'; });
+    if (gks.length) return choice(gks);
   } else if (action === 'regate') {
-    var def = squad.find(function (p) { return p.posicion === 'Defensa'; });
-    if (def) return def;
+    var defs = squad.filter(function (p) { return p.posicion === 'Defensa'; });
+    if (defs.length) return choice(defs);
   }
   return choice(squad);
 }
@@ -932,7 +942,7 @@ function renderMatch() {
       // defensiva de verdad (hissatsu real del portero/defensa, solo 1 vez
       // por partido, mucho más fuerte -- casi garantiza que no te marquen).
       var defTechnique = defender.hissatsu ? defender.hissatsu[0] : 'técnica defensiva';
-      var techUsed = m.defenseTechniqueUsed;
+      var techUsed = m.defenseTechniqueUsedByPos[defender.posicion];
       body = '<div class="panel center-text">' +
         '<p>' + escapeHtml(pend.attackerRaw.nombre) + ' (rival) se prepara para atacar.</p>' +
         '<button class="btn btn-block" onclick="resolveOpponentTurn(\'normal\')">No hacer nada</button>' +
@@ -1086,7 +1096,7 @@ function resolveOpponentTurn(mode) {
   var useActiveDefense = mode === 'activa';
   var useTechnique = mode === 'tecnica';
   if (useActiveDefense) m.playerCooldownBoost -= 1;
-  if (useTechnique) m.defenseTechniqueUsed = true;
+  if (useTechnique) m.defenseTechniqueUsedByPos[p.defenderRaw.posicion] = true;
   resolveAttack(p.attackerRaw, p.defenderRaw, p.action, false, p.defHasSpecialist, useActiveDefense, useTechnique);
   advanceTurn();
 }
