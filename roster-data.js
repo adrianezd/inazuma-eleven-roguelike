@@ -267,7 +267,7 @@ var ROSTER = [
   },
   {
     id: 'r23', nombre: 'Archer Hawkins', original: 'Tobitaka Seiya',
-    posicion: 'Defensa', tipo: 'Aire',
+    posicion: 'Defensa', tipo: 'Viento',
     tiro: 30, pase: 40, defensa: 79, especial: 60,
     hissatsu: ['Corte de vacío'],
     desc: 'Guerrero solitario que rechazó el once titular por orgullo.',
@@ -283,7 +283,7 @@ var ROSTER = [
   },
   {
     id: 'r30', nombre: 'Arion Sherwind', original: 'Matsukaze Tenma',
-    posicion: 'Centrocampista', tipo: 'Aire',
+    posicion: 'Centrocampista', tipo: 'Viento',
     tiro: 75, pase: 75, defensa: 46, especial: 66,
     hissatsu: ['Brisa deslizante'],
     desc: 'Capitán de la nueva generación de Raimon, corazón indomable.',
@@ -371,7 +371,7 @@ var ROSTER = [
   },
   {
     id: 'r42', nombre: 'Thor Stoutberg', original: "Raiden Hijikata",
-    posicion: 'Defensa', tipo: 'Aire',
+    posicion: 'Defensa', tipo: 'Viento',
     tiro: 38, pase: 50, defensa: 80, especial: 60,
     hissatsu: ['Pisotón de Sumo'],
     desc: 'Defensa robusto y disciplinado, con un estilo de juego imponente.',
@@ -387,7 +387,7 @@ var ROSTER = [
   },
   {
     id: 'r44', nombre: 'Tom Skipper', original: "Yo Kabutenji",
-    posicion: 'Delantero', tipo: 'Aire',
+    posicion: 'Delantero', tipo: 'Viento',
     tiro: 78, pase: 60, defensa: 36, especial: 72,
     hissatsu: ['La Tierra'],
     desc: 'Delantero ágil y veloz, con un instinto asesino frente a la portería.',
@@ -420,7 +420,7 @@ var ROSTER = [
   {
     id: 'r48', nombre: 'Maxwell Carson', original: 'Matsuno Kuusuke',
     posicion: 'Centrocampista', tipo: 'Viento',
-    tiro: 52, pase: 62, defensa: 44, especial: 54,
+    tiro: 65, pase: 62, defensa: 44, especial: 54,
     hissatsu: ['Remate en V'],
     desc: 'Centrocampista habilidoso de Raimon, siempre dispuesto a improvisar.',
     locked: false, cost: 70
@@ -451,7 +451,7 @@ var ROSTER = [
   },
   {
     id: 'r52', nombre: 'Tori Vanguard', original: 'Zaizen Touko',
-    posicion: 'Centrocampista', tipo: 'Aire',
+    posicion: 'Centrocampista', tipo: 'Viento',
     tiro: 58, pase: 62, defensa: 64, especial: 60,
     hissatsu: ['Torre Inexpugnable'],
     desc: 'Centrocampista de Aire con una gran capacidad defensiva.',
@@ -467,7 +467,7 @@ var ROSTER = [
   },
   {
     id: 'r54', nombre: 'Dave Quagmire', original: 'Saginuma Osamu',
-    posicion: 'Portero', tipo: 'Aire',
+    posicion: 'Portero', tipo: 'Viento',
     tiro: 24, pase: 48, defensa: 82, especial: 70,
     hissatsu: ['Agujero de gusano'],
     desc: 'Portero de Epsilon con reflejos sorprendentes y gran intuición para anticipar los tiros.',
@@ -563,7 +563,7 @@ var ROSTER = [
   },
   {
     id: 'r66', nombre: 'Jimmy Mach', original: 'Maya Hayami',
-    posicion: 'Delantero', tipo: 'Aire',
+    posicion: 'Delantero', tipo: 'Viento',
     tiro: 72, pase: 65, defensa: 34, especial: 70,
     hissatsu: ['Tiro Giratorio'],
     desc: 'Alcanza la velocidad del sonido y es capaz de rematar desde cualquier ángulo.',
@@ -571,7 +571,7 @@ var ROSTER = [
   },
   {
     id: 'r67', nombre: 'Balt Decker', original: 'Balt Decker',
-    posicion: 'Defensa', tipo: 'Aire',
+    posicion: 'Defensa', tipo: 'Viento',
     tiro: 40, pase: 50, defensa: 75, especial: 75,
     hissatsu: ['Ciclón'],
     desc: 'Defensa de pequeño tamaño pero gran capacidad defensiva.',
