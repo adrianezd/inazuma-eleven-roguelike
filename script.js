@@ -247,10 +247,13 @@ var NODE_LABELS = {
 function generateMap(hardMode) {
   // Nº de nodos por fila variable (3 a 5), como un mapa de rutas ramificadas
   // real, en vez de un número fijo; las filas de jefe (1) se mantienen fijas.
-  // Modo Difícil: mapa exclusivo con 4 jefes en vez de 3 (4 nodos -> jefe ->
-  // 4 nodos -> jefe -> 2 nodos -> jefe -> 2 nodos -> jefe final muy difícil).
+  // Modo Difícil: mismo criterio horizontal que el normal (3 a 5 nodos por
+  // fila), pero con más filas verticales por tramo antes de cada jefe: 4
+  // filas en vez de 3 para llegar al 1º y 2º jefe, y 2 filas (igual que en
+  // normal) para el 3º y el 4º (jefe final, muy difícil) -- 4 jefes en total
+  // en vez de 3.
   var rowDefs = hardMode
-    ? [4, 1, 4, 1, 2, 1, 2, 1]
+    ? [rand(3, 5), rand(3, 5), rand(3, 5), rand(3, 5), 1, rand(3, 5), rand(3, 5), rand(3, 5), rand(3, 5), 1, rand(3, 5), rand(3, 5), 1, rand(3, 5), rand(3, 5), 1]
     : [rand(3, 5), rand(3, 5), rand(3, 5), 1, rand(3, 5), rand(3, 5), rand(3, 5), 1, rand(3, 5), rand(3, 5), 1];
   var rows = [];
   var idCounter = 0;
