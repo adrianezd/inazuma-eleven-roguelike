@@ -1084,24 +1084,24 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
     // sus turnos contra un equipo sin portero/defensa reales (reportado:
     // 7 goles rivales en 7 turnos).
     atkStat = attacker.especial;
-    chance = 58 + (atkStat - defender.defensa) * 0.35;
+    chance = 68 + (atkStat - defender.defensa) * 0.35;
   }
 
   chance += adv * (action === 'especial' ? 8 : 10);
 
   // El equipo rival marca muchos menos goles en general (bajado a petición
   // explícita tras varias partidas injustamente duras para el jugador).
-  if (!isPlayerAttacking) chance -= 22;
+  if (!isPlayerAttacking) chance -= 10;
   // Defensa activa: el jugador ha elegido defender con su portero/defensa
   // real (solo posible si tiene uno de verdad), a cambio de retrasar un
   // turno la recarga de su propia Especial (ver resolveOpponentTurn).
   if (!isPlayerAttacking && activeDefense) chance -= 20;
 
-  var maxChance = (action === 'especial' && isPlayerAttacking) ? 99 : (isPlayerAttacking ? 95 : 65);
+  var maxChance = (action === 'especial' && isPlayerAttacking) ? 99 : (isPlayerAttacking ? 95 : 80);
   // El suelo del rival sube de 5 a 18: con un portero muy fuerte (88-99 de
   // defensa) el cálculo podía dejarlo casi imbatible (~5% constante). Un
   // suelo más alto asegura que siempre tenga una posibilidad real de marcar.
-  var minChance = (action === 'especial' && isPlayerAttacking) ? 85 : (isPlayerAttacking ? 5 : 18);
+  var minChance = (action === 'especial' && isPlayerAttacking) ? 85 : (isPlayerAttacking ? 5 : 30);
   chance = clamp(Math.round(chance), minChance, maxChance);
 
   var roll = rand(1, 100);
