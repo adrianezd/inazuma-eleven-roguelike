@@ -171,7 +171,7 @@ var ROSTER = [
     id: 'r14', nombre: 'Xavier Foster', original: 'Kiyama Hiroto',
     posicion: 'Delantero', tipo: 'Fuego',
     tiro: 82, pase: 54, defensa: 38, especial: 66,
-    hissatsu: ['Cañon Meteoritos'],
+    hissatsu: ['Cañon de Meteoritos'],
     desc: 'Antiguo capitán de Genesis, ambicioso y brillante.',
     locked: true, cost: 135
   },
@@ -375,5 +375,182 @@ var ROSTER = [
     hissatsu: ['Chut draconiano'],
     desc: 'Centrocampista creativo, capaz de cambiar el rumbo del partido.',
     locked: false
-  }
+  },
+  {
+    id: 'r44', nombre: 'Tom Skipper', original: "Yo Kabutenji",
+    posicion: 'Delantero', tipo: 'Aire',
+    tiro: 78, pase: 60, defensa: 36, especial: 72,
+    hissatsu: ['La Tierra'],
+    desc: 'Delantero ágil y veloz, con un instinto asesino frente a la portería.',
+    locked: true, cost: 120
+  },
+  {
+    id: 'r45', nombre: 'Bash Lancer', original: "Baddap Sleep",
+    posicion: 'Delantero', tipo: 'Bosque',
+    tiro: 80, pase: 50, defensa: 34, especial: 70,
+    hissatsu: ['Lanza Letal'],
+    desc: 'Delantero y capitán de la Academia Ogre, con un estilo de juego agresivo y directo.',
+    locked: true, cost: 140
+  },
+    {
+    id: 'r46', nombre: 'Steve Grim', original: 'Handa Shinichi',
+    posicion: 'Centrocampista', tipo: 'Bosque',
+    tiro: 48, pase: 64, defensa: 48, especial: 52,
+    hissatsu: ['Disparo Rodante'],
+    desc: 'Centrocampista equilibrado de Raimon, fiable y trabajador.',
+    locked: false, cost: 65
+  },
+  {
+    id: 'r47', nombre: 'Timmy Saunders', original: 'Shourinji Ayumu',
+    posicion: 'Centrocampista', tipo: 'Montaña',
+    tiro: 42, pase: 56, defensa: 58, especial: 50,
+    hissatsu: ['Cabezazo Kung Fu'],
+    desc: 'Pequeño pero valiente jugador de Raimon con gran espíritu de lucha.',
+    locked: false, cost: 58
+  },
+  {
+    id: 'r48', nombre: 'Maxwell Carson', original: 'Matsuno Kuusuke',
+    posicion: 'Centrocampista', tipo: 'Viento',
+    tiro: 52, pase: 62, defensa: 44, especial: 54,
+    hissatsu: ['Remate en V'],
+    desc: 'Centrocampista habilidoso de Raimon, siempre dispuesto a improvisar.',
+    locked: false, cost: 70
+  },
+  {
+    id: 'r49', nombre: 'Jim Wraith', original: 'Kageno Jin',
+    posicion: 'Defensa', tipo: 'Bosque',
+    tiro: 34, pase: 48, defensa: 66, especial: 55,
+    hissatsu: ['Doppelganger'],
+    desc: 'Defensa silencioso capaz de sorprender apareciendo de la nada.',
+    locked: false, cost: 68
+  },
+  {
+    id: 'r50', nombre: 'Isaac Glass', original: 'Kakeru Megane',
+    posicion: 'Delantero', tipo: 'Bosque',
+    tiro: 65, pase: 60, defensa: 34, especial: 68,
+    hissatsu: ['Remate Gafas v2'],
+    desc: 'Delantero peculiar que sueña con convertirse en una estrella.',
+    locked: false, cost: 72
+  },
+  {
+    id: 'r51', nombre: 'Paul Siddon', original: 'Donichi Posei',
+    posicion: 'Portero', tipo: 'Montaña',
+    tiro: 30, pase: 30, defensa: 79, especial: 80,
+    hissatsu: ['Muralla Gigante'],
+    desc: 'Portero veterano del Zeus, conocido por su imponente presencia en la portería.',
+    locked: true, cost: 155
+  },
+  {
+    id: 'r52', nombre: 'Tori Vanguard', original: 'Zaizen Touko',
+    posicion: 'Centrocampista', tipo: 'Aire',
+    tiro: 58, pase: 62, defensa: 64, especial: 60,
+    hissatsu: ['Torre Inexpugnable'],
+    desc: 'Centrocampista de Aire con una gran capacidad defensiva.',
+    locked: true, cost: 115
+  },
+  {
+    id: 'r53', nombre: 'Cameron Morefield', original: 'Otonashi Haruna',
+    posicion: 'Centrocampista', tipo: 'Viento',
+    tiro: 38, pase: 68, defensa: 44, especial: 52,
+    hissatsu: ['Pase Celestial'],
+    desc: 'Analista y apoyo del equipo, siempre pendiente de cada detalle.',
+    locked: false, cost: 60
+  },
+  {
+    id: 'r54', nombre: 'Dave Quagmire', original: 'Saginuma Osamu',
+    posicion: 'Portero', tipo: 'Aire',
+    tiro: 24, pase: 48, defensa: 82, especial: 70,
+    hissatsu: ['Agujero de gusano'],
+    desc: 'Portero de Epsilon con reflejos sorprendentes y gran intuición para anticipar los tiros.',
+    locked: true, cost: 125
+  },
+  {
+    id: 'r55', nombre: 'Zeke Valanche', original: 'Desarm',
+    posicion: 'Delantero', tipo: 'Bosque',
+    tiro: 79, pase: 48, defensa: 34, especial: 72,
+    hissatsu: ['Remate de Gaia'],
+    desc: 'Delantero de Epsilon con una presencia intimidante y gran potencia.',
+    locked: true, cost: 130
+  },
+  {
+    id: 'r56', nombre: 'Suzette Hartland', original: 'Urabe Rika',
+    posicion: 'Delantero', tipo: 'Bosque',
+    tiro: 70, pase: 54, defensa: 38, especial: 60,
+    hissatsu: ['Torre de Osaka'],
+    desc: 'Delantera de Osaka con una personalidad tan intensa como su juego.',
+    locked: false, cost: 78
+  },
+  {
+    id: 'r57', nombre: 'Lilly Willow', original: 'Kogure Yuuya',
+    posicion: 'Defensa', tipo: 'Viento',
+    tiro: 36, pase: 48, defensa: 68, especial: 52,
+    hissatsu: ['Trampa de Araña'],
+    desc: 'Jugadora astuta capaz de complicar cualquier ataque rival.',
+    locked: false, cost: 74
+  },
+  {
+    id: 'r58', nombre: 'Edgar Partinus', original: 'Edgar Valtinas',
+    posicion: 'Delantero', tipo: 'Bosque',
+    tiro: 86, pase: 58, defensa: 38, especial: 78,
+    hissatsu: ['Excalibur'],
+    desc: 'Capitán de los Knights of Queen y elegante especialista del remate.',
+    locked: true, cost: 180
+  },
+  {
+    id: 'r59', nombre: 'Mark Krueger', original: 'Mark Kruger',
+    posicion: 'Centrocampista', tipo: 'Bosque',
+    tiro: 72, pase: 78, defensa: 52, especial: 74,
+    hissatsu: ['Gran Lobo'],
+    desc: 'Capitán de Unicorn y uno de los grandes cerebros del fútbol americano.',
+    locked: true, cost: 170
+  },
+  {
+    id: 'r60', nombre: 'Dylan Keats', original: 'Dylan Keith',
+    posicion: 'Delantero', tipo: 'Fuego',
+    tiro: 82, pase: 62, defensa: 36, especial: 76,
+    hissatsu: ['Remate Unicornio'],
+    desc: 'Delantero de Unicorn conocido por su velocidad y precisión.',
+    locked: true, cost: 155
+  },
+  {
+    id: 'r61', nombre: 'Paolo Bianchi', original: 'Fidio Aldena',
+    posicion: 'Delantero', tipo: 'Bosque',
+    tiro: 86, pase: 62, defensa: 34, especial: 82,
+    hissatsu: ['Espada de Odín'],
+    desc: 'Capitán de Orfeo y meteoro blanco del fútbol italiano.',
+    locked: true, cost: 190
+  },
+  {
+    id: 'r62', nombre: 'Tiago Torres', original: 'Teres Tolue',
+    posicion: 'Defensa', tipo: 'Fuego',
+    tiro: 42, pase: 52, defensa: 88, especial: 76,
+    hissatsu: ['Muro de Hierro'],
+    desc: 'Capitán de Los Emperadores, especialista defensivo prácticamente impenetrable.',
+    locked: true, cost: 175
+  },
+  {
+    id: 'r63', nombre: 'Nakata Hidetoshi', original: 'Nakata Hidetoshi',
+    posicion: 'Centrocampista', tipo: 'Montaña',
+    tiro: 80, pase: 82, defensa: 50, especial: 88,
+    hissatsu: ['Disparo Valiente'],
+    desc: 'Veterano de gran talento que lidera el centro del campo con experiencia.',
+    locked: true, cost: 265
+  },
+  {
+    id: 'r64', nombre: 'Angelo Gabrini', original: 'Angelo Gabrini',
+    posicion: 'Centrocampista', tipo: 'Viento',
+    tiro: 70, pase: 74, defensa: 34, especial: 74,
+    hissatsu: ['Balon Angelical'],
+    desc: 'Centrocampista italiano de técnica refinada y gran capacidad goleadora.',
+    locked: true, cost: 145
+  },
+  {
+    id: 'r65', nombre: 'Marco Maserati', original: 'Marco Masato',
+    posicion: 'Defensa', tipo: 'Bosque',
+    tiro: 52, pase: 70, defensa: 76, especial: 64,
+    hissatsu: ['Voltereta Círcense'],
+    desc: 'Defensa técnica de Orfeo con gran capacidad para combinar.',
+    locked: false, cost: 105
+  },
+
 ];
