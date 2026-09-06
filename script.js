@@ -158,9 +158,13 @@ function offerCaptains() {
 function generateRecruitOptions() {
   var squadRosterIds = G.run.squad.map(function (p) { return p.id; });
   var unlocked = getUnlockedIds();
+  // No se puede tener dos porteros en el mismo equipo real: si ya tienes uno,
+  // no se ofrecen más porteros para fichar.
+  var alreadyHasPortero = G.run.squad.some(function (p) { return p.posicion === 'Portero'; });
   var pool = ROSTER.filter(function (p) {
     if (squadRosterIds.indexOf(p.id) !== -1) return false;
     if (p.locked && unlocked.indexOf(p.id) === -1) return false;
+    if (alreadyHasPortero && p.posicion === 'Portero') return false;
     return true;
   });
   var shuffled = pool.slice().sort(function () { return Math.random() - 0.5; });
@@ -835,6 +839,7 @@ function startMatch(nodeId, isBoss) {
     oppCooldownBoost: 0,
     oppLastSpecialMove: null,
     pendingOpp: null,
+    defenseTechniqueUsed: false, // técnica defensiva: solo 1 vez por partido (ver resolveOpponentTurn)
     log: [],
     selectedAttackerId: null,
     lastEvent: null,
@@ -922,19 +927,21 @@ function renderMatch() {
     var pend = prepareOpponentTurn();
     var defender = pend.defenderRaw;
     if (pend.defHasSpecialist) {
-      // Sí, "Defensa activa" ES usar la técnica especial del portero/defensa,
-      // solo que en defensa en vez de en ataque: se nombra explícitamente la
-      // técnica (hissatsu) para que quede claro que es SU jugada especial la
-      // que para el balón, no un bonus genérico anónimo.
+      // 3 opciones reales: no hacer nada, defensa activa (genérica, se puede
+      // repetir cada turno, retrasa 1 turno tu Especial), o la técnica
+      // defensiva de verdad (hissatsu real del portero/defensa, solo 1 vez
+      // por partido, mucho más fuerte -- casi garantiza que no te marquen).
       var defTechnique = defender.hissatsu ? defender.hissatsu[0] : 'técnica defensiva';
+      var techUsed = m.defenseTechniqueUsed;
       body = '<div class="panel center-text">' +
         '<p>' + escapeHtml(pend.attackerRaw.nombre) + ' (rival) se prepara para atacar.</p>' +
-        '<button class="btn btn-primary btn-block" onclick="resolveOpponentTurn(true)">Usar ' + escapeHtml(defTechnique) + ' de ' + escapeHtml(defender.nombre) + ' (' + defender.posicion + ')<small>Su técnica especial EN DEFENSA: baja mucho la probabilidad de gol rival, pero retrasa tu Especial 1 turno</small></button>' +
-        '<button class="btn btn-block mt" onclick="resolveOpponentTurn(false)">Dejar defensa normal (sin técnica)</button>' +
+        '<button class="btn btn-block" onclick="resolveOpponentTurn(\'normal\')">No hacer nada</button>' +
+        '<button class="btn btn-primary btn-block mt" onclick="resolveOpponentTurn(\'activa\')">Defensa activa de ' + escapeHtml(defender.nombre) + ' (' + defender.posicion + ')<small>Baja la probabilidad de gol rival; retrasa tu Especial 1 turno. Se puede repetir.</small></button>' +
+        '<button class="btn btn-block mt" ' + (techUsed ? 'disabled' : '') + ' onclick="resolveOpponentTurn(\'tecnica\')" style="' + (techUsed ? '' : 'background:#7a3b12;color:#fff;') + '">' + (techUsed ? 'Técnica defensiva ya usada esta partida' : ('Usar ' + escapeHtml(defTechnique) + ' de ' + escapeHtml(defender.nombre))) + '<small>' + (techUsed ? '' : 'Su técnica especial EN DEFENSA: casi garantiza que no te marquen. Solo 1 vez por partido.') + '</small></button>' +
       '</div>';
     } else {
       var neededPos = pend.action === 'regate' ? 'Defensa' : 'Portero';
-      body = '<div class="panel center-text"><p>El rival está atacando… (no tienes un ' + neededPos + ' real en el campo, así que no puedes defender activamente esta jugada)</p><button class="btn btn-primary btn-block" onclick="resolveOpponentTurn(false)">Continuar</button></div>';
+      body = '<div class="panel center-text"><p>El rival está atacando… (no tienes un ' + neededPos + ' real en el campo, así que no puedes defender activamente esta jugada)</p><button class="btn btn-primary btn-block" onclick="resolveOpponentTurn(\'normal\')">Continuar</button></div>';
     }
   }
 
@@ -1069,16 +1076,22 @@ function prepareOpponentTurn() {
 // real (portero para tiro/especial, defensa para regate) puede activar una
 // "defensa activa": baja bastante la probabilidad de que le marquen esta
 // jugada, a cambio de retrasar un turno la recarga de su propia Especial.
-function resolveOpponentTurn(useActiveDefense) {
+// mode: 'normal' (sin hacer nada especial), 'activa' (defensa activa,
+// repetible, retrasa la Especial 1 turno) o 'tecnica' (técnica defensiva del
+// portero/defensa real, solo 1 vez por partido, mucho más fuerte que "activa").
+function resolveOpponentTurn(mode) {
   var m = G.match;
   var p = m.pendingOpp || prepareOpponentTurn();
   m.pendingOpp = null;
+  var useActiveDefense = mode === 'activa';
+  var useTechnique = mode === 'tecnica';
   if (useActiveDefense) m.playerCooldownBoost -= 1;
-  resolveAttack(p.attackerRaw, p.defenderRaw, p.action, false, p.defHasSpecialist, !!useActiveDefense);
+  if (useTechnique) m.defenseTechniqueUsed = true;
+  resolveAttack(p.attackerRaw, p.defenderRaw, p.action, false, p.defHasSpecialist, useActiveDefense, useTechnique);
   advanceTurn();
 }
 
-function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defenderHasSpecialist, activeDefense) {
+function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defenderHasSpecialist, activeDefense, defenseTechnique) {
   var m = G.match;
   var attacker = effectiveStats(attackerRaw);
   var defender = effectiveStats(defenderRaw);
@@ -1112,11 +1125,19 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
   // turno la recarga de su propia Especial (ver resolveOpponentTurn).
   if (!isPlayerAttacking && activeDefense) chance -= 20;
 
-  var maxChance = (action === 'especial' && isPlayerAttacking) ? 99 : (isPlayerAttacking ? 95 : 80);
+  // Tu propio portero casi nunca mete gol de tiro (es su portero, no un
+  // rematador) -- solo se aplica a TU equipo, el del rival da igual porque
+  // ya está excluido de atacar por completo (ver prepareOpponentTurn).
+  var isOwnGoalkeeperShot = isPlayerAttacking && action === 'tiro' && attackerRaw.posicion === 'Portero';
+
+  // Técnica defensiva (1 sola vez por partido, ver resolveOpponentTurn): un
+  // parón/entrada decisivo, mucho más fuerte que la "defensa activa" normal
+  // -- por eso ignora incluso el suelo mínimo del rival (30).
+  var maxChance = defenseTechnique ? 5 : (isOwnGoalkeeperShot ? 8 : ((action === 'especial' && isPlayerAttacking) ? 99 : (isPlayerAttacking ? 95 : 80)));
   // El suelo del rival sube de 5 a 18: con un portero muy fuerte (88-99 de
   // defensa) el cálculo podía dejarlo casi imbatible (~5% constante). Un
   // suelo más alto asegura que siempre tenga una posibilidad real de marcar.
-  var minChance = (action === 'especial' && isPlayerAttacking) ? 85 : (isPlayerAttacking ? 5 : 30);
+  var minChance = defenseTechnique ? 1 : ((action === 'especial' && isPlayerAttacking) ? 85 : (isPlayerAttacking ? 5 : 30));
   chance = clamp(Math.round(chance), minChance, maxChance);
 
   var roll = rand(1, 100);
@@ -1155,7 +1176,7 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
   // quitarlo porque salía en cada jugada rival, no solo cuando importaba.)
   // Sí se nombra la técnica cuando el jugador ELIGIÓ activamente defender
   // con ella (acción deliberada suya, no un aviso automático de cada turno).
-  var defenderTag = (!isPlayerAttacking && activeDefense)
+  var defenderTag = (!isPlayerAttacking && (activeDefense || defenseTechnique))
     ? (' (' + escapeHtml(defender.hissatsu ? defender.hissatsu[0] : 'técnica defensiva') + ' de ' + escapeHtml(defender.nombre) + ')')
     : '';
 
