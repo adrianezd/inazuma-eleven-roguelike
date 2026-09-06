@@ -922,10 +922,15 @@ function renderMatch() {
     var pend = prepareOpponentTurn();
     var defender = pend.defenderRaw;
     if (pend.defHasSpecialist) {
+      // Sí, "Defensa activa" ES usar la técnica especial del portero/defensa,
+      // solo que en defensa en vez de en ataque: se nombra explícitamente la
+      // técnica (hissatsu) para que quede claro que es SU jugada especial la
+      // que para el balón, no un bonus genérico anónimo.
+      var defTechnique = defender.hissatsu ? defender.hissatsu[0] : 'técnica defensiva';
       body = '<div class="panel center-text">' +
         '<p>' + escapeHtml(pend.attackerRaw.nombre) + ' (rival) se prepara para atacar.</p>' +
-        '<button class="btn btn-primary btn-block" onclick="resolveOpponentTurn(true)">Defensa activa de ' + escapeHtml(defender.nombre) + ' (' + defender.posicion + ')<small>Baja mucho su probabilidad de gol, pero retrasa tu Especial 1 turno</small></button>' +
-        '<button class="btn btn-block mt" onclick="resolveOpponentTurn(false)">Dejar defensa normal</button>' +
+        '<button class="btn btn-primary btn-block" onclick="resolveOpponentTurn(true)">Usar ' + escapeHtml(defTechnique) + ' de ' + escapeHtml(defender.nombre) + ' (' + defender.posicion + ')<small>Su técnica especial EN DEFENSA: baja mucho la probabilidad de gol rival, pero retrasa tu Especial 1 turno</small></button>' +
+        '<button class="btn btn-block mt" onclick="resolveOpponentTurn(false)">Dejar defensa normal (sin técnica)</button>' +
       '</div>';
     } else {
       var neededPos = pend.action === 'regate' ? 'Defensa' : 'Portero';
@@ -1146,8 +1151,13 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
     }
   }
 
-  // (Se probó a nombrar al defensor aquí, pero el jugador pidió quitarlo.)
-  var defenderTag = '';
+  // (Se probó a nombrar al defensor SIEMPRE aquí, pero el jugador pidió
+  // quitarlo porque salía en cada jugada rival, no solo cuando importaba.)
+  // Sí se nombra la técnica cuando el jugador ELIGIÓ activamente defender
+  // con ella (acción deliberada suya, no un aviso automático de cada turno).
+  var defenderTag = (!isPlayerAttacking && activeDefense)
+    ? (' (' + escapeHtml(defender.hissatsu ? defender.hissatsu[0] : 'técnica defensiva') + ' de ' + escapeHtml(defender.nombre) + ')')
+    : '';
 
   // La "ventaja/desventaja elemental" solo se muestra en el resumen pequeño
   // de abajo (el log), no en el mensaje grande de arriba bajo el turno.
