@@ -841,15 +841,15 @@ function resolveEventoNode() {
     return { type: 'malus', text: 'Sabotaje del autobús: ' + escapeHtml(pSab.nombre) + ' llega dolorido por el viaje y pierde 20 puntos en ' + statKey.charAt(0).toUpperCase() + statKey.slice(1) + '.' };
   }
   if (roll === 9) {
-    if (squad.length >= MAX_SQUAD) {
-      return { type: 'fichaje', text: 'Un jugador legendario se ofrece a uniros, pero tu plantilla ya está completa.' };
-    }
     var squadIdsSecret = squad.map(function (x) { return x.id; });
     var secretPool = ROSTER.filter(function (x) { return x.cost === 99999 && squadIdsSecret.indexOf(x.id) === -1; });
     if (secretPool.length === 0) {
       return { type: 'fichaje', text: 'No hay ningún jugador secreto disponible para unirse ahora mismo.' };
     }
     var secretPlayer = rosterInstance(choice(secretPool));
+    if (squad.length >= MAX_SQUAD) {
+      return { type: 'fichaje-full', text: '¡' + escapeHtml(secretPlayer.nombre) + ' se ofrece a uniros! Un fichaje secreto muy especial, pero tu plantilla ya está completa.', candidate: secretPlayer };
+    }
     squad.push(secretPlayer);
     return { type: 'fichaje', text: '¡' + escapeHtml(secretPlayer.nombre) + ' se une a tu plantilla! Un fichaje secreto muy especial.' };
   }
@@ -889,9 +889,6 @@ function resolveEventoNode() {
     return { type: 'tecnica', text: escapeHtml(p.nombre) + ' aprende una nueva técnica en un entrenamiento especial: +' + amount + ' a Especial.' };
   }
   if (roll === 2) {
-    if (squad.length >= MAX_SQUAD) {
-      return { type: 'fichaje', text: 'Un jugador prometedor se ofrece a unirse al equipo, pero tu plantilla ya está completa.' };
-    }
     var squadIds = squad.map(function (x) { return x.id; });
     var unlocked = getUnlockedIds();
     var pool = ROSTER.filter(function (x) {
@@ -903,6 +900,9 @@ function resolveEventoNode() {
       return { type: 'fichaje', text: 'No hay ningún jugador disponible para unirse ahora mismo.' };
     }
     var newPlayer = rosterInstance(choice(pool));
+    if (squad.length >= MAX_SQUAD) {
+      return { type: 'fichaje-full', text: 'Un jugador prometedor, ' + escapeHtml(newPlayer.nombre) + ', se ofrece a unirse al equipo, pero tu plantilla ya está completa.', candidate: newPlayer };
+    }
     squad.push(newPlayer);
     return { type: 'fichaje', text: escapeHtml(newPlayer.nombre) + ' se une a tu plantilla gratis tras el evento.' };
   }
@@ -910,16 +910,37 @@ function resolveEventoNode() {
 
 function renderEvento() {
   var result = G.pendingEventResult || { text: '' };
+  // Si el evento ofrece un fichaje pero la plantilla ya está completa, se
+  // deja elegir a quién sustituir (o rechazarlo), igual que en el nodo de
+  // Fichaje normal, en vez de perder el jugador automáticamente.
+  var actionsHtml = '<button class="btn btn-primary btn-block mt" onclick="applyEvento()">Continuar</button>';
+  if (result.type === 'fichaje-full' && result.candidate) {
+    actionsHtml =
+      '<p class="dim small mt">¿Quieres que se una de todos modos? Elige a quién sustituir:</p>' +
+      '<div class="btn-row">' + G.run.squad.map(function (p) {
+        return '<button class="btn btn-danger" onclick="eventoRecruitDecide(\'' + p.instanceId + '\')">Sustituir a ' + escapeHtml(p.nombre) + '</button>';
+      }).join('') + '</div>' +
+      '<button class="btn btn-outline btn-block mt" onclick="eventoRecruitDecide(null)">No, gracias</button>';
+  }
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
         '<h2 class="panel-title">Evento Especial</h2>' +
         '<p>' + result.text + '</p>' +
         '<div class="card-grid">' + G.run.squad.map(function (p) { return playerCardHtml(p, '', false, true); }).join('') + '</div>' +
-        '<button class="btn btn-primary btn-block mt" onclick="applyEvento()">Continuar</button>' +
+        actionsHtml +
       '</div>' +
     '</div>'
   );
+}
+
+function eventoRecruitDecide(replaceInstanceId) {
+  var result = G.pendingEventResult;
+  if (replaceInstanceId && result && result.candidate) {
+    var idx = G.run.squad.findIndex(function (p) { return p.instanceId === replaceInstanceId; });
+    if (idx !== -1) G.run.squad[idx] = result.candidate;
+  }
+  applyEvento();
 }
 
 function applyEvento() {
