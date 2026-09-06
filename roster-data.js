@@ -425,9 +425,9 @@ var ROSTER = [
     locked: false, cost: 68
   },
   {
-    id: 'r50', nombre: 'Isaac Glass', original: 'Kakeru Megane',
+    id: 'r50', nombre: 'Isaac Glass', original: 'Kazuto Megane',
     posicion: 'Delantero', tipo: 'Bosque',
-    tiro: 65, pase: 60, defensa: 34, especial: 68,
+    tiro: 67, pase: 62, defensa: 36, especial: 70,
     hissatsu: ['Remate Gafas v2'],
     desc: 'Delantero peculiar que sueña con convertirse en una estrella.',
     locked: false, cost: 72

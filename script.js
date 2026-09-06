@@ -968,8 +968,14 @@ function renderPlayerTurn() {
   // seleccionado tiene la misma "hissatsu" que se usó la última vez, hay que
   // cambiar de jugador (o esperar a que ese cooldown se reinicie con otro).
   var isRepeat = selectedPlayer && specialLabel === m.playerLastSpecialMove;
-  var canSpecial = pStatus.ready && selected && !isRepeat;
-  var specialHint = isRepeat ? 'Repetida: cambia de jugador' : (pStatus.ready ? '¡Lista!' : ('Disponible en ' + pStatus.turnsLeft + ' turno' + (pStatus.turnsLeft === 1 ? '' : 's')));
+  // Las técnicas de Portero y Defensa son defensivas: solo sirven para la
+  // "defensa activa" cuando ataca el rival (ver prepareOpponentTurn), NUNCA
+  // para tirar a puerta. Solo Delantero y Centrocampista pueden usar su
+  // Especial en su propio turno de ataque.
+  var canAttackWithSpecial = selectedPlayer && (selectedPlayer.posicion === 'Delantero' || selectedPlayer.posicion === 'Centrocampista');
+  var canSpecial = pStatus.ready && selected && !isRepeat && canAttackWithSpecial;
+  var specialHint = (selectedPlayer && !canAttackWithSpecial) ? 'Su técnica es defensiva, no de ataque' :
+    (isRepeat ? 'Repetida: cambia de jugador' : (pStatus.ready ? '¡Lista!' : ('Disponible en ' + pStatus.turnsLeft + ' turno' + (pStatus.turnsLeft === 1 ? '' : 's'))));
 
   var matchupHtml = '';
   if (selectedPlayer) {
@@ -1038,8 +1044,12 @@ function prepareOpponentTurn() {
   var oppStatus = specialStatus(m.oppAtkCount, m.oppLastSpecialAt, m.oppCooldownBoost, m.oppCooldownNeeded);
   var oppMoveName = attackerRaw.hissatsu ? attackerRaw.hissatsu[0] : null;
   var oppIsRepeat = oppMoveName && oppMoveName === m.oppLastSpecialMove;
+  // Mismo criterio que para el jugador: solo Delantero/Centrocampista pueden
+  // rematar con su técnica; Defensa (Portero ya está excluido de atacar) solo
+  // ataca con Tiro/Regate normales.
+  var oppCanSpecial = attackerRaw.posicion === 'Delantero' || attackerRaw.posicion === 'Centrocampista';
   var action;
-  if (oppStatus.ready && !oppIsRepeat && (adv >= 0 || Math.random() < 0.6)) {
+  if (oppCanSpecial && oppStatus.ready && !oppIsRepeat && (adv >= 0 || Math.random() < 0.6)) {
     action = 'especial';
   } else {
     action = Math.random() < 0.65 ? 'tiro' : 'regate';
