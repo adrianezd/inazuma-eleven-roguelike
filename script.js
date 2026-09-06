@@ -8,6 +8,36 @@
    ========================================================================= */
 
 /* ---------------------------------------------------------------------
+   0. MODO DÍA / NOCHE (tema visual, independiente del meta-progreso)
+   --------------------------------------------------------------------- */
+
+var THEME_KEY = 'inazumaRoguelike_theme';
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  var btn = document.getElementById('themeToggle');
+  if (btn) {
+    btn.textContent = theme === 'light' ? '☀️' : '🌙';
+    btn.setAttribute('aria-label', theme === 'light' ? 'Cambiar a modo noche' : 'Cambiar a modo día');
+  }
+  var metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) metaTheme.setAttribute('content', theme === 'light' ? '#f3f0e8' : '#0d1512');
+}
+
+function toggleTheme() {
+  var current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  var next = current === 'light' ? 'dark' : 'light';
+  try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* almacenamiento no disponible */ }
+  applyTheme(next);
+}
+
+(function initTheme() {
+  var saved = 'dark';
+  try { saved = localStorage.getItem(THEME_KEY) || 'dark'; } catch (e) { /* almacenamiento no disponible */ }
+  applyTheme(saved);
+})();
+
+/* ---------------------------------------------------------------------
    1. CONSTANTES DERIVADAS DE LOS DATOS REALES (roster-data.js)
    --------------------------------------------------------------------- */
 
@@ -189,9 +219,9 @@ function loadMeta() {
     var raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) throw new Error('none');
     var data = JSON.parse(raw);
-    return Object.assign({ points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0 }, data);
+    return Object.assign({ points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0, normalWins: 0 }, data);
   } catch (e) {
-    return { points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0 };
+    return { points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0, normalWins: 0 };
   }
 }
 
@@ -214,11 +244,14 @@ var NODE_LABELS = {
   jefe: 'Jefe'
 };
 
-function generateMap() {
-  // Nº de nodos por fila variable (2 o 3), como un mapa de rutas ramificadas
-  // real, en vez de siempre 3; las filas de jefe (1) se mantienen fijas.
-  // 3 nodos -> jefe -> 3 nodos -> jefe -> 2 nodos -> jefe final (antes 4-2-1).
-  var rowDefs = [rand(3, 5), rand(3, 5), rand(3, 5), 1, rand(3, 5), rand(3, 5), rand(3, 5), 1, rand(3, 5), rand(3, 5), 1];
+function generateMap(hardMode) {
+  // Nº de nodos por fila variable (3 a 5), como un mapa de rutas ramificadas
+  // real, en vez de un número fijo; las filas de jefe (1) se mantienen fijas.
+  // Modo Difícil: mapa exclusivo con 4 jefes en vez de 3 (4 nodos -> jefe ->
+  // 4 nodos -> jefe -> 2 nodos -> jefe -> 2 nodos -> jefe final muy difícil).
+  var rowDefs = hardMode
+    ? [4, 1, 4, 1, 2, 1, 2, 1]
+    : [rand(3, 5), rand(3, 5), rand(3, 5), 1, rand(3, 5), rand(3, 5), rand(3, 5), 1, rand(3, 5), rand(3, 5), 1];
   var rows = [];
   var idCounter = 0;
 
@@ -315,18 +348,20 @@ function findNode(map, nodeId) {
 
 var G = {
   screen: 'menu',
-  meta: (typeof localStorage !== 'undefined') ? loadMeta() : { points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0 },
+  meta: (typeof localStorage !== 'undefined') ? loadMeta() : { points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0, normalWins: 0 },
   run: null,
   match: null,
   pendingCaptainOffers: null,
   pendingRecruits: null,
-  pendingTraining: null
+  pendingTraining: null,
+  pendingHardMode: false
 };
 
-function newRun() {
+function newRun(hardMode) {
   G.run = {
     squad: [],
-    map: generateMap(),
+    hardMode: !!hardMode,
+    map: generateMap(!!hardMode),
     currentNodeId: null,
     clearedCount: 0,
     matchesWon: 0,
@@ -347,6 +382,7 @@ function render() {
   var html = '';
   switch (G.screen) {
     case 'menu': html = renderMenu(); break;
+    case 'modeSelect': html = renderModeSelect(); break;
     case 'captainSelect': html = renderCaptainSelect(); break;
     case 'map': html = renderMap(); break;
     case 'match': html = renderMatch(); break;
@@ -394,7 +430,45 @@ function renderMenu() {
 
 function spiritIcon() { return '<svg class="icon-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 L14.5 9 L22 9 L16 13.5 L18 21 L12 16.5 L6 21 L8 13.5 L2 9 L9.5 9 Z"/></svg>'; }
 
-function actionStartRun() { G.pendingCaptainOffers = offerCaptains(); G.screen = 'captainSelect'; render(); }
+function hardModeUnlocked() {
+  var meta = G.meta;
+  var totalUnlocked = ROSTER.filter(function (p) { return !p.locked || meta.unlocked.indexOf(p.id) !== -1; }).length;
+  return (meta.normalWins || 0) > 5 && totalUnlocked > 10;
+}
+
+function actionStartRun() { G.screen = 'modeSelect'; render(); }
+function actionStartRunWithMode(hard) {
+  if (hard && !hardModeUnlocked()) return;
+  G.pendingHardMode = !!hard;
+  G.pendingCaptainOffers = offerCaptains();
+  G.screen = 'captainSelect';
+  render();
+}
+function renderModeSelect() {
+  var meta = G.meta;
+  var unlocked = hardModeUnlocked();
+  var totalUnlocked = ROSTER.filter(function (p) { return !p.locked || meta.unlocked.indexOf(p.id) !== -1; }).length;
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<h2 class="panel-title">Elige el modo de juego</h2>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-primary btn-block" onclick="actionStartRunWithMode(false)">Modo Normal</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" style="' + (unlocked ? 'background:#7a1212;color:#fff;' : '') + '" ' +
+            (unlocked ? 'onclick="actionStartRunWithMode(true)"' : 'disabled') + '>' +
+            'Modo Difícil' + (unlocked ? '' : ' 🔒') +
+          '</button>' +
+        '</div>' +
+        (unlocked
+          ? '<p class="dim small">Los rivales meten algún gol más y paran algo más. El mapa tiene 4 jefes en vez de 3 (el último, muy difícil), y en los eventos especiales puede aparecer un jefe por sorpresa.</p>'
+          : '<p class="dim small">Se desbloquea ganando el Modo Normal más de 5 veces y teniendo más de 10 personajes desbloqueados. Progreso: ' + (meta.normalWins || 0) + '/6 victorias, ' + totalUnlocked + '/11 personajes.</p>') +
+        '<button class="btn btn-outline btn-block mt" onclick="actionBackToMenu()">Volver</button>' +
+      '</div>' +
+    '</div>'
+  );
+}
 function actionGoVestuario() { G.screen = 'vestuario'; render(); }
 function actionGoColeccion() { G.screen = 'coleccion'; render(); }
 
@@ -444,7 +518,7 @@ function renderCaptainSelect() {
 
 function selectCaptain(instanceId) {
   var captain = G.pendingCaptainOffers.find(function (c) { return c.instanceId === instanceId; });
-  newRun();
+  newRun(G.pendingHardMode);
   G.run.squad.push(captain);
   G.screen = 'map';
   render();
@@ -533,7 +607,7 @@ function renderMap() {
     '<div class="screen">' +
       '<div class="panel">' +
         '<h2 class="panel-title mb0">Mapa de la temporada</h2>' +
-        '<p class="dim small">Nodos superados: ' + run.clearedCount + ' · Partidos ganados: ' + run.matchesWon + '</p>' +
+        '<p class="dim small">Nodos superados: ' + run.clearedCount + ' · Partidos ganados: ' + run.matchesWon + (run.hardMode ? ' · <strong style="color:var(--danger)">Modo Difícil</strong>' : '') + '</p>' +
       '</div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:8px">Tu plantilla</h3>' +
@@ -598,7 +672,17 @@ function enterNode(nodeId) {
     case 'entrenamiento': G.pendingTraining = generateTrainingOptions(); G.screen = 'entrenamiento'; render(); break;
     case 'fichaje': G.pendingRecruits = generateRecruitOptions(); G.screen = 'fichaje'; render(); break;
     case 'descanso': G.screen = 'descanso'; render(); break;
-    case 'evento': G.pendingEventResult = resolveEventoNode(); G.screen = 'evento'; render(); break;
+    case 'evento':
+      // Solo en Modo Difícil: un evento puede ser en realidad una emboscada
+      // de un equipo de jefe (probabilidad baja, no en todos los eventos).
+      if (G.run.hardMode && Math.random() < 0.2) {
+        startMatch(nodeId, true);
+      } else {
+        G.pendingEventResult = resolveEventoNode();
+        G.screen = 'evento';
+        render();
+      }
+      break;
   }
 }
 
@@ -846,8 +930,15 @@ function applyEvento() {
 
 function startMatch(nodeId, isBoss) {
   var depth = mapDepth(nodeId, G.run.map);
-  var isFinalBoss = isBoss && depth === 10; // jefe en profundidad 10 (última fila) es el final
-  var oppSquad = generateOpponentSquad(depth, isBoss, isFinalBoss);
+  var maxDepth = G.run.map.rows.length - 1;
+  var isFinalBoss = isBoss && depth === maxDepth; // jefe en la última fila es el final (normal o difícil)
+  // La progresión de dificultad está calibrada sobre el mapa normal (11 filas,
+  // profundidad máxima 10). El Modo Difícil tiene un mapa más corto (8 filas),
+  // así que aquí se normaliza la profundidad a esa misma escala 0-10 para que
+  // sus jefes reciban un bonus comparable en vez de uno artificialmente bajo
+  // solo por aparecer en una fila más temprana.
+  var normDepth = maxDepth > 0 ? (depth / maxDepth) * 10 : depth;
+  var oppSquad = generateOpponentSquad(normDepth, isBoss, isFinalBoss);
   var oppName = (isBoss ? 'Jefe: ' : '') + randomTeamName(isBoss);
   G.match = {
     isBoss: isBoss,
@@ -1167,6 +1258,11 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
   // turno la recarga de su propia Especial (ver resolveOpponentTurn).
   if (!isPlayerAttacking && activeDefense) chance -= 20;
 
+  // Modo Difícil: un ajuste pequeño y exclusivo de este modo (no toca el
+  // modo normal, que ya está bien equilibrado). El rival mete algún gol
+  // más y para algo más al jugador -- "un pelín", nada más.
+  if (G.run && G.run.hardMode) chance += isPlayerAttacking ? -5 : 5;
+
   // Tu propio portero casi nunca mete gol de tiro (es su portero, no un
   // rematador) -- solo se aplica a TU equipo, el del rival da igual porque
   // ya está excluido de atacar por completo (ver prepareOpponentTurn).
@@ -1329,6 +1425,7 @@ function finishRun() {
   var meta = G.meta;
   meta.points += G.run.spiritEarned;
   meta.runsPlayed++;
+  if (G.run.victory && !G.run.hardMode) meta.normalWins = (meta.normalWins || 0) + 1;
   var depthReached = G.run.clearedCount;
   if (depthReached > meta.bestNode) meta.bestNode = depthReached;
   if (G.run.matchesWon > meta.bestWins) meta.bestWins = G.run.matchesWon;
