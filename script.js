@@ -148,9 +148,18 @@ function positionIconSvg(pos) {
   }
 }
 
+// Soporte genérico para sprite propio/libre: si un jugador tiene un campo
+// "sprite" (ruta local a una imagen que TÚ hayas puesto en el proyecto,
+// dibujada o licenciada libremente), se usa esa imagen. Si no tiene el
+// campo, o el archivo no carga, se muestran las iniciales de siempre.
 function avatarHtml(p) {
+  var sprite = p.sprite
+    ? '<img class="avatar-sprite" src="' + escapeHtml(p.sprite) + '" alt="" loading="lazy" ' +
+      'onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'\';">'
+    : '';
   return '<span class="avatar type-bg-' + p.tipo.toLowerCase().replace('ñ', 'n') + '" aria-hidden="true">' +
-    '<span class="avatar-initials">' + initials(p.nombre) + '</span>' +
+    sprite +
+    '<span class="avatar-initials"' + (p.sprite ? ' style="display:none"' : '') + '>' + initials(p.nombre) + '</span>' +
     '<span class="avatar-pos-badge"><svg viewBox="0 0 24 24">' + positionIconSvg(p.posicion) + '</svg></span>' +
     '</span>';
 }
