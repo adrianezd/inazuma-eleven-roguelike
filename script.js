@@ -80,6 +80,40 @@ function bossBonusRange(depth) {
 function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
+// Generador determinista (mulberry32), usado SOLO para el Modo Diario: hace
+// que la plantilla y el mapa sean iguales para todo el mundo ese día. El
+// combate en sí sigue usando el azar real de siempre (no tendría sentido
+// "predecir" un partido, solo el reto de partida/plantel debe ser igual).
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function todayKey() {
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function dailySeed() {
+  var key = todayKey();
+  var hash = 0;
+  for (var i = 0; i < key.length; i++) { hash = (hash * 31 + key.charCodeAt(i)) | 0; }
+  return hash;
+}
+// Sustituye Math.random por una versión con semilla SOLO durante fn(), y la
+// restaura al terminar (incluso si fn lanza un error).
+function withSeededRandom(seed, fn) {
+  var original = Math.random;
+  Math.random = mulberry32(seed);
+  try {
+    return fn();
+  } finally {
+    Math.random = original;
+  }
+}
+
 // Aplica un cambio PERMANENTE (para esta partida) a una estadística de un
 // jugador y marca visualmente la dirección del último cambio: verde si
 // subió, rojo si bajó. La marca se queda toda la partida (no se limpia),
@@ -148,18 +182,19 @@ function positionIconSvg(pos) {
   }
 }
 
-// Soporte genérico para sprite propio/libre: si un jugador tiene un campo
-// "sprite" (ruta local a una imagen que TÚ hayas puesto en el proyecto,
-// dibujada o licenciada libremente), se usa esa imagen. Si no tiene el
-// campo, o el archivo no carga, se muestran las iniciales de siempre.
+// Soporte genérico para sprite propio/libre: se prueba automáticamente
+// "assets/sprites/{id}.png" para cada jugador (o la ruta de su campo
+// "sprite" si se define una distinta a mano). Si el archivo no existe
+// todavía, el navegador dispara "onerror" y se cae a las iniciales de
+// siempre sin romper nada -- así puedes ir soltando sprites de uno en uno
+// sin tener que tocar roster-data.js cada vez.
 function avatarHtml(p) {
-  var sprite = p.sprite
-    ? '<img class="avatar-sprite" src="' + escapeHtml(p.sprite) + '" alt="" loading="lazy" ' +
-      'onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'\';">'
-    : '';
+  var spritePath = p.sprite || ('assets/sprites/' + p.id + '.png');
+  var sprite = '<img class="avatar-sprite" src="' + escapeHtml(spritePath) + '" alt="" loading="lazy" ' +
+    'onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'\';">';
   return '<span class="avatar type-bg-' + p.tipo.toLowerCase().replace('ñ', 'n') + '" aria-hidden="true">' +
     sprite +
-    '<span class="avatar-initials"' + (p.sprite ? ' style="display:none"' : '') + '>' + initials(p.nombre) + '</span>' +
+    '<span class="avatar-initials" style="display:none">' + initials(p.nombre) + '</span>' +
     '<span class="avatar-pos-badge"><svg viewBox="0 0 24 24">' + positionIconSvg(p.posicion) + '</svg></span>' +
     '</span>';
 }
@@ -257,6 +292,133 @@ function generateRecruitOptions() {
 }
 
 /* ---------------------------------------------------------------------
+   4b. DRAFT INICIAL (Modo Torneo y Modo Supervivencia): eliges tu plantel
+   de 4 completo antes de empezar, en vez de 1 capitán + fichajes sobre la
+   marcha. Mismas reglas de posición que el resto del juego (máx. 1
+   Portero, máx. 2 Defensa).
+   --------------------------------------------------------------------- */
+
+function generateDraftOptions() {
+  var squad = G.pendingDraftSquad;
+  var unlocked = getUnlockedIds();
+  var alreadyHasPortero = squad.some(function (p) { return p.posicion === 'Portero'; });
+  var defensaCount = squad.filter(function (p) { return p.posicion === 'Defensa'; }).length;
+  var pool = ROSTER.filter(function (p) {
+    if (p.locked && unlocked.indexOf(p.id) === -1) return false;
+    if (alreadyHasPortero && p.posicion === 'Portero') return false;
+    if (defensaCount >= 2 && p.posicion === 'Defensa') return false;
+    return true;
+  });
+  var shuffled = pool.slice().sort(function () { return Math.random() - 0.5; });
+  return shuffled.slice(0, 3).map(rosterInstance);
+}
+
+function actionStartDraftMode(mode) {
+  G.pendingDraftMode = mode;
+  G.pendingDraftSquad = [];
+  G.pendingDraftOptions = generateDraftOptions();
+  G.screen = 'draftPick';
+  render();
+}
+
+function pickDraftPlayer(instanceId) {
+  var picked = G.pendingDraftOptions.find(function (p) { return p.instanceId === instanceId; });
+  if (!picked) return;
+  G.pendingDraftSquad.push(picked);
+  if (G.pendingDraftSquad.length >= MAX_SQUAD) {
+    finishDraft();
+  } else {
+    G.pendingDraftOptions = generateDraftOptions();
+    render();
+  }
+}
+
+function finishDraft() {
+  var mode = G.pendingDraftMode;
+  newRun(mode);
+  G.run.squad = G.pendingDraftSquad;
+  if (mode === 'torneo') {
+    G.run.map = generateLinearMap(['partido', 'partido', 'partido', 'partido', 'partido', 'partido', 'jefe']);
+  } else if (mode === 'supervivencia') {
+    var waves = [];
+    for (var i = 0; i < 50; i++) waves.push('jefe');
+    G.run.map = generateLinearMap(waves);
+  }
+  G.pendingDraftMode = null;
+  G.pendingDraftSquad = [];
+  G.screen = 'map';
+  render();
+}
+
+function renderDraftPick() {
+  var squadHtml = G.pendingDraftSquad.length
+    ? '<div class="panel"><h3 style="margin-bottom:8px">Tu plantilla</h3><div class="card-grid">' +
+      G.pendingDraftSquad.map(function (p) { return playerCardHtml(p, '', false, true); }).join('') +
+      '</div></div>'
+    : '';
+  var optionsHtml = G.pendingDraftOptions.map(function (c) {
+    return playerCardHtml(c, 'pickDraftPlayer(\'' + c.instanceId + '\')', false, false);
+  }).join('');
+  var modeLabel = G.pendingDraftMode === 'torneo' ? 'Torneo' : 'Supervivencia';
+  return (
+    '<div class="screen">' +
+      '<div class="panel"><h2 class="panel-title mb0">Draft inicial — ' + modeLabel + '</h2>' +
+        '<p class="dim small">Elige a tu jugador ' + (G.pendingDraftSquad.length + 1) + ' de ' + MAX_SQUAD + '.</p></div>' +
+      squadHtml +
+      '<div class="panel"><h3 style="margin-bottom:8px">Elige uno</h3><div class="card-grid">' + optionsHtml + '</div></div>' +
+    '</div>'
+  );
+}
+
+/* ---------------------------------------------------------------------
+   4c. MODO DIARIO: plantel aleatorio con 1 Portero, 1 Defensa, 1
+   Centrocampista y 1 Delantero siempre, y el mismo mapa para todo el
+   mundo ese día (semilla determinista). El combate en sí sigue usando
+   azar real -- solo el plantel y el mapa se generan con semilla.
+   --------------------------------------------------------------------- */
+
+function generateDailySquad() {
+  var meta = G.meta;
+  var eligible = ROSTER.filter(function (p) { return !p.locked || meta.unlocked.indexOf(p.id) !== -1; });
+  return POSITIONS.map(function (pos) {
+    var options = eligible.filter(function (p) { return p.posicion === pos; });
+    if (options.length === 0) options = ROSTER.filter(function (p) { return p.posicion === pos; });
+    return rosterInstance(choice(options));
+  });
+}
+
+function actionStartDaily() {
+  var today = todayKey();
+  if (G.meta.dailyLastDate === today) {
+    G.screen = 'dailyAlreadyPlayed';
+    render();
+    return;
+  }
+  var seed = dailySeed();
+  withSeededRandom(seed, function () {
+    newRun('diario');
+    G.run.squad = generateDailySquad();
+    G.run.map = generateMap(false);
+  });
+  G.screen = 'map';
+  render();
+}
+
+function renderDailyAlreadyPlayed() {
+  var r = G.meta.dailyLastResult || {};
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<h2 class="panel-title">Ya has jugado hoy</h2>' +
+        '<p class="dim">El Modo Diario se renueva cada día. Vuelve mañana para un nuevo reto.</p>' +
+        '<p>' + (r.victory ? '¡Fuiste campeón hoy! 🏆' : 'Hoy llegaste a ' + (r.nodes || 0) + ' nodos.') + '</p>' +
+        '<button class="btn btn-outline btn-block mt" onclick="actionBackToMenu()">Volver</button>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+/* ---------------------------------------------------------------------
    5. PERSISTENCIA (localStorage)
    --------------------------------------------------------------------- */
 
@@ -271,9 +433,9 @@ function loadMeta() {
     var raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) throw new Error('none');
     var data = JSON.parse(raw);
-    return Object.assign({ points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0, normalWins: 0 }, data);
+    return Object.assign({ points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0, normalWins: 0, bestSurvivalWave: 0, tournamentsWon: 0, dailyLastDate: null, dailyLastResult: null }, data);
   } catch (e) {
-    return { points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0, normalWins: 0 };
+    return { points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0, normalWins: 0, bestSurvivalWave: 0, tournamentsWon: 0, dailyLastDate: null, dailyLastResult: null };
   }
 }
 
@@ -370,6 +532,23 @@ function generateMap(hardMode) {
   return { rows: rows, edges: edges };
 }
 
+// Mapa lineal (una sola columna, sin ramificaciones): reutiliza el mismo
+// renderizado y motor de partidos que el mapa ramificado, solo que cada fila
+// tiene 1 único nodo. Se usa para Torneo (partidos seguidos + jefe final) y
+// Supervivencia (todo jefes, cada vez más difíciles).
+function generateLinearMap(nodeTypes) {
+  var rows = [];
+  var idCounter = 0;
+  nodeTypes.forEach(function (type, rowIndex) {
+    rows.push([{ id: 'n' + (idCounter++), row: rowIndex, col: 0, type: type, cleared: false }]);
+  });
+  var edges = {};
+  for (var r = 0; r < rows.length - 1; r++) {
+    edges[rows[r][0].id] = [rows[r + 1][0].id];
+  }
+  return { rows: rows, edges: edges };
+}
+
 function weightedNodeType() {
   var roll = Math.random() * 100;
   if (roll < 40) return 'partido';
@@ -403,22 +582,30 @@ function findNode(map, nodeId) {
 
 var G = {
   screen: 'menu',
-  meta: (typeof localStorage !== 'undefined') ? loadMeta() : { points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0, normalWins: 0 },
+  meta: (typeof localStorage !== 'undefined') ? loadMeta() : { points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0, normalWins: 0, bestSurvivalWave: 0, tournamentsWon: 0, dailyLastDate: null, dailyLastResult: null },
   run: null,
   match: null,
   pendingCaptainOffers: null,
   pendingRecruits: null,
   pendingTraining: null,
   pendingHardMode: false,
+  pendingDraftMode: null,
+  pendingDraftSquad: [],
+  pendingDraftOptions: [],
   vestuarioFilter: { tipo: null, posicion: null },
   coleccionFilter: { tipo: null, posicion: null }
 };
 
-function newRun(hardMode) {
+// Acepta el booleano de siempre (true/false = difícil/normal) o, para los
+// modos nuevos, una cadena directa ('torneo', 'supervivencia', 'diario').
+function newRun(modeOrHard) {
+  var mode = typeof modeOrHard === 'string' ? modeOrHard : (modeOrHard ? 'hard' : 'normal');
+  var needsBranchedMap = mode === 'normal' || mode === 'hard';
   G.run = {
     squad: [],
-    hardMode: !!hardMode,
-    map: generateMap(!!hardMode),
+    mode: mode,
+    hardMode: mode === 'hard',
+    map: needsBranchedMap ? generateMap(mode === 'hard') : null,
     currentNodeId: null,
     clearedCount: 0,
     matchesWon: 0,
@@ -450,6 +637,8 @@ function render() {
     case 'summary': html = renderSummary(); break;
     case 'vestuario': html = renderVestuario(); break;
     case 'coleccion': html = renderColeccion(); break;
+    case 'draftPick': html = renderDraftPick(); break;
+    case 'dailyAlreadyPlayed': html = renderDailyAlreadyPlayed(); break;
     default: html = renderMenu();
   }
   appEl.innerHTML = html;
@@ -465,9 +654,20 @@ function renderMenu() {
         '<div class="stats-summary">' +
           '<div class="stat-tile"><div class="num">' + m.bestNode + '</div><div class="label">Mejor progreso (nodos)</div></div>' +
           '<div class="stat-tile"><div class="num">' + m.bestWins + '</div><div class="label">Mejor racha de victorias</div></div>' +
+          '<div class="stat-tile"><div class="num">' + (m.bestSurvivalWave || 0) + '</div><div class="label">Mejor oleada (Supervivencia)</div></div>' +
+          '<div class="stat-tile"><div class="num">' + (m.tournamentsWon || 0) + '</div><div class="label">Torneos ganados</div></div>' +
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-primary btn-block" onclick="actionStartRun()">Jugar</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionStartDraftMode(\'torneo\')">Modo Torneo</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionStartDraftMode(\'supervivencia\')">Modo Supervivencia</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionStartDaily()">Modo Diario' + (G.meta.dailyLastDate === todayKey() ? ' ✓' : '') + '</button>' +
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-block" onclick="actionGoVestuario()">Vestuario</button>' +
@@ -698,10 +898,14 @@ function renderMap() {
     return '<div class="map-row">' + nodesHtml + '</div>';
   }).join('');
 
+  var mapTitle = run.mode === 'torneo' ? 'Torneo'
+    : run.mode === 'supervivencia' ? 'Supervivencia — Oleada ' + (run.clearedCount + 1)
+    : run.mode === 'diario' ? 'Modo Diario'
+    : 'Mapa de la temporada';
   return (
     '<div class="screen">' +
       '<div class="panel">' +
-        '<h2 class="panel-title mb0">Mapa de la temporada</h2>' +
+        '<h2 class="panel-title mb0">' + mapTitle + '</h2>' +
         '<p class="dim small">Nodos superados: ' + run.clearedCount + ' · Partidos ganados: ' + run.matchesWon + (run.hardMode ? ' · <strong style="color:var(--danger)">Modo Difícil</strong>' : '') + '</p>' +
       '</div>' +
       '<div class="panel">' +
@@ -1056,7 +1260,10 @@ function startMatch(nodeId, isBoss) {
   // así que aquí se normaliza la profundidad a esa misma escala 0-10 para que
   // sus jefes reciban un bonus comparable en vez de uno artificialmente bajo
   // solo por aparecer en una fila más temprana.
-  var normDepth = maxDepth > 0 ? (depth / maxDepth) * 10 : depth;
+  // Supervivencia es la excepción: no tiene techo real (mapa muy largo para
+  // simular "sin final"), así que usa la profundidad cruda sin normalizar,
+  // para que cada oleada sea claramente más dura que la anterior sin tope.
+  var normDepth = G.run.mode === 'supervivencia' ? depth : (maxDepth > 0 ? (depth / maxDepth) * 10 : depth);
   var oppSquad = generateOpponentSquad(normDepth, isBoss, isFinalBoss);
   var oppName = (isBoss ? 'Jefe: ' : '') + randomTeamName(isBoss);
   G.match = {
@@ -1575,7 +1782,17 @@ function finishRun() {
   var meta = G.meta;
   meta.points += G.run.spiritEarned;
   meta.runsPlayed++;
-  if (G.run.victory && !G.run.hardMode) meta.normalWins = (meta.normalWins || 0) + 1;
+  // Solo el Modo Normal cuenta para desbloquear el Modo Difícil -- Torneo,
+  // Supervivencia y Diario no deben contar como "victoria en normal".
+  if (G.run.victory && G.run.mode === 'normal') meta.normalWins = (meta.normalWins || 0) + 1;
+  if (G.run.victory && G.run.mode === 'torneo') meta.tournamentsWon = (meta.tournamentsWon || 0) + 1;
+  if (G.run.mode === 'supervivencia' && G.run.clearedCount > (meta.bestSurvivalWave || 0)) {
+    meta.bestSurvivalWave = G.run.clearedCount;
+  }
+  if (G.run.mode === 'diario') {
+    meta.dailyLastDate = todayKey();
+    meta.dailyLastResult = { victory: G.run.victory, nodes: G.run.clearedCount };
+  }
   var depthReached = G.run.clearedCount;
   if (depthReached > meta.bestNode) meta.bestNode = depthReached;
   if (G.run.matchesWon > meta.bestWins) meta.bestWins = G.run.matchesWon;
