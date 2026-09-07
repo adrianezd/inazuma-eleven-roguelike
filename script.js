@@ -79,6 +79,27 @@ function bossBonusRange(depth) {
 
 function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+// Aplica un cambio PERMANENTE (para esta partida) a una estadística de un
+// jugador y marca visualmente la dirección del último cambio: verde si
+// subió, rojo si bajó. La marca se queda toda la partida (no se limpia),
+// salvo que otro cambio posterior a esa misma stat vaya en la dirección
+// contraria. No se usa para la fatiga (efecto temporal y reversible, con
+// su propio indicador ya existente).
+function applyStatChange(player, stat, delta) {
+  player[stat] = clamp(player[stat] + delta, 0, 99);
+  player.boostedStats = player.boostedStats || [];
+  player.reducedStats = player.reducedStats || [];
+  if (delta > 0) {
+    if (player.boostedStats.indexOf(stat) === -1) player.boostedStats.push(stat);
+    var ri = player.reducedStats.indexOf(stat);
+    if (ri !== -1) player.reducedStats.splice(ri, 1);
+  } else if (delta < 0) {
+    if (player.reducedStats.indexOf(stat) === -1) player.reducedStats.push(stat);
+    var bi = player.boostedStats.indexOf(stat);
+    if (bi !== -1) player.boostedStats.splice(bi, 1);
+  }
+}
 function choice(arr) { return arr[rand(0, arr.length - 1)]; }
 function uid() { return 'p' + Math.random().toString(36).slice(2, 10); }
 function escapeHtml(s) {
@@ -584,12 +605,14 @@ function playerCardHtml(p, onclickAttr, selected, disabled) {
 function statBarsHtml(p) {
   var stats = [['Tiro', 'tiro', p.tiro], ['Regate', 'pase', p.pase], ['Defensa', 'defensa', p.defensa], ['Especial', 'especial', p.especial]];
   var boosted = p.boostedStats || [];
+  var reduced = p.reducedStats || [];
   return '<div class="stat-bars">' + stats.map(function (s) {
     var label = s[0], key = s[1], value = s[2];
     var isMax = value >= 99;
     var isBoosted = boosted.indexOf(key) !== -1;
-    var valueColor = isMax ? 'color:#fff;' : (isBoosted ? 'color:#7cfc00;font-weight:bold;' : '');
-    var barStyle = isMax ? 'background:#fff;' : (isBoosted ? 'background:#7cfc00;' : '');
+    var isReduced = reduced.indexOf(key) !== -1;
+    var valueColor = isMax ? 'color:#fff;' : (isBoosted ? 'color:#7cfc00;font-weight:bold;' : (isReduced ? 'color:#ff5c5c;font-weight:bold;' : ''));
+    var barStyle = isMax ? 'background:#fff;' : (isBoosted ? 'background:#7cfc00;' : (isReduced ? 'background:#ff5c5c;' : ''));
     return '<span class="stat-label">' + label + '</span>' +
       '<span class="stat-bar-track"><span class="stat-bar-fill" style="width:' + clamp(value, 0, 100) + '%;' + barStyle + '"></span></span>' +
       '<span class="stat-value" style="' + valueColor + '">' + value + '</span>';
@@ -779,7 +802,7 @@ function renderTraining() {
 function applyTraining(index) {
   var opt = G.pendingTraining[index];
   var player = G.run.squad.find(function (p) { return p.instanceId === opt.playerId; });
-  player[opt.stat] = clamp(player[opt.stat] + opt.amount, 0, 99);
+  applyStatChange(player, opt.stat, opt.amount);
   G.run.spiritEarned += SPIRIT_PER_NODE;
   returnToMap();
 }
@@ -866,16 +889,14 @@ function resolveEventoNode() {
     return { type: 'fatiga', text: escapeHtml(p3.nombre) + ' vuelve agotado del evento y queda fatigado (-10 a todo hasta el próximo descanso).' };
   }
   if (roll === 7) {
-    squad.forEach(function (p) {
-      p.especial = clamp(p.especial + 10, 0, 99);
-    });
+    squad.forEach(function (p) { applyStatChange(p, 'especial', 10); });
     return { type: 'bonus', text: 'Subís a la Torre Inazuma a entrenar en altura. Todo el equipo sube +10 a Especial (solo esta partida).' };
   }
   if (roll === 8) {
     var stats = ['tiro', 'pase', 'defensa', 'especial'];
     var pSab = choice(squad);
     var statKey = choice(stats);
-    pSab[statKey] = clamp(pSab[statKey] - 20, 0, 99);
+    applyStatChange(pSab, statKey, -20);
     return { type: 'malus', text: 'Sabotaje del autobús: ' + escapeHtml(pSab.nombre) + ' llega dolorido por el viaje y pierde 20 puntos en ' + statKey.charAt(0).toUpperCase() + statKey.slice(1) + '.' };
   }
   if (roll === 9) {
@@ -903,32 +924,32 @@ function resolveEventoNode() {
   if (roll === 6) {
     squad.forEach(function (p) {
       p.fatigado = false;
-      p.tiro = clamp(p.tiro + 10, 0, 99);
+      applyStatChange(p, 'tiro', 10);
     });
     return { type: 'bonus', text: 'Un entrenador invitado os da una charla motivadora: se os quita toda la fatiga y todo el equipo sube +10 a Tiro (solo esta partida).' };
   }
   if (roll === 4) {
     squad.forEach(function (p) {
-      p.tiro = clamp(p.tiro + 5, 0, 99);
-      p.pase = clamp(p.pase + 5, 0, 99);
-      p.defensa = clamp(p.defensa + 5, 0, 99);
-      p.especial = clamp(p.especial + 5, 0, 99);
+      applyStatChange(p, 'tiro', 5);
+      applyStatChange(p, 'pase', 5);
+      applyStatChange(p, 'defensa', 5);
+      applyStatChange(p, 'especial', 5);
     });
     return { type: 'bonus', text: 'Silvia os ha preparado bolas de arroz. ¡Todo el equipo sube +5 en todos los atributos (solo esta partida)!' };
   }
   if (roll === 5) {
     squad.forEach(function (p) {
-      p.tiro = clamp(p.tiro - 5, 0, 99);
-      p.pase = clamp(p.pase - 5, 0, 99);
-      p.defensa = clamp(p.defensa - 5, 0, 99);
-      p.especial = clamp(p.especial - 5, 0, 99);
+      applyStatChange(p, 'tiro', -5);
+      applyStatChange(p, 'pase', -5);
+      applyStatChange(p, 'defensa', -5);
+      applyStatChange(p, 'especial', -5);
     });
     return { type: 'malus', text: 'Sector Quinto os ha cerrado la escuela. Todo el equipo pierde 5 puntos en todas las estadísticas.' };
   }
   if (roll === 1) {
     var p = choice(squad);
     var amount = rand(10, 18);
-    p.especial = clamp(p.especial + amount, 0, 99);
+    applyStatChange(p, 'especial', amount);
     return { type: 'tecnica', text: escapeHtml(p.nombre) + ' aprende una nueva técnica en un entrenamiento especial: +' + amount + ' a Especial.' };
   }
   if (roll === 2) {
@@ -1462,13 +1483,8 @@ function finishMatch() {
       var stats = ['tiro', 'pase', 'defensa', 'especial'];
       var stat = choice(stats);
       var oldVal = p[stat];
-      p[stat] = clamp(p[stat] + 5, 0, 99);
+      applyStatChange(p, stat, 5);
       m.bonusesApplied.push({ nombre: p.nombre, stat: stat, oldVal: oldVal, newVal: p[stat] });
-      // Marca la stat como potenciada para que se vea en verde en las
-      // tarjetas del jugador (mapa, vestidor visual, etc.) el resto de la
-      // partida, no solo en el mensaje de esta pantalla.
-      p.boostedStats = (p.boostedStats || []).slice();
-      if (p.boostedStats.indexOf(stat) === -1) p.boostedStats.push(stat);
     });
   } else {
     m.log.push('Derrota. Tu temporada termina aquí.');
