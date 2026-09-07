@@ -317,6 +317,7 @@ function actionStartDraftMode(mode) {
   G.pendingDraftMode = mode;
   G.pendingDraftSquad = [];
   G.pendingDraftOptions = generateDraftOptions();
+  if (mode === 'torneo') G.pendingTournamentBracket = generateTournamentBracket();
   G.screen = 'draftPick';
   render();
 }
@@ -338,11 +339,23 @@ function finishDraft() {
   newRun(mode);
   G.run.squad = G.pendingDraftSquad;
   if (mode === 'torneo') {
-    G.run.map = generateLinearMap(['partido', 'partido', 'partido', 'partido', 'partido', 'partido', 'jefe']);
-  } else if (mode === 'supervivencia') {
-    var waves = [];
-    for (var i = 0; i < 50; i++) waves.push('jefe');
-    G.run.map = generateLinearMap(waves);
+    var bracket = G.pendingTournamentBracket;
+    var round1 = [];
+    for (var i = 0; i < 8; i += 2) round1.push({ a: bracket.slots[i], b: bracket.slots[i + 1], winner: null });
+    G.tournament = { rounds: [round1] };
+    G.pendingDraftMode = null;
+    G.pendingDraftSquad = [];
+    G.screen = 'torneoBracket';
+    render();
+    return;
+  }
+  if (mode === 'supervivencia') {
+    G.run.survivalStep = 0;
+    G.run.survivalWave = 0;
+    G.pendingDraftMode = null;
+    G.pendingDraftSquad = [];
+    advanceSurvivalStage();
+    return;
   }
   G.pendingDraftMode = null;
   G.pendingDraftSquad = [];
@@ -387,6 +400,13 @@ function generateDailySquad() {
   });
 }
 
+// Secuencia fija del Modo Diario (distinta de Supervivencia, que se repite
+// en bucle): Partido -> Evento -> Entrenamiento -> Evento -> Jefe final.
+// No se ve el mapa en ningún momento: cada etapa lleva directamente a la
+// siguiente pantalla (partido, entrenamiento o evento) sin pasar por un
+// mapa intermedio.
+var DAILY_SEQUENCE = ['partido', 'evento', 'entrenamiento', 'evento', 'jefe'];
+
 function actionStartDaily() {
   var today = todayKey();
   if (G.meta.dailyLastDate === today) {
@@ -395,12 +415,41 @@ function actionStartDaily() {
     return;
   }
   var seed = dailySeed();
-  withSeededRandom(seed, function () {
-    newRun('diario');
-    G.run.squad = generateDailySquad();
-    G.run.map = generateMap(false);
-  });
-  G.screen = 'map';
+  var squad;
+  // Solo la plantilla se genera con semilla (mismo reto para todo el mundo
+  // ese día); el resto de la partida (partidos, eventos) usa azar real.
+  withSeededRandom(seed, function () { squad = generateDailySquad(); });
+  newRun('diario');
+  G.run.squad = squad;
+  G.run.dailyStep = 0;
+  advanceDailyStage();
+}
+
+function advanceDailyStage() {
+  var stepType = DAILY_SEQUENCE[G.run.dailyStep];
+  G.run.dailyStep++;
+  switch (stepType) {
+    case 'partido': startDailyMatch(false); break;
+    case 'jefe': startDailyMatch(true); break;
+    case 'entrenamiento': G.pendingTraining = generateTrainingOptions(); G.screen = 'entrenamiento'; render(); break;
+    case 'evento': G.pendingEventResult = resolveEventoNode(); G.screen = 'evento'; render(); break;
+  }
+}
+
+function startDailyMatch(isBoss) {
+  var isFinalBoss = isBoss; // el único jefe de la secuencia diaria es el final
+  var oppSquad = generateOpponentSquad(isBoss ? 8 : 3, isBoss, isFinalBoss);
+  var oppName = (isBoss ? 'Jefe: ' : '') + randomTeamName(isBoss);
+  G.match = {
+    isBoss: isBoss, oppName: oppName, oppSquad: oppSquad, turn: 1, order: buildTurnOrder(),
+    playerScore: 0, oppScore: 0,
+    playerAtkCount: 0, playerLastSpecialAt: 0, playerCooldownNeeded: rand(2, 3), playerCooldownBoost: 0, playerLastSpecialMove: null,
+    oppAtkCount: 0, oppLastSpecialAt: 0, oppCooldownNeeded: rand(2, 3), oppCooldownBoost: 0, oppLastSpecialMove: null,
+    pendingOpp: null, defenseTechniqueUsedByPos: { Portero: false, Defensa: false },
+    log: [], selectedAttackerId: null, lastEvent: null, lastEventClass: '', finished: false,
+    suddenDeath: false, sdRound: 0, sdStage: 'jugador'
+  };
+  G.screen = 'match';
   render();
 }
 
@@ -411,11 +460,169 @@ function renderDailyAlreadyPlayed() {
       '<div class="panel center-text">' +
         '<h2 class="panel-title">Ya has jugado hoy</h2>' +
         '<p class="dim">El Modo Diario se renueva cada día. Vuelve mañana para un nuevo reto.</p>' +
-        '<p>' + (r.victory ? '¡Fuiste campeón hoy! 🏆' : 'Hoy llegaste a ' + (r.nodes || 0) + ' nodos.') + '</p>' +
+        '<p>' + (r.victory ? '¡Superaste el reto de hoy! 🏆' : 'Hoy llegaste a la etapa ' + (r.nodes || 0) + ' de ' + DAILY_SEQUENCE.length + '.') + '</p>' +
         '<button class="btn btn-outline btn-block mt" onclick="actionBackToMenu()">Volver</button>' +
       '</div>' +
     '</div>'
   );
+}
+
+/* ---------------------------------------------------------------------
+   4d. MODO SUPERVIVENCIA: ciclo fijo que se repite sin fin (Partido,
+   Entreno/Evento, Partido, Entreno/Evento, Jefe, Entreno/Evento...). No se
+   ve ningún mapa: cada etapa lleva directamente a la siguiente pantalla.
+   La oleada (nº de jefes superados) marca cuánto escala la dificultad.
+   --------------------------------------------------------------------- */
+
+var SURVIVAL_CYCLE = ['partido', 'entrenoOEvento', 'partido', 'entrenoOEvento', 'jefe', 'entrenoOEvento'];
+
+function advanceSurvivalStage() {
+  var stepType = SURVIVAL_CYCLE[G.run.survivalStep % SURVIVAL_CYCLE.length];
+  if (stepType === 'entrenoOEvento') stepType = choice(['entrenamiento', 'evento']);
+  G.run.survivalStep++;
+  if (stepType === 'jefe') G.run.survivalWave = (G.run.survivalWave || 0) + 1;
+  switch (stepType) {
+    case 'partido': startSurvivalMatch(false); break;
+    case 'jefe': startSurvivalMatch(true); break;
+    case 'entrenamiento': G.pendingTraining = generateTrainingOptions(); G.screen = 'entrenamiento'; render(); break;
+    case 'evento': G.pendingEventResult = resolveEventoNode(); G.screen = 'evento'; render(); break;
+  }
+}
+
+function startSurvivalMatch(isBoss) {
+  // Sin techo de dificultad: la oleada crece sin normalizar, así cada jefe
+  // sucesivo es claramente más duro que el anterior (ver bossBonusRange).
+  var depth = G.run.survivalWave || 0;
+  var oppSquad = generateOpponentSquad(depth, isBoss, false);
+  var oppName = (isBoss ? 'Jefe: ' : '') + randomTeamName(isBoss);
+  G.match = {
+    isBoss: isBoss, oppName: oppName, oppSquad: oppSquad, turn: 1, order: buildTurnOrder(),
+    playerScore: 0, oppScore: 0,
+    playerAtkCount: 0, playerLastSpecialAt: 0, playerCooldownNeeded: rand(2, 3), playerCooldownBoost: 0, playerLastSpecialMove: null,
+    oppAtkCount: 0, oppLastSpecialAt: 0, oppCooldownNeeded: rand(2, 3), oppCooldownBoost: 0, oppLastSpecialMove: null,
+    pendingOpp: null, defenseTechniqueUsedByPos: { Portero: false, Defensa: false },
+    log: [], selectedAttackerId: null, lastEvent: null, lastEventClass: '', finished: false,
+    suddenDeath: false, sdRound: 0, sdStage: 'jugador'
+  };
+  G.screen = 'match';
+  render();
+}
+
+/* ---------------------------------------------------------------------
+   4e. MODO TORNEO: bracket real de eliminación de 8 (tú + 7 rivales CPU:
+   5 de nivel jefe, 2 normales, repartidos al azar en el cuadro). Juegas 3
+   rondas (Cuartos, Semis, Final); los partidos del cuadro que no te tocan
+   se resuelven solos para que se vea el cuadro completo avanzar.
+   --------------------------------------------------------------------- */
+
+function generateTournamentBracket() {
+  var tiers = ['jefe', 'jefe', 'jefe', 'jefe', 'jefe', 'normal', 'normal'];
+  tiers = tiers.slice().sort(function () { return Math.random() - 0.5; });
+  var rivals = tiers.map(function (tier) {
+    return { isPlayer: false, name: randomTeamName(tier === 'jefe'), tier: tier };
+  });
+  var slots = new Array(8);
+  var playerSlot = rand(0, 7);
+  slots[playerSlot] = { isPlayer: true };
+  var ri = 0;
+  for (var i = 0; i < 8; i++) {
+    if (i === playerSlot) continue;
+    slots[i] = rivals[ri];
+    ri++;
+  }
+  return { slots: slots };
+}
+
+// Resuelve un partido entre dos equipos CPU (no interviene el jugador):
+// los de nivel jefe ganan más a menudo, pero no siempre.
+function simulateCpuMatch(a, b) {
+  var powerA = a.tier === 'jefe' ? rand(70, 95) : rand(50, 75);
+  var powerB = b.tier === 'jefe' ? rand(70, 95) : rand(50, 75);
+  return powerA >= powerB ? a : b;
+}
+
+function startTournamentMatch() {
+  var t = G.tournament;
+  var round = t.rounds[t.rounds.length - 1];
+  var match = round.filter(function (m) { return (m.a.isPlayer || m.b.isPlayer) && m.winner === null; })[0];
+  var opp = match.a.isPlayer ? match.b : match.a;
+  var isBoss = opp.tier === 'jefe';
+  var roundIndex = t.rounds.length - 1; // 0 = Cuartos, 1 = Semis, 2 = Final
+  var isFinalBoss = roundIndex === 2;
+  var normDepth = roundIndex * 5; // 0, 5, 10 -- cada ronda pesa más que la anterior
+  var oppSquad = generateOpponentSquad(normDepth, isBoss, isFinalBoss);
+  var oppName = (isBoss ? 'Jefe: ' : '') + opp.name;
+  G.match = {
+    isBoss: isBoss, oppName: oppName, oppSquad: oppSquad, turn: 1, order: buildTurnOrder(),
+    playerScore: 0, oppScore: 0,
+    playerAtkCount: 0, playerLastSpecialAt: 0, playerCooldownNeeded: rand(2, 3), playerCooldownBoost: 0, playerLastSpecialMove: null,
+    oppAtkCount: 0, oppLastSpecialAt: 0, oppCooldownNeeded: rand(2, 3), oppCooldownBoost: 0, oppLastSpecialMove: null,
+    pendingOpp: null, defenseTechniqueUsedByPos: { Portero: false, Defensa: false },
+    log: [], selectedAttackerId: null, lastEvent: null, lastEventClass: '', finished: false,
+    suddenDeath: false, sdRound: 0, sdStage: 'jugador'
+  };
+  G.screen = 'match';
+  render();
+}
+
+function afterTournamentMatchEnd(playerWon) {
+  var t = G.tournament;
+  var round = t.rounds[t.rounds.length - 1];
+  var match = round.filter(function (m) { return (m.a.isPlayer || m.b.isPlayer) && m.winner === null; })[0];
+  match.winner = playerWon ? (match.a.isPlayer ? match.a : match.b) : (match.a.isPlayer ? match.b : match.a);
+  if (G.match && G.match.isBoss) G.run.squad.forEach(function (p) { p.fatigado = false; });
+  G.match = null;
+  if (!playerWon) {
+    G.run.victory = false;
+    finishRun();
+    return;
+  }
+  // Resolver el resto de partidos de esta ronda que no jugó el jugador.
+  round.forEach(function (m) {
+    if (m.winner === null) m.winner = simulateCpuMatch(m.a, m.b);
+  });
+  if (round.length === 1) {
+    // Era la final y el jugador ganó: campeón del torneo.
+    G.run.victory = true;
+    G.run.spiritEarned += SPIRIT_PER_BOSS;
+    finishRun();
+    return;
+  }
+  var winners = round.map(function (m) { return m.winner; });
+  var nextRound = [];
+  for (var i = 0; i < winners.length; i += 2) nextRound.push({ a: winners[i], b: winners[i + 1], winner: null });
+  t.rounds.push(nextRound);
+  G.screen = 'torneoBracket';
+  render();
+}
+
+function renderTournamentBracket() {
+  var t = G.tournament;
+  var roundNames = ['Cuartos de Final', 'Semifinal', 'Final'];
+  var html = '<div class="screen"><div class="panel"><h2 class="panel-title mb0">Torneo</h2><p class="dim small">Bracket de 8: tú y 7 rivales (5 de nivel jefe 👑, 2 normales).</p></div>';
+  t.rounds.forEach(function (round, ri) {
+    html += '<div class="panel"><h3 style="margin-bottom:8px">' + roundNames[ri] + '</h3>';
+    round.forEach(function (m) {
+      var aLabel = m.a.isPlayer ? 'Tú' : escapeHtml(m.a.name) + (m.a.tier === 'jefe' ? ' 👑' : '');
+      var bLabel = m.b.isPlayer ? 'Tú' : escapeHtml(m.b.name) + (m.b.tier === 'jefe' ? ' 👑' : '');
+      var isPlayerMatch = m.a.isPlayer || m.b.isPlayer;
+      var resultText = m.winner
+        ? ('Gana: ' + (m.winner.isPlayer ? 'Tú' : escapeHtml(m.winner.name)))
+        : (isPlayerMatch ? 'Tu turno' : 'Pendiente');
+      html += '<div class="bracket-match' + (isPlayerMatch && !m.winner ? ' bracket-match-active' : '') + '">' +
+          '<span>' + aLabel + '</span><span class="bracket-vs">vs</span><span>' + bLabel + '</span>' +
+          '<div class="dim small">' + resultText + '</div>' +
+        '</div>';
+    });
+    html += '</div>';
+  });
+  var lastRound = t.rounds[t.rounds.length - 1];
+  var pendingPlayerMatch = lastRound.filter(function (m) { return (m.a.isPlayer || m.b.isPlayer) && m.winner === null; })[0];
+  if (pendingPlayerMatch) {
+    html += '<button class="btn btn-primary btn-block" onclick="startTournamentMatch()">Jugar mi partido</button>';
+  }
+  html += '</div>';
+  return html;
 }
 
 /* ---------------------------------------------------------------------
@@ -532,23 +739,6 @@ function generateMap(hardMode) {
   return { rows: rows, edges: edges };
 }
 
-// Mapa lineal (una sola columna, sin ramificaciones): reutiliza el mismo
-// renderizado y motor de partidos que el mapa ramificado, solo que cada fila
-// tiene 1 único nodo. Se usa para Torneo (partidos seguidos + jefe final) y
-// Supervivencia (todo jefes, cada vez más difíciles).
-function generateLinearMap(nodeTypes) {
-  var rows = [];
-  var idCounter = 0;
-  nodeTypes.forEach(function (type, rowIndex) {
-    rows.push([{ id: 'n' + (idCounter++), row: rowIndex, col: 0, type: type, cleared: false }]);
-  });
-  var edges = {};
-  for (var r = 0; r < rows.length - 1; r++) {
-    edges[rows[r][0].id] = [rows[r + 1][0].id];
-  }
-  return { rows: rows, edges: edges };
-}
-
 function weightedNodeType() {
   var roll = Math.random() * 100;
   if (roll < 40) return 'partido';
@@ -639,6 +829,7 @@ function render() {
     case 'coleccion': html = renderColeccion(); break;
     case 'draftPick': html = renderDraftPick(); break;
     case 'dailyAlreadyPlayed': html = renderDailyAlreadyPlayed(); break;
+    case 'torneoBracket': html = renderTournamentBracket(); break;
     default: html = renderMenu();
   }
   appEl.innerHTML = html;
@@ -898,14 +1089,10 @@ function renderMap() {
     return '<div class="map-row">' + nodesHtml + '</div>';
   }).join('');
 
-  var mapTitle = run.mode === 'torneo' ? 'Torneo'
-    : run.mode === 'supervivencia' ? 'Supervivencia — Oleada ' + (run.clearedCount + 1)
-    : run.mode === 'diario' ? 'Modo Diario'
-    : 'Mapa de la temporada';
   return (
     '<div class="screen">' +
       '<div class="panel">' +
-        '<h2 class="panel-title mb0">' + mapTitle + '</h2>' +
+        '<h2 class="panel-title mb0">Mapa de la temporada</h2>' +
         '<p class="dim small">Nodos superados: ' + run.clearedCount + ' · Partidos ganados: ' + run.matchesWon + (run.hardMode ? ' · <strong style="color:var(--danger)">Modo Difícil</strong>' : '') + '</p>' +
       '</div>' +
       '<div class="panel">' +
@@ -990,7 +1177,23 @@ function clearCurrentNode() {
   if (node && !node.cleared) { node.cleared = true; G.run.clearedCount++; }
 }
 
-function returnToMap() { clearCurrentNode(); G.screen = 'map'; render(); }
+function returnToMap() {
+  // Supervivencia y Diario no usan mapa: cada etapa (entrenamiento, evento)
+  // encadena directamente con la siguiente en vez de volver a un mapa.
+  if (G.run.mode === 'supervivencia') { advanceSurvivalStage(); return; }
+  if (G.run.mode === 'diario') {
+    if (G.run.dailyStep >= DAILY_SEQUENCE.length) {
+      G.run.victory = true;
+      finishRun();
+    } else {
+      advanceDailyStage();
+    }
+    return;
+  }
+  clearCurrentNode();
+  G.screen = 'map';
+  render();
+}
 
 /* ---------------------------------------------------------------------
    10. ENTRENAMIENTO
@@ -1260,10 +1463,7 @@ function startMatch(nodeId, isBoss) {
   // así que aquí se normaliza la profundidad a esa misma escala 0-10 para que
   // sus jefes reciban un bonus comparable en vez de uno artificialmente bajo
   // solo por aparecer en una fila más temprana.
-  // Supervivencia es la excepción: no tiene techo real (mapa muy largo para
-  // simular "sin final"), así que usa la profundidad cruda sin normalizar,
-  // para que cada oleada sea claramente más dura que la anterior sin tope.
-  var normDepth = G.run.mode === 'supervivencia' ? depth : (maxDepth > 0 ? (depth / maxDepth) * 10 : depth);
+  var normDepth = maxDepth > 0 ? (depth / maxDepth) * 10 : depth;
   var oppSquad = generateOpponentSquad(normDepth, isBoss, isFinalBoss);
   var oppName = (isBoss ? 'Jefe: ' : '') + randomTeamName(isBoss);
   G.match = {
@@ -1757,6 +1957,26 @@ function renderMatchEnd() {
 }
 
 function afterMatchWin() {
+  if (G.run.mode === 'torneo') { afterTournamentMatchEnd(true); return; }
+  if (G.run.mode === 'supervivencia') {
+    if (G.match.isBoss) G.run.squad.forEach(function (p) { p.fatigado = false; });
+    G.match = null;
+    advanceSurvivalStage();
+    return;
+  }
+  if (G.run.mode === 'diario') {
+    if (G.match.isBoss) G.run.squad.forEach(function (p) { p.fatigado = false; });
+    G.match = null;
+    if (G.run.dailyStep >= DAILY_SEQUENCE.length) {
+      G.run.victory = true;
+      G.run.spiritEarned += SPIRIT_PER_BOSS;
+      finishRun();
+    } else {
+      advanceDailyStage();
+    }
+    return;
+  }
+  // ---- Modo Normal / Difícil: mapa ramificado de siempre ----
   var wasFinalBoss = mapDepth(G.run.currentNodeId, G.run.map) === G.run.map.rows.length - 1;
   if (G.match.isBoss) {
     // Vencer a un jefe (cualquiera de los 3) quita la fatiga a todo el equipo.
@@ -1776,7 +1996,11 @@ function afterMatchWin() {
   render();
 }
 
-function afterMatchLoss() { G.run.victory = false; finishRun(); }
+function afterMatchLoss() {
+  if (G.run.mode === 'torneo') { afterTournamentMatchEnd(false); return; }
+  G.run.victory = false;
+  finishRun();
+}
 
 function finishRun() {
   var meta = G.meta;
@@ -1786,12 +2010,12 @@ function finishRun() {
   // Supervivencia y Diario no deben contar como "victoria en normal".
   if (G.run.victory && G.run.mode === 'normal') meta.normalWins = (meta.normalWins || 0) + 1;
   if (G.run.victory && G.run.mode === 'torneo') meta.tournamentsWon = (meta.tournamentsWon || 0) + 1;
-  if (G.run.mode === 'supervivencia' && G.run.clearedCount > (meta.bestSurvivalWave || 0)) {
-    meta.bestSurvivalWave = G.run.clearedCount;
+  if (G.run.mode === 'supervivencia' && (G.run.survivalWave || 0) > (meta.bestSurvivalWave || 0)) {
+    meta.bestSurvivalWave = G.run.survivalWave;
   }
   if (G.run.mode === 'diario') {
     meta.dailyLastDate = todayKey();
-    meta.dailyLastResult = { victory: G.run.victory, nodes: G.run.clearedCount };
+    meta.dailyLastResult = { victory: G.run.victory, nodes: G.run.dailyStep };
   }
   var depthReached = G.run.clearedCount;
   if (depthReached > meta.bestNode) meta.bestNode = depthReached;

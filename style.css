@@ -550,3 +550,19 @@ a { color: var(--accent); }
 @media (min-width: 640px) {
   .action-row { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* ===== Bracket de Torneo ===== */
+.bracket-match {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.bracket-match-active { border-color: var(--accent-2); border-width: 2px; }
+.bracket-vs { color: var(--text-dim); font-size: 0.8rem; }
+.bracket-match .dim { flex-basis: 100%; }
