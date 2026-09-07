@@ -63,7 +63,7 @@ var RIVAL_TEAM_NAMES = [
   'Tarjeteros', 'Veteranos Inazuma', 'Instituto Alius',
   'Cala Pirata', 'Sallys', 'Leones del desierto',
   'Academia Universal', 'Instituto Cherrybloom', 'Instituto Plenilunio',
-  'Raimon Inakuni'
+  'Raimon Inakuni', 'Mary Times', 'Mar de Luna'
 ];
 
 var RIVAL_TEAM_BOSSES = [
@@ -71,8 +71,13 @@ var RIVAL_TEAM_BOSSES = [
   'Instituto Alius','Emperadores Oscuros',
   'Genesis', 'Prominence', 'Polvo de Diamante', 'Tormenta de Géminis', 'Dragones de Fuego',
   'Pequeños Gigantes', 'Épsilon', 'Los Emperadores', 'Os Reis', 'Neo Japón',
-  'Protocolo Omega', 'Caos', 'El Dorado', 'Resistencia Japón', 'Resistencia Japón GO',
-  'Gir', 'Gar', 'Ragnah'
+  'Protocolo Omega', 'Caos', 'El Dorado 01', 'Resistencia Japón', 'Resistencia Japón GO',
+  'Gir', 'Gar', 'Ragnah', 'Alius Masters', 'Inazuma Japan', 'Inazuma Japan GO',
+  'Chrono Storm', 'Dragon Link', 'Desesperdidos', 'Dinastía Galáctica',
+  'Earth Eleven', 'Eclipse de Orión', 'El Dorado 02', 'El Dorado 03', 
+  'Protocolo Omega 2.0', 'Protocolo Omega 3.0', 'Zanark Domain', 'Equipo Zero',
+  'Falam Medius', 'Flota Ixar'
+
 ];
 
 
