@@ -1448,6 +1448,20 @@ function finishMatch() {
     var candidate = choice(G.run.squad);
     candidate.fatigado = true;
     m.log.push('¡Victoria! +' + reward + ' Puntos de Espíritu (se sumarán al terminar la partida).');
+    // El bonus de +5 se calcula AQUÍ (antes de la primera renderización de la
+    // pantalla de victoria), no en afterMatchWin: esa función solo se dispara
+    // al pulsar "Continuar" y ya navega fuera de esta pantalla, así que si el
+    // bonus se calculaba ahí el mensaje nunca llegaba a verse.
+    var howMany = Math.random() < 0.6 ? 1 : 2;
+    var shuffled = G.run.squad.slice().sort(function () { return Math.random() - 0.5; });
+    m.bonusesApplied = [];
+    shuffled.slice(0, howMany).forEach(function (p) {
+      var stats = ['tiro', 'pase', 'defensa', 'especial'];
+      var stat = choice(stats);
+      var oldVal = p[stat];
+      p[stat] = clamp(p[stat] + 5, 0, 99);
+      m.bonusesApplied.push({ nombre: p.nombre, stat: stat, oldVal: oldVal, newVal: p[stat] });
+    });
   } else {
     m.log.push('Derrota. Tu temporada termina aquí.');
   }
@@ -1486,18 +1500,8 @@ function afterMatchWin() {
     // Vencer a un jefe (cualquiera de los 3) quita la fatiga a todo el equipo.
     G.run.squad.forEach(function (p) { p.fatigado = false; });
   }
-  // Tras ganar el partido: 1 o 2 personajes aleatorios suben +5 en un atributo
-  // aleatorio (solo para este partido, no se guarda entre partidas).
-  var howMany = Math.random() < 0.6 ? 1 : 2;
-  var shuffled = G.run.squad.slice().sort(function () { return Math.random() - 0.5; });
-  G.match.bonusesApplied = [];
-  shuffled.slice(0, howMany).forEach(function (p) {
-    var stats = ['tiro', 'pase', 'defensa', 'especial'];
-    var stat = choice(stats);
-    var oldVal = p[stat];
-    p[stat] = clamp(p[stat] + 5, 0, 99);
-    G.match.bonusesApplied.push({ nombre: p.nombre, stat: stat, oldVal: oldVal, newVal: p[stat] });
-  });
+  // El bonus de +5 ya se calculó y aplicó en finishMatch(), para que el
+  // mensaje se vea en la pantalla de victoria antes de pulsar "Continuar".
   G.match = null;
   clearCurrentNode();
   if (wasFinalBoss) {
