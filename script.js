@@ -914,6 +914,7 @@ function render() {
     case 'summary': html = renderSummary(); break;
     case 'vestuario': html = renderVestuario(); break;
     case 'coleccion': html = renderColeccion(); break;
+    case 'coleccionEquipos': html = renderColeccionEquipos(); break;
     case 'draftPick': html = renderDraftPick(); break;
     case 'dailyAlreadyPlayed': html = renderDailyAlreadyPlayed(); break;
     case 'torneoBracket': html = renderTournamentBracket(); break;
@@ -953,6 +954,9 @@ function renderMenu() {
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-outline btn-block" onclick="actionGoColeccion()">Colección de personajes</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-outline btn-block" onclick="actionGoColeccionEquipos()">Colección de equipos</button>' +
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-outline btn-block" disabled style="opacity:0.5;cursor:not-allowed;">Supertécnicas 🔒</button>' +
@@ -1015,6 +1019,29 @@ function renderModeSelect() {
 }
 function actionGoVestuario() { G.screen = 'vestuario'; render(); }
 function actionGoColeccion() { G.screen = 'coleccion'; render(); }
+function actionGoColeccionEquipos() { G.screen = 'coleccionEquipos'; render(); }
+
+function renderColeccionEquipos() {
+  var normalItems = RIVAL_TEAM_NAMES.map(function (name) {
+    return '<div class="shop-item"><div><strong>' + escapeHtml(name) + '</strong></div></div>';
+  }).join('');
+  var bossItems = RIVAL_TEAM_BOSSES.map(function (name) {
+    return '<div class="shop-item"><div><strong>' + escapeHtml(name) + '</strong></div><div class="cost"><span class="pill">👑 Jefe</span></div></div>';
+  }).join('');
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<h2 class="panel-title">Colección de equipos</h2>' +
+        '<p class="dim small">Todos los equipos rivales que pueden aparecer en el juego.</p>' +
+      '</div>' +
+      '<div class="panel"><h3 style="margin-bottom:8px">Equipos normales (' + RIVAL_TEAM_NAMES.length + ')</h3></div>' +
+      normalItems +
+      '<div class="panel"><h3 style="margin-bottom:8px">Equipos de jefe (' + RIVAL_TEAM_BOSSES.length + ')</h3></div>' +
+      bossItems +
+      '<button class="btn btn-block mt" onclick="actionBackToMenu()">Volver</button>' +
+    '</div>'
+  );
+}
 
 function renderColeccion() {
   var meta = G.meta;
