@@ -300,10 +300,12 @@ function generateRecruitOptions() {
 
 function generateDraftOptions() {
   var squad = G.pendingDraftSquad;
+  var squadIds = squad.map(function (p) { return p.id; });
   var unlocked = getUnlockedIds();
   var alreadyHasPortero = squad.some(function (p) { return p.posicion === 'Portero'; });
   var defensaCount = squad.filter(function (p) { return p.posicion === 'Defensa'; }).length;
   var pool = ROSTER.filter(function (p) {
+    if (squadIds.indexOf(p.id) !== -1) return false;
     if (p.locked && unlocked.indexOf(p.id) === -1) return false;
     if (alreadyHasPortero && p.posicion === 'Portero') return false;
     if (defensaCount >= 2 && p.posicion === 'Defensa') return false;
