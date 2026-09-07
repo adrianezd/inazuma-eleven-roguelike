@@ -357,7 +357,9 @@ var G = {
   pendingCaptainOffers: null,
   pendingRecruits: null,
   pendingTraining: null,
-  pendingHardMode: false
+  pendingHardMode: false,
+  vestuarioFilter: { tipo: null, posicion: null },
+  coleccionFilter: { tipo: null, posicion: null }
 };
 
 function newRun(hardMode) {
@@ -477,9 +479,17 @@ function actionGoColeccion() { G.screen = 'coleccion'; render(); }
 
 function renderColeccion() {
   var meta = G.meta;
+  var filter = G.coleccionFilter || { tipo: null, posicion: null };
   var isUnlocked = function (c) { return !c.locked || meta.unlocked.indexOf(c.id) !== -1; };
   var unlockedCount = ROSTER.filter(isUnlocked).length;
-  var items = ROSTER.map(function (c) {
+
+  var filtered = ROSTER.filter(function (c) {
+    if (filter.tipo && c.tipo !== filter.tipo) return false;
+    if (filter.posicion && c.posicion !== filter.posicion) return false;
+    return true;
+  });
+
+  var items = filtered.map(function (c) {
     var unlocked = isUnlocked(c);
     return (
       '<div class="shop-item" style="' + (unlocked ? '' : 'opacity:.55;') + '">' +
@@ -491,16 +501,30 @@ function renderColeccion() {
       '</div>'
     );
   }).join('');
+
+  var filterBtns = '<div class="btn-row">' +
+    (filter.tipo ? '<button class="btn btn-outline" onclick="coleccionFilterChange(\'tipo\', null)">Tipo: ' + filter.tipo + ' ✕</button>' : TYPES.map(function (t) { return '<button class="btn" onclick="coleccionFilterChange(\'tipo\', \'' + t + '\')">' + t + '</button>'; }).join('')) +
+    '</div><div class="btn-row">' +
+    (filter.posicion ? '<button class="btn btn-outline" onclick="coleccionFilterChange(\'posicion\', null)">Pos: ' + filter.posicion + ' ✕</button>' : POSITIONS.map(function (p) { return '<button class="btn" onclick="coleccionFilterChange(\'posicion\', \'' + p + '\')">' + p + '</button>'; }).join('')) +
+    '</div>';
+
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
         '<h2 class="panel-title">Colección de personajes</h2>' +
-        '<p class="dim small">' + unlockedCount + ' de ' + ROSTER.length + ' personajes desbloqueados hasta ahora.</p>' +
+        '<p class="dim small">' + unlockedCount + ' de ' + ROSTER.length + ' desbloqueados. Mostrando ' + filtered.length + '.</p>' +
+        filterBtns +
       '</div>' +
       items +
       '<button class="btn btn-block mt" onclick="actionBackToMenu()">Volver</button>' +
     '</div>'
   );
+}
+
+function coleccionFilterChange(filterType, value) {
+  G.coleccionFilter = G.coleccionFilter || { tipo: null, posicion: null };
+  G.coleccionFilter[filterType] = value;
+  render();
 }
 function actionBackToMenu() { G.screen = 'menu'; render(); }
 
@@ -550,7 +574,7 @@ function playerCardHtml(p, onclickAttr, selected, disabled) {
 }
 
 function statBarsHtml(p) {
-  var stats = [['Tiro', p.tiro], ['Pase', p.pase], ['Defensa', p.defensa], ['Especial', p.especial]];
+  var stats = [['Tiro', p.tiro], ['Regate', p.pase], ['Defensa', p.defensa], ['Especial', p.especial]];
   return '<div class="stat-bars">' + stats.map(function (s) {
     return '<span class="stat-label">' + s[0] + '</span>' +
       '<span class="stat-bar-track"><span class="stat-bar-fill" style="width:' + clamp(s[1], 0, 100) + '%"></span></span>' +
@@ -854,6 +878,11 @@ function resolveEventoNode() {
     return { type: 'fichaje', text: '¡' + escapeHtml(secretPlayer.nombre) + ' se une a tu plantilla! Un fichaje secreto muy especial.' };
   }
   if (roll === 10) {
+    var anyFatigued = squad.some(function (p) { return p.fatigado; });
+    if (!anyFatigued) {
+      // Si nadie está fatigado, el hospital no aparece: cae a otro evento.
+      return resolveEventoNode();
+    }
     squad.forEach(function (p) { p.fatigado = false; });
     return { type: 'bonus', text: 'Visitáis el hospital del Raimon. Todo el equipo se cura de la fatiga.' };
   }
@@ -1259,17 +1288,18 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
   else if (action === 'regate') { atkStat = attacker.pase; chance = 30 + (atkStat - defender.defensa) * 0.5; }
   else if (isPlayerAttacking) {
     // Tu Especial es un gol casi garantizado: base muy alta y el estatus
-    // defensivo del rival solo la penaliza levemente (peso 0.15 en vez de
-    // 0.6), así que ni un portero legendario la baja de ~85%.
+    // defensivo del rival solo la penaliza levemente (peso 0.25 ahora: más
+    // relevancia de tu Especial stat), así que ni un portero legendario la
+    // baja de ~85% con un Especial medio-alto.
     atkStat = attacker.especial;
-    chance = 94 + (atkStat - defender.defensa) * 0.15;
+    chance = 94 + (atkStat - defender.defensa) * 0.25;
   } else {
     // La Especial rival es peligrosa pero NO casi-garantizada como la tuya:
     // si no fuera así, un equipo rival podía marcar en prácticamente todos
     // sus turnos contra un equipo sin portero/defensa reales (reportado:
-    // 7 goles rivales en 7 turnos).
+    // 7 goles rivales en 7 turnos). Ahora con peso 0.45 (subido de 0.35).
     atkStat = attacker.especial;
-    chance = 68 + (atkStat - defender.defensa) * 0.35;
+    chance = 68 + (atkStat - defender.defensa) * 0.45;
   }
 
   chance += adv * (action === 'especial' ? 8 : 10);
@@ -1436,6 +1466,15 @@ function afterMatchWin() {
     // Vencer a un jefe (cualquiera de los 3) quita la fatiga a todo el equipo.
     G.run.squad.forEach(function (p) { p.fatigado = false; });
   }
+  // Tras ganar el partido: 1 o 2 personajes aleatorios suben +5 en un atributo
+  // aleatorio (solo para este partido, no se guarda entre partidas).
+  var howMany = Math.random() < 0.6 ? 1 : 2;
+  var shuffled = G.run.squad.slice().sort(function () { return Math.random() - 0.5; });
+  shuffled.slice(0, howMany).forEach(function (p) {
+    var stats = ['tiro', 'pase', 'defensa', 'especial'];
+    var stat = choice(stats);
+    p[stat] = clamp(p[stat] + 5, 0, 99);
+  });
   G.match = null;
   clearCurrentNode();
   if (wasFinalBoss) {
@@ -1495,8 +1534,16 @@ function renderSummary() {
 
 function renderVestuario() {
   var meta = G.meta;
+  var filter = G.vestuarioFilter || { tipo: null, posicion: null };
   var locked = ROSTER.filter(function (p) { return p.locked && p.cost !== 99999; });
-  var items = locked.map(function (c) {
+
+  var filtered = locked.filter(function (c) {
+    if (filter.tipo && c.tipo !== filter.tipo) return false;
+    if (filter.posicion && c.posicion !== filter.posicion) return false;
+    return true;
+  });
+
+  var items = filtered.map(function (c) {
     var unlocked = meta.unlocked.indexOf(c.id) !== -1;
     var right = unlocked
       ? '<span class="dim">Desbloqueado</span>'
@@ -1512,17 +1559,30 @@ function renderVestuario() {
     );
   }).join('');
 
+  var filterBtns = '<div class="btn-row">' +
+    (filter.tipo ? '<button class="btn btn-outline" onclick="vestuarioFilterChange(\'tipo\', null)">Tipo: ' + filter.tipo + ' ✕</button>' : TYPES.map(function (t) { return '<button class="btn" onclick="vestuarioFilterChange(\'tipo\', \'' + t + '\')">' + t + '</button>'; }).join('')) +
+    '</div><div class="btn-row">' +
+    (filter.posicion ? '<button class="btn btn-outline" onclick="vestuarioFilterChange(\'posicion\', null)">Pos: ' + filter.posicion + ' ✕</button>' : POSITIONS.map(function (p) { return '<button class="btn" onclick="vestuarioFilterChange(\'posicion\', \'' + p + '\')">' + p + '</button>'; }).join('')) +
+    '</div>';
+
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
         '<h2 class="panel-title">Vestuario</h2>' +
         '<p class="currency-display">' + spiritIcon() + ' ' + meta.points + ' Puntos de Espíritu</p>' +
-        '<p class="dim small">Desbloquea jugadores adicionales que podrán aparecer al empezar una nueva partida.</p>' +
+        '<p class="dim small">Mostrando ' + filtered.length + ' de ' + locked.length + ' jugadores desbloqueables.</p>' +
+        filterBtns +
       '</div>' +
       items +
       '<button class="btn btn-block mt" onclick="actionBackToMenu()">Volver</button>' +
     '</div>'
   );
+}
+
+function vestuarioFilterChange(filterType, value) {
+  G.vestuarioFilter = G.vestuarioFilter || { tipo: null, posicion: null };
+  G.vestuarioFilter[filterType] = value;
+  render();
 }
 
 function buyCaptain(playerId) {
