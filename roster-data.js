@@ -600,6 +600,48 @@ var ROSTER = [
     hissatsu: ['Defensa Automática'],
     desc: 'Portero robotizado con reflejos sobrehumanos y una programación impecable.',
     locked: true, cost: 99999
-  }
+  },
+  {
+    id: 'r71', nombre: 'Destra', original: 'Desuta',
+    posicion: 'Delantero', tipo: 'Montaña',
+    tiro: 83, pase: 50, defensa: 30, especial: 85,
+    hissatsu: ['Carga Negativa'],
+    desc: 'Delantero de fuerza bruta, capaz de romper cualquier defensa.',
+    locked: true, cost: 180
+  },
+  {
+    id: 'r72', nombre: 'Sael', original: 'Sael',
+    posicion: 'Delantero', tipo: 'Bosque',
+    tiro: 2, pase: 60, defensa: 34, especial: 72,
+    hissatsu: ['Remate Celestial'],
+    desc: 'Delantero de origen desconocido, con un estilo de juego místico y poderoso.',
+    locked: true, cost: 160
+  },
+  {
+  id: 'r73', nombre: 'Escavan Malice', original: 'Eska Bannel',
+    posicion: 'Delantero', tipo: 'Montaña',
+    tiro: 81, pase: 50, defensa: 30, especial: 80,
+    hissatsu: ['Lluvia Letal'],
+    desc: 'Es tan temperamental que monta en cólera si pierde la ocasión de marcar',
+    locked: true, cost: 170
+  },
+  {
+    id: 'r74', nombre: 'Mystral Callous', original: 'Mistrene Callous',
+    posicion: 'Delantero', tipo: 'Montaña',
+    tiro: 80, pase: 50, defensa: 30, especial: 80,
+    hissatsu: ['Lluvia Letal'],
+    desc: 'Puede parecer una chica, pero, a la hora de jugar, es todo un salvaje.',
+    locked: true, cost: 175
+  },
+  {
+    id: 'r75', nombre: 'Victor Garcia', original: 'Querardo Naval',
+    posicion: 'Defensa', tipo: 'Montaña',
+    tiro: 50, pase: 55, defensa: 78, especial: 80,
+    hissatsu: ['Engaño Torero'],
+    desc: 'Se crió en una finca con toros y sabe torear, pero no le gusta herir a los animales.',
+    locked: true, cost: 145
+  },
+  
+
 
 ];
