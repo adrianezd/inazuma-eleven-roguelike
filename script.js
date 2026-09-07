@@ -614,29 +614,24 @@ function afterTournamentMatchEnd(playerWon) {
     finishRun();
     return;
   }
-  // Tras ganar, 1 entrenamiento y 1 evento especial antes de ver avanzar el
-  // resto del cuadro (ver returnToMap / advanceTournamentPostMatchSequence).
+  // Si esta victoria es la de la Final (queda 1 solo partido en la ronda),
+  // el torneo termina aquí mismo: sin entrenamiento ni nada más después.
+  if (round.length === 1) {
+    completeTournamentRoundAdvance();
+    return;
+  }
+  // Si no era la final: 1 entrenamiento (sin evento especial) antes de ver
+  // avanzar el resto del cuadro (ver returnToMap / advanceTournamentPostMatchSequence).
   t.pendingRoundAdvance = true;
-  t.postMatchStep = null;
   G.pendingTraining = generateTrainingOptions();
   G.screen = 'entrenamiento';
   render();
 }
 
-// Se llama desde returnToMap() dos veces tras un partido de torneo ganado:
-// la primera al terminar el entrenamiento (pasa al evento), la segunda al
-// terminar el evento (ahí sí se completa el avance de ronda del cuadro).
+// Se llama desde returnToMap() al terminar el entrenamiento tras un partido
+// de torneo ganado (que no era la final): completa el avance de ronda.
 function advanceTournamentPostMatchSequence() {
-  var t = G.tournament;
-  if (t.postMatchStep === null) {
-    t.postMatchStep = 'evento';
-    G.pendingEventResult = resolveEventoNode();
-    G.screen = 'evento';
-    render();
-    return;
-  }
-  t.pendingRoundAdvance = false;
-  t.postMatchStep = null;
+  G.tournament.pendingRoundAdvance = false;
   completeTournamentRoundAdvance();
 }
 
