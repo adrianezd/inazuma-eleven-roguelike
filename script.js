@@ -129,8 +129,30 @@ function initials(nombre) {
   return (a + b).toUpperCase();
 }
 
+// Insignia SVG original (líneas geométricas, sin arte oficial) que marca la
+// posición del jugador en una esquina del avatar: portería para Portero,
+// escudo para Defensa, estrella de 4 puntas para Centrocampista y flecha
+// ascendente para Delantero.
+function positionIconSvg(pos) {
+  switch (pos) {
+    case 'Portero':
+      return '<path d="M5 20 V6 H19 V20 M5 12.5 H19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
+    case 'Defensa':
+      return '<path d="M12 3 L19 6 V11 C19 16 16 19.2 12 21 C8 19.2 5 16 5 11 V6 Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>';
+    case 'Centrocampista':
+      return '<path d="M12 2.5 L14.2 9.8 L21.5 12 L14.2 14.2 L12 21.5 L9.8 14.2 L2.5 12 L9.8 9.8 Z" fill="currentColor"/>';
+    case 'Delantero':
+      return '<path d="M12 2.5 L19.5 11 H15 V21.5 H9 V11 H4.5 Z" fill="currentColor"/>';
+    default:
+      return '';
+  }
+}
+
 function avatarHtml(p) {
-  return '<span class="avatar type-bg-' + p.tipo.toLowerCase().replace('ñ', 'n') + '" aria-hidden="true">' + initials(p.nombre) + '</span>';
+  return '<span class="avatar type-bg-' + p.tipo.toLowerCase().replace('ñ', 'n') + '" aria-hidden="true">' +
+    '<span class="avatar-initials">' + initials(p.nombre) + '</span>' +
+    '<span class="avatar-pos-badge"><svg viewBox="0 0 24 24">' + positionIconSvg(p.posicion) + '</svg></span>' +
+    '</span>';
 }
 
 /* ---------------------------------------------------------------------
