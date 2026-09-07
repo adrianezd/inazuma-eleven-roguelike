@@ -63,7 +63,8 @@ var RIVAL_TEAM_NAMES = [
   'Tarjeteros', 'Veteranos Inazuma', 'Instituto Alius',
   'Cala Pirata', 'Sallys', 'Leones del desierto',
   'Academia Universal', 'Instituto Cherrybloom', 'Instituto Plenilunio',
-  'Raimon Inakuni', 'Mary Times', 'Mar de Luna'
+  'Raimon Inakuni', 'Mary Times', 'Mar de Luna', 'Farm', 'Fauxshore',
+  'Los orions', 'Mar de Árboles'
 ];
 
 var RIVAL_TEAM_BOSSES = [
@@ -76,7 +77,7 @@ var RIVAL_TEAM_BOSSES = [
   'Chrono Storm', 'Dragon Link', 'Desesperdidos', 'Dinastía Galáctica',
   'Earth Eleven', 'Eclipse de Orión', 'El Dorado 02', 'El Dorado 03', 
   'Protocolo Omega 2.0', 'Protocolo Omega 3.0', 'Zanark Domain', 'Equipo Zero',
-  'Falam Medius', 'Flota Ixar'
+  'Falam Medius', 'Flota Ixar', 'Guardianes de La Reina'
 
 ];
 
@@ -656,7 +657,61 @@ var ROSTER = [
     desc: 'Se crió en una finca con toros y sabe torear, pero no le gusta herir a los animales.',
     locked: true, cost: 145
   },
-
-
+  {
+    id: 'r76', nombre: 'Bai Long', original: 'Haikyuu',
+    posicion: 'Delantero', tipo: 'Viento',
+    tiro: 85, pase: 60, defensa: 34, especial: 72,
+    hissatsu: ['Rizo de Dragón'],
+    desc: 'Rival de Victor Blade. Se crió en el Santuario',
+    locked: true, cost: 155
+  },
+  {
+    id: 'r77', nombre: 'Tezcat', original: 'Shuu',
+    posicion: 'Delantero', tipo: 'Bosque',
+    tiro: 80, pase: 60, defensa: 34, especial: 72,
+    hissatsu: ['Ceniza Negra'],
+    desc: 'Delantero misterioso con habilidades sobrenaturales.',
+    locked: true, cost: 155
+  },
+  {
+    id: 'r78', nombre: 'Zanark Avalonic', original: 'Zanark Avalonic',
+    posicion: 'Delantero', tipo: 'Montaña',
+    tiro: 86, pase: 60, defensa: 34, especial: 80,
+    hissatsu: ['Golpe Cataclismo'],
+    desc: 'Delantero de origen desconocido, con un estilo de juego imponente y poderoso.',
+    locked: true, cost: 200
+  },
+  {
+    id: 'r79', nombre: 'Malcom Night', original: 'Malcom Night',
+    posicion: 'Defensa', tipo: 'Bosque',
+    tiro: 50, pase: 55, defensa: 80, especial: 75,
+    hissatsu: ['Corte Giratorio'],
+    desc: 'Defensa de gran experiencia, capaz de anticipar cualquier jugada.',
+    locked: true, cost: 120
+  },
+  {
+    id: 'r80', nombre: 'Mask', original: 'Nathan Jones',
+    posicion: 'Portero', tipo: 'Viento',
+    tiro: 20, pase: 50, defensa: 76, especial: 70,
+    hissatsu: ['Cuchilla Asesina'],
+    desc: 'Portero enmascarado con reflejos felinos y gran intuición para detener tiros.',
+    locked: false
+  },
+  {
+    id: 'r81', nombre: 'Wolf', original: 'Troy Moon',
+    posicion: 'Centrocampista', tipo: 'Montaña',
+    tiro: 70, pase: 60, defensa: 60, especial: 70,
+    hissatsu: ['Tiro Fantasma'],
+    desc: 'Defensa que sale cuando hay Luna Llena.',
+    locked: false
+  },
+  {
+    id: 'r82', nombre: 'Talisman', original: 'Johan Tassman',
+    posicion: 'Delantero', tipo: 'Bosque',
+    tiro: 76, pase: 50, defensa: 50, especial: 70,
+    hissatsu: ['Tiro Fantasma'],
+    desc: 'Mediocentro y capitán del Occult.',
+    locked: false
+  },
 
 ];
