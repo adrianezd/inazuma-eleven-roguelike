@@ -582,14 +582,17 @@ function playerCardHtml(p, onclickAttr, selected, disabled) {
 }
 
 function statBarsHtml(p) {
-  var stats = [['Tiro', p.tiro], ['Regate', p.pase], ['Defensa', p.defensa], ['Especial', p.especial]];
+  var stats = [['Tiro', 'tiro', p.tiro], ['Regate', 'pase', p.pase], ['Defensa', 'defensa', p.defensa], ['Especial', 'especial', p.especial]];
+  var boosted = p.boostedStats || [];
   return '<div class="stat-bars">' + stats.map(function (s) {
-    var isMax = s[1] >= 99;
-    var valueColor = isMax ? 'color:#fff;' : '';
-    var barStyle = isMax ? 'background:#fff;' : '';
-    return '<span class="stat-label">' + s[0] + '</span>' +
-      '<span class="stat-bar-track"><span class="stat-bar-fill" style="width:' + clamp(s[1], 0, 100) + '%;' + barStyle + '"></span></span>' +
-      '<span class="stat-value" style="' + valueColor + '">' + s[1] + '</span>';
+    var label = s[0], key = s[1], value = s[2];
+    var isMax = value >= 99;
+    var isBoosted = boosted.indexOf(key) !== -1;
+    var valueColor = isMax ? 'color:#fff;' : (isBoosted ? 'color:#7cfc00;font-weight:bold;' : '');
+    var barStyle = isMax ? 'background:#fff;' : (isBoosted ? 'background:#7cfc00;' : '');
+    return '<span class="stat-label">' + label + '</span>' +
+      '<span class="stat-bar-track"><span class="stat-bar-fill" style="width:' + clamp(value, 0, 100) + '%;' + barStyle + '"></span></span>' +
+      '<span class="stat-value" style="' + valueColor + '">' + value + '</span>';
   }).join('') + '</div>';
 }
 
@@ -1461,6 +1464,11 @@ function finishMatch() {
       var oldVal = p[stat];
       p[stat] = clamp(p[stat] + 5, 0, 99);
       m.bonusesApplied.push({ nombre: p.nombre, stat: stat, oldVal: oldVal, newVal: p[stat] });
+      // Marca la stat como potenciada para que se vea en verde en las
+      // tarjetas del jugador (mapa, vestidor visual, etc.) el resto de la
+      // partida, no solo en el mensaje de esta pantalla.
+      p.boostedStats = (p.boostedStats || []).slice();
+      if (p.boostedStats.indexOf(stat) === -1) p.boostedStats.push(stat);
     });
   } else {
     m.log.push('Derrota. Tu temporada termina aquí.');
