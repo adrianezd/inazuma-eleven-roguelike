@@ -90,7 +90,7 @@ var ROSTER = [
   {
     id: 'r03', nombre: 'Nathan Swift', original: 'Kazemaru Ichirouta',
     posicion: 'Defensa', tipo: 'Viento',
-    tiro: 61, pase: 62, defensa: 70, especial: 58,
+    tiro: 66, pase: 62, defensa: 72, especial: 58,
     hissatsu: ['Defensa Huracán'],
     desc: 'El jugador más veloz del Raimon.',
     locked: true, cost: 75
@@ -98,7 +98,7 @@ var ROSTER = [
   {
     id: 'r04', nombre: 'Jude Sharp', original: 'Kidou Yuuto',
     posicion: 'Centrocampista', tipo: 'Viento',
-    tiro: 64, pase: 78, defensa: 54, especial: 74,
+    tiro: 69, pase: 78, defensa: 54, especial: 74,
     hissatsu: ['Pingüino Emperador III'],
     desc: 'Estratega frío y calculador, el cerebro del equipo.',
     locked: true, cost: 75
@@ -106,7 +106,7 @@ var ROSTER = [
   {
     id: 'r05', nombre: 'Kevin Dragonfly', original: 'Someoka Ryuugo',
     posicion: 'Delantero', tipo: 'Bosque',
-    tiro: 78, pase: 44, defensa: 40, especial: 62,
+    tiro: 75, pase: 44, defensa: 40, especial: 64,
     hissatsu: ['Remate Dragón'],
     desc: 'Delantero fogoso, uno de los fundadores del club.',
     locked: false
@@ -114,7 +114,7 @@ var ROSTER = [
   {
     id: 'r06', nombre: 'Jack Wallside', original: 'Kabeyama Heigorou',
     posicion: 'Defensa', tipo: 'Montaña',
-    tiro: 36, pase: 46, defensa: 82, especial: 52,
+    tiro: 36, pase: 46, defensa: 79, especial: 65,
     hissatsu: ['El Muro'],
     desc: 'Un muro humano casi imposible de traspasar.',
     locked: true, cost: 99
@@ -122,7 +122,7 @@ var ROSTER = [
   {
     id: 'r07', nombre: 'Caleb Stonewall', original: 'Fudou Akio',
     posicion: 'Centrocampista', tipo: 'Fuego',
-    tiro: 64, pase: 66, defensa: 58, especial: 68,
+    tiro: 64, pase: 66, defensa: 62, especial: 68,
     hissatsu: ['Pinguino Emperador III'],
     desc: 'Provocador y letal, juega sin reglas.',
     locked: true, cost: 150
@@ -612,7 +612,7 @@ var ROSTER = [
   {
     id: 'r72', nombre: 'Sael', original: 'Sael',
     posicion: 'Delantero', tipo: 'Bosque',
-    tiro: 2, pase: 60, defensa: 34, especial: 72,
+    tiro: 82, pase: 60, defensa: 34, especial: 72,
     hissatsu: ['Remate Celestial'],
     desc: 'Delantero de origen desconocido, con un estilo de juego místico y poderoso.',
     locked: true, cost: 160
@@ -641,7 +641,7 @@ var ROSTER = [
     desc: 'Se crió en una finca con toros y sabe torear, pero no le gusta herir a los animales.',
     locked: true, cost: 145
   },
-  
+
 
 
 ];

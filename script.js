@@ -423,6 +423,14 @@ function renderMenu() {
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-outline btn-block" onclick="actionGoColeccion()">Colección de personajes</button>' +
         '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-outline btn-block" disabled style="opacity:0.5;cursor:not-allowed;">Supertécnicas 🔒</button>' +
+        '</div>' +
+        '<p class="dim small center-text">Proximamente</p>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-outline btn-block" disabled style="opacity:0.5;cursor:not-allowed;">Multijugador 🔒</button>' +
+        '</div>' +
+        '<p class="dim small center-text">Proximamente</p>' +
       '</div>' +
       '<div class="panel">' +
         '<h2 class="panel-title">La rueda elemental</h2>' +
@@ -576,9 +584,12 @@ function playerCardHtml(p, onclickAttr, selected, disabled) {
 function statBarsHtml(p) {
   var stats = [['Tiro', p.tiro], ['Regate', p.pase], ['Defensa', p.defensa], ['Especial', p.especial]];
   return '<div class="stat-bars">' + stats.map(function (s) {
+    var isMax = s[1] >= 99;
+    var valueColor = isMax ? 'color:#fff;' : '';
+    var barStyle = isMax ? 'background:#fff;' : '';
     return '<span class="stat-label">' + s[0] + '</span>' +
-      '<span class="stat-bar-track"><span class="stat-bar-fill" style="width:' + clamp(s[1], 0, 100) + '%"></span></span>' +
-      '<span class="stat-value">' + s[1] + '</span>';
+      '<span class="stat-bar-track"><span class="stat-bar-fill" style="width:' + clamp(s[1], 0, 100) + '%;' + barStyle + '"></span></span>' +
+      '<span class="stat-value" style="' + valueColor + '">' + s[1] + '</span>';
   }).join('') + '</div>';
 }
 
@@ -1449,6 +1460,15 @@ function renderMatchEnd() {
   var html = '<div class="panel center-text">';
   if (won) {
     html += '<h3>Victoria ' + m.playerScore + ' - ' + m.oppScore + '</h3>';
+    if (m.bonusesApplied && m.bonusesApplied.length > 0) {
+      html += '<div style="background:#1a3a1a;border-radius:8px;padding:8px;margin:8px 0;text-align:left;">';
+      html += '<p style="margin:0 0 6px;color:#7cfc00;font-weight:bold;text-align:center;">Bonificación post-victoria:</p>';
+      m.bonusesApplied.forEach(function (b) {
+        var statLabel = b.stat === 'pase' ? 'Regate' : (b.stat.charAt(0).toUpperCase() + b.stat.slice(1));
+        html += '<p style="margin:4px 0;color:#7cfc00;font-size:0.9em;">' + escapeHtml(b.nombre) + ': ' + statLabel + ' +5 (' + b.oldVal + '→' + b.newVal + ')</p>';
+      });
+      html += '</div>';
+    }
     html += '<p class="dim">Tu equipo avanza en el mapa.</p>';
     html += '<button class="btn btn-primary btn-block" onclick="afterMatchWin()">Continuar</button>';
   } else {
@@ -1470,10 +1490,13 @@ function afterMatchWin() {
   // aleatorio (solo para este partido, no se guarda entre partidas).
   var howMany = Math.random() < 0.6 ? 1 : 2;
   var shuffled = G.run.squad.slice().sort(function () { return Math.random() - 0.5; });
+  G.match.bonusesApplied = [];
   shuffled.slice(0, howMany).forEach(function (p) {
     var stats = ['tiro', 'pase', 'defensa', 'especial'];
     var stat = choice(stats);
+    var oldVal = p[stat];
     p[stat] = clamp(p[stat] + 5, 0, 99);
+    G.match.bonusesApplied.push({ nombre: p.nombre, stat: stat, oldVal: oldVal, newVal: p[stat] });
   });
   G.match = null;
   clearCurrentNode();
