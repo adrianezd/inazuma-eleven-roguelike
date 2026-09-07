@@ -51,18 +51,28 @@ var TYPE_MARK = { Fuego: 'F', Bosque: 'B', Viento: 'V', 'Montaña': 'M' };
 // para nombrar a los equipos generados proceduralmente que enfrenta el jugador;
 // esos equipos NO usan nombres de personajes reales para no atribuir
 // incorrectamente datos de jugadores concretos a plantillas ficticias).
+// NOTA: los nombres de esta lista y de RIVAL_TEAM_BOSSES se verificaron con
+// cuidado hasta "Instituto Aliea" (ver README). Los añadidos a partir de ahí
+// (marcados abajo) son de menor confianza -- se recuerdan de la franquicia
+// pero no se han verificado con la misma rigurosidad que el resto; revísalos
+// si te importa la precisión exacta del doblaje español.
 var RIVAL_TEAM_NAMES = [
   'Royal Academy', 'Zeus', 'Occult', 'Instituto Osaka',
   'Alpino', 'Unicorn', 'Big Waves',
   'Brain', 'Wild', 'Shuriken', 'Kirkwwood', 'Umbrella',
-  'Tarjeteros', 'Occult', 'Veteranos Inazuma'
+  'Tarjeteros', 'Veteranos Inazuma', 'Instituto Alius',
+  'Cala Pirata', 'Sallys', 'Leones del desierto',
+  'Academia Universal', 'Instituto Cherrybloom', 'Instituto Plenilunio',
+  'Raimon Inakuni'
 ];
 
 var RIVAL_TEAM_BOSSES = [
   'Royal Academy', 'Zeus', 'Academia Ogre',
   'Instituto Alius','Emperadores Oscuros',
   'Genesis', 'Prominence', 'Polvo de Diamante', 'Tormenta de Géminis', 'Dragones de Fuego',
-  'Pequeños Gigantes', 'Épsilon', 'Los Emperadores', 'Os Reis', 'Neo Japón'
+  'Pequeños Gigantes', 'Épsilon', 'Los Emperadores', 'Os Reis', 'Neo Japón',
+  'Protocolo Omega', 'Caos', 'El Dorado', 'Resistencia Japón', 'Resistencia Japón GO',
+  'Gir', 'Gar', 'Ragnah'
 ];
 
 

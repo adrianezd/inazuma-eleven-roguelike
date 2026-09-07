@@ -317,9 +317,36 @@ function actionStartDraftMode(mode) {
   G.pendingDraftMode = mode;
   G.pendingDraftSquad = [];
   G.pendingDraftOptions = generateDraftOptions();
-  if (mode === 'torneo') G.pendingTournamentBracket = generateTournamentBracket();
   G.screen = 'draftPick';
   render();
+}
+
+function actionStartTournament() { G.screen = 'torneoSizeSelect'; render(); }
+
+function actionChooseTournamentSize(size) {
+  G.pendingTournamentBracket = generateTournamentBracket(size);
+  actionStartDraftMode('torneo');
+}
+
+function renderTorneoSizeSelect() {
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<h2 class="panel-title">¿Torneo de cuántos?</h2>' +
+        '<p class="dim small">Bracket de eliminación directa: tú y el resto de rivales, la mayoría de nivel jefe.</p>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-primary btn-block" onclick="actionChooseTournamentSize(8)">8 equipos</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-primary btn-block" onclick="actionChooseTournamentSize(16)">16 equipos</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-primary btn-block" onclick="actionChooseTournamentSize(32)">32 equipos</button>' +
+        '</div>' +
+        '<button class="btn btn-outline btn-block mt" onclick="actionBackToMenu()">Volver</button>' +
+      '</div>' +
+    '</div>'
+  );
 }
 
 function pickDraftPlayer(instanceId) {
@@ -341,8 +368,8 @@ function finishDraft() {
   if (mode === 'torneo') {
     var bracket = G.pendingTournamentBracket;
     var round1 = [];
-    for (var i = 0; i < 8; i += 2) round1.push({ a: bracket.slots[i], b: bracket.slots[i + 1], winner: null });
-    G.tournament = { rounds: [round1] };
+    for (var i = 0; i < bracket.slots.length; i += 2) round1.push({ a: bracket.slots[i], b: bracket.slots[i + 1], winner: null });
+    G.tournament = { rounds: [round1], size: bracket.size };
     G.pendingDraftMode = null;
     G.pendingDraftSquad = [];
     G.screen = 'torneoBracket';
@@ -515,22 +542,29 @@ function startSurvivalMatch(isBoss) {
    se resuelven solos para que se vea el cuadro completo avanzar.
    --------------------------------------------------------------------- */
 
-function generateTournamentBracket() {
-  var tiers = ['jefe', 'jefe', 'jefe', 'jefe', 'jefe', 'normal', 'normal'];
-  tiers = tiers.slice().sort(function () { return Math.random() - 0.5; });
+function generateTournamentBracket(size) {
+  var totalCpu = size - 1; // el jugador ocupa 1 plaza del cuadro
+  // Reparto proporcional al caso de referencia de 8 (5 jefes, 2 normales):
+  // ~70% de nivel jefe, el resto normal.
+  var jefeCount = Math.round(totalCpu * 0.7);
+  var normalCount = totalCpu - jefeCount;
+  var tiers = [];
+  for (var t1 = 0; t1 < jefeCount; t1++) tiers.push('jefe');
+  for (var t2 = 0; t2 < normalCount; t2++) tiers.push('normal');
+  tiers = tiers.sort(function () { return Math.random() - 0.5; });
   var rivals = tiers.map(function (tier) {
     return { isPlayer: false, name: randomTeamName(tier === 'jefe'), tier: tier };
   });
-  var slots = new Array(8);
-  var playerSlot = rand(0, 7);
+  var slots = new Array(size);
+  var playerSlot = rand(0, size - 1);
   slots[playerSlot] = { isPlayer: true };
   var ri = 0;
-  for (var i = 0; i < 8; i++) {
+  for (var i = 0; i < size; i++) {
     if (i === playerSlot) continue;
     slots[i] = rivals[ri];
     ri++;
   }
-  return { slots: slots };
+  return { slots: slots, size: size };
 }
 
 // Resuelve un partido entre dos equipos CPU (no interviene el jugador):
@@ -547,9 +581,12 @@ function startTournamentMatch() {
   var match = round.filter(function (m) { return (m.a.isPlayer || m.b.isPlayer) && m.winner === null; })[0];
   var opp = match.a.isPlayer ? match.b : match.a;
   var isBoss = opp.tier === 'jefe';
-  var roundIndex = t.rounds.length - 1; // 0 = Cuartos, 1 = Semis, 2 = Final
-  var isFinalBoss = roundIndex === 2;
-  var normDepth = roundIndex * 5; // 0, 5, 10 -- cada ronda pesa más que la anterior
+  var roundIndex = t.rounds.length - 1; // 0 = primera ronda ... última = Final
+  var totalRounds = Math.log2(t.size);
+  var isFinalBoss = roundIndex === totalRounds - 1;
+  // 0..10 sin importar si el torneo es de 8, 16 o 32: la última ronda
+  // siempre llega al tope, escalando proporcionalmente al nº de rondas.
+  var normDepth = totalRounds > 1 ? (roundIndex / (totalRounds - 1)) * 10 : 10;
   var oppSquad = generateOpponentSquad(normDepth, isBoss, isFinalBoss);
   var oppName = (isBoss ? 'Jefe: ' : '') + opp.name;
   G.match = {
@@ -577,6 +614,35 @@ function afterTournamentMatchEnd(playerWon) {
     finishRun();
     return;
   }
+  // Tras ganar, 1 entrenamiento y 1 evento especial antes de ver avanzar el
+  // resto del cuadro (ver returnToMap / advanceTournamentPostMatchSequence).
+  t.pendingRoundAdvance = true;
+  t.postMatchStep = null;
+  G.pendingTraining = generateTrainingOptions();
+  G.screen = 'entrenamiento';
+  render();
+}
+
+// Se llama desde returnToMap() dos veces tras un partido de torneo ganado:
+// la primera al terminar el entrenamiento (pasa al evento), la segunda al
+// terminar el evento (ahí sí se completa el avance de ronda del cuadro).
+function advanceTournamentPostMatchSequence() {
+  var t = G.tournament;
+  if (t.postMatchStep === null) {
+    t.postMatchStep = 'evento';
+    G.pendingEventResult = resolveEventoNode();
+    G.screen = 'evento';
+    render();
+    return;
+  }
+  t.pendingRoundAdvance = false;
+  t.postMatchStep = null;
+  completeTournamentRoundAdvance();
+}
+
+function completeTournamentRoundAdvance() {
+  var t = G.tournament;
+  var round = t.rounds[t.rounds.length - 1];
   // Resolver el resto de partidos de esta ronda que no jugó el jugador.
   round.forEach(function (m) {
     if (m.winner === null) m.winner = simulateCpuMatch(m.a, m.b);
@@ -596,24 +662,50 @@ function afterTournamentMatchEnd(playerWon) {
   render();
 }
 
+function roundNameForIndex(idx, totalRounds) {
+  var fromEnd = totalRounds - 1 - idx;
+  if (fromEnd === 0) return 'Final';
+  if (fromEnd === 1) return 'Semifinal';
+  if (fromEnd === 2) return 'Cuartos de Final';
+  if (fromEnd === 3) return 'Octavos de Final';
+  if (fromEnd === 4) return 'Dieciseisavos de Final';
+  return 'Ronda ' + (idx + 1);
+}
+
+function bracketMatchHtml(m) {
+  var aLabel = m.a.isPlayer ? 'Tú' : escapeHtml(m.a.name) + (m.a.tier === 'jefe' ? ' 👑' : '');
+  var bLabel = m.b.isPlayer ? 'Tú' : escapeHtml(m.b.name) + (m.b.tier === 'jefe' ? ' 👑' : '');
+  var isPlayerMatch = m.a.isPlayer || m.b.isPlayer;
+  var resultText = m.winner
+    ? ('Gana: ' + (m.winner.isPlayer ? 'Tú' : escapeHtml(m.winner.name)))
+    : (isPlayerMatch ? 'Tu turno' : 'Pendiente');
+  return '<div class="bracket-match' + (isPlayerMatch && !m.winner ? ' bracket-match-active' : '') + (m.winner ? ' bracket-match-done' : '') + '">' +
+      '<span class="bracket-side' + (m.winner === m.a ? ' bracket-winner-side' : '') + '">' + aLabel + '</span>' +
+      '<span class="bracket-vs">vs</span>' +
+      '<span class="bracket-side' + (m.winner === m.b ? ' bracket-winner-side' : '') + '">' + bLabel + '</span>' +
+      '<div class="dim small">' + resultText + '</div>' +
+    '</div>';
+}
+
 function renderTournamentBracket() {
   var t = G.tournament;
-  var roundNames = ['Cuartos de Final', 'Semifinal', 'Final'];
-  var html = '<div class="screen"><div class="panel"><h2 class="panel-title mb0">Torneo</h2><p class="dim small">Bracket de 8: tú y 7 rivales (5 de nivel jefe 👑, 2 normales).</p></div>';
+  var totalRounds = Math.log2(t.size);
+  var html = '<div class="screen"><div class="panel center-text"><h2 class="panel-title mb0">🏆 Torneo de ' + t.size + '</h2><p class="dim small">Tú y ' + (t.size - 1) + ' rivales, eliminación directa.</p></div>';
   t.rounds.forEach(function (round, ri) {
-    html += '<div class="panel"><h3 style="margin-bottom:8px">' + roundNames[ri] + '</h3>';
-    round.forEach(function (m) {
-      var aLabel = m.a.isPlayer ? 'Tú' : escapeHtml(m.a.name) + (m.a.tier === 'jefe' ? ' 👑' : '');
-      var bLabel = m.b.isPlayer ? 'Tú' : escapeHtml(m.b.name) + (m.b.tier === 'jefe' ? ' 👑' : '');
-      var isPlayerMatch = m.a.isPlayer || m.b.isPlayer;
-      var resultText = m.winner
-        ? ('Gana: ' + (m.winner.isPlayer ? 'Tú' : escapeHtml(m.winner.name)))
-        : (isPlayerMatch ? 'Tu turno' : 'Pendiente');
-      html += '<div class="bracket-match' + (isPlayerMatch && !m.winner ? ' bracket-match-active' : '') + '">' +
-          '<span>' + aLabel + '</span><span class="bracket-vs">vs</span><span>' + bLabel + '</span>' +
-          '<div class="dim small">' + resultText + '</div>' +
-        '</div>';
-    });
+    var isFinal = round.length === 1;
+    html += '<div class="panel"><h3 class="bracket-round-title">' + roundNameForIndex(ri, totalRounds) + '</h3>';
+    if (isFinal) {
+      html += bracketMatchHtml(round[0]);
+      if (round[0].winner) {
+        html += '<p class="bracket-champion">🏆 Campeón: ' + (round[0].winner.isPlayer ? 'Tú' : escapeHtml(round[0].winner.name)) + '</p>';
+      }
+    } else {
+      html += '<div class="bracket-round-grid">';
+      for (var i = 0; i < round.length; i += 2) {
+        html += '<div class="bracket-group">' + bracketMatchHtml(round[i]) + bracketMatchHtml(round[i + 1]) + '</div>';
+      }
+      html += '</div>';
+    }
     html += '</div>';
   });
   var lastRound = t.rounds[t.rounds.length - 1];
@@ -830,6 +922,7 @@ function render() {
     case 'draftPick': html = renderDraftPick(); break;
     case 'dailyAlreadyPlayed': html = renderDailyAlreadyPlayed(); break;
     case 'torneoBracket': html = renderTournamentBracket(); break;
+    case 'torneoSizeSelect': html = renderTorneoSizeSelect(); break;
     default: html = renderMenu();
   }
   appEl.innerHTML = html;
@@ -852,7 +945,7 @@ function renderMenu() {
           '<button class="btn btn-primary btn-block" onclick="actionStartRun()">Jugar</button>' +
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionStartDraftMode(\'torneo\')">Modo Torneo</button>' +
+          '<button class="btn btn-block" onclick="actionStartTournament()">Modo Torneo</button>' +
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-block" onclick="actionStartDraftMode(\'supervivencia\')">Modo Supervivencia</button>' +
@@ -1178,9 +1271,13 @@ function clearCurrentNode() {
 }
 
 function returnToMap() {
-  // Supervivencia y Diario no usan mapa: cada etapa (entrenamiento, evento)
-  // encadena directamente con la siguiente en vez de volver a un mapa.
+  // Supervivencia, Diario y Torneo no usan mapa: cada etapa (entrenamiento,
+  // evento) encadena directamente con la siguiente en vez de volver a un mapa.
   if (G.run.mode === 'supervivencia') { advanceSurvivalStage(); return; }
+  if (G.run.mode === 'torneo' && G.tournament && G.tournament.pendingRoundAdvance) {
+    advanceTournamentPostMatchSequence();
+    return;
+  }
   if (G.run.mode === 'diario') {
     if (G.run.dailyStep >= DAILY_SEQUENCE.length) {
       G.run.victory = true;

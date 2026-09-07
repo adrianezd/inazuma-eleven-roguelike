@@ -552,6 +552,29 @@ a { color: var(--accent); }
 }
 
 /* ===== Bracket de Torneo ===== */
+.bracket-round-title {
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.9rem;
+  color: var(--accent-2);
+  margin-bottom: 10px;
+}
+.bracket-round-grid { display: flex; flex-direction: column; gap: 16px; }
+.bracket-group {
+  position: relative;
+  padding-left: 16px;
+}
+.bracket-group::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 20px; bottom: 20px;
+  width: 12px;
+  border: 2px solid var(--accent-2);
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  opacity: 0.6;
+}
 .bracket-match {
   display: flex;
   align-items: center;
@@ -562,7 +585,19 @@ a { color: var(--accent); }
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   margin-bottom: 8px;
+  margin-left: 4px;
 }
+.bracket-group .bracket-match:last-child { margin-bottom: 0; }
 .bracket-match-active { border-color: var(--accent-2); border-width: 2px; }
+.bracket-match-done { opacity: 0.75; }
 .bracket-vs { color: var(--text-dim); font-size: 0.8rem; }
 .bracket-match .dim { flex-basis: 100%; }
+.bracket-side { transition: color 0.15s ease; }
+.bracket-winner-side { color: var(--success); font-weight: 700; }
+.bracket-champion {
+  text-align: center;
+  color: var(--accent-2);
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin: 10px 0 0;
+}
