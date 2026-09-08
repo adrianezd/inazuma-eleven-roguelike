@@ -236,15 +236,7 @@ a { color: var(--accent); }
   line-height: 1;
 }
 .type-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px; height: 16px;
-  border-radius: 50%;
-  font-size: 0.65rem;
-  font-weight: 700;
-  background: currentColor;
-  color: var(--bg);
+  display: none;
 }
 .type-fuego   { background: rgba(255,107,69,0.14); color: var(--fuego); border-color: var(--fuego); }
 .type-bosque  { background: rgba(76,175,80,0.16);  color: var(--bosque); border-color: var(--bosque); }
@@ -607,4 +599,69 @@ a { color: var(--accent); }
   font-weight: 700;
   font-size: 1.1rem;
   margin: 10px 0 0;
+}
+
+/* ===== Victory & Defeat Animations ===== */
+.victory-animation {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 120px;
+  z-index: 9999;
+  animation: victoryBounce 1.5s ease-out forwards;
+  filter: drop-shadow(0 0 20px #FFD700);
+}
+@keyframes victoryBounce {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+  50% { transform: translate(-50%, -50%) scale(1.2); }
+  100% { transform: translate(-50%, -150%) scale(1); opacity: 0; }
+}
+
+.defeat-animation {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 100px;
+  z-index: 9999;
+  animation: defeatShake 1s ease-out forwards;
+  filter: drop-shadow(0 0 15px #FF4444);
+}
+@keyframes defeatShake {
+  0%, 100% { transform: translate(-50%, -50%) rotate(0deg); opacity: 1; }
+  25% { transform: translate(-45%, -50%) rotate(-5deg); }
+  50% { transform: translate(-55%, -50%) rotate(5deg); }
+  75% { transform: translate(-48%, -50%) rotate(-3deg); }
+}
+
+.tournament-victory {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 9999;
+  animation: trophySpinFloat 2s ease-out forwards;
+}
+.trophy-icon { font-size: 150px; animation: trophySpin 1.2s ease-in-out infinite; }
+.victory-text {
+  font-size: 48px;
+  font-weight: bold;
+  color: #FFD700;
+  margin-top: 20px;
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+  animation: textGlow 1s ease-in-out infinite;
+}
+@keyframes trophySpinFloat {
+  0% { transform: translate(-50%, -50%) scale(0) rotate(-180deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 0; }
+}
+@keyframes trophySpin {
+  0%, 100% { transform: rotateZ(0deg); }
+  50% { transform: rotateZ(10deg); }
+}
+@keyframes textGlow {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
 }

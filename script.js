@@ -2154,8 +2154,25 @@ function finishRun() {
   if (G.run.matchesWon > meta.bestWins) meta.bestWins = G.run.matchesWon;
   saveMeta(meta);
   G.meta = meta;
+  showEndAnimation(G.run.victory, G.run.mode);
   G.screen = 'summary';
   render();
+}
+
+function showEndAnimation(victory, mode) {
+  var div = document.createElement('div');
+  if (mode === 'torneo' && victory) {
+    div.className = 'tournament-victory';
+    div.innerHTML = '<div class="trophy-icon">🏆</div><div class="victory-text">¡CAMPEÓN!</div>';
+  } else if (victory) {
+    div.className = 'victory-animation';
+    div.textContent = '✨';
+  } else {
+    div.className = 'defeat-animation';
+    div.textContent = '💔';
+  }
+  document.body.appendChild(div);
+  setTimeout(function() { div.remove(); }, mode === 'torneo' ? 2500 : 1500);
 }
 
 /* ---------------------------------------------------------------------
