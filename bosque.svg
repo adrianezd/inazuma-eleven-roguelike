@@ -1,12 +1,18 @@
 <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Bosque: Trébol/Hoja de 4 pétalos -->
   <defs>
     <linearGradient id="treeFill" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#7CB342;stop-opacity:1" />
       <stop offset="100%" style="stop-color:#2E7D32;stop-opacity:1" />
     </linearGradient>
   </defs>
-  <rect x="45" y="65" width="10" height="20" fill="#6D4C41"/>
-  <path d="M 50 15 L 35 40 L 45 40 L 30 60 L 55 60 L 40 80 L 60 80 L 35 95 L 65 95 L 50 75 L 70 75 L 50 50 L 70 50 Z" fill="url(#treeFill)" stroke="#1B5E20" stroke-width="1.5"/>
-  <circle cx="42" cy="45" r="2" fill="#81C784" opacity="0.7"/>
-  <circle cx="60" cy="65" r="2" fill="#81C784" opacity="0.7"/>
+  <!-- Tallo central -->
+  <rect x="48" y="60" width="4" height="25" fill="#558B2F"/>
+  <!-- 4 hojas -->
+  <ellipse cx="50" cy="25" rx="12" ry="15" fill="url(#treeFill)" stroke="#1B5E20" stroke-width="1.5"/>
+  <ellipse cx="75" cy="50" rx="15" ry="12" fill="url(#treeFill)" stroke="#1B5E20" stroke-width="1.5" transform="rotate(90 75 50)"/>
+  <ellipse cx="25" cy="50" rx="15" ry="12" fill="url(#treeFill)" stroke="#1B5E20" stroke-width="1.5" transform="rotate(-90 25 50)"/>
+  <ellipse cx="50" cy="75" rx="12" ry="15" fill="url(#treeFill)" stroke="#1B5E20" stroke-width="1.5" transform="rotate(180 50 75)"/>
+  <!-- Centro -->
+  <circle cx="50" cy="50" r="8" fill="#9CCC65"/>
 </svg>
