@@ -1185,6 +1185,33 @@ function nodeIconSvg(type) {
   }
 }
 
+function setSquadView(view) {
+  G.squadView = view;
+  render();
+}
+
+// Vista de campo: coloca a la plantilla por posición real, delanteros
+// arriba (ataque) y portero abajo (su propia portería), como una alineación.
+// Solo se muestran las filas que tienen algún jugador (con MAX_SQUAD=4 casi
+// siempre faltará alguna posición).
+function renderSquadPitch(squad) {
+  var order = ['Delantero', 'Centrocampista', 'Defensa', 'Portero'];
+  var rowsHtml = order.map(function (pos) {
+    var players = squad.filter(function (p) { return p.posicion === pos; });
+    if (!players.length) return '';
+    var itemsHtml = players.map(function (p) {
+      return (
+        '<div class="pitch-player' + (p.fatigado ? ' fatigued' : '') + '">' +
+          avatarHtml(p) +
+          '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span>' +
+        '</div>'
+      );
+    }).join('');
+    return '<div class="pitch-row">' + itemsHtml + '</div>';
+  }).join('');
+  return '<div class="pitch">' + rowsHtml + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div>';
+}
+
 function renderMap() {
   var run = G.run;
   var avail = availableNodeIds();
@@ -1218,8 +1245,16 @@ function renderMap() {
         '<p class="dim small">Nodos superados: ' + run.clearedCount + ' · Partidos ganados: ' + run.matchesWon + (run.hardMode ? ' · <strong style="color:var(--danger)">Modo Difícil</strong>' : '') + '</p>' +
       '</div>' +
       '<div class="panel">' +
-        '<h3 style="margin-bottom:8px">Tu plantilla</h3>' +
-        '<div class="card-grid">' + run.squad.map(function (p) { return playerCardHtml(p, '', false, true); }).join('') + '</div>' +
+        '<div class="panel-title-row">' +
+          '<h3>Tu plantilla</h3>' +
+          '<div class="view-toggle">' +
+            '<button class="btn-tiny' + (G.squadView !== 'lista' ? ' active' : '') + '" onclick="setSquadView(\'campo\')">Campo</button>' +
+            '<button class="btn-tiny' + (G.squadView === 'lista' ? ' active' : '') + '" onclick="setSquadView(\'lista\')">Lista</button>' +
+          '</div>' +
+        '</div>' +
+        (G.squadView === 'lista'
+          ? '<div class="card-grid">' + run.squad.map(function (p) { return playerCardHtml(p, '', false, true); }).join('') + '</div>'
+          : renderSquadPitch(run.squad)) +
       '</div>' +
       '<div class="map-wrap">' +
         '<div class="map-rows" id="mapRows">' + rowsHtml + '<svg class="map-svg" id="mapSvg"></svg></div>' +
@@ -1696,6 +1731,12 @@ function hasDefensiveSpecialist(squad, action) {
   return true;
 }
 
+var FIELD_EVENT_ICONS = { goal: '⚽', save: '🧤', defense: '🛡️', block: '✋' };
+function fieldIconHtml(eventClass) {
+  if (!eventClass || !FIELD_EVENT_ICONS[eventClass]) return '';
+  return '<div class="field-icon">' + FIELD_EVENT_ICONS[eventClass] + '</div>';
+}
+
 function renderMatch() {
   var m = G.match;
   if (!m) return '';
@@ -1739,7 +1780,7 @@ function renderMatch() {
       '</div>' +
       '<div class="turn-indicator">' + (m.suddenDeath ? 'Muerte súbita — ronda ' + m.sdRound : 'Turno ' + Math.min(m.turn, MATCH_TURNS) + ' de ' + MATCH_TURNS) + (m.finished ? '' : (isPlayerTurn ? ' · Tu ataque' : ' · Ataque rival')) + '</div>' +
       (m.suddenDeath && !m.finished ? '<p class="dim small center-text">Gol de oro: gana quien marque primero. Si nadie marca esta ronda, continúa otra.</p>' : '') +
-      '<div class="' + fieldClass + '"><div class="field-event">' + (m.lastEvent || (isPlayerTurn ? 'Elige a tu jugador y tu jugada' : '')) + '</div></div>' +
+      '<div class="' + fieldClass + '">' + fieldIconHtml(m.lastEventClass) + '<div class="field-event">' + (m.lastEvent || (isPlayerTurn ? 'Elige a tu jugador y tu jugada' : '')) + '</div></div>' +
       '<div class="meter-wrap">' +
         '<div class="meter-label"><span>Especial</span><span>' + (pStatus.ready ? '¡Lista!' : 'Disponible en ' + pStatus.turnsLeft + ' turno' + (pStatus.turnsLeft === 1 ? '' : 's')) + '</span></div>' +
         '<div class="meter-track"><div class="meter-fill' + (pStatus.ready ? ' full' : '') + '" style="width:' + pStatus.pct + '%"></div></div>' +
@@ -1982,7 +2023,11 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
   } else {
     var missVerb = action === 'regate' ? 'el regate es cortado.' : (action === 'especial' ? (escapeHtml(moveName || 'la jugada especial') + ' es bloqueada.') : 'el tiro es bloqueado.');
     m.lastEvent = actorLabel + ': ' + missVerb + defenderTag;
-    m.lastEventClass = 'block';
+    // El icono/animación de la jugada fallida distingue quién la para: el
+    // Portero (parada) del Defensa (entrada/defensa) -- así "tiro", "parada"
+    // y "defensa" se ven y se sienten como tres eventos distintos, no un
+    // único "bloqueo" genérico.
+    m.lastEventClass = defenderRaw.posicion === 'Portero' ? 'save' : (defenderRaw.posicion === 'Defensa' ? 'defense' : 'block');
     m.log.push(m.lastEvent + advText);
   }
   m.selectedAttackerId = null;
