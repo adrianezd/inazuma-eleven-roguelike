@@ -228,6 +228,13 @@ a { color: var(--accent); }
   border: 1px solid transparent;
   white-space: nowrap;
 }
+.type-symbol {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  line-height: 1;
+}
 .type-mark {
   display: inline-flex;
   align-items: center;

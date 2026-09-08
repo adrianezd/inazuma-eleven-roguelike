@@ -151,8 +151,19 @@ function typeAdvantage(a, b) {
   return 0;
 }
 
+function getTypeSymbol(tipo) {
+  var symbols = {
+    'Fuego': '🔥',
+    'Bosque': '🌿',
+    'Viento': '💨',
+    'Montaña': '🏔️'
+  };
+  return symbols[tipo] || '⭕';
+}
+
 function typeBadge(tipo) {
   return '<span class="type-badge type-' + tipo.toLowerCase().replace('ñ', 'n') + '">' +
+    '<span class="type-symbol">' + getTypeSymbol(tipo) + '</span>' +
     '<span class="type-mark" aria-hidden="true">' + TYPE_MARK[tipo] + '</span>' + tipo + '</span>';
 }
 
