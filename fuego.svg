@@ -1,14 +1,14 @@
-<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
   <!-- Fondo rojo -->
-  <rect width="64" height="64" fill="#FF4444"/>
-  <!-- Llama amarilla pixelada -->
-  <rect x="24" y="32" width="16" height="8" fill="#FFFF00"/>
-  <rect x="20" y="24" width="24" height="8" fill="#FFFF00"/>
-  <rect x="28" y="16" width="8" height="8" fill="#FFFF00"/>
-  <rect x="24" y="40" width="16" height="8" fill="#FF8800"/>
-  <rect x="20" y="48" width="24" height="8" fill="#FF4400"/>
-  <!-- Detalles -->
-  <rect x="32" y="20" width="8" height="4" fill="#FFFF00"/>
-  <rect x="16" y="32" width="4" height="8" fill="#FF8800"/>
-  <rect x="48" y="32" width="4" height="8" fill="#FF8800"/>
+  <rect width="100" height="100" fill="#DD3333" stroke="#AA0000" stroke-width="3"/>
+  <!-- Llama amarilla pixelada central -->
+  <rect x="35" y="25" width="10" height="10" fill="#FFFF00"/>
+  <rect x="25" y="35" width="10" height="10" fill="#FFFF00"/>
+  <rect x="35" y="35" width="10" height="10" fill="#FFFF00"/>
+  <rect x="45" y="35" width="10" height="10" fill="#FFFF00"/>
+  <rect x="30" y="45" width="10" height="10" fill="#FFFF00"/>
+  <rect x="40" y="45" width="10" height="10" fill="#FFFF00"/>
+  <rect x="35" y="55" width="10" height="10" fill="#FF8800"/>
+  <!-- Interior más claro -->
+  <rect x="38" y="38" width="4" height="4" fill="#FFFF99"/>
 </svg>
