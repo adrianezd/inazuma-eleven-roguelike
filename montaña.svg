@@ -1,17 +1,30 @@
-<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <!-- Montaña: Picos triangulares -->
-  <defs>
-    <linearGradient id="mountainFill" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#D4A574;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#8B6F47;stop-opacity:1" />
-    </linearGradient>
-  </defs>
-  <!-- Montaña principal grande -->
-  <polygon points="50,15 85,70 15,70" fill="url(#mountainFill)" stroke="#654321" stroke-width="2"/>
-  <!-- Montañas secundarias -->
-  <polygon points="35,70 55,35 75,70" fill="#A0826D" opacity="0.7"/>
-  <polygon points="25,70 40,45 55,70" fill="#B8956F" opacity="0.6"/>
-  <!-- Nieve en picos -->
-  <polygon points="50,15 55,30 45,30" fill="#FFF" opacity="0.9"/>
-  <polygon points="35,50 40,60 30,60" fill="#E8E8E8" opacity="0.8"/>
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo naranja -->
+  <rect width="64" height="64" fill="#FF9944"/>
+  <!-- Montaña marrón oscura -->
+  <!-- Pico principal -->
+  <rect x="20" y="12" width="8" height="8" fill="#664422"/>
+  <rect x="28" y="12" width="8" height="8" fill="#664422"/>
+  <rect x="36" y="12" width="8" height="8" fill="#664422"/>
+
+  <!-- Laderas izquierda -->
+  <rect x="12" y="20" width="8" height="8" fill="#775533"/>
+  <rect x="20" y="20" width="8" height="8" fill="#664422"/>
+
+  <!-- Centro montaña -->
+  <rect x="28" y="20" width="8" height="8" fill="#553311"/>
+
+  <!-- Laderas derecha -->
+  <rect x="36" y="20" width="8" height="8" fill="#664422"/>
+  <rect x="44" y="20" width="8" height="8" fill="#775533"/>
+
+  <!-- Base -->
+  <rect x="8" y="28" width="8" height="8" fill="#885544"/>
+  <rect x="16" y="28" width="8" height="8" fill="#775533"/>
+  <rect x="24" y="28" width="16" height="8" fill="#664422"/>
+  <rect x="40" y="28" width="8" height="8" fill="#775533"/>
+  <rect x="48" y="28" width="8" height="8" fill="#885544"/>
+
+  <!-- Detalles sombra -->
+  <rect x="28" y="36" width="8" height="4" fill="#442211"/>
 </svg>
