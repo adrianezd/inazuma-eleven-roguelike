@@ -121,7 +121,10 @@ function withSeededRandom(seed, fn) {
 // contraria. No se usa para la fatiga (efecto temporal y reversible, con
 // su propio indicador ya existente).
 function applyStatChange(player, stat, delta) {
-  player[stat] = clamp(player[stat] + delta, 0, 99);
+  // Sin techo: un jugador muy entrenado puede superar el 99 "de manual" y
+  // seguir subiendo (ver statBarsHtml, que lo pinta en verde en vez del
+  // antiguo blanco de "al máximo").
+  player[stat] = Math.max(0, player[stat] + delta);
   player.boostedStats = player.boostedStats || [];
   player.reducedStats = player.reducedStats || [];
   if (delta > 0) {
@@ -1152,11 +1155,13 @@ function statBarsHtml(p) {
   var reduced = p.reducedStats || [];
   return '<div class="stat-bars">' + stats.map(function (s) {
     var label = s[0], key = s[1], value = s[2];
-    var isMax = value >= 99;
-    var isBoosted = boosted.indexOf(key) !== -1;
+    // Sin techo de 99: una stat que lo supera (por entrenamiento/bonus) se
+    // queda en verde -- antes se ponía en blanco al llegar justo a 99, lo
+    // que además ocultaba que siguiera subiendo por encima.
+    var isBoosted = boosted.indexOf(key) !== -1 || value > 99;
     var isReduced = reduced.indexOf(key) !== -1;
-    var valueColor = isMax ? 'color:#fff;' : (isBoosted ? 'color:#7cfc00;font-weight:bold;' : (isReduced ? 'color:#ff5c5c;font-weight:bold;' : ''));
-    var barStyle = isMax ? 'background:#fff;' : (isBoosted ? 'background:#7cfc00;' : (isReduced ? 'background:#ff5c5c;' : ''));
+    var valueColor = isBoosted ? 'color:#7cfc00;font-weight:bold;' : (isReduced ? 'color:#ff5c5c;font-weight:bold;' : '');
+    var barStyle = isBoosted ? 'background:#7cfc00;' : (isReduced ? 'background:#ff5c5c;' : '');
     return '<span class="stat-label">' + label + '</span>' +
       '<span class="stat-bar-track"><span class="stat-bar-fill" style="width:' + clamp(value, 0, 100) + '%;' + barStyle + '"></span></span>' +
       '<span class="stat-value" style="' + valueColor + '">' + value + '</span>';
@@ -1277,6 +1282,11 @@ function drawMapConnections() {
   if (!wrap || !svg) return;
   var run = G.run;
   var edges = run.map.edges;
+  // Verde solo en los caminos REALMENTE elegibles ahora mismo (las próximas
+  // opciones desde tu nodo actual) -- antes se pintaba de verde CUALQUIER
+  // rama que saliera de un nodo ya superado, incluidas las que el jugador
+  // nunca llegó a coger, lo que parecía un camino recorrido falso.
+  var avail = availableNodeIds();
   var rect = wrap.getBoundingClientRect();
   svg.setAttribute('width', rect.width);
   svg.setAttribute('height', rect.height);
@@ -1293,8 +1303,8 @@ function drawMapConnections() {
       var tr = toEl.getBoundingClientRect();
       var tx = tr.left - rect.left + tr.width / 2;
       var ty = tr.top - rect.top + tr.height / 2;
-      var fromNode = findNode(run.map, fromId);
-      var stroke = fromNode.cleared ? '#2f9e6b' : '#2a3b4a';
+      var isPossibleNow = fromId === run.currentNodeId && avail.indexOf(toId) !== -1;
+      var stroke = isPossibleNow ? '#2f9e6b' : '#2a3b4a';
       lines += '<line x1="' + fx + '" y1="' + fy + '" x2="' + tx + '" y2="' + ty + '" stroke="' + stroke + '" stroke-width="3" />';
     });
   });
@@ -1846,10 +1856,10 @@ function selectAttacker(instanceId) { G.match.selectedAttackerId = instanceId; r
 function effectiveStats(p) {
   if (!p.fatigado) return p;
   return {
-    tiro: clamp(p.tiro - 10, 5, 99),
-    pase: clamp(p.pase - 10, 5, 99),
-    defensa: clamp(p.defensa - 10, 5, 99),
-    especial: clamp(p.especial - 10, 5, 99),
+    tiro: Math.max(5, p.tiro - 10),
+    pase: Math.max(5, p.pase - 10),
+    defensa: Math.max(5, p.defensa - 10),
+    especial: Math.max(5, p.especial - 10),
     tipo: p.tipo,
     nombre: p.nombre,
     hissatsu: p.hissatsu
