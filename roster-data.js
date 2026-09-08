@@ -64,7 +64,7 @@ var RIVAL_TEAM_NAMES = [
   'Cala Pirata', 'Sallys', 'Leones del desierto',
   'Academia Universal', 'Instituto Cherrybloom', 'Instituto Plenilunio',
   'Raimon Inakuni', 'Mary Times', 'Mar de Luna', 'Farm', 'Fauxshore',
-  'Los orions', 'Mar de Árboles'
+  'Los orions', 'Mar de Árboles', 'Otaku'
 ];
 
 var RIVAL_TEAM_BOSSES = [
@@ -77,8 +77,7 @@ var RIVAL_TEAM_BOSSES = [
   'Chrono Storm', 'Dragon Link', 'Desesperdidos', 'Dinastía Galáctica',
   'Earth Eleven', 'Eclipse de Orión', 'El Dorado 02', 'El Dorado 03', 
   'Protocolo Omega 2.0', 'Protocolo Omega 3.0', 'Zanark Domain', 'Equipo Zero',
-  'Falam Medius', 'Flota Ixar', 'Guardianes de La Reina'
-
+  'Falam Medius', 'Flota Ixar', 'Guardianes de La Reina', 'Orfeo'
 ];
 
 
@@ -713,5 +712,304 @@ var ROSTER = [
     desc: 'Mediocentro y capitán del Occult.',
     locked: false
   },
+ // ============================================================
+  // WILD - 11 TITULARES
+  // ============================================================
 
+  {
+    id: 'r83', nombre: 'Boar', original: 'Charlie Boardfield',
+    posicion: 'Portero', tipo: 'Fuego',
+    tiro: 18, pase: 48, defensa: 80, especial: 68,
+    hissatsu: ['Garra Salvaje'],
+    desc: 'Portero del Wild, agresivo y poderoso como un jabalí.',
+    locked: false, cost: 105
+  },
+  {
+    id: 'r84', nombre: 'Chicken', original: 'Hugo Tallgeese',
+    posicion: 'Centrocampista', tipo: 'Viento',
+    tiro: 65, pase: 70, defensa: 58, especial: 68,
+    hissatsu: ['Acelerón'],
+    desc: 'Capitán del Wild y cerebro del equipo.',
+    locked: false, cost: 115
+  },
+  {
+    id: 'r85', nombre: 'Fishman', original: 'Wilson Fishman',
+    posicion: 'Defensa', tipo: 'Bosque',
+    tiro: 38, pase: 52, defensa: 75, especial: 58,
+    hissatsu: ['Robo Rápido'],
+    desc: 'Defensa ágil especializado en robar balones.',
+    locked: false, cost: 90
+  },
+  {
+    id: 'r86', nombre: 'Toad', original: 'Peter Johnson',
+    posicion: 'Defensa', tipo: 'Bosque',
+    tiro: 34, pase: 46, defensa: 77, especial: 58,
+    hissatsu: ['Barrido Defensivo'],
+    desc: 'Defensa resistente que utiliza movimientos rápidos para recuperar el balón.',
+    locked: false, cost: 88
+  },
+  {
+    id: 'r87', nombre: 'Lion', original: 'Leonard O\'Shea',
+    posicion: 'Defensa', tipo: 'Montaña',
+    tiro: 45, pase: 48, defensa: 79, especial: 66,
+    hissatsu: ['Embestida'],
+    desc: 'Defensa poderoso que destaca por su fuerza física.',
+    locked: false, cost: 105
+  },
+  {
+    id: 'r88', nombre: 'Chameleon', original: 'Cham Lion',
+    posicion: 'Defensa', tipo: 'Bosque',
+    tiro: 42, pase: 55, defensa: 73, especial: 62,
+    hissatsu: ['Robo Rápido'],
+    desc: 'Defensa imprevisible capaz de desaparecer entre los rivales.',
+    locked: false, cost: 92
+  },
+  {
+    id: 'r89', nombre: 'Eagle', original: 'Steve Eagle',
+    posicion: 'Centrocampista', tipo: 'Viento',
+    tiro: 68, pase: 64, defensa: 48, especial: 70,
+    hissatsu: ['Ataque de Cóndor'],
+    desc: 'Centrocampista veloz que domina el juego aéreo.',
+    locked: false, cost: 108
+  },
+  {
+    id: 'r90', nombre: 'Monkey', original: 'Bruce Monkey',
+    posicion: 'Centrocampista', tipo: 'Bosque',
+    tiro: 64, pase: 58, defensa: 54, especial: 68,
+    hissatsu: ['Giro de Mono'],
+    desc: 'Jugador imprevisible y escurridizo que puede aparecer en cualquier zona.',
+    locked: false, cost: 102
+  },
+  {
+    id: 'r91', nombre: 'Gorilla', original: 'Gary Lancaster',
+    posicion: 'Delantero', tipo: 'Montaña',
+    tiro: 79, pase: 42, defensa: 45, especial: 70,
+    hissatsu: ['Remate Tarzán'],
+    desc: 'Delantero de enorme fuerza física y potencia de remate.',
+    locked: false, cost: 120
+  },
+  {
+    id: 'r92', nombre: 'Snake', original: 'Harry Snake',
+    posicion: 'Delantero', tipo: 'Bosque',
+    tiro: 76, pase: 50, defensa: 38, especial: 72,
+    hissatsu: ['Remate Serpiente'],
+    desc: 'Delantero ágil cuyos movimientos son difíciles de predecir.',
+    locked: false, cost: 115
+  },
+  {
+    id: 'r93', nombre: 'Cheetah', original: 'Adrian Speed',
+    posicion: 'Delantero', tipo: 'Viento',
+    tiro: 82, pase: 58, defensa: 34, especial: 78,
+    hissatsu: ['Remate Tarzán'],
+    desc: 'El delantero más veloz del Wild, capaz de dejar atrás a cualquier defensa.',
+    locked: false, cost: 130
+  },
+
+  {
+    id: 'r94', nombre: 'Styx', original: 'Russell Walk',
+    posicion: 'Defensa', tipo: 'Bosque',
+    tiro: 42, pase: 50, defensa: 73, especial: 72,
+    hissatsu: ['Gravedad'],
+    desc: 'Defensa del Occult vinculado al río de los muertos.',
+    locked: false, cost: 105
+  },
+  {
+    id: 'r95', nombre: 'Creepy', original: 'Jason Jones',
+    posicion: 'Defensa', tipo: 'Viento',
+    tiro: 38, pase: 48, defensa: 72, especial: 70,
+    hissatsu: ['Doppelgänger'],
+    desc: 'Defensa siniestro capaz de confundir a sus rivales.',
+    locked: false, cost: 100
+  },
+  {
+    id: 'r96', nombre: 'Franky', original: 'Ken Furan',
+    posicion: 'Defensa', tipo: 'Montaña',
+    tiro: 38, pase: 45, defensa: 74, especial: 65,
+    hissatsu: ['Frankstein'],
+    desc: 'Defensa corpulento obsesionado con crear vida artificial.',
+    locked: false, cost: 108
+  },
+  {
+    id: 'r97', nombre: 'Undead', original: 'Jerry Fulton',
+    posicion: 'Defensa', tipo: 'Fuego',
+    tiro: 40, pase: 47, defensa: 71, especial: 68,
+    hissatsu: ['Doppelgänger'],
+    desc: 'Defensa que parece incapaz de sentir miedo o dolor.',
+    locked: false, cost: 102
+  },
+  {
+    id: 'r98', nombre: 'Jiangshi', original: 'Ray Mannings',
+    posicion: 'Centrocampista', tipo: 'Viento',
+    tiro: 58, pase: 67, defensa: 50, especial: 73,
+    hissatsu: ['Gravedad'],
+    desc: 'Centrocampista que se mueve de forma extraña e imprevisible.',
+    locked: false, cost: 108
+  },
+  {
+    id: 'r99', nombre: 'Mummy', original: 'Robert Mayer',
+    posicion: 'Centrocampista', tipo: 'Bosque',
+    tiro: 56, pase: 64, defensa: 53, especial: 70,
+    hissatsu: ['Gravedad'],
+    desc: 'Centrocampista envuelto en vendas y experto en controlar el ritmo.',
+    locked: false, cost: 102
+  },
+  {
+    id: 'r100', nombre: 'Grave', original: 'Alexander Brave',
+    posicion: 'Centrocampista', tipo: 'Fuego',
+    tiro: 62, pase: 60, defensa: 48, especial: 74,
+    hissatsu: ['Maldición'],
+    desc: 'Centrocampista que canaliza una energía oscura y misteriosa.',
+    locked: false, cost: 108
+  },
+  {
+    id: 'r101', nombre: 'Blood', original: 'Burt Wolf',
+    posicion: 'Centrocampista', tipo: 'Montaña',
+    tiro: 64, pase: 56, defensa: 50, especial: 76,
+    hissatsu: ['Tiro Fantasma'],
+    desc: 'Centrocampista siniestro que utiliza técnicas de aspecto vampírico.',
+    locked: false, cost: 112
+  },
+    {
+    id: 'r102', nombre: 'Apollo', original: 'Apollo Hikaru',
+    posicion: 'Defensa', tipo: 'Viento',
+    tiro: 38, pase: 58, defensa: 78, especial: 70,
+    hissatsu: ['Entrada Tormenta'],
+    desc: 'Defensa del Zeus conocido por sus movimientos rápidos y precisos.',
+    locked: false, cost: 108
+  },
+  {
+    id: 'r103', nombre: 'Hephestus', original: 'En Hephais',
+    posicion: 'Defensa', tipo: 'Montaña',
+    tiro: 42, pase: 48, defensa: 84, especial: 72,
+    hissatsu: ['Mega Terremoto'],
+    desc: 'Defensa poderoso que utiliza su fuerza para detener los ataques.',
+    locked: false, cost: 112
+  },
+  {
+    id: 'r104', nombre: 'Ares', original: 'Ran Aresu',
+    posicion: 'Defensa', tipo: 'Fuego',
+    tiro: 40, pase: 50, defensa: 81, especial: 68,
+    hissatsu: ['Entrada Tormenta'],
+    desc: 'Defensa agresivo que destaca por sus entradas contundentes.',
+    locked: false, cost: 108
+  },
+  {
+    id: 'r105', nombre: 'Dio', original: 'Geki Deio',
+    posicion: 'Defensa', tipo: 'Montaña',
+    tiro: 44, pase: 52, defensa: 80, especial: 70,
+    hissatsu: ['Mega Terremoto'],
+    desc: 'Defensa del Zeus con una gran potencia física.',
+    locked: false, cost: 110
+  },
+  {
+    id: 'r106', nombre: 'Hermes', original: 'Matsuaki Herume',
+    posicion: 'Centrocampista', tipo: 'Viento',
+    tiro: 56, pase: 72, defensa: 45, especial: 78,
+    hissatsu: ['Hora Celestial'],
+    desc: 'Centrocampista veloz especializado en superar rivales con su velocidad.',
+    locked: false, cost: 115
+  },
+  {
+    id: 'r107', nombre: 'Athena', original: 'Tomo Atena',
+    posicion: 'Centrocampista', tipo: 'Bosque',
+    tiro: 55, pase: 70, defensa: 50, especial: 74,
+    hissatsu: ['Sabiduría Divina'],
+    desc: 'Centrocampista técnico capaz de controlar el ritmo del partido.',
+    locked: false, cost: 112
+  },
+  {
+    id: 'r108', nombre: 'Demeter', original: 'Yutaka Demete',
+    posicion: 'Centrocampista', tipo: 'Bosque',
+    tiro: 64, pase: 65, defensa: 48, especial: 72,
+    hissatsu: ['Disparo con Rebotes'],
+    desc: 'Centrocampista ofensivo con un potente disparo.',
+    locked: false, cost: 115
+  },
+  {
+    id: 'r109', nombre: 'Hera', original: 'Tadashi Hera',
+    posicion: 'Centrocampista', tipo: 'Viento',
+    tiro: 62, pase: 68, defensa: 46, especial: 75,
+    hissatsu: ['Flecha Divina'],
+    desc: 'Centrocampista del Zeus capaz de lanzar poderosos disparos.',
+    locked: false, cost: 115
+  },
+
+
+  // ============================================================
+  // GÉNESIS
+  // Xene y Bellatrix ya están definidos.
+  // ============================================================
+
+  {
+    id: 'r110', nombre: 'Nero', original: 'Nelson Rockwell',
+    posicion: 'Portero', tipo: 'Bosque',
+    tiro: 18, pase: 52, defensa: 90, especial: 86,
+    hissatsu: ['Muro Dimensional'],
+    desc: 'Portero del Génesis con una defensa prácticamente inexpugnable.',
+    locked: false, cost: 135
+  },
+  {
+    id: 'r111', nombre: 'Gele', original: 'Gail Baker',
+    posicion: 'Defensa', tipo: 'Viento',
+    tiro: 40, pase: 56, defensa: 82, especial: 74,
+    hissatsu: ['Niebla Mística'],
+    desc: 'Defensa del Génesis que confunde a sus rivales con movimientos impredecibles.',
+    locked: false, cost: 120
+  },
+  {
+    id: 'r112', nombre: 'Kiburn', original: 'Kim Powell',
+    posicion: 'Defensa', tipo: 'Fuego',
+    tiro: 44, pase: 52, defensa: 84, especial: 76,
+    hissatsu: ['Gravitación'],
+    desc: 'Defensa extremadamente poderoso que utiliza la fuerza gravitatoria.',
+    locked: false, cost: 122
+  },
+  {
+    id: 'r113', nombre: 'Zohen', original: 'Zack Cummings',
+    posicion: 'Defensa', tipo: 'Montaña',
+    tiro: 42, pase: 54, defensa: 86, especial: 70,
+    hissatsu: ['Robo Planeta'],
+    desc: 'Defensa resistente especializado en recuperar el balón.',
+    locked: false, cost: 120
+  },
+  {
+    id: 'r114', nombre: 'Hauser', original: 'Hunt Mercer',
+    posicion: 'Defensa', tipo: 'Montaña',
+    tiro: 40, pase: 50, defensa: 88, especial: 72,
+    hissatsu: ['Superarmadillo'],
+    desc: 'Defensa de enorme resistencia física.',
+    locked: false, cost: 122
+  },
+  {
+    id: 'r115', nombre: 'Kormer', original: 'Connor Murray',
+    posicion: 'Centrocampista', tipo: 'Fuego',
+    tiro: 58, pase: 68, defensa: 52, especial: 78,
+    hissatsu: ['Rapto Divino'],
+    desc: 'Centrocampista del Génesis con gran capacidad para controlar el balón.',
+    locked: false, cost: 125
+  },
+  {
+    id: 'r116', nombre: 'Kiwill', original: 'Katie Brown',
+    posicion: 'Centrocampista', tipo: 'Viento',
+    tiro: 55, pase: 72, defensa: 48, especial: 76,
+    hissatsu: ['Finta Bumerán'],
+    desc: 'Centrocampista técnica y ágil que destaca en el uno contra uno.',
+    locked: false, cost: 120
+  },
+  {
+    id: 'r117', nombre: 'Ark', original: 'Ashton Malone',
+    posicion: 'Centrocampista', tipo: 'Bosque',
+    tiro: 64, pase: 64, defensa: 50, especial: 80,
+    hissatsu: ['Cañón de Meteoritos'],
+    desc: 'Centrocampista ofensivo con un disparo de enorme potencia.',
+    locked: false, cost: 130
+  },
+  {
+    id: 'r118', nombre: 'Wittz', original: 'Wilbur Watkins',
+    posicion: 'Delantero', tipo: 'Bosque',
+    tiro: 82, pase: 56, defensa: 38, especial: 82,
+    hissatsu: ['Astro Remate'],
+    desc: 'Delantero del Génesis capaz de realizar potentes remates de origen cósmico.',
+    locked: false, cost: 135
+  },
 ];
