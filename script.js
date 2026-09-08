@@ -152,11 +152,12 @@ function typeAdvantage(a, b) {
 }
 
 function getTypeSymbol(tipo) {
+  var baseUrl = window.location.pathname.includes('/inazuma') ? '/inazuma-eleven-roguelike/' : './';
   var paths = {
-    'Fuego': 'assets/elementos/fuego.png',
-    'Bosque': 'assets/elementos/bosque.png',
-    'Viento': 'assets/elementos/viento.png',
-    'Montaña': 'assets/elementos/montaña.png'
+    'Fuego': baseUrl + 'assets/elementos/fuego.png',
+    'Bosque': baseUrl + 'assets/elementos/bosque.png',
+    'Viento': baseUrl + 'assets/elementos/viento.png',
+    'Montaña': baseUrl + 'assets/elementos/montaña.png'
   };
   var path = paths[tipo];
   return path ? '<img src="' + path + '" style="width:22px;height:22px;vertical-align:middle;border-radius:3px;" alt="' + tipo + '" />' : '⭕';
