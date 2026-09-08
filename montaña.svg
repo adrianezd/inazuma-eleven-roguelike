@@ -1,0 +1,13 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="mountainFill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#9C9C9C;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#424242;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <path d="M 20 80 L 40 40 L 50 55 L 70 25 L 85 80 Z" fill="url(#mountainFill)" stroke="#212121" stroke-width="2"/>
+  <path d="M 40 80 L 50 55 L 65 80 Z" fill="#757575" opacity="0.6"/>
+  <path d="M 70 80 L 85 25 L 95 80 Z" fill="#BDBDBD" opacity="0.5"/>
+  <polygon points="50,45 48,50 52,50" fill="#FFF" opacity="0.9"/>
+  <polygon points="70,20 68,25 72,25" fill="#FFF" opacity="0.85"/>
+</svg>

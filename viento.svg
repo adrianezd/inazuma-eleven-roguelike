@@ -1,0 +1,13 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="windFill" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#29C7C7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00838F;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <path d="M 20 35 Q 50 20 80 35" stroke="url(#windFill)" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M 15 50 Q 45 35 85 50" stroke="url(#windFill)" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.7"/>
+  <path d="M 25 65 Q 50 50 80 65" stroke="url(#windFill)" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.5"/>
+  <circle cx="85" cy="35" r="3" fill="#B2EBF2" opacity="0.8"/>
+  <circle cx="88" cy="50" r="2.5" fill="#B2EBF2" opacity="0.7"/>
+</svg>

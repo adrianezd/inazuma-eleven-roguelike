@@ -152,13 +152,14 @@ function typeAdvantage(a, b) {
 }
 
 function getTypeSymbol(tipo) {
-  var symbols = {
-    'Fuego': '🔥',
-    'Bosque': '🌿',
-    'Viento': '💨',
-    'Montaña': '🏔️'
+  var paths = {
+    'Fuego': 'fuego.svg',
+    'Bosque': 'bosque.svg',
+    'Viento': 'viento.svg',
+    'Montaña': 'montaña.svg'
   };
-  return symbols[tipo] || '⭕';
+  var path = paths[tipo];
+  return path ? '<img src="' + path + '" style="width:20px;height:20px;vertical-align:middle;" alt="' + tipo + '" />' : '⭕';
 }
 
 function typeBadge(tipo) {
