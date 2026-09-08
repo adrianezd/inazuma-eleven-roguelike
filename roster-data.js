@@ -894,7 +894,7 @@ var ROSTER = [
     locked: false, cost: 108
   },
   {
-    id: 'r105', nombre: 'Dio', original: 'Geki Deio',
+    id: 'r105', nombre: 'Dionyisus', original: 'Geki Deio',
     posicion: 'Defensa', tipo: 'Montaña',
     tiro: 44, pase: 52, defensa: 80, especial: 70,
     hissatsu: ['Mega Terremoto'],
@@ -919,10 +919,10 @@ var ROSTER = [
   },
   {
     id: 'r108', nombre: 'Demeter', original: 'Yutaka Demete',
-    posicion: 'Centrocampista', tipo: 'Bosque',
-    tiro: 64, pase: 65, defensa: 48, especial: 72,
+    posicion: 'Delantero', tipo: 'Fuego',
+    tiro: 77, pase: 65, defensa: 48, especial: 72,
     hissatsu: ['Disparo con Rebotes'],
-    desc: 'Centrocampista ofensivo con un potente disparo.',
+    desc: 'Delantero del zeus con potente disparo.',
     locked: false, cost: 115
   },
   {
