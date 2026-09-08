@@ -153,13 +153,13 @@ function typeAdvantage(a, b) {
 
 function getTypeSymbol(tipo) {
   var paths = {
-    'Fuego': 'fuego.svg',
-    'Bosque': 'bosque.svg',
-    'Viento': 'viento.svg',
-    'Montaña': 'montaña.svg'
+    'Fuego': 'assets/elementos/fuego.png',
+    'Bosque': 'assets/elementos/bosque.png',
+    'Viento': 'assets/elementos/viento.png',
+    'Montaña': 'assets/elementos/montaña.png'
   };
   var path = paths[tipo];
-  return path ? '<img src="' + path + '" style="width:20px;height:20px;vertical-align:middle;" alt="' + tipo + '" />' : '⭕';
+  return path ? '<img src="' + path + '" style="width:22px;height:22px;vertical-align:middle;border-radius:3px;" alt="' + tipo + '" />' : '⭕';
 }
 
 function typeBadge(tipo) {
