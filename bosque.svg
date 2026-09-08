@@ -1,17 +1,11 @@
 <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
   <!-- Fondo verde -->
   <rect width="100" height="100" fill="#33DD33" stroke="#00AA00" stroke-width="3"/>
-  <!-- Cruz/Asterisco pixelado de 4 puntas -->
-  <!-- Centro -->
-  <rect x="40" y="40" width="20" height="20" fill="#00AA00"/>
-  <!-- Punta arriba -->
-  <rect x="45" y="20" width="10" height="20" fill="#00AA00"/>
-  <!-- Punta abajo -->
-  <rect x="45" y="60" width="10" height="20" fill="#00AA00"/>
-  <!-- Punta izquierda -->
-  <rect x="20" y="45" width="20" height="10" fill="#00AA00"/>
-  <!-- Punta derecha -->
-  <rect x="60" y="45" width="20" height="10" fill="#00AA00"/>
-  <!-- Detalle oscuro en centro -->
-  <rect x="44" y="44" width="12" height="12" fill="#006600"/>
+  <!-- Árbol pixelado verde oscuro exacto de la imagen -->
+  <rect x="35" y="20" width="30" height="10" fill="#003300"/>
+  <rect x="40" y="30" width="20" height="10" fill="#003300"/>
+  <rect x="45" y="40" width="10" height="10" fill="#003300"/>
+  <rect x="40" y="50" width="20" height="10" fill="#003300"/>
+  <rect x="35" y="60" width="30" height="10" fill="#003300"/>
+  <rect x="45" y="70" width="10" height="15" fill="#553300"/>
 </svg>

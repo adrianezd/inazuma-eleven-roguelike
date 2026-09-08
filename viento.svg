@@ -1,16 +1,22 @@
 <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
   <!-- Fondo azul -->
   <rect width="100" height="100" fill="#3333DD" stroke="#0000AA" stroke-width="3"/>
-  <!-- Patrón zigzag diagonal blanco -->
-  <rect x="20" y="15" width="10" height="10" fill="#FFFFFF"/>
-  <rect x="30" y="25" width="10" height="10" fill="#FFFFFF"/>
-  <rect x="40" y="35" width="10" height="10" fill="#FFFFFF"/>
-  <rect x="50" y="45" width="10" height="10" fill="#FFFFFF"/>
-  <rect x="60" y="55" width="10" height="10" fill="#FFFFFF"/>
-  <rect x="70" y="65" width="10" height="10" fill="#FFFFFF"/>
-  <!-- Segunda línea -->
+  <!-- Líneas blancas diagonales exactas de la imagen -->
+  <rect x="15" y="20" width="10" height="10" fill="#FFFFFF"/>
+  <rect x="25" y="15" width="10" height="10" fill="#FFFFFF"/>
   <rect x="35" y="20" width="10" height="10" fill="#FFFFFF"/>
-  <rect x="45" y="30" width="10" height="10" fill="#FFFFFF"/>
-  <rect x="55" y="40" width="10" height="10" fill="#FFFFFF"/>
-  <rect x="65" y="50" width="10" height="10" fill="#FFFFFF"/>
+  <rect x="45" y="15" width="10" height="10" fill="#FFFFFF"/>
+  <rect x="55" y="20" width="10" height="10" fill="#FFFFFF"/>
+  <rect x="65" y="15" width="10" height="10" fill="#FFFFFF"/>
+
+  <rect x="20" y="35" width="10" height="10" fill="#FFFFFF"/>
+  <rect x="30" y="30" width="10" height="10" fill="#FFFFFF"/>
+  <rect x="40" y="35" width="10" height="10" fill="#FFFFFF"/>
+  <rect x="50" y="30" width="10" height="10" fill="#FFFFFF"/>
+  <rect x="60" y="35" width="10" height="10" fill="#FFFFFF"/>
+
+  <rect x="25" y="50" width="10" height="10" fill="#FFFFFF"/>
+  <rect x="35" y="45" width="10" height="10" fill="#FFFFFF"/>
+  <rect x="45" y="50" width="10" height="10" fill="#FFFFFF"/>
+  <rect x="55" y="45" width="10" height="10" fill="#FFFFFF"/>
 </svg>
