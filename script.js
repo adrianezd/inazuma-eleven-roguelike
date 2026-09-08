@@ -1069,7 +1069,7 @@ function renderColeccion() {
       '<div class="shop-item" style="' + (unlocked ? '' : 'opacity:.55;') + '">' +
         '<div>' +
           avatarHtml(c) + ' <strong>' + escapeHtml(c.nombre) + '</strong> ' + typeBadge(c.tipo) + '<br>' +
-          '<span class="dim small">' + c.posicion + ' · ' + escapeHtml(c.desc) + '</span>' +
+          '<span class="dim small">' + escapeHtml(c.desc) + '</span>' +
         '</div>' +
         '<div class="cost">' + (unlocked ? '<span class="pill">Desbloqueado</span>' : (c.cost === 99999 ? '<span class="dim">Secreto</span>' : '<span class="dim">Bloqueado</span>')) + '</div>' +
       '</div>'
@@ -1139,7 +1139,6 @@ function playerCardHtml(p, onclickAttr, selected, disabled) {
         '</div>' +
         typeBadge(p.tipo) +
       '</div>' +
-      '<div class="player-pos">' + p.posicion + '</div>' +
       statBarsHtml(p) +
       hissatsuHtml +
       (p.fatigado ? '<div class="fatigue-tag">Fatigado (-10 a todo)</div>' : '') +
@@ -2219,7 +2218,7 @@ function renderVestuario() {
       '<div class="shop-item">' +
         '<div>' +
           avatarHtml(c) + ' <strong>' + escapeHtml(c.nombre) + '</strong> ' + typeBadge(c.tipo) + '<br>' +
-          '<span class="dim small">' + c.posicion + ' · ' + escapeHtml(c.desc) + '</span>' +
+          '<span class="dim small">' + escapeHtml(c.desc) + '</span>' +
         '</div>' +
         '<div class="cost">' + (unlocked ? '' : c.cost + ' pts. ') + right + '</div>' +
       '</div>'
