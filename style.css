@@ -483,6 +483,8 @@ a { color: var(--accent); }
 .score-side { text-align: center; flex: 1; min-width: 0; }
 .score-name { font-size: 0.85rem; color: var(--text-dim); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .score-num { font-size: 2.4rem; font-family: 'Oswald', sans-serif; line-height: 1; }
+.team-shield { width: 34px; height: 34px; object-fit: contain; display: block; margin: 0 auto 4px; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5)); }
+.bracket-shield { width: 18px; height: 18px; object-fit: contain; vertical-align: middle; margin-right: 4px; border-radius: 3px; }
 .score-vs { font-size: 0.9rem; color: var(--text-dim); padding: 0 8px; }
 .turn-indicator {
   text-align: center;

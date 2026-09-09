@@ -260,6 +260,35 @@ function generateOpponentSquad(depth, isBoss, isFinalBoss) {
 
 function randomTeamName(isBoss) { return choice(isBoss ? RIVAL_TEAM_BOSSES : RIVAL_TEAM_NAMES); }
 
+// Escudos de equipo (assets/escudos): solo unos pocos equipos rivales de las
+// listas de arriba tienen escudo propio hecho -- el resto usa un escudo
+// genérico (team1.png) para que ningún rival se quede sin insignia en el
+// marcador. Las claves se normalizan (minúsculas, sin tildes) para no fallar
+// por acentos ("Épsilon"/"Géminis") al comparar con el nombre generado.
+var TEAM_SHIELD_FILES = {
+  'Royal Academy': 'royal-academy.png',
+  'Zeus': 'zeus.png',
+  'Occult': 'occult.png',
+  'Alpino': 'alpino.png',
+  'Genesis': 'genesis.png',
+  'Prominence': 'prominence.png',
+  'Tormenta de Géminis': 'tormenta-de-geminis.png',
+  'Pequeños Gigantes': 'pequeños-gigantes.png',
+  'Épsilon': 'epsilon.png'
+};
+var TEAM_SHIELD_FALLBACK = 'assets/escudos/team1.png';
+function normalizeTeamKey(name) {
+  return String(name).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+}
+var TEAM_SHIELDS = {};
+Object.keys(TEAM_SHIELD_FILES).forEach(function (name) {
+  TEAM_SHIELDS[normalizeTeamKey(name)] = 'assets/escudos/' + TEAM_SHIELD_FILES[name];
+});
+function teamShieldPath(name) {
+  var bare = String(name).replace(/^Jefe:\s*/, '');
+  return TEAM_SHIELDS[normalizeTeamKey(bare)] || TEAM_SHIELD_FALLBACK;
+}
+
 /* ---------------------------------------------------------------------
    4. SELECCIÓN DE CAPITÁN / FICHAJES (plantel real)
    --------------------------------------------------------------------- */
@@ -477,9 +506,10 @@ function advanceDailyStage() {
 function startDailyMatch(isBoss) {
   var isFinalBoss = isBoss; // el único jefe de la secuencia diaria es el final
   var oppSquad = generateOpponentSquad(isBoss ? 8 : 3, isBoss, isFinalBoss);
-  var oppName = (isBoss ? 'Jefe: ' : '') + randomTeamName(isBoss);
+  var oppTeamName = randomTeamName(isBoss);
+  var oppName = (isBoss ? 'Jefe: ' : '') + oppTeamName;
   G.match = {
-    isBoss: isBoss, oppName: oppName, oppSquad: oppSquad, turn: 1, order: buildTurnOrder(),
+    isBoss: isBoss, oppName: oppName, oppShield: teamShieldPath(oppTeamName), oppSquad: oppSquad, turn: 1, order: buildTurnOrder(),
     playerScore: 0, oppScore: 0,
     playerAtkCount: 0, playerLastSpecialAt: 0, playerCooldownNeeded: rand(2, 3), playerCooldownBoost: 0, playerUsedSpecialByPlayer: {},
     oppAtkCount: 0, oppLastSpecialAt: 0, oppCooldownNeeded: rand(2, 3), oppCooldownBoost: 0, oppLastSpecialMove: null,
@@ -532,9 +562,10 @@ function startSurvivalMatch(isBoss) {
   // sucesivo es claramente más duro que el anterior (ver bossBonusRange).
   var depth = G.run.survivalWave || 0;
   var oppSquad = generateOpponentSquad(depth, isBoss, false);
-  var oppName = (isBoss ? 'Jefe: ' : '') + randomTeamName(isBoss);
+  var oppTeamName = randomTeamName(isBoss);
+  var oppName = (isBoss ? 'Jefe: ' : '') + oppTeamName;
   G.match = {
-    isBoss: isBoss, oppName: oppName, oppSquad: oppSquad, turn: 1, order: buildTurnOrder(),
+    isBoss: isBoss, oppName: oppName, oppShield: teamShieldPath(oppTeamName), oppSquad: oppSquad, turn: 1, order: buildTurnOrder(),
     playerScore: 0, oppScore: 0,
     playerAtkCount: 0, playerLastSpecialAt: 0, playerCooldownNeeded: rand(2, 3), playerCooldownBoost: 0, playerUsedSpecialByPlayer: {},
     oppAtkCount: 0, oppLastSpecialAt: 0, oppCooldownNeeded: rand(2, 3), oppCooldownBoost: 0, oppLastSpecialMove: null,
@@ -600,8 +631,9 @@ function startTournamentMatch() {
   var normDepth = totalRounds > 1 ? (roundIndex / (totalRounds - 1)) * 10 : 10;
   var oppSquad = generateOpponentSquad(normDepth, isBoss, isFinalBoss);
   var oppName = (isBoss ? 'Jefe: ' : '') + opp.name;
+  var oppShield = teamShieldPath(opp.name);
   G.match = {
-    isBoss: isBoss, oppName: oppName, oppSquad: oppSquad, turn: 1, order: buildTurnOrder(),
+    isBoss: isBoss, oppName: oppName, oppShield: oppShield, oppSquad: oppSquad, turn: 1, order: buildTurnOrder(),
     playerScore: 0, oppScore: 0,
     playerAtkCount: 0, playerLastSpecialAt: 0, playerCooldownNeeded: rand(2, 3), playerCooldownBoost: 0, playerUsedSpecialByPlayer: {},
     oppAtkCount: 0, oppLastSpecialAt: 0, oppCooldownNeeded: rand(2, 3), oppCooldownBoost: 0, oppLastSpecialMove: null,
@@ -678,9 +710,14 @@ function roundNameForIndex(idx, totalRounds) {
   return 'Ronda ' + (idx + 1);
 }
 
+function bracketShieldHtml(side) {
+  if (side.isPlayer) return '';
+  return '<img class="bracket-shield" src="' + escapeHtml(teamShieldPath(side.name)) + '" alt="">';
+}
+
 function bracketMatchHtml(m) {
-  var aLabel = m.a.isPlayer ? 'Tú' : escapeHtml(m.a.name) + (m.a.tier === 'jefe' ? ' 👑' : '');
-  var bLabel = m.b.isPlayer ? 'Tú' : escapeHtml(m.b.name) + (m.b.tier === 'jefe' ? ' 👑' : '');
+  var aLabel = m.a.isPlayer ? 'Tú' : bracketShieldHtml(m.a) + escapeHtml(m.a.name) + (m.a.tier === 'jefe' ? ' 👑' : '');
+  var bLabel = m.b.isPlayer ? 'Tú' : bracketShieldHtml(m.b) + escapeHtml(m.b.name) + (m.b.tier === 'jefe' ? ' 👑' : '');
   var isPlayerMatch = m.a.isPlayer || m.b.isPlayer;
   var resultText = m.winner
     ? ('Gana: ' + (m.winner.isPlayer ? 'Tú' : escapeHtml(m.winner.name)))
@@ -1646,10 +1683,12 @@ function startMatch(nodeId, isBoss) {
   // solo por aparecer en una fila más temprana.
   var normDepth = maxDepth > 0 ? (depth / maxDepth) * 10 : depth;
   var oppSquad = generateOpponentSquad(normDepth, isBoss, isFinalBoss);
-  var oppName = (isBoss ? 'Jefe: ' : '') + randomTeamName(isBoss);
+  var oppTeamName = randomTeamName(isBoss);
+  var oppName = (isBoss ? 'Jefe: ' : '') + oppTeamName;
   G.match = {
     isBoss: isBoss,
     oppName: oppName,
+    oppShield: teamShieldPath(oppTeamName),
     oppSquad: oppSquad,
     turn: 1,
     order: buildTurnOrder(),
@@ -1797,7 +1836,7 @@ function renderMatch() {
       '<div class="match-scoreboard">' +
         '<div class="score-side"><div class="score-name">Tu equipo</div><div class="score-num">' + m.playerScore + '</div></div>' +
         '<div class="score-vs">VS</div>' +
-        '<div class="score-side"><div class="score-name">' + escapeHtml(m.oppName) + '</div><div class="score-num">' + m.oppScore + '</div></div>' +
+        '<div class="score-side">' + (m.oppShield ? '<img class="team-shield" src="' + escapeHtml(m.oppShield) + '" alt="">' : '') + '<div class="score-name">' + escapeHtml(m.oppName) + '</div><div class="score-num">' + m.oppScore + '</div></div>' +
       '</div>' +
       '<div class="turn-indicator">' + (m.suddenDeath ? 'Muerte súbita — ronda ' + m.sdRound : 'Turno ' + Math.min(m.turn, MATCH_TURNS) + ' de ' + MATCH_TURNS) + (m.finished ? '' : (isPlayerTurn ? ' · Tu ataque' : ' · Ataque rival')) + '</div>' +
       (m.suddenDeath && !m.finished ? '<p class="dim small center-text">Gol de oro: gana quien marque primero. Si nadie marca esta ronda, continúa otra.</p>' : '') +
