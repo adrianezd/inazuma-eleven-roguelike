@@ -2842,7 +2842,23 @@ var FUTDRAFT_FORMATIONS = [
   { id: '352', name: '3-5-2', rows: [
       { pos: 'Delantero', count: 2 }, { pos: 'Centrocampista', count: 5 },
       { pos: 'Defensa', count: 3 }, { pos: 'Portero', count: 1 }
-    ], atk: 1.08, def: 1.0, desc: 'Control del centro del campo.' }
+    ], atk: 1.08, def: 1.0, desc: 'Control del centro del campo.' },
+  { id: '4231', name: '4-2-3-1', rows: [
+      { pos: 'Delantero', count: 1 }, { pos: 'Centrocampista', count: 5 },
+      { pos: 'Defensa', count: 4 }, { pos: 'Portero', count: 1 }
+    ], atk: 1.0, def: 1.1, desc: 'Base sólida con mediapunta de apoyo.' },
+  { id: '343', name: '3-4-3', rows: [
+      { pos: 'Delantero', count: 3 }, { pos: 'Centrocampista', count: 4 },
+      { pos: 'Defensa', count: 3 }, { pos: 'Portero', count: 1 }
+    ], atk: 1.28, def: 0.78, desc: 'Máxima presión ofensiva, línea corta atrás.' },
+  { id: '532', name: '5-3-2', rows: [
+      { pos: 'Delantero', count: 2 }, { pos: 'Centrocampista', count: 3 },
+      { pos: 'Defensa', count: 5 }, { pos: 'Portero', count: 1 }
+    ], atk: 0.85, def: 1.28, desc: 'Muro defensivo, contragolpes con dos puntas.' },
+  { id: '541', name: '5-4-1', rows: [
+      { pos: 'Delantero', count: 1 }, { pos: 'Centrocampista', count: 4 },
+      { pos: 'Defensa', count: 5 }, { pos: 'Portero', count: 1 }
+    ], atk: 0.8, def: 1.3, desc: 'Ultradefensiva, un solo delantero de referencia.' }
 ];
 
 function actionGoFutDraftModeSelect() { G.screen = 'futdraftModeSelect'; render(); }
@@ -2917,6 +2933,18 @@ function futDraftNeededCounts(formation, squad) {
   return needed;
 }
 
+// Orden fijo del draft en modo estricto: portero, luego defensas hasta
+// cubrir los que pida la formación, luego centrocampistas, luego
+// delanteros -- no se ofrece un delantero mientras aún falten defensas.
+var FUTDRAFT_DRAFT_ORDER = ['Portero', 'Defensa', 'Centrocampista', 'Delantero'];
+function futDraftCurrentNeededPos(formation, squad) {
+  var needed = futDraftNeededCounts(formation, squad);
+  for (var i = 0; i < FUTDRAFT_DRAFT_ORDER.length; i++) {
+    if (needed[FUTDRAFT_DRAFT_ORDER[i]] > 0) return FUTDRAFT_DRAFT_ORDER[i];
+  }
+  return null;
+}
+
 function generateFutDraftOptions() {
   var f = G.futdraft;
   var squad = f.squad;
@@ -2924,10 +2952,10 @@ function generateFutDraftOptions() {
   var pool;
   if (f.mode === 'estricto') {
     var formation = FUTDRAFT_FORMATIONS.find(function (x) { return x.id === f.formation; });
-    var needed = futDraftNeededCounts(formation, squad);
+    var currentPos = futDraftCurrentNeededPos(formation, squad);
     pool = ROSTER.filter(function (p) {
       if (squadIds.indexOf(p.id) !== -1) return false;
-      return (needed[p.posicion] || 0) > 0;
+      return p.posicion === currentPos;
     });
   } else {
     var counts = futDraftPosCounts(squad);
@@ -2958,13 +2986,21 @@ function renderFutDraftPick() {
   var f = G.futdraft;
   var squad = f.squad;
   var modeLabel = f.mode === 'estricto' ? 'Estricto' : 'Libre';
+  var subtitle = 'Elige a tu jugador ' + (squad.length + 1) + ' de ' + FUTDRAFT_SQUAD_SIZE + '.';
+  if (f.mode === 'estricto') {
+    var formation = FUTDRAFT_FORMATIONS.find(function (x) { return x.id === f.formation; });
+    var currentPos = futDraftCurrentNeededPos(formation, squad);
+    var needed = futDraftNeededCounts(formation, squad);
+    var counts = futDraftPosCounts(squad);
+    subtitle = 'Elige tu ' + currentPos + ' (' + ((counts[currentPos] || 0) + 1) + ' de ' + (needed[currentPos] + (counts[currentPos] || 0)) + ').';
+  }
   var optionsHtml = G.futdraftOptions.map(function (c) {
     return playerCardHtml(c, 'pickFutDraftPlayer(\'' + c.instanceId + '\')', false, false);
   }).join('');
   return (
     '<div class="screen">' +
       '<div class="panel"><h2 class="panel-title mb0">FutDraft &middot; ' + modeLabel + '</h2>' +
-        '<p class="dim small">Elige a tu jugador ' + (squad.length + 1) + ' de ' + FUTDRAFT_SQUAD_SIZE + '.</p></div>' +
+        '<p class="dim small">' + subtitle + '</p></div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:8px">Tu plantilla</h3>' +
         renderFutDraftPitch(squad, f.formation, true) +
@@ -3055,8 +3091,9 @@ function renderFutDraftTeam() {
         '<p class="dim small">Puntuación de equipo: <strong style="color:var(--accent-2)">' + score + '</strong> / 100</p>' +
       '</div>' +
       '<div class="panel">' +
-        '<div class="panel-title-row"><h3>Formación</h3><div class="view-toggle">' + formationBtns + '</div></div>' +
-        '<p class="dim small" style="margin-bottom:10px">' + activeFormation.desc + '</p>' +
+        '<h3 style="margin-bottom:8px">Formación</h3>' +
+        '<div class="view-toggle view-toggle-wrap">' + formationBtns + '</div>' +
+        '<p class="dim small" style="margin:8px 0 10px">' + activeFormation.desc + '</p>' +
         renderFutDraftPitch(f.squad, f.formation) +
       '</div>' +
       '<button class="btn btn-primary btn-block" onclick="startFutDraftMatches()">Jugar ' + FUTDRAFT_MATCHES + ' partidos</button>' +
