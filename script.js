@@ -655,11 +655,21 @@ function generateTournamentBracket(size) {
   return { slots: slots, size: size };
 }
 
-// Resuelve un partido entre dos equipos CPU (no interviene el jugador):
-// los de nivel jefe ganan más a menudo, pero no siempre.
+// Fuerza real del equipo (TEAM_POWER, ver roster-data.js) si el nombre está
+// en la tabla; si no, un valor de reserva según el nivel (jefe/normal) para
+// que nunca falte un número con el que comparar.
+function teamPower(side) {
+  var bare = String(side.name).replace(/^Jefe:\s*/, '');
+  if (TEAM_POWER.hasOwnProperty(bare)) return TEAM_POWER[bare];
+  return side.tier === 'jefe' ? 65 : 35;
+}
+
+// Resuelve un partido entre dos equipos CPU (no interviene el jugador): se
+// tira un dado alrededor de la fuerza real de cada equipo (TEAM_POWER), así
+// que el mejor puntuado gana más a menudo pero siempre puede haber sorpresa.
 function simulateCpuMatch(a, b) {
-  var powerA = a.tier === 'jefe' ? rand(70, 95) : rand(50, 75);
-  var powerB = b.tier === 'jefe' ? rand(70, 95) : rand(50, 75);
+  var powerA = clamp(teamPower(a) + rand(-12, 12), 1, 100);
+  var powerB = clamp(teamPower(b) + rand(-12, 12), 1, 100);
   return powerA >= powerB ? a : b;
 }
 

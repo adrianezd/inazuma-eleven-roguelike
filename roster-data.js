@@ -80,6 +80,36 @@ var RIVAL_TEAM_BOSSES = [
   'Falam Medius', 'Flota Ixar', 'Guardianes de La Reina', 'Orfeo'
 ];
 
+// Puntuación de "fuerza" de cada equipo (1-100), usada para que la CPU
+// resuelva enfrentamientos entre rivales (torneo, FutDraft) con más sentido
+// que un dado puro: cuanto más alta, más gana. Son valores de partida
+// (equipos de RIVAL_TEAM_NAMES más bajos, de RIVAL_TEAM_BOSSES más altos,
+// los que aparecen en ambas listas a medio camino) pensados para ajustar a
+// mano con el tiempo, no una medición objetiva de nada.
+var TEAM_POWER = {
+  // Solo en RIVAL_TEAM_NAMES (nivel normal)
+  'Occult': 40, 'Instituto Osaka': 25,
+  'Alpino': 35, 'Unicorn': 22, 'Big Waves': 30,
+  'Brain': 45, 'Wild': 32, 'Shuriken': 28, 'Kirkwwood': 20, 'Umbrella': 18,
+  'Tarjeteros': 16, 'Veteranos Inazuma': 38,
+  'Cala Pirata': 21, 'Sallys': 24, 'Leones del desierto': 33,
+  'Academia Universal': 29, 'Instituto Cherrybloom': 26, 'Instituto Plenilunio': 34,
+  'Raimon Inakuni': 17, 'Mary Times': 36, 'Mar de Luna': 19, 'Farm': 15, 'Fauxshore': 31,
+  'Los orions': 27, 'Mar de Árboles': 37, 'Otaku': 23,
+  // En las dos listas a la vez (versátiles, gama media-alta)
+  'Royal Academy': 58, 'Zeus': 62, 'Instituto Alius': 55,
+  // Solo en RIVAL_TEAM_BOSSES (nivel jefe)
+  'Academia Ogre': 60, 'Emperadores Oscuros': 78, 'Genesis': 90,
+  'Prominence': 82, 'Polvo de Diamante': 80, 'Tormenta de Géminis': 75, 'Dragones de Fuego': 70,
+  'Pequeños Gigantes': 68, 'Épsilon': 85, 'Los Emperadores': 72, 'Os Reis': 65, 'Neo Japón': 74,
+  'Protocolo Omega': 66, 'Caos': 63, 'El Dorado 01': 57, 'Resistencia Japón': 61, 'Resistencia Japón GO': 71,
+  'Gir': 56, 'Gar': 56, 'Ragnah': 59, 'Alius Masters': 73, 'Inazuma Japan': 88, 'Inazuma Japan GO': 96,
+  'Chrono Storm': 77, 'Dragon Link': 69, 'Desesperdidos': 54, 'Dinastía Galáctica': 86,
+  'Earth Eleven': 64, 'Eclipse de Orión': 84, 'El Dorado 02': 67, 'El Dorado 03': 79,
+  'Protocolo Omega 2.0': 76, 'Protocolo Omega 3.0': 89, 'Zanark Domain': 91, 'Equipo Zero': 81,
+  'Falam Medius': 62, 'Flota Ixar': 83, 'Guardianes de La Reina': 87, 'Orfeo': 73
+};
+
 
 // El plantel real: 16 personajes de Inazuma Eleven. "nombre" usa el nombre
 // del doblaje en inglés/internacional (idéntico al usado en el doblaje de
