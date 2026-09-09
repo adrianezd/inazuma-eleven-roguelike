@@ -1040,6 +1040,7 @@ function render() {
     case 'futdraftFormationSelect': html = renderFutDraftFormationSelect(); break;
     case 'futdraftPick': html = renderFutDraftPick(); break;
     case 'futdraftTeam': html = renderFutDraftTeam(); break;
+    case 'futdraftBracket': html = renderFutDraftBracket(); break;
     case 'futdraftMatchResult': html = renderFutDraftMatchResult(); break;
     case 'futdraftSummary': html = renderFutDraftSummary(); break;
     default: html = renderMenu();
@@ -2824,7 +2825,6 @@ function renderPenaltyModeEnd(p) {
    --------------------------------------------------------------------- */
 
 var FUTDRAFT_SQUAD_SIZE = 11;
-var FUTDRAFT_MATCHES = 3;
 // Topes por posición durante el draft (modo Libre): altos para no
 // restringir de más, pero justos para que nunca sobren jugadores fuera de
 // sitio (el máximo que pide cualquiera de las formaciones de abajo).
@@ -3096,15 +3096,26 @@ function renderFutDraftTeam() {
         '<p class="dim small" style="margin:8px 0 10px">' + activeFormation.desc + '</p>' +
         renderFutDraftPitch(f.squad, f.formation) +
       '</div>' +
-      '<button class="btn btn-primary btn-block" onclick="startFutDraftMatches()">Jugar ' + FUTDRAFT_MATCHES + ' partidos</button>' +
+      '<button class="btn btn-primary btn-block" onclick="startFutDraftMatches()">Jugar torneo (8 equipos)</button>' +
     '</div>'
   );
 }
 
+// El torneo de FutDraft reutiliza exactamente el mismo cuadro y la misma
+// simulación CPU-vs-CPU que el Modo Torneo normal (generateTournamentBracket,
+// simulateCpuMatch, TEAM_POWER) -- lo único distinto es cómo se resuelve el
+// partido del jugador: en vez de jugarse a golpes, se simula igual que los
+// de la CPU pero usando la puntuación de equipo y el multiplicador de la
+// formación elegida en vez de TEAM_POWER.
 window.startFutDraftMatches = function () {
-  G.futdraft.matches = [];
-  G.futdraft.matchIndex = 0;
-  playNextFutDraftMatch();
+  var bracket = generateTournamentBracket(8);
+  var round1 = [];
+  for (var i = 0; i < bracket.slots.length; i += 2) round1.push({ a: bracket.slots[i], b: bracket.slots[i + 1], winner: null });
+  G.futdraft.tournament = { rounds: [round1], size: 8 };
+  G.futdraft.champion = null;
+  G.futdraft.eliminated = false;
+  G.screen = 'futdraftBracket';
+  render();
 };
 
 function futDraftExpectedGoals(myAtk, oppDef) {
@@ -3114,56 +3125,106 @@ function futDraftRandomGoals(expected) {
   return clamp(Math.round(expected + rand(-1.2, 1.2)), 0, 8);
 }
 
-function playNextFutDraftMatch() {
+window.playFutDraftMatch = function () {
   var f = G.futdraft;
-  var usedNames = f.matches.map(function (m) { return m.oppName; });
-  var allNames = RIVAL_TEAM_NAMES.concat(RIVAL_TEAM_BOSSES);
-  var pool = allNames.filter(function (n) { return usedNames.indexOf(n) === -1; });
-  var oppName = choice(pool.length ? pool : allNames);
-  var oppPower = TEAM_POWER.hasOwnProperty(oppName) ? TEAM_POWER[oppName] : 45;
+  var round = f.tournament.rounds[f.tournament.rounds.length - 1];
+  var match = round.filter(function (m) { return (m.a.isPlayer || m.b.isPlayer) && m.winner === null; })[0];
+  var oppSide = match.a.isPlayer ? match.b : match.a;
   var formation = FUTDRAFT_FORMATIONS.find(function (ft) { return ft.id === f.formation; });
   var score = futDraftTeamScore(f.squad);
+  var oppPower = teamPower(oppSide);
   var myAtk = score * formation.atk;
   var myDef = score * formation.def;
   var myGoals = futDraftRandomGoals(futDraftExpectedGoals(myAtk, oppPower));
   var oppGoals = futDraftRandomGoals(futDraftExpectedGoals(oppPower, myDef));
-  var result = myGoals > oppGoals ? 'win' : (myGoals < oppGoals ? 'loss' : 'draw');
-  f.matches.push({ oppName: oppName, oppShield: teamShieldPath(oppName), oppPower: oppPower, myGoals: myGoals, oppGoals: oppGoals, result: result });
+  // En el bracket no puede haber empate -- si el marcador sale igualado se
+  // decide con un mano a mano final ponderado por fuerza (como unos
+  // penaltis abstractos), no con otro sorteo de goles.
+  if (myGoals === oppGoals) {
+    if ((myAtk + rand(-10, 10)) >= (oppPower + rand(-10, 10))) myGoals++; else oppGoals++;
+  }
+  var playerWon = myGoals > oppGoals;
+  match.winner = playerWon ? (match.a.isPlayer ? match.a : match.b) : (match.a.isPlayer ? match.b : match.a);
+  f.lastMatchResult = { oppName: oppSide.name, oppShield: teamShieldPath(oppSide.name), oppPower: oppPower, myGoals: myGoals, oppGoals: oppGoals, playerWon: playerWon };
   G.screen = 'futdraftMatchResult';
   render();
-}
+};
 
 window.continueFutDraftMatch = function () {
   var f = G.futdraft;
-  f.matchIndex++;
-  if (f.matchIndex >= FUTDRAFT_MATCHES) finishFutDraft();
-  else playNextFutDraftMatch();
+  var round = f.tournament.rounds[f.tournament.rounds.length - 1];
+  if (!f.lastMatchResult.playerWon) {
+    f.eliminated = true;
+    G.screen = 'futdraftSummary';
+    render();
+    return;
+  }
+  // El jugador ganó su partido: se resuelve el resto de la ronda sola,
+  // igual que en el Modo Torneo normal.
+  round.forEach(function (m) { if (m.winner === null) m.winner = simulateCpuMatch(m.a, m.b); });
+  if (round.length === 1) {
+    f.champion = round[0].winner;
+    G.screen = 'futdraftSummary';
+    render();
+    return;
+  }
+  var winners = round.map(function (m) { return m.winner; });
+  var nextRound = [];
+  for (var i = 0; i < winners.length; i += 2) nextRound.push({ a: winners[i], b: winners[i + 1], winner: null });
+  f.tournament.rounds.push(nextRound);
+  G.screen = 'futdraftBracket';
+  render();
 };
 
-function finishFutDraft() {
-  G.screen = 'futdraftSummary';
-  render();
+function renderFutDraftBracket() {
+  var t = G.futdraft.tournament;
+  var totalRounds = Math.log2(t.size);
+  var html = '<div class="screen"><div class="panel center-text"><h2 class="panel-title mb0">🏆 Torneo FutDraft</h2><p class="dim small">Tu once y ' + (t.size - 1) + ' rivales, eliminación directa.</p></div>';
+  html += '<div class="panel bracket-panel"><div class="bracket-tree">';
+  t.rounds.forEach(function (round, ri) {
+    var isFinal = round.length === 1;
+    html += '<div class="bracket-round-col"><div class="bracket-round-title">' + roundNameForIndex(ri, totalRounds) + '</div>';
+    if (isFinal) {
+      html += '<div class="bracket-final-wrap">' + bracketMatchHtml(round[0]) + '</div>';
+    } else {
+      html += '<div class="bracket-pairs">';
+      for (var i = 0; i < round.length; i += 2) {
+        html += '<div class="bracket-pair">' + bracketMatchHtml(round[i]) + bracketMatchHtml(round[i + 1]) + '</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  var lastRound = t.rounds[t.rounds.length - 1];
+  var champion = lastRound.length === 1 ? lastRound[0].winner : null;
+  html += '<div class="bracket-round-col bracket-trophy-col"><div class="bracket-round-title">Campeón</div>' +
+    '<div class="bracket-trophy-wrap">' +
+      '<div class="bracket-trophy' + (champion ? '' : ' is-pending') + '">🏆</div>' +
+      '<div class="bracket-champion-name">' + (champion ? (champion.isPlayer ? 'Tú' : escapeHtml(champion.name)) : '?') + '</div>' +
+    '</div></div>';
+  html += '</div></div>';
+  var pendingPlayerMatch = lastRound.filter(function (m) { return (m.a.isPlayer || m.b.isPlayer) && m.winner === null; })[0];
+  if (pendingPlayerMatch) {
+    html += '<button class="btn btn-primary btn-block" onclick="playFutDraftMatch()">Jugar mi partido</button>';
+  }
+  html += '</div>';
+  return html;
 }
 
 function renderFutDraftMatchResult() {
-  var f = G.futdraft;
-  var m = f.matches[f.matches.length - 1];
-  var resultLabel = m.result === 'win' ? '🏆 ¡Victoria!' : (m.result === 'loss' ? 'Derrota' : 'Empate');
-  var isLast = f.matchIndex >= FUTDRAFT_MATCHES - 1;
+  var r = G.futdraft.lastMatchResult;
+  var resultLabel = r.playerWon ? '🏆 ¡Victoria!' : 'Derrota';
   return (
     '<div class="screen">' +
-      '<div class="panel center-text">' +
-        '<h2 class="panel-title mb0">Partido ' + (f.matchIndex + 1) + ' de ' + FUTDRAFT_MATCHES + '</h2>' +
-      '</div>' +
       '<div class="match-scoreboard">' +
-        '<div class="score-side"><img class="team-shield" src="' + PLAYER_SHIELD + '" alt=""><div class="score-name">Tú</div><div class="score-num">' + m.myGoals + '</div></div>' +
+        '<div class="score-side"><img class="team-shield" src="' + PLAYER_SHIELD + '" alt=""><div class="score-name">Tú</div><div class="score-num">' + r.myGoals + '</div></div>' +
         '<div class="score-vs">VS</div>' +
-        '<div class="score-side"><img class="team-shield" src="' + escapeHtml(m.oppShield) + '" alt=""><div class="score-name">' + escapeHtml(m.oppName) + '</div><div class="score-num">' + m.oppGoals + '</div></div>' +
+        '<div class="score-side"><img class="team-shield" src="' + escapeHtml(r.oppShield) + '" alt=""><div class="score-name">' + escapeHtml(r.oppName) + '</div><div class="score-num">' + r.oppGoals + '</div></div>' +
       '</div>' +
       '<div class="panel center-text">' +
         '<h3 style="margin-bottom:4px">' + resultLabel + '</h3>' +
-        '<p class="dim small">Fuerza de ' + escapeHtml(m.oppName) + ': ' + m.oppPower + ' / 100</p>' +
-        '<button class="btn btn-primary btn-block mt" onclick="continueFutDraftMatch()">' + (isLast ? 'Ver resumen' : 'Siguiente partido') + '</button>' +
+        '<p class="dim small">Fuerza de ' + escapeHtml(r.oppName) + ': ' + r.oppPower + ' / 100</p>' +
+        '<button class="btn btn-primary btn-block mt" onclick="continueFutDraftMatch()">' + (r.playerWon ? 'Continuar' : 'Ver resultado') + '</button>' +
       '</div>' +
     '</div>'
   );
@@ -3171,19 +3232,14 @@ function renderFutDraftMatchResult() {
 
 function renderFutDraftSummary() {
   var f = G.futdraft;
-  var wins = f.matches.filter(function (m) { return m.result === 'win'; }).length;
-  var draws = f.matches.filter(function (m) { return m.result === 'draw'; }).length;
-  var losses = f.matches.filter(function (m) { return m.result === 'loss'; }).length;
-  var matchesHtml = f.matches.map(function (m) {
-    return '<p>vs ' + escapeHtml(m.oppName) + ': <strong>' + m.myGoals + ' - ' + m.oppGoals + '</strong></p>';
-  }).join('');
+  var won = f.champion && f.champion.isPlayer;
+  var title = won ? '🏆 ¡Campeón del torneo!' : 'Eliminado';
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
-        '<h2 class="panel-title mt">Resumen de FutDraft</h2>' +
-        '<p class="score-num">' + wins + 'V ' + draws + 'E ' + losses + 'D</p>' +
-        '<div class="log-panel" style="text-align:left">' + matchesHtml + '</div>' +
+        '<h2 class="panel-title mt">' + title + '</h2>' +
+        (won ? '<div class="bracket-trophy" style="margin:0 auto">🏆</div>' : '<p class="dim small">Tu once no llegó hasta el final esta vez.</p>') +
         '<button class="btn btn-primary btn-block mt" onclick="actionGoFutDraftModeSelect()">Nuevo draft</button>' +
       '</div>' +
     '</div>'
