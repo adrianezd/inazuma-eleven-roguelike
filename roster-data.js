@@ -489,7 +489,7 @@ var ROSTER = [
   {
     id: 'r51', nombre: 'Paul Siddon', original: 'Donichi Posei',
     posicion: 'Portero', tipo: 'Montaña',
-    tiro: 30, pase: 50, defensa: 79, especial: 80,
+    tiro: 51, pase: 50, defensa: 79, especial: 80,
     hissatsu: ['Muralla Gigante'],
     desc: 'Portero veterano del Zeus, conocido por su imponente presencia en la portería.',
     locked: true, cost: 155
@@ -973,7 +973,7 @@ var ROSTER = [
   {
     id: 'r110', nombre: 'Nero', original: 'Nelson Rockwell',
     posicion: 'Portero', tipo: 'Bosque',
-    tiro: 18, pase: 52, defensa: 84, especial: 76,
+    tiro: 38, pase: 52, defensa: 84, especial: 76,
     hissatsu: ['Muro Dimensional'],
     desc: 'Portero del Génesis con una defensa prácticamente inexpugnable.',
     locked: false, cost: 135
