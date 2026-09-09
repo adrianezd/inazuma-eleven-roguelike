@@ -243,7 +243,7 @@ var ROSTER = [
   {
     id: 'r20', nombre: 'Byron Love', original: 'Afuro Terumi',
     posicion: 'Centrocampista', tipo: 'Bosque',
-    tiro: 78, pase: 74, defensa: 42, especial: 76,
+    tiro: 81, pase: 74, defensa: 42, especial: 76,
     hissatsu: ['Sabiduría Divina'],
     desc: 'Capitán de Zeus, el centrocampista más elegante y letal.',
     locked: true, cost: 177
@@ -251,7 +251,7 @@ var ROSTER = [
   {
     id: 'r21', nombre: 'Scott Banyan', original: 'Kogure Yuuya',
     posicion: 'Defensa', tipo: 'Bosque',
-    tiro: 38, pase: 50, defensa: 73, especial: 50,
+    tiro: 38, pase: 50, defensa: 77, especial: 50,
     hissatsu: ['Campo Torbellino'],
     desc: 'Defensa travieso de Raimon, siempre lleno de recursos.',
     locked: true, cost: 87
@@ -275,7 +275,7 @@ var ROSTER = [
   {
     id: 'r22', nombre: 'David Samford', original: 'Sakuma Jirou',
     posicion: 'Delantero', tipo: 'Bosque',
-    tiro: 76, pase: 61, defensa: 30, especial: 58,
+    tiro: 78, pase: 64, defensa: 30, especial: 58,
     hissatsu: ['Pinguino Emperador II'],
     desc: 'Delantero de la royal, implacable y sin piedad en el choque.',
     locked: true, cost: 113
@@ -283,7 +283,7 @@ var ROSTER = [
   {
     id: 'r23', nombre: 'Archer Hawkins', original: 'Tobitaka Seiya',
     posicion: 'Defensa', tipo: 'Viento',
-    tiro: 30, pase: 40, defensa: 79, especial: 60,
+    tiro: 30, pase: 40, defensa: 80, especial: 60,
     hissatsu: ['Corte de vacío'],
     desc: 'Guerrero solitario que rechazó el once titular por orgullo.',
     locked: true, cost: 89
@@ -291,7 +291,7 @@ var ROSTER = [
   {
     id: 'r24', nombre: 'Aiden Froste', original: 'Fubuki Atsuya',
     posicion: 'Delantero', tipo: 'Fuego',
-    tiro: 78, pase: 44, defensa: 30, especial: 68,
+    tiro: 80, pase: 44, defensa: 30, especial: 68,
     hissatsu: ['Remate Cazaosos'],
     desc: 'El hermano de Shawn Froste, tan letal como frío en el área.',
     locked: true, cost: 105
@@ -299,7 +299,7 @@ var ROSTER = [
   {
     id: 'r30', nombre: 'Arion Sherwind', original: 'Matsukaze Tenma',
     posicion: 'Centrocampista', tipo: 'Viento',
-    tiro: 75, pase: 75, defensa: 46, especial: 66,
+    tiro: 78, pase: 78, defensa: 46, especial: 69,
     hissatsu: ['Brisa deslizante'],
     desc: 'Capitán de la nueva generación de Raimon, corazón indomable.',
     locked: true, cost: 159
@@ -307,7 +307,7 @@ var ROSTER = [
   {
     id: 'r31', nombre: 'Riccardo Di Rigo', original: 'Shindou Takuto',
     posicion: 'Centrocampista', tipo: 'Bosque',
-    tiro: 73, pase: 78, defensa: 44, especial: 72,
+    tiro: 76, pase: 78, defensa: 44, especial: 72,
     hissatsu: ['Pentagrama'],
     desc: 'Estratega de piano y balón, heredero del legado de Jude Sharp.',
     locked: false
@@ -315,7 +315,7 @@ var ROSTER = [
   {
     id: 'r32', nombre: 'Gabriel García', original: 'Kirino Ranmaru',
     posicion: 'Defensa', tipo: 'Bosque',
-    tiro: 40, pase: 56, defensa: 76, especial: 54,
+    tiro: 40, pase: 56, defensa: 78, especial: 54,
     hissatsu: ['Niebla Mística'],
     desc: 'Defensa técnico y mejor amigo de Riccardo.',
     locked: false
@@ -323,9 +323,9 @@ var ROSTER = [
   {
     id: 'r33', nombre: 'Aitor Cazador', original: 'Kariya Masaki',
     posicion: 'Defensa', tipo: 'Bosque',
-    tiro: 44, pase: 44, defensa: 76, especial: 62,
+    tiro: 44, pase: 44, defensa: 78, especial: 62,
     hissatsu: ['Red de caza'],
-    desc: 'Regateador travieso capaz de desaparecer entre rivales.',
+    desc: 'Defensa travieso capaz de desaparecer entre rivales.',
     locked: true, cost: 114
   },
   {
@@ -339,7 +339,7 @@ var ROSTER = [
   {
     id: 'r36', nombre: 'Ryoma Nishiki', original: 'Nishiki Ryouma',
     posicion: 'Delantero', tipo: 'Montaña',
-    tiro: 75, pase: 71, defensa: 34, especial: 58,
+    tiro: 76, pase: 73, defensa: 34, especial: 58,
     hissatsu: ['Chut ancestal'],
     desc: 'Delantero desenfadado con un don natural para el gol.',
     locked: false
