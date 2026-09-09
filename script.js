@@ -2825,10 +2825,10 @@ function renderPenaltyModeEnd(p) {
 
 var FUTDRAFT_SQUAD_SIZE = 11;
 var FUTDRAFT_MATCHES = 3;
-// Topes por posición durante el draft: altos para no restringir de más,
-// pero justos para que nunca sobren jugadores fuera de sitio (el máximo
-// que pide cualquiera de las 3 formaciones de abajo).
-var FUTDRAFT_POS_CAPS = { Portero: 1, Defensa: 5, Centrocampista: 5, Delantero: 3 };
+// Topes por posición durante el draft (modo Libre): altos para no
+// restringir de más, pero justos para que nunca sobren jugadores fuera de
+// sitio (el máximo que pide cualquiera de las formaciones de abajo).
+var FUTDRAFT_POS_CAPS = { Portero: 1, Defensa: 5, Centrocampista: 5, Delantero: 4 };
 
 var FUTDRAFT_FORMATIONS = [
   { id: '442', name: '4-4-2', rows: [
@@ -2843,10 +2843,10 @@ var FUTDRAFT_FORMATIONS = [
       { pos: 'Delantero', count: 2 }, { pos: 'Centrocampista', count: 5 },
       { pos: 'Defensa', count: 3 }, { pos: 'Portero', count: 1 }
     ], atk: 1.08, def: 1.0, desc: 'Control del centro del campo.' },
-  { id: '4231', name: '4-2-3-1', rows: [
-      { pos: 'Delantero', count: 1 }, { pos: 'Centrocampista', count: 5 },
-      { pos: 'Defensa', count: 4 }, { pos: 'Portero', count: 1 }
-    ], atk: 1.0, def: 1.1, desc: 'Base sólida con mediapunta de apoyo.' },
+  { id: '334', name: '3-3-4', rows: [
+      { pos: 'Delantero', count: 4 }, { pos: 'Centrocampista', count: 3 },
+      { pos: 'Defensa', count: 3 }, { pos: 'Portero', count: 1 }
+    ], atk: 1.35, def: 0.7, desc: 'Ataque total, cuatro delanteros.' },
   { id: '343', name: '3-4-3', rows: [
       { pos: 'Delantero', count: 3 }, { pos: 'Centrocampista', count: 4 },
       { pos: 'Defensa', count: 3 }, { pos: 'Portero', count: 1 }
