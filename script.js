@@ -1284,12 +1284,10 @@ function drawMapConnections() {
   var run = G.run;
   var edges = run.map.edges;
   var traversed = run.traversedEdges || {};
-  // Verde en dos casos: el tramo ya ANDADO (el camino real que has recorrido,
-  // guardado en traversedEdges) y los tramos que salen de tu nodo actual
-  // hacia las opciones elegibles ahora mismo. Nunca las ramas de un nodo
-  // superado que no elegiste -- eso fue el bug anterior (cualquier rama de
-  // un nodo "cleared" se pintaba verde, la hubieras cogido o no).
-  var avail = availableNodeIds();
+  // Verde SOLO en el tramo que ya andaste de verdad (traversedEdges), nunca
+  // en las opciones que podrías elegir a continuación -- eso se pinta en
+  // cuanto entras en el nodo, no antes, para no insinuar una elección que
+  // todavía no has hecho.
   var rect = wrap.getBoundingClientRect();
   svg.setAttribute('width', rect.width);
   svg.setAttribute('height', rect.height);
@@ -1306,9 +1304,7 @@ function drawMapConnections() {
       var tr = toEl.getBoundingClientRect();
       var tx = tr.left - rect.left + tr.width / 2;
       var ty = tr.top - rect.top + tr.height / 2;
-      var isTraversed = !!traversed[fromId + '>' + toId];
-      var isPossibleNow = fromId === run.currentNodeId && avail.indexOf(toId) !== -1;
-      var stroke = (isTraversed || isPossibleNow) ? '#2f9e6b' : '#2a3b4a';
+      var stroke = traversed[fromId + '>' + toId] ? '#2f9e6b' : '#2a3b4a';
       lines += '<line x1="' + fx + '" y1="' + fy + '" x2="' + tx + '" y2="' + ty + '" stroke="' + stroke + '" stroke-width="3" />';
     });
   });
