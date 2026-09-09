@@ -481,7 +481,7 @@ function startDailyMatch(isBoss) {
   G.match = {
     isBoss: isBoss, oppName: oppName, oppSquad: oppSquad, turn: 1, order: buildTurnOrder(),
     playerScore: 0, oppScore: 0,
-    playerAtkCount: 0, playerLastSpecialAt: 0, playerCooldownNeeded: rand(2, 3), playerCooldownBoost: 0, playerLastSpecialMove: null,
+    playerAtkCount: 0, playerLastSpecialAt: 0, playerCooldownNeeded: rand(2, 3), playerCooldownBoost: 0, playerUsedSpecialByPlayer: {},
     oppAtkCount: 0, oppLastSpecialAt: 0, oppCooldownNeeded: rand(2, 3), oppCooldownBoost: 0, oppLastSpecialMove: null,
     pendingOpp: null, defenseTechniqueUsedByPos: { Portero: false, Defensa: false },
     log: [], selectedAttackerId: null, lastEvent: null, lastEventClass: '', finished: false,
@@ -536,7 +536,7 @@ function startSurvivalMatch(isBoss) {
   G.match = {
     isBoss: isBoss, oppName: oppName, oppSquad: oppSquad, turn: 1, order: buildTurnOrder(),
     playerScore: 0, oppScore: 0,
-    playerAtkCount: 0, playerLastSpecialAt: 0, playerCooldownNeeded: rand(2, 3), playerCooldownBoost: 0, playerLastSpecialMove: null,
+    playerAtkCount: 0, playerLastSpecialAt: 0, playerCooldownNeeded: rand(2, 3), playerCooldownBoost: 0, playerUsedSpecialByPlayer: {},
     oppAtkCount: 0, oppLastSpecialAt: 0, oppCooldownNeeded: rand(2, 3), oppCooldownBoost: 0, oppLastSpecialMove: null,
     pendingOpp: null, defenseTechniqueUsedByPos: { Portero: false, Defensa: false },
     log: [], selectedAttackerId: null, lastEvent: null, lastEventClass: '', finished: false,
@@ -603,7 +603,7 @@ function startTournamentMatch() {
   G.match = {
     isBoss: isBoss, oppName: oppName, oppSquad: oppSquad, turn: 1, order: buildTurnOrder(),
     playerScore: 0, oppScore: 0,
-    playerAtkCount: 0, playerLastSpecialAt: 0, playerCooldownNeeded: rand(2, 3), playerCooldownBoost: 0, playerLastSpecialMove: null,
+    playerAtkCount: 0, playerLastSpecialAt: 0, playerCooldownNeeded: rand(2, 3), playerCooldownBoost: 0, playerUsedSpecialByPlayer: {},
     oppAtkCount: 0, oppLastSpecialAt: 0, oppCooldownNeeded: rand(2, 3), oppCooldownBoost: 0, oppLastSpecialMove: null,
     pendingOpp: null, defenseTechniqueUsedByPos: { Portero: false, Defensa: false },
     log: [], selectedAttackerId: null, lastEvent: null, lastEventClass: '', finished: false,
@@ -1658,14 +1658,15 @@ function startMatch(nodeId, isBoss) {
     // La Especial ya no depende de un medidor de carga lenta: se rige por un
     // cooldown aleatorio de 2 o 3 ataques propios (ver specialStatus), que se
     // vuelve a sortear cada vez que se usa. El Pase adelanta la recarga un
-    // ataque extra (su motivo de ser ahora que ya no existe el medidor), y no
-    // se puede repetir la misma técnica (mismo nombre de "hissatsu") dos
-    // veces seguidas: hay que cambiar de jugador o esperar a la siguiente vez.
+    // ataque extra (su motivo de ser ahora que ya no existe el medidor).
+    // Cada jugador (delantero/centrocampista) puede usar SU técnica de
+    // ataque 1 sola vez por partido -- igual que la técnica defensiva de
+    // portero/defensa, no solo "no repetir dos veces seguidas" como antes.
     playerAtkCount: 0,
     playerLastSpecialAt: 0,
     playerCooldownNeeded: rand(2, 3),
     playerCooldownBoost: 0,
-    playerLastSpecialMove: null,
+    playerUsedSpecialByPlayer: {},
     oppAtkCount: 0,
     oppLastSpecialAt: 0,
     oppCooldownNeeded: rand(2, 3),
@@ -1822,18 +1823,19 @@ function renderPlayerTurn() {
   var pStatus = specialStatus(m.playerAtkCount, m.playerLastSpecialAt, m.playerCooldownBoost, m.playerCooldownNeeded);
   var selectedPlayer = selected ? squad.find(function (p) { return p.instanceId === selected; }) : null;
   var specialLabel = selectedPlayer && selectedPlayer.hissatsu ? selectedPlayer.hissatsu[0] : 'Especial';
-  // No se puede repetir la misma técnica dos veces seguidas: si el jugador
-  // seleccionado tiene la misma "hissatsu" que se usó la última vez, hay que
-  // cambiar de jugador (o esperar a que ese cooldown se reinicie con otro).
-  var isRepeat = selectedPlayer && specialLabel === m.playerLastSpecialMove;
+  // Cada jugador puede usar su técnica de ataque 1 sola vez por partido
+  // (igual que la técnica defensiva de portero/defensa) -- antes solo se
+  // bloqueaba repetirla dos veces SEGUIDAS, así que rotando entre jugadores
+  // se podía volver a usar la misma técnica más adelante en el mismo partido.
+  var alreadyUsed = selectedPlayer && !!m.playerUsedSpecialByPlayer[selectedPlayer.instanceId];
   // Las técnicas de Portero y Defensa son defensivas: solo sirven para la
   // "defensa activa" cuando ataca el rival (ver prepareOpponentTurn), NUNCA
   // para tirar a puerta. Solo Delantero y Centrocampista pueden usar su
   // Especial en su propio turno de ataque.
   var canAttackWithSpecial = selectedPlayer && (selectedPlayer.posicion === 'Delantero' || selectedPlayer.posicion === 'Centrocampista');
-  var canSpecial = pStatus.ready && selected && !isRepeat && canAttackWithSpecial;
+  var canSpecial = pStatus.ready && selected && !alreadyUsed && canAttackWithSpecial;
   var specialHint = (selectedPlayer && !canAttackWithSpecial) ? 'Su técnica es defensiva, no de ataque' :
-    (isRepeat ? 'Repetida: cambia de jugador' : (pStatus.ready ? '¡Lista!' : ('Disponible en ' + pStatus.turnsLeft + ' turno' + (pStatus.turnsLeft === 1 ? '' : 's'))));
+    (alreadyUsed ? 'Ya usada esta partida' : (pStatus.ready ? '¡Lista!' : ('Disponible en ' + pStatus.turnsLeft + ' turno' + (pStatus.turnsLeft === 1 ? '' : 's'))));
 
   var matchupHtml = '';
   if (selectedPlayer) {
@@ -2011,7 +2013,7 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
       m.playerLastSpecialAt = m.playerAtkCount;
       m.playerCooldownBoost = 0;
       m.playerCooldownNeeded = rand(2, 3);
-      m.playerLastSpecialMove = moveName;
+      m.playerUsedSpecialByPlayer[attackerRaw.instanceId] = true;
     }
   } else {
     m.oppAtkCount++;
