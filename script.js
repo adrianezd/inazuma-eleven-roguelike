@@ -1436,10 +1436,14 @@ function renderRecruit() {
           return '<button class="btn btn-danger" onclick="recruitPlayer(' + i + ', \'' + p.instanceId + '\')">Sustituir a ' + escapeHtml(p.nombre) + '</button>';
         }).join('') + '</div>';
     }
+    var origHtml = cand.original ? '<span class="player-original">(' + escapeHtml(cand.original) + ')</span>' : '';
     return (
       '<div class="choice-card">' +
-        '<h3>' + escapeHtml(cand.nombre) + ' ' + typeBadge(cand.tipo) + '</h3>' +
-        '<p class="dim">' + cand.posicion + (cand.original ? ' · ' + escapeHtml(cand.original) : '') + '</p>' +
+        '<div class="player-card-head">' +
+          avatarHtml(cand) +
+          '<div class="player-head-text"><span class="player-name">' + escapeHtml(cand.nombre) + '</span>' + origHtml + '</div>' +
+          typeBadge(cand.tipo) +
+        '</div>' +
         statBarsHtml(cand) +
         (cand.hissatsu ? '<div class="hissatsu-tag">' + cand.hissatsu.map(escapeHtml).join(' · ') + '</div>' : '') +
         '<div class="mt">' + actionsHtml + '</div>' +
