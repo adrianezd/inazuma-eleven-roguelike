@@ -303,6 +303,10 @@ var TEAM_SHIELD_FILES = {
 // team1.png es el escudo del propio jugador ("Tu equipo"), no un relleno
 // genérico para rivales sin escudo -- por eso vive fuera de TEAM_SHIELD_FILES.
 var PLAYER_SHIELD = 'assets/escudos/team1.png';
+// Escudo de relleno para cualquier rival (normal o jefe) que no tenga uno
+// propio en TEAM_SHIELD_FILES -- antes no se mostraba nada, ahora se usa
+// siempre este por defecto en cualquier partido.
+var SECRET_SHIELD = 'assets/escudos/secret.png';
 function normalizeTeamKey(name) {
   return String(name).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
 }
@@ -312,7 +316,7 @@ Object.keys(TEAM_SHIELD_FILES).forEach(function (name) {
 });
 function teamShieldPath(name) {
   var bare = String(name).replace(/^Jefe:\s*/, '');
-  return TEAM_SHIELDS[normalizeTeamKey(bare)] || null;
+  return TEAM_SHIELDS[normalizeTeamKey(bare)] || SECRET_SHIELD;
 }
 
 /* ---------------------------------------------------------------------
@@ -752,9 +756,8 @@ function roundNameForIndex(idx, totalRounds) {
   return 'Ronda ' + (idx + 1);
 }
 
-var SECRET_SHIELD = 'assets/escudos/secret.png';
 function bracketShieldHtml(side) {
-  var path = side.isPlayer ? PLAYER_SHIELD : (teamShieldPath(side.name) || SECRET_SHIELD);
+  var path = side.isPlayer ? PLAYER_SHIELD : teamShieldPath(side.name);
   return '<img class="bracket-shield" src="' + escapeHtml(path) + '" alt="">';
 }
 
@@ -1902,7 +1905,7 @@ function renderMatch() {
       '<div class="match-scoreboard">' +
         '<div class="score-side"><img class="team-shield" src="' + PLAYER_SHIELD + '" alt=""><div class="score-name">Tu equipo</div><div class="score-num">' + m.playerScore + '</div></div>' +
         '<div class="score-vs">VS</div>' +
-        '<div class="score-side">' + (m.oppShield ? '<img class="team-shield" src="' + escapeHtml(m.oppShield) + '" alt="">' : '<div class="team-shield-spacer"></div>') + '<div class="score-name">' + escapeHtml(m.oppName) + '</div><div class="score-num">' + m.oppScore + '</div></div>' +
+        '<div class="score-side"><img class="team-shield" src="' + escapeHtml(m.oppShield) + '" alt=""><div class="score-name">' + escapeHtml(m.oppName) + '</div><div class="score-num">' + m.oppScore + '</div></div>' +
       '</div>' +
       '<div class="turn-indicator">' + (m.suddenDeath ? 'Muerte súbita — ronda ' + m.sdRound : 'Turno ' + Math.min(m.turn, MATCH_TURNS) + ' de ' + MATCH_TURNS) + (m.finished ? '' : (isPlayerTurn ? ' · Tu ataque' : ' · Ataque rival')) + '</div>' +
       (m.suddenDeath && !m.finished ? '<p class="dim small center-text">Gol de oro: gana quien marque primero. Si nadie marca esta ronda, continúa otra.</p>' : '') +
@@ -2768,7 +2771,7 @@ function renderPenaltyMode() {
       '<div class="match-scoreboard">' +
         '<div class="score-side"><img class="team-shield" src="' + PLAYER_SHIELD + '" alt=""><div class="score-name">Tú</div><div class="score-num">' + p.playerGoals + '</div></div>' +
         '<div class="score-vs">' + (p.suddenDeath ? 'Muerte súbita' : ('Ronda ' + p.round + '/' + PENALTY_MODE_ROUNDS)) + '</div>' +
-        '<div class="score-side">' + (p.oppShield ? '<img class="team-shield" src="' + escapeHtml(p.oppShield) + '" alt="">' : '<div class="team-shield-spacer"></div>') + '<div class="score-name">' + escapeHtml(p.oppName) + '</div><div class="score-num">' + p.rivalGoals + '</div></div>' +
+        '<div class="score-side"><img class="team-shield" src="' + escapeHtml(p.oppShield) + '" alt=""><div class="score-name">' + escapeHtml(p.oppName) + '</div><div class="score-num">' + p.rivalGoals + '</div></div>' +
       '</div>' +
       '<div class="panel center-text">' + actionHtml + '</div>' +
       '<div class="log-panel">' + p.log.slice(-6).map(function (l) { return '<p>' + l + '</p>'; }).join('') + '</div>' +
