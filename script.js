@@ -275,7 +275,30 @@ var TEAM_SHIELD_FILES = {
   'Prominence': 'prominence.png',
   'Tormenta de Géminis': 'tormenta-de-geminis.png',
   'Pequeños Gigantes': 'pequeños-gigantes.png',
-  'Épsilon': 'epsilon.png'
+  'Épsilon': 'epsilon.png',
+  'Big Waves': 'big-waves.png',
+  'Caos': 'caos.png',
+  'Chrono Storm': 'chrono-storm.webp',
+  'Dragon Link': 'dragon-link.png',
+  'El Dorado 01': 'eldorado01.png',
+  'Farm': 'farm.png',
+  'Fauxshore': 'fauxshore.png',
+  'Gar': 'gar.png',
+  'Gir': 'gir.png',
+  'Mar de Árboles': 'mar-de-arboles.png',
+  'Mary Times': 'mary-times.png',
+  'Neo Japón': 'neo-japon.png',
+  'Orfeo': 'orfeo.png',
+  'Os Reis': 'osreis.png',
+  'Polvo de Diamante': 'polvo-de-diamantes.png',
+  'Protocolo Omega': 'protocolo-omega.png',
+  'Protocolo Omega 2.0': 'protocolo-omega2-0.png',
+  'Protocolo Omega 3.0': 'protocolo-omega-3.0.png',
+  'Ragnah': 'ragnah.png',
+  'Shuriken': 'shuriken.png',
+  'Zanark Domain': 'zanark-domain.png',
+  'Equipo Zero': 'zero.png',
+  'Desesperdidos': 'desesperados.png'
 };
 // team1.png es el escudo del propio jugador ("Tu equipo"), no un relleno
 // genérico para rivales sin escudo -- por eso vive fuera de TEAM_SHIELD_FILES.
@@ -735,42 +758,51 @@ function bracketShieldHtml(side) {
   return '<img class="bracket-shield" src="' + escapeHtml(path) + '" alt="">';
 }
 
+function bracketTeamHtml(side, m, colorClass) {
+  var label = side.isPlayer ? 'Tú' : escapeHtml(side.name) + (side.tier === 'jefe' ? ' 👑' : '');
+  var isWinner = m.winner === side;
+  var isLoser = m.winner != null && m.winner !== side;
+  var cls = 'bracket-team ' + (isLoser ? 'bracket-team-lost' : colorClass) + (isWinner ? ' bracket-team-winner' : '');
+  return '<div class="' + cls + '">' + bracketShieldHtml(side) + '<span>' + label + '</span></div>';
+}
+
 function bracketMatchHtml(m) {
-  var aLabel = bracketShieldHtml(m.a) + (m.a.isPlayer ? 'Tú' : escapeHtml(m.a.name) + (m.a.tier === 'jefe' ? ' 👑' : ''));
-  var bLabel = bracketShieldHtml(m.b) + (m.b.isPlayer ? 'Tú' : escapeHtml(m.b.name) + (m.b.tier === 'jefe' ? ' 👑' : ''));
   var isPlayerMatch = m.a.isPlayer || m.b.isPlayer;
-  var resultText = m.winner
-    ? ('Gana: ' + (m.winner.isPlayer ? 'Tú' : escapeHtml(m.winner.name)))
-    : (isPlayerMatch ? 'Tu turno' : 'Pendiente');
-  return '<div class="bracket-match' + (isPlayerMatch && !m.winner ? ' bracket-match-active' : '') + (m.winner ? ' bracket-match-done' : '') + '">' +
-      '<span class="bracket-side' + (m.winner === m.a ? ' bracket-winner-side' : '') + '">' + aLabel + '</span>' +
-      '<span class="bracket-vs">vs</span>' +
-      '<span class="bracket-side' + (m.winner === m.b ? ' bracket-winner-side' : '') + '">' + bLabel + '</span>' +
-      '<div class="dim small">' + resultText + '</div>' +
+  var html = '<div class="bracket-match' + (isPlayerMatch && !m.winner ? ' bracket-match-active' : '') + '">' +
+      bracketTeamHtml(m.a, m, 'bracket-team-blue') +
+      bracketTeamHtml(m.b, m, 'bracket-team-gold') +
     '</div>';
+  if (isPlayerMatch && !m.winner) html += '<div class="bracket-your-turn">Tu turno</div>';
+  return html;
 }
 
 function renderTournamentBracket() {
   var t = G.tournament;
   var totalRounds = Math.log2(t.size);
   var html = '<div class="screen"><div class="panel center-text"><h2 class="panel-title mb0">🏆 Torneo de ' + t.size + '</h2><p class="dim small">Tú y ' + (t.size - 1) + ' rivales, eliminación directa.</p></div>';
+  html += '<div class="panel bracket-panel"><div class="bracket-tree">';
   t.rounds.forEach(function (round, ri) {
     var isFinal = round.length === 1;
-    html += '<div class="panel"><h3 class="bracket-round-title">' + roundNameForIndex(ri, totalRounds) + '</h3>';
+    html += '<div class="bracket-round-col"><div class="bracket-round-title">' + roundNameForIndex(ri, totalRounds) + '</div>';
     if (isFinal) {
-      html += bracketMatchHtml(round[0]);
-      if (round[0].winner) {
-        html += '<p class="bracket-champion">🏆 Campeón: ' + (round[0].winner.isPlayer ? 'Tú' : escapeHtml(round[0].winner.name)) + '</p>';
-      }
+      html += '<div class="bracket-final-wrap">' + bracketMatchHtml(round[0]) + '</div>';
     } else {
-      html += '<div class="bracket-round-grid">';
+      html += '<div class="bracket-pairs">';
       for (var i = 0; i < round.length; i += 2) {
-        html += '<div class="bracket-group">' + bracketMatchHtml(round[i]) + bracketMatchHtml(round[i + 1]) + '</div>';
+        html += '<div class="bracket-pair">' + bracketMatchHtml(round[i]) + bracketMatchHtml(round[i + 1]) + '</div>';
       }
       html += '</div>';
     }
     html += '</div>';
   });
+  var lastRoundForChampion = t.rounds[t.rounds.length - 1];
+  var champion = lastRoundForChampion.length === 1 ? lastRoundForChampion[0].winner : null;
+  html += '<div class="bracket-round-col bracket-trophy-col"><div class="bracket-round-title">Campeón</div>' +
+    '<div class="bracket-trophy-wrap">' +
+      '<div class="bracket-trophy' + (champion ? '' : ' is-pending') + '">🏆</div>' +
+      '<div class="bracket-champion-name">' + (champion ? (champion.isPlayer ? 'Tú' : escapeHtml(champion.name)) : '?') + '</div>' +
+    '</div></div>';
+  html += '</div></div>';
   var lastRound = t.rounds[t.rounds.length - 1];
   var pendingPlayerMatch = lastRound.filter(function (m) { return (m.a.isPlayer || m.b.isPlayer) && m.winner === null; })[0];
   if (pendingPlayerMatch) {

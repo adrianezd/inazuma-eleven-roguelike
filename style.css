@@ -729,55 +729,75 @@ a { color: var(--accent); }
 }
 
 /* ===== Bracket de Torneo ===== */
+.bracket-panel { padding: 14px 10px; }
+.bracket-tree {
+  display: flex;
+  align-items: stretch;
+  gap: 30px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 10px 14px;
+  -webkit-overflow-scrolling: touch;
+}
+.bracket-round-col {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 152px;
+}
 .bracket-round-title {
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  font-size: 0.9rem;
+  font-size: 0.72rem;
   color: var(--accent-2);
   margin-bottom: 10px;
 }
-.bracket-round-grid { display: flex; flex-direction: column; gap: 16px; }
-.bracket-group {
-  position: relative;
-  padding-left: 16px;
-}
-.bracket-group::before {
+.bracket-pairs { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 18px; }
+.bracket-pair { position: relative; display: flex; flex-direction: column; gap: 12px; }
+.bracket-pair::after {
   content: '';
   position: absolute;
-  left: 0; top: 20px; bottom: 20px;
-  width: 12px;
+  right: -16px; top: 24%; bottom: 24%;
+  width: 16px;
   border: 2px solid var(--accent-2);
-  border-right: none;
-  border-radius: 8px 0 0 8px;
-  opacity: 0.6;
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  opacity: 0.55;
 }
-.bracket-match {
+.bracket-match { display: flex; flex-direction: column; gap: 5px; position: relative; }
+.bracket-team {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  background: var(--bg-alt);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-  margin-bottom: 8px;
-  margin-left: 4px;
-}
-.bracket-group .bracket-match:last-child { margin-bottom: 0; }
-.bracket-match-active { border-color: var(--accent-2); border-width: 2px; }
-.bracket-match-done { opacity: 0.75; }
-.bracket-vs { color: var(--text-dim); font-size: 0.8rem; }
-.bracket-match .dim { flex-basis: 100%; }
-.bracket-side { transition: color 0.15s ease; }
-.bracket-winner-side { color: var(--success); font-weight: 700; }
-.bracket-champion {
-  text-align: center;
-  color: var(--accent-2);
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
   font-weight: 700;
-  font-size: 1.1rem;
-  margin: 10px 0 0;
+  color: #06202f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+.bracket-team span { overflow: hidden; text-overflow: ellipsis; }
+.bracket-team-blue { background: var(--accent); }
+.bracket-team-gold { background: var(--accent-2); }
+.bracket-team-lost { background: var(--bg-alt); color: var(--text-dim); opacity: 0.55; }
+.bracket-team-winner { box-shadow: 0 0 0 2px var(--success) inset; }
+.bracket-match-active .bracket-team { box-shadow: 0 0 0 2px var(--text) inset; }
+.bracket-your-turn {
+  text-align: center;
+  font-size: 0.66rem;
+  color: var(--accent-2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 1px;
+}
+.bracket-final-wrap { flex: 1; display: flex; align-items: center; }
+.bracket-trophy-col { flex: 0 0 110px; align-items: center; }
+.bracket-trophy-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; }
+.bracket-trophy { font-size: 2.6rem; line-height: 1; }
+.bracket-trophy.is-pending { opacity: 0.3; filter: grayscale(1); }
+.bracket-champion-name { font-weight: 800; color: var(--accent-2); font-size: 0.92rem; }
 
 /* ===== Victory & Defeat Animations ===== */
 .victory-animation {
