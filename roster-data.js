@@ -943,7 +943,7 @@ var ROSTER = [
   {
     id: 'r110', nombre: 'Nero', original: 'Nelson Rockwell',
     posicion: 'Portero', tipo: 'Bosque',
-    tiro: 18, pase: 52, defensa: 90, especial: 86,
+    tiro: 18, pase: 52, defensa: 84, especial: 79,
     hissatsu: ['Muro Dimensional'],
     desc: 'Portero del Génesis con una defensa prácticamente inexpugnable.',
     locked: false, cost: 135
@@ -951,7 +951,7 @@ var ROSTER = [
   {
     id: 'r111', nombre: 'Gele', original: 'Gail Baker',
     posicion: 'Defensa', tipo: 'Viento',
-    tiro: 40, pase: 56, defensa: 82, especial: 74,
+    tiro: 40, pase: 56, defensa: 80, especial: 74,
     hissatsu: ['Niebla Mística'],
     desc: 'Defensa del Génesis que confunde a sus rivales con movimientos impredecibles.',
     locked: false, cost: 120
@@ -959,7 +959,7 @@ var ROSTER = [
   {
     id: 'r112', nombre: 'Kiburn', original: 'Kim Powell',
     posicion: 'Defensa', tipo: 'Fuego',
-    tiro: 44, pase: 52, defensa: 84, especial: 76,
+    tiro: 44, pase: 52, defensa: 80, especial: 76,
     hissatsu: ['Gravitación'],
     desc: 'Defensa extremadamente poderoso que utiliza la fuerza gravitatoria.',
     locked: false, cost: 122
@@ -967,7 +967,7 @@ var ROSTER = [
   {
     id: 'r113', nombre: 'Zohen', original: 'Zack Cummings',
     posicion: 'Defensa', tipo: 'Montaña',
-    tiro: 42, pase: 54, defensa: 86, especial: 70,
+    tiro: 42, pase: 54, defensa: 80, especial: 70,
     hissatsu: ['Robo Planeta'],
     desc: 'Defensa resistente especializado en recuperar el balón.',
     locked: false, cost: 120
@@ -975,7 +975,7 @@ var ROSTER = [
   {
     id: 'r114', nombre: 'Hauser', original: 'Hunt Mercer',
     posicion: 'Defensa', tipo: 'Montaña',
-    tiro: 40, pase: 50, defensa: 88, especial: 72,
+    tiro: 40, pase: 50, defensa: 80, especial: 72,
     hissatsu: ['Superarmadillo'],
     desc: 'Defensa de enorme resistencia física.',
     locked: false, cost: 122
@@ -983,7 +983,7 @@ var ROSTER = [
   {
     id: 'r115', nombre: 'Kormer', original: 'Connor Murray',
     posicion: 'Centrocampista', tipo: 'Fuego',
-    tiro: 58, pase: 68, defensa: 52, especial: 78,
+    tiro: 58, pase: 68, defensa: 68, especial: 78,
     hissatsu: ['Rapto Divino'],
     desc: 'Centrocampista del Génesis con gran capacidad para controlar el balón.',
     locked: false, cost: 125
@@ -1011,5 +1011,21 @@ var ROSTER = [
     hissatsu: ['Astro Remate'],
     desc: 'Delantero del Génesis capaz de realizar potentes remates de origen cósmico.',
     locked: false, cost: 135
+  },
+  {
+    id: 'r119', nombre: 'Hector Helio', original: 'Rococo Ulpa',
+    posicion: 'Portero', tipo: 'Montaña',
+    tiro: 51, pase: 56, defensa: 87, especial: 82,
+    hissatsu: ['Mano Celestial X'],
+    desc: 'Procede de una remota región llamada Costail y tiene un potencial enorme.',
+    locked: false, cost: 190
+  },
+  {
+    id: 'r120', nombre: 'Hector Helio', original: 'Rococo Ulpa',
+    posicion: 'Delantero', tipo: 'Montaña',
+    tiro: 82, pase: 56, defensa: 38, especial: 82,
+    hissatsu: ['Disparo X'],
+    desc: 'Procede de una remota región llamada Costail y tiene un potencial enorme.',
+    locked: false, cost: 190
   },
 ];
