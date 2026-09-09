@@ -301,6 +301,13 @@ a { color: var(--accent); }
   text-shadow: 0 1px 2px rgba(0,0,0,0.6);
 }
 .pitch-player.fatigued .pitch-player-name { color: var(--text-dim); }
+/* Filas de hasta 5 (FutDraft, 11 jugadores): jugadores más estrechos para
+   que quepan sin amontonarse en una pantalla de móvil. */
+.pitch-11 { min-height: 380px; gap: 10px; padding: 14px 6px; }
+.pitch-11 .pitch-row { gap: 8px; }
+.pitch-11 .pitch-player { width: 44px; }
+.pitch-11 .pitch-player-name { font-size: 0.56rem; max-width: 44px; }
+.pitch-11 .avatar { width: 32px; height: 32px; }
 .pitch-center-line { position: absolute; left: 8%; right: 8%; top: 50%; height: 1px; background: rgba(255,255,255,0.18); }
 .pitch-center-circle {
   position: absolute; left: 50%; top: 50%; width: 70px; height: 70px;

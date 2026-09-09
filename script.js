@@ -1036,6 +1036,10 @@ function render() {
     case 'dailyAlreadyPlayed': html = renderDailyAlreadyPlayed(); break;
     case 'torneoBracket': html = renderTournamentBracket(); break;
     case 'torneoSizeSelect': html = renderTorneoSizeSelect(); break;
+    case 'futdraftPick': html = renderFutDraftPick(); break;
+    case 'futdraftTeam': html = renderFutDraftTeam(); break;
+    case 'futdraftMatchResult': html = renderFutDraftMatchResult(); break;
+    case 'futdraftSummary': html = renderFutDraftSummary(); break;
     default: html = renderMenu();
   }
   appEl.innerHTML = html;
@@ -1070,6 +1074,9 @@ function renderMenu() {
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-block" onclick="actionStartPenaltyMode()">Modo Penaltis</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionStartFutDraft()">FutDraft</button>' +
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-block" onclick="actionGoVestuario()">Vestuario</button>' +
@@ -2799,6 +2806,268 @@ function renderPenaltyModeEnd(p) {
         '<p class="score-num">' + p.playerGoals + ' - ' + p.rivalGoals + '</p>' +
         '<p class="dim small">vs ' + escapeHtml(p.oppName) + '</p>' +
         '<button class="btn btn-primary btn-block mt" onclick="actionStartPenaltyMode()">Jugar otra tanda</button>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+/* ---------------------------------------------------------------------
+   15d. FUTDRAFT: modo independiente (sin plantilla persistente ni mapa).
+   Draft de 11 jugadores de 1 en 1 eligiendo entre 3 opciones, con la
+   formación que elijas se calcula el once titular y una puntuación de
+   equipo, y se juegan 3 partidos con resultado aleatorio en base a esa
+   puntuación, la formación y la fuerza real (TEAM_POWER) del rival de
+   turno. No usa el plantel de espíritu del jugador ni da puntos al
+   terminar, igual que Modo Penaltis.
+   --------------------------------------------------------------------- */
+
+var FUTDRAFT_SQUAD_SIZE = 11;
+var FUTDRAFT_MATCHES = 3;
+// Topes por posición durante el draft: altos para no restringir de más,
+// pero justos para que nunca sobren jugadores fuera de sitio (el máximo
+// que pide cualquiera de las 3 formaciones de abajo).
+var FUTDRAFT_POS_CAPS = { Portero: 1, Defensa: 5, Centrocampista: 5, Delantero: 3 };
+
+var FUTDRAFT_FORMATIONS = [
+  { id: '442', name: '4-4-2', rows: [
+      { pos: 'Delantero', count: 2 }, { pos: 'Centrocampista', count: 4 },
+      { pos: 'Defensa', count: 4 }, { pos: 'Portero', count: 1 }
+    ], atk: 1.0, def: 1.12, desc: 'Equilibrada, sólida atrás.' },
+  { id: '433', name: '4-3-3', rows: [
+      { pos: 'Delantero', count: 3 }, { pos: 'Centrocampista', count: 3 },
+      { pos: 'Defensa', count: 4 }, { pos: 'Portero', count: 1 }
+    ], atk: 1.2, def: 0.85, desc: 'Todo al ataque, arriesgada atrás.' },
+  { id: '352', name: '3-5-2', rows: [
+      { pos: 'Delantero', count: 2 }, { pos: 'Centrocampista', count: 5 },
+      { pos: 'Defensa', count: 3 }, { pos: 'Portero', count: 1 }
+    ], atk: 1.08, def: 1.0, desc: 'Control del centro del campo.' }
+];
+
+function actionStartFutDraft() {
+  G.futdraft = { squad: [], formation: '442', matches: [], matchIndex: 0 };
+  G.futdraftOptions = generateFutDraftOptions();
+  G.screen = 'futdraftPick';
+  render();
+}
+
+function futDraftPosCounts(squad) {
+  var c = { Portero: 0, Defensa: 0, Centrocampista: 0, Delantero: 0 };
+  squad.forEach(function (p) { c[p.posicion]++; });
+  return c;
+}
+
+function generateFutDraftOptions() {
+  var squad = G.futdraft.squad;
+  var squadIds = squad.map(function (p) { return p.id; });
+  var counts = futDraftPosCounts(squad);
+  var pool = ROSTER.filter(function (p) {
+    if (squadIds.indexOf(p.id) !== -1) return false;
+    if (counts[p.posicion] >= FUTDRAFT_POS_CAPS[p.posicion]) return false;
+    return true;
+  });
+  var shuffled = pool.slice().sort(function () { return Math.random() - 0.5; });
+  return shuffled.slice(0, 3).map(rosterInstance);
+}
+
+window.pickFutDraftPlayer = function (instanceId) {
+  var picked = G.futdraftOptions.find(function (p) { return p.instanceId === instanceId; });
+  if (!picked) return;
+  G.futdraft.squad.push(picked);
+  if (G.futdraft.squad.length >= FUTDRAFT_SQUAD_SIZE) {
+    G.screen = 'futdraftTeam';
+    render();
+  } else {
+    G.futdraftOptions = generateFutDraftOptions();
+    render();
+  }
+};
+
+function renderFutDraftPick() {
+  var squad = G.futdraft.squad;
+  var squadHtml = squad.length
+    ? '<div class="panel"><h3 style="margin-bottom:8px">Tu once (' + squad.length + '/' + FUTDRAFT_SQUAD_SIZE + ')</h3><div class="card-grid">' +
+      squad.map(function (p) { return playerCardHtml(p, '', false, true); }).join('') +
+      '</div></div>'
+    : '';
+  var optionsHtml = G.futdraftOptions.map(function (c) {
+    return playerCardHtml(c, 'pickFutDraftPlayer(\'' + c.instanceId + '\')', false, false);
+  }).join('');
+  return (
+    '<div class="screen">' +
+      '<div class="panel"><h2 class="panel-title mb0">FutDraft</h2>' +
+        '<p class="dim small">Elige a tu jugador ' + (squad.length + 1) + ' de ' + FUTDRAFT_SQUAD_SIZE + '.</p></div>' +
+      squadHtml +
+      '<div class="panel"><h3 style="margin-bottom:8px">Elige uno</h3><div class="card-grid">' + optionsHtml + '</div></div>' +
+    '</div>'
+  );
+}
+
+function futDraftTeamScore(squad) {
+  if (!squad.length) return 0;
+  var total = squad.reduce(function (sum, p) { return sum + (p.tiro + p.pase + p.defensa + p.especial) / 4; }, 0);
+  return Math.round(total / squad.length);
+}
+
+// Reparte a los 11 del draft en los huecos de la formación elegida en DOS
+// pasadas: la 1ª reserva para cada línea a los jugadores de esa posición
+// real que haya (portero primero, que casi siempre hay solo 1 -- si se
+// mezclara con el relleno de otra línea en una sola pasada, esa línea
+// podía "robarse" al único portero real por tener buena defensa, dejando
+// la portería vacía). La 2ª pasada rellena los huecos que aún falten con
+// los mejores jugadores que queden, sin mirar su posición real.
+function assignFutDraftFormation(squad, formation) {
+  var remaining = squad.slice();
+  var statFor = { Portero: 'defensa', Defensa: 'defensa', Centrocampista: 'pase', Delantero: 'tiro' };
+  var processOrder = ['Portero', 'Defensa', 'Centrocampista', 'Delantero'];
+  function takeBest(list, stat, n) {
+    var sorted = list.slice().sort(function (a, b) { return b[stat] - a[stat]; });
+    var taken = sorted.slice(0, n);
+    taken.forEach(function (p) {
+      var idx = remaining.indexOf(p);
+      if (idx !== -1) remaining.splice(idx, 1);
+    });
+    return taken;
+  }
+  var byPos = {};
+  processOrder.forEach(function (pos) {
+    var row = formation.rows.find(function (r) { return r.pos === pos; });
+    if (!row) return;
+    var ownPos = remaining.filter(function (p) { return p.posicion === pos; });
+    byPos[pos] = takeBest(ownPos, statFor[pos], row.count);
+  });
+  processOrder.forEach(function (pos) {
+    var row = formation.rows.find(function (r) { return r.pos === pos; });
+    if (!row || byPos[pos].length >= row.count) return;
+    byPos[pos] = byPos[pos].concat(takeBest(remaining, statFor[pos], row.count - byPos[pos].length));
+  });
+  return formation.rows.map(function (row) { return { pos: row.pos, players: byPos[row.pos] }; });
+}
+
+function renderFutDraftPitch(squad, formationId) {
+  var formation = FUTDRAFT_FORMATIONS.find(function (f) { return f.id === formationId; });
+  var rows = assignFutDraftFormation(squad, formation);
+  var rowsHtml = rows.map(function (row) {
+    var itemsHtml = row.players.map(function (p) {
+      return '<div class="pitch-player">' + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
+    }).join('');
+    return '<div class="pitch-row">' + itemsHtml + '</div>';
+  }).join('');
+  return '<div class="pitch pitch-11">' + rowsHtml + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div>';
+}
+
+window.setFutDraftFormation = function (id) {
+  G.futdraft.formation = id;
+  render();
+};
+
+function renderFutDraftTeam() {
+  var f = G.futdraft;
+  var score = futDraftTeamScore(f.squad);
+  var formationBtns = FUTDRAFT_FORMATIONS.map(function (ft) {
+    return '<button class="btn-tiny' + (f.formation === ft.id ? ' active' : '') + '" onclick="setFutDraftFormation(\'' + ft.id + '\')">' + ft.name + '</button>';
+  }).join('');
+  var activeFormation = FUTDRAFT_FORMATIONS.find(function (ft) { return ft.id === f.formation; });
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
+        '<h2 class="panel-title mt mb0">Tu once inicial</h2>' +
+        '<p class="dim small">Puntuación de equipo: <strong style="color:var(--accent-2)">' + score + '</strong> / 100</p>' +
+      '</div>' +
+      '<div class="panel">' +
+        '<div class="panel-title-row"><h3>Formación</h3><div class="view-toggle">' + formationBtns + '</div></div>' +
+        '<p class="dim small" style="margin-bottom:10px">' + activeFormation.desc + '</p>' +
+        renderFutDraftPitch(f.squad, f.formation) +
+      '</div>' +
+      '<button class="btn btn-primary btn-block" onclick="startFutDraftMatches()">Jugar ' + FUTDRAFT_MATCHES + ' partidos</button>' +
+    '</div>'
+  );
+}
+
+window.startFutDraftMatches = function () {
+  G.futdraft.matches = [];
+  G.futdraft.matchIndex = 0;
+  playNextFutDraftMatch();
+};
+
+function futDraftExpectedGoals(myAtk, oppDef) {
+  return clamp(1.3 + (myAtk - oppDef) / 22, 0.2, 5);
+}
+function futDraftRandomGoals(expected) {
+  return clamp(Math.round(expected + rand(-1.2, 1.2)), 0, 8);
+}
+
+function playNextFutDraftMatch() {
+  var f = G.futdraft;
+  var usedNames = f.matches.map(function (m) { return m.oppName; });
+  var allNames = RIVAL_TEAM_NAMES.concat(RIVAL_TEAM_BOSSES);
+  var pool = allNames.filter(function (n) { return usedNames.indexOf(n) === -1; });
+  var oppName = choice(pool.length ? pool : allNames);
+  var oppPower = TEAM_POWER.hasOwnProperty(oppName) ? TEAM_POWER[oppName] : 45;
+  var formation = FUTDRAFT_FORMATIONS.find(function (ft) { return ft.id === f.formation; });
+  var score = futDraftTeamScore(f.squad);
+  var myAtk = score * formation.atk;
+  var myDef = score * formation.def;
+  var myGoals = futDraftRandomGoals(futDraftExpectedGoals(myAtk, oppPower));
+  var oppGoals = futDraftRandomGoals(futDraftExpectedGoals(oppPower, myDef));
+  var result = myGoals > oppGoals ? 'win' : (myGoals < oppGoals ? 'loss' : 'draw');
+  f.matches.push({ oppName: oppName, oppShield: teamShieldPath(oppName), oppPower: oppPower, myGoals: myGoals, oppGoals: oppGoals, result: result });
+  G.screen = 'futdraftMatchResult';
+  render();
+}
+
+window.continueFutDraftMatch = function () {
+  var f = G.futdraft;
+  f.matchIndex++;
+  if (f.matchIndex >= FUTDRAFT_MATCHES) finishFutDraft();
+  else playNextFutDraftMatch();
+};
+
+function finishFutDraft() {
+  G.screen = 'futdraftSummary';
+  render();
+}
+
+function renderFutDraftMatchResult() {
+  var f = G.futdraft;
+  var m = f.matches[f.matches.length - 1];
+  var resultLabel = m.result === 'win' ? '🏆 ¡Victoria!' : (m.result === 'loss' ? 'Derrota' : 'Empate');
+  var isLast = f.matchIndex >= FUTDRAFT_MATCHES - 1;
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<h2 class="panel-title mb0">Partido ' + (f.matchIndex + 1) + ' de ' + FUTDRAFT_MATCHES + '</h2>' +
+      '</div>' +
+      '<div class="match-scoreboard">' +
+        '<div class="score-side"><img class="team-shield" src="' + PLAYER_SHIELD + '" alt=""><div class="score-name">Tú</div><div class="score-num">' + m.myGoals + '</div></div>' +
+        '<div class="score-vs">VS</div>' +
+        '<div class="score-side"><img class="team-shield" src="' + escapeHtml(m.oppShield) + '" alt=""><div class="score-name">' + escapeHtml(m.oppName) + '</div><div class="score-num">' + m.oppGoals + '</div></div>' +
+      '</div>' +
+      '<div class="panel center-text">' +
+        '<h3 style="margin-bottom:4px">' + resultLabel + '</h3>' +
+        '<p class="dim small">Fuerza de ' + escapeHtml(m.oppName) + ': ' + m.oppPower + ' / 100</p>' +
+        '<button class="btn btn-primary btn-block mt" onclick="continueFutDraftMatch()">' + (isLast ? 'Ver resumen' : 'Siguiente partido') + '</button>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function renderFutDraftSummary() {
+  var f = G.futdraft;
+  var wins = f.matches.filter(function (m) { return m.result === 'win'; }).length;
+  var draws = f.matches.filter(function (m) { return m.result === 'draw'; }).length;
+  var losses = f.matches.filter(function (m) { return m.result === 'loss'; }).length;
+  var matchesHtml = f.matches.map(function (m) {
+    return '<p>vs ' + escapeHtml(m.oppName) + ': <strong>' + m.myGoals + ' - ' + m.oppGoals + '</strong></p>';
+  }).join('');
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
+        '<h2 class="panel-title mt">Resumen de FutDraft</h2>' +
+        '<p class="score-num">' + wins + 'V ' + draws + 'E ' + losses + 'D</p>' +
+        '<div class="log-panel" style="text-align:left">' + matchesHtml + '</div>' +
+        '<button class="btn btn-primary btn-block mt" onclick="actionStartFutDraft()">Nuevo draft</button>' +
       '</div>' +
     '</div>'
   );
