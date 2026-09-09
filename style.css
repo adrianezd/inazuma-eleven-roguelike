@@ -308,6 +308,14 @@ a { color: var(--accent); }
 .pitch-11 .pitch-player { width: 44px; }
 .pitch-11 .pitch-player-name { font-size: 0.56rem; max-width: 44px; }
 .pitch-11 .avatar { width: 32px; height: 32px; }
+.pitch-empty-slot {
+  width: 32px; height: 32px;
+  border: 2px dashed rgba(255,255,255,0.28);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.35);
+  font-size: 0.9rem;
+}
 .pitch-center-line { position: absolute; left: 8%; right: 8%; top: 50%; height: 1px; background: rgba(255,255,255,0.18); }
 .pitch-center-circle {
   position: absolute; left: 50%; top: 50%; width: 70px; height: 70px;
