@@ -505,11 +505,11 @@ var ROSTER = [
     locked: false, cost: 78
   },
   {
-    id: 'r57', nombre: 'Lilly Willow', original: 'Kogure Yuuya',
-    posicion: 'Defensa', tipo: 'Viento',
-    tiro: 36, pase: 48, defensa: 68, especial: 52,
-    hissatsu: ['Trampa de Araña'],
-    desc: 'Jugadora astuta capaz de complicar cualquier ataque rival.',
+    id: 'r57', nombre: 'Eugene Conwell', original: 'Kogure Yuuya',
+    posicion: 'Delantero', tipo: 'Viento',
+    tiro: 69, pase: 48, defensa: 48, especial: 69,
+    hissatsu: ['Chut congelante'],
+    desc: 'Cabeza bolo.',
     locked: false, cost: 74
   },
   {
