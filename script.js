@@ -895,6 +895,7 @@ function newRun(modeOrHard) {
     hardMode: mode === 'hard',
     map: needsBranchedMap ? generateMap(mode === 'hard') : null,
     currentNodeId: null,
+    traversedEdges: {},
     clearedCount: 0,
     matchesWon: 0,
     spiritEarned: 0,
@@ -1282,10 +1283,12 @@ function drawMapConnections() {
   if (!wrap || !svg) return;
   var run = G.run;
   var edges = run.map.edges;
-  // Verde solo en los caminos REALMENTE elegibles ahora mismo (las próximas
-  // opciones desde tu nodo actual) -- antes se pintaba de verde CUALQUIER
-  // rama que saliera de un nodo ya superado, incluidas las que el jugador
-  // nunca llegó a coger, lo que parecía un camino recorrido falso.
+  var traversed = run.traversedEdges || {};
+  // Verde en dos casos: el tramo ya ANDADO (el camino real que has recorrido,
+  // guardado en traversedEdges) y los tramos que salen de tu nodo actual
+  // hacia las opciones elegibles ahora mismo. Nunca las ramas de un nodo
+  // superado que no elegiste -- eso fue el bug anterior (cualquier rama de
+  // un nodo "cleared" se pintaba verde, la hubieras cogido o no).
   var avail = availableNodeIds();
   var rect = wrap.getBoundingClientRect();
   svg.setAttribute('width', rect.width);
@@ -1303,8 +1306,9 @@ function drawMapConnections() {
       var tr = toEl.getBoundingClientRect();
       var tx = tr.left - rect.left + tr.width / 2;
       var ty = tr.top - rect.top + tr.height / 2;
+      var isTraversed = !!traversed[fromId + '>' + toId];
       var isPossibleNow = fromId === run.currentNodeId && avail.indexOf(toId) !== -1;
-      var stroke = isPossibleNow ? '#2f9e6b' : '#2a3b4a';
+      var stroke = (isTraversed || isPossibleNow) ? '#2f9e6b' : '#2a3b4a';
       lines += '<line x1="' + fx + '" y1="' + fy + '" x2="' + tx + '" y2="' + ty + '" stroke="' + stroke + '" stroke-width="3" />';
     });
   });
@@ -1318,6 +1322,12 @@ window.addEventListener('resize', function () {
 function enterNode(nodeId) {
   var node = findNode(G.run.map, nodeId);
   if (!node || node.cleared) return;
+  // Guarda el tramo concreto que se anda (de dónde vienes a dónde vas), no
+  // solo que el nodo de origen quedó "superado" -- así el mapa puede pintar
+  // el camino real recorrido en vez de adivinarlo por nodos sueltos.
+  if (G.run.currentNodeId) {
+    G.run.traversedEdges[G.run.currentNodeId + '>' + nodeId] = true;
+  }
   G.run.currentNodeId = nodeId;
   switch (node.type) {
     case 'partido': startMatch(nodeId, false); break;
@@ -2016,11 +2026,18 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
 
   // (Se probó a nombrar al defensor SIEMPRE aquí, pero el jugador pidió
   // quitarlo porque salía en cada jugada rival, no solo cuando importaba.)
-  // Sí se nombra la técnica cuando el jugador ELIGIÓ activamente defender
-  // con ella (acción deliberada suya, no un aviso automático de cada turno).
-  var defenderTag = (!isPlayerAttacking && (activeDefense || defenseTechnique))
-    ? (' (' + escapeHtml(defender.hissatsu ? defender.hissatsu[0] : 'técnica defensiva') + ' de ' + escapeHtml(defender.nombre) + ')')
-    : '';
+  // Solo se nombra la TÉCNICA (el hissatsu real, 1 vez por partido) cuando el
+  // jugador la usó de verdad. "Defensa activa" es una acción genérica y
+  // repetible, no el hissatsu -- antes mostraba igualmente el nombre de la
+  // técnica real (p.ej. "Muro Dimensional de Nero") aunque el jugador solo
+  // hubiera elegido "Defensa activa", dando a entender que había gastado su
+  // único uso de la técnica cuando no era así.
+  var defenderTag = '';
+  if (!isPlayerAttacking && defenseTechnique) {
+    defenderTag = ' (' + escapeHtml(defender.hissatsu ? defender.hissatsu[0] : 'técnica defensiva') + ' de ' + escapeHtml(defender.nombre) + ')';
+  } else if (!isPlayerAttacking && activeDefense) {
+    defenderTag = ' (defensa activa de ' + escapeHtml(defender.nombre) + ')';
+  }
 
   // La "ventaja/desventaja elemental" solo se muestra en el resumen pequeño
   // de abajo (el log), no en el mensaje grande de arriba bajo el turno.
