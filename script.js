@@ -995,6 +995,8 @@ function render() {
   }
   appEl.innerHTML = html;
   if (G.screen === 'map') drawMapConnections();
+  var howToEl = document.getElementById('como-jugar');
+  if (howToEl) howToEl.hidden = G.screen !== 'menu';
 }
 
 function renderMenu() {
@@ -2200,6 +2202,16 @@ function maybeTriggerPenalty() {
 function renderPenalty() {
   var m = G.match;
   var p = m.penalty;
+  if (p.result) {
+    var resultTitle = p.result === 'goal' ? '⚽ ¡Gol!' : '🧤 ¡Parada!';
+    return (
+      '<div class="panel center-text penalty-panel">' +
+        '<h3>' + resultTitle + '</h3>' +
+        '<p class="dim small">' + p.resultText + '</p>' +
+        '<button class="btn btn-primary btn-block" onclick="continuePenalty()">Continuar</button>' +
+      '</div>'
+    );
+  }
   var title = p.playerShoots ? '⚽ ¡Penalti a tu favor!' : '🧤 ¡Penalti en contra!';
   var subtitle = p.playerShoots
     ? escapeHtml(p.shooterName) + ' se planta ante ' + escapeHtml(p.keeperName) + ' (rival). Elige dónde tirar.'
@@ -2223,7 +2235,7 @@ function renderPenalty() {
 window.resolvePenalty = function (zone) {
   var m = G.match;
   var p = m && m.penalty;
-  if (!p) return;
+  if (!p || p.result) return;
   var otherZone = rand(0, 2);
   // "zone" es siempre la zona que cubre el portero (elegida por la CPU si
   // disparas tú, elegida por ti si defiendes) y "otherZone" la del disparo
@@ -2237,11 +2249,23 @@ window.resolvePenalty = function (zone) {
     m[scoringSide]++;
     m.lastEvent = shooterLabel + ': ¡penalti anotado!';
     m.lastEventClass = 'goal';
+    p.result = 'goal';
+    p.resultText = shooterLabel + ' marca el penalti.';
   } else {
     m.lastEvent = shooterLabel + ': penalti detenido por ' + escapeHtml(p.keeperName) + '.';
     m.lastEventClass = 'save';
+    p.result = 'save';
+    p.resultText = escapeHtml(p.keeperName) + ' detiene el penalti de ' + shooterLabel + '.';
   }
   m.log.push(m.lastEvent);
+  // El resultado se muestra en pantalla (ver renderPenalty) antes de volver
+  // al partido -- eso ocurre al pulsar "Continuar" (ver continuePenalty).
+  render();
+};
+
+window.continuePenalty = function () {
+  var m = G.match;
+  if (!m || !m.penalty) return;
   m.penalty = null;
 
   // Si esto pasa en muerte súbita y ya decide el partido, hay que cerrarlo
@@ -2625,22 +2649,35 @@ function actionStartPenaltyMode() {
 
 window.resolvePenaltyModeShot = function (zone) {
   var p = G.penaltyRun;
-  if (!p || p.finished) return;
+  if (!p || p.finished || p.result) return;
   var otherZone = rand(0, 2);
   var saved = zone === otherZone;
 
   if (p.stage === 'shoot') {
-    if (!saved) { p.playerGoals++; p.log.push('Tú: ¡gol!'); }
-    else { p.log.push('Tú: penalti parado.'); }
+    if (!saved) { p.playerGoals++; p.log.push('Tú: ¡gol!'); p.result = { type: 'goal', text: '¡Marcas el penalti!' }; }
+    else { p.log.push('Tú: penalti parado.'); p.result = { type: 'save', text: 'El portero rival ataja tu disparo.' }; }
+  } else {
+    if (!saved) { p.rivalGoals++; p.log.push(escapeHtml(p.oppName) + ': ¡gol!'); p.result = { type: 'goal', text: escapeHtml(p.oppName) + ' anota el penalti.' }; }
+    else { p.log.push(escapeHtml(p.oppName) + ': penalti parado.'); p.result = { type: 'save', text: '¡Detienes el penalti rival!' }; }
+  }
+  // El resultado se muestra en pantalla (ver renderPenaltyMode) antes de
+  // pasar al siguiente lanzamiento -- eso ocurre al pulsar "Continuar"
+  // (ver continuePenaltyModeShot), que aplica el cambio de turno/ronda.
+  render();
+};
+
+window.continuePenaltyModeShot = function () {
+  var p = G.penaltyRun;
+  if (!p || !p.result) return;
+  p.result = null;
+
+  if (p.stage === 'shoot') {
     p.stage = 'defend';
     render();
     return;
   }
 
-  if (!saved) { p.rivalGoals++; p.log.push(escapeHtml(p.oppName) + ': ¡gol!'); }
-  else { p.log.push(escapeHtml(p.oppName) + ': penalti parado.'); }
   p.stage = 'shoot';
-
   if (p.suddenDeath) {
     if (p.playerGoals !== p.rivalGoals) { finishPenaltyMode(); return; }
   } else {
@@ -2669,6 +2706,26 @@ function renderPenaltyMode() {
   var title = isShoot ? '⚽ Tu turno de chutar' : '🧤 Para el penalti rival';
   var subtitle = isShoot ? 'Elige dónde tirar.' : 'Elige dónde tirarte a parar.';
 
+  var actionHtml;
+  if (p.result) {
+    actionHtml =
+      '<h3 style="margin-bottom:4px">' + (p.result.type === 'goal' ? '⚽ ¡Gol!' : '🧤 ¡Parada!') + '</h3>' +
+      '<p class="dim small">' + p.result.text + '</p>' +
+      '<button class="btn btn-primary btn-block mt" onclick="continuePenaltyModeShot()">Continuar</button>';
+  } else {
+    actionHtml =
+      '<h3 style="margin-bottom:4px">' + title + '</h3>' +
+      '<p class="dim small">' + subtitle + '</p>' +
+      '<div class="penalty-goal">' +
+        '<img class="penalty-goal-img" src="assets/otros/penaltis.png" alt="">' +
+        '<div class="penalty-zones">' +
+          '<button class="penalty-zone" onclick="resolvePenaltyModeShot(0)" aria-label="Izquierda"></button>' +
+          '<button class="penalty-zone" onclick="resolvePenaltyModeShot(1)" aria-label="Centro"></button>' +
+          '<button class="penalty-zone" onclick="resolvePenaltyModeShot(2)" aria-label="Derecha"></button>' +
+        '</div>' +
+      '</div>';
+  }
+
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
@@ -2681,18 +2738,7 @@ function renderPenaltyMode() {
         '<div class="score-vs">' + (p.suddenDeath ? 'Muerte súbita' : ('Ronda ' + p.round + '/' + PENALTY_MODE_ROUNDS)) + '</div>' +
         '<div class="score-side">' + (p.oppShield ? '<img class="team-shield" src="' + escapeHtml(p.oppShield) + '" alt="">' : '<div class="team-shield-spacer"></div>') + '<div class="score-name">' + escapeHtml(p.oppName) + '</div><div class="score-num">' + p.rivalGoals + '</div></div>' +
       '</div>' +
-      '<div class="panel center-text">' +
-        '<h3 style="margin-bottom:4px">' + title + '</h3>' +
-        '<p class="dim small">' + subtitle + '</p>' +
-        '<div class="penalty-goal">' +
-          '<img class="penalty-goal-img" src="assets/otros/penaltis.png" alt="">' +
-          '<div class="penalty-zones">' +
-            '<button class="penalty-zone" onclick="resolvePenaltyModeShot(0)" aria-label="Izquierda"></button>' +
-            '<button class="penalty-zone" onclick="resolvePenaltyModeShot(1)" aria-label="Centro"></button>' +
-            '<button class="penalty-zone" onclick="resolvePenaltyModeShot(2)" aria-label="Derecha"></button>' +
-          '</div>' +
-        '</div>' +
-      '</div>' +
+      '<div class="panel center-text">' + actionHtml + '</div>' +
       '<div class="log-panel">' + p.log.slice(-6).map(function (l) { return '<p>' + l + '</p>'; }).join('') + '</div>' +
     '</div>'
   );
