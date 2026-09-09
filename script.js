@@ -752,14 +752,14 @@ function roundNameForIndex(idx, totalRounds) {
   return 'Ronda ' + (idx + 1);
 }
 
+var SECRET_SHIELD = 'assets/escudos/secret.png';
 function bracketShieldHtml(side) {
-  var path = side.isPlayer ? PLAYER_SHIELD : teamShieldPath(side.name);
-  if (!path) return '';
+  var path = side.isPlayer ? PLAYER_SHIELD : (teamShieldPath(side.name) || SECRET_SHIELD);
   return '<img class="bracket-shield" src="' + escapeHtml(path) + '" alt="">';
 }
 
 function bracketTeamHtml(side, m, colorClass) {
-  var label = side.isPlayer ? 'Tú' : escapeHtml(side.name) + (side.tier === 'jefe' ? ' 👑' : '');
+  var label = side.isPlayer ? 'Tú' : escapeHtml(side.name);
   var isWinner = m.winner === side;
   var isLoser = m.winner != null && m.winner !== side;
   var cls = 'bracket-team ' + (isLoser ? 'bracket-team-lost' : colorClass) + (isWinner ? ' bracket-team-winner' : '');
