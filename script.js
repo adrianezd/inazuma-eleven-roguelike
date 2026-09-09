@@ -597,8 +597,24 @@ function generateTournamentBracket(size) {
   for (var t1 = 0; t1 < jefeCount; t1++) tiers.push('jefe');
   for (var t2 = 0; t2 < normalCount; t2++) tiers.push('normal');
   tiers = tiers.sort(function () { return Math.random() - 0.5; });
+  // Nombres SIN repetir en el mismo cuadro: antes cada rival se sorteaba
+  // independiente (randomTeamName), así que dos casillas distintas podían
+  // sacar el mismo equipo por pura coincidencia (más probable cuanto más
+  // grande el torneo). Se reparte de dos mazos ya barajados y compartiendo
+  // un set de "usados" entre jefes y normales, porque algunos nombres
+  // (Royal Academy, Zeus...) están en las dos listas a la vez.
+  var usedTeamNames = {};
+  var bossPool = RIVAL_TEAM_BOSSES.slice().sort(function () { return Math.random() - 0.5; });
+  var normalPool = RIVAL_TEAM_NAMES.slice().sort(function () { return Math.random() - 0.5; });
+  function drawUniqueTeamName(pool) {
+    for (var i = 0; i < pool.length; i++) {
+      var key = normalizeTeamKey(pool[i]);
+      if (!usedTeamNames[key]) { usedTeamNames[key] = true; return pool[i]; }
+    }
+    return pool[rand(0, pool.length - 1)]; // mazo agotado (torneo enorme): último recurso, puede repetir
+  }
   var rivals = tiers.map(function (tier) {
-    return { isPlayer: false, name: randomTeamName(tier === 'jefe'), tier: tier };
+    return { isPlayer: false, name: drawUniqueTeamName(tier === 'jefe' ? bossPool : normalPool), tier: tier };
   });
   var slots = new Array(size);
   var playerSlot = rand(0, size - 1);
@@ -922,7 +938,8 @@ var G = {
   pendingDraftSquad: [],
   pendingDraftOptions: [],
   vestuarioFilter: { tipo: null, posicion: null },
-  coleccionFilter: { tipo: null, posicion: null }
+  coleccionFilter: { tipo: null, posicion: null },
+  gacha: { spinning: false, resultId: null }
 };
 
 // Acepta el booleano de siempre (true/false = difícil/normal) o, para los
@@ -966,6 +983,7 @@ function render() {
     case 'evento': html = renderEvento(); break;
     case 'summary': html = renderSummary(); break;
     case 'vestuario': html = renderVestuario(); break;
+    case 'gacha': html = renderGacha(); break;
     case 'coleccion': html = renderColeccion(); break;
     case 'coleccionEquipos': html = renderColeccionEquipos(); break;
     case 'draftPick': html = renderDraftPick(); break;
@@ -1005,6 +1023,10 @@ function renderMenu() {
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-block" onclick="actionGoVestuario()">Vestuario</button>' +
         '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionGoGacha()">Fichaje de Bolas</button>' +
+        '</div>' +
+        '<p class="dim small center-text">' + GACHA_COST + ' pts. · desbloquea un jugador al azar</p>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-outline btn-block" onclick="actionGoColeccion()">Colección de personajes</button>' +
         '</div>' +
@@ -1809,7 +1831,9 @@ function renderMatch() {
   var pStatus = specialStatus(m.playerAtkCount, m.playerLastSpecialAt, m.playerCooldownBoost, m.playerCooldownNeeded);
 
   var body = '';
-  if (m.finished) {
+  if (m.penalty) {
+    body = renderPenalty();
+  } else if (m.finished) {
     body = renderMatchEnd();
   } else if (isPlayerTurn) {
     body = renderPlayerTurn();
@@ -1840,7 +1864,7 @@ function renderMatch() {
       '<div class="match-scoreboard">' +
         '<div class="score-side"><img class="team-shield" src="' + PLAYER_SHIELD + '" alt=""><div class="score-name">Tu equipo</div><div class="score-num">' + m.playerScore + '</div></div>' +
         '<div class="score-vs">VS</div>' +
-        '<div class="score-side">' + (m.oppShield ? '<img class="team-shield" src="' + escapeHtml(m.oppShield) + '" alt="">' : '') + '<div class="score-name">' + escapeHtml(m.oppName) + '</div><div class="score-num">' + m.oppScore + '</div></div>' +
+        '<div class="score-side">' + (m.oppShield ? '<img class="team-shield" src="' + escapeHtml(m.oppShield) + '" alt="">' : '<div class="team-shield-spacer"></div>') + '<div class="score-name">' + escapeHtml(m.oppName) + '</div><div class="score-num">' + m.oppScore + '</div></div>' +
       '</div>' +
       '<div class="turn-indicator">' + (m.suddenDeath ? 'Muerte súbita — ronda ' + m.sdRound : 'Turno ' + Math.min(m.turn, MATCH_TURNS) + ' de ' + MATCH_TURNS) + (m.finished ? '' : (isPlayerTurn ? ' · Tu ataque' : ' · Ataque rival')) + '</div>' +
       (m.suddenDeath && !m.finished ? '<p class="dim small center-text">Gol de oro: gana quien marque primero. Si nadie marca esta ronda, continúa otra.</p>' : '') +
@@ -2105,6 +2129,16 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
   m.selectedAttackerId = null;
 }
 
+// El partido sigue (no ha terminado en este mismo cambio de turno): antes de
+// pintar la pantalla, se sortea si toca un penalti-bonus (ver
+// maybeTriggerPenalty). Se hace aquí y no dentro de render() porque render()
+// se puede volver a llamar sin que haya pasado turno de verdad (p.ej. al
+// redimensionar), y un sorteo ahí lo repetiría cada vez.
+function continueMatch() {
+  maybeTriggerPenalty();
+  render();
+}
+
 function advanceTurn() {
   var m = G.match;
   if (m.suddenDeath) {
@@ -2114,7 +2148,7 @@ function advanceTurn() {
     // el momento -- siempre le daba al rival una respuesta gratis antes de
     // poder ganar).
     if (m.playerScore !== m.oppScore) { finishMatch(); return; }
-    if (m.sdStage === 'jugador') { m.sdStage = 'rival'; render(); return; }
+    if (m.sdStage === 'jugador') { m.sdStage = 'rival'; continueMatch(); return; }
     m.sdRound++;
     if (m.sdRound > 5) {
       if (Math.random() < 0.5) m.playerScore++; else m.oppScore++;
@@ -2122,7 +2156,7 @@ function advanceTurn() {
       return;
     }
     m.sdStage = 'jugador';
-    render();
+    continueMatch();
     return;
   }
 
@@ -2133,14 +2167,87 @@ function advanceTurn() {
       m.sdRound = 1;
       m.sdStage = 'jugador';
       m.log.push('Empate — ¡muerte súbita!');
-      render();
+      continueMatch();
       return;
     }
     finishMatch();
     return;
   }
-  render();
+  continueMatch();
 }
+
+// Penalti-bonus: evento aleatorio (5% cada vez que el partido sigue tras un
+// cambio de turno) que interrumpe brevemente el flujo normal para un
+// mini-juego de 3 zonas -- no consume el turno en curso, solo se resuelve
+// antes de él y luego el partido sigue exactamente donde iba.
+function maybeTriggerPenalty() {
+  var m = G.match;
+  if (!m || m.finished || m.penalty) return;
+  if (Math.random() >= 0.05) return;
+  var playerShoots = Math.random() < 0.5;
+  var shooterSquad = playerShoots ? G.run.squad : m.oppSquad;
+  var keeperSquad = playerShoots ? m.oppSquad : G.run.squad;
+  var shooterPool = shooterSquad.filter(function (p) { return p.posicion !== 'Portero'; });
+  var shooter = choice(shooterPool.length ? shooterPool : shooterSquad);
+  var keeper = keeperSquad.find(function (p) { return p.posicion === 'Portero'; }) || choice(keeperSquad);
+  m.penalty = { playerShoots: playerShoots, shooterName: shooter.nombre, keeperName: keeper.nombre };
+}
+
+function renderPenalty() {
+  var m = G.match;
+  var p = m.penalty;
+  var title = p.playerShoots ? '⚽ ¡Penalti a tu favor!' : '🧤 ¡Penalti en contra!';
+  var subtitle = p.playerShoots
+    ? escapeHtml(p.shooterName) + ' se planta ante ' + escapeHtml(p.keeperName) + ' (rival). Elige dónde tirar.'
+    : escapeHtml(p.shooterName) + ' (rival) se planta ante ' + escapeHtml(p.keeperName) + '. Elige dónde tirarte a parar.';
+  return (
+    '<div class="panel center-text penalty-panel">' +
+      '<h3>' + title + '</h3>' +
+      '<p class="dim small">' + subtitle + '</p>' +
+      '<div class="penalty-goal">' +
+        '<img class="penalty-goal-img" src="assets/otros/penaltis.png" alt="">' +
+        '<div class="penalty-zones">' +
+          '<button class="penalty-zone" onclick="resolvePenalty(0)" aria-label="Izquierda"></button>' +
+          '<button class="penalty-zone" onclick="resolvePenalty(1)" aria-label="Centro"></button>' +
+          '<button class="penalty-zone" onclick="resolvePenalty(2)" aria-label="Derecha"></button>' +
+        '</div>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+window.resolvePenalty = function (zone) {
+  var m = G.match;
+  var p = m && m.penalty;
+  if (!p) return;
+  var otherZone = rand(0, 2);
+  // "zone" es siempre la zona que cubre el portero (elegida por la CPU si
+  // disparas tú, elegida por ti si defiendes) y "otherZone" la del disparo
+  // (al azar si defiendes tú, elegida por la CPU si disparas tú). Si
+  // coinciden, para; si no, gol -- la misma fórmula sirve para ambos casos.
+  var saved = zone === otherZone;
+  var scoringSide = p.playerShoots ? 'playerScore' : 'oppScore';
+  var shooterLabel = p.playerShoots ? escapeHtml(p.shooterName) : escapeHtml(p.shooterName) + ' (rival)';
+
+  if (!saved) {
+    m[scoringSide]++;
+    m.lastEvent = shooterLabel + ': ¡penalti anotado!';
+    m.lastEventClass = 'goal';
+  } else {
+    m.lastEvent = shooterLabel + ': penalti detenido por ' + escapeHtml(p.keeperName) + '.';
+    m.lastEventClass = 'save';
+  }
+  m.log.push(m.lastEvent);
+  m.penalty = null;
+
+  // Si esto pasa en muerte súbita y ya decide el partido, hay que cerrarlo
+  // aquí mismo: no va a haber otra llamada a advanceTurn para este evento.
+  if (m.suddenDeath && m.playerScore !== m.oppScore) {
+    finishMatch();
+    return;
+  }
+  render();
+};
 
 function finishMatch() {
   var m = G.match;
@@ -2378,6 +2485,112 @@ function buyCaptain(playerId) {
   meta.unlocked.push(playerId);
   saveMeta(meta);
   render();
+}
+
+/* ---------------------------------------------------------------------
+   15b. FICHAJE DE BOLAS: máquina gachapon -- tirada al azar (no eliges a
+   quién) que desbloquea un jugador real cualquiera que aún no tengas, a
+   cambio de Puntos de Espíritu. Complementa al Vestuario (ahí SÍ eliges a
+   quién desbloquear, pero jugador por jugador y a precios variables).
+   --------------------------------------------------------------------- */
+
+var GACHA_COST = 120;
+var GACHA_SPIN_MS = 1600;
+
+function actionGoGacha() {
+  G.gacha = { spinning: false, resultId: null };
+  G.screen = 'gacha';
+  render();
+}
+
+function gachaLockedPool() {
+  var meta = G.meta;
+  return ROSTER.filter(function (p) { return p.locked && meta.unlocked.indexOf(p.id) === -1; });
+}
+
+function spinGacha() {
+  var meta = G.meta;
+  if (G.gacha.spinning) return;
+  if (meta.points < GACHA_COST) return;
+  var pool = gachaLockedPool();
+  if (!pool.length) return;
+  meta.points -= GACHA_COST;
+  saveMeta(meta);
+  G.gacha.spinning = true;
+  G.gacha.resultId = null;
+  render();
+  setTimeout(function () {
+    var won = choice(pool);
+    meta.unlocked.push(won.id);
+    saveMeta(meta);
+    G.gacha.spinning = false;
+    G.gacha.resultId = won.id;
+    render();
+  }, GACHA_SPIN_MS);
+}
+
+function gachaMachineHtml(spinning) {
+  return (
+    '<div class="gacha-machine' + (spinning ? ' spinning' : '') + '">' +
+      '<div class="gacha-dome">' +
+        '<span class="gacha-ball" style="--c1:#e94560;--c2:#ff8fa3;left:16%;top:52%;"></span>' +
+        '<span class="gacha-ball" style="--c1:#4ecdc4;--c2:#a8f5ee;left:42%;top:30%;"></span>' +
+        '<span class="gacha-ball" style="--c1:#44b78b;--c2:#a8f0cf;left:66%;top:55%;"></span>' +
+        '<span class="gacha-ball" style="--c1:#ffd166;--c2:#fff0c2;left:28%;top:68%;"></span>' +
+        '<span class="gacha-ball" style="--c1:#8c4fd1;--c2:#d6bdf5;left:54%;top:72%;"></span>' +
+        '<span class="gacha-ball" style="--c1:#3a8fd9;--c2:#a9d4f5;left:78%;top:36%;"></span>' +
+      '</div>' +
+      '<div class="gacha-body">' +
+        '<div class="gacha-slot"></div>' +
+        '<div class="gacha-crank"><span class="gacha-crank-arm"></span><span class="gacha-crank-knob"></span></div>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function renderGacha() {
+  var meta = G.meta;
+  var pool = gachaLockedPool();
+  var g = G.gacha || { spinning: false, resultId: null };
+  var resultPlayer = g.resultId ? ROSTER.find(function (p) { return p.id === g.resultId; }) : null;
+
+  var resultHtml = '';
+  if (g.spinning) {
+    resultHtml = '<p class="dim small center-text mt">Girando la máquina…</p>';
+  } else if (resultPlayer) {
+    resultHtml =
+      '<div class="panel gacha-result mt">' +
+        '<p class="center-text" style="color:var(--accent-2);font-weight:700;">¡Fichaje conseguido!</p>' +
+        '<div class="player-card-head" style="justify-content:center;">' +
+          avatarHtml(resultPlayer) +
+          '<div class="player-head-text"><span class="player-name">' + escapeHtml(resultPlayer.nombre) + '</span>' +
+          (resultPlayer.original ? '<span class="player-original">(' + escapeHtml(resultPlayer.original) + ')</span>' : '') + '</div>' +
+          typeBadge(resultPlayer.tipo) +
+        '</div>' +
+        '<p class="dim small center-text">' + escapeHtml(resultPlayer.desc) + '</p>' +
+      '</div>';
+  } else if (!pool.length) {
+    resultHtml = '<p class="dim small center-text mt">Ya tienes a todo el plantel disponible. ¡No queda nadie más por fichar!</p>';
+  }
+
+  var canSpin = !g.spinning && pool.length > 0 && meta.points >= GACHA_COST;
+  var spinLabel = g.spinning ? 'Girando…' : ('Girar (' + GACHA_COST + ' pts.)');
+
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<h2 class="panel-title mb0">Fichaje de Bolas</h2>' +
+        '<p class="dim small">Gira la máquina y ficha a un jugador real al azar entre los que aún no tienes. No se puede elegir a quién te toca.</p>' +
+        '<p class="currency-display">' + spiritIcon() + ' ' + meta.points + ' Puntos de Espíritu</p>' +
+      '</div>' +
+      '<div class="panel center-text">' +
+        gachaMachineHtml(g.spinning) +
+        '<button class="btn btn-primary btn-block mt" ' + (canSpin ? '' : 'disabled') + ' onclick="spinGacha()">' + spinLabel + '</button>' +
+        resultHtml +
+      '</div>' +
+      '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
+    '</div>'
+  );
 }
 
 /* ---------------------------------------------------------------------
