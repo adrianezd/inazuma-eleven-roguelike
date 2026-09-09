@@ -375,7 +375,8 @@ function renderTorneoSizeSelect() {
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
-        '<h2 class="panel-title">¿Torneo de cuántos?</h2>' +
+        '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
+        '<h2 class="panel-title mt">¿Torneo de cuántos?</h2>' +
         '<p class="dim small">Bracket de eliminación directa: tú y el resto de rivales, la mayoría de nivel jefe.</p>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-primary btn-block" onclick="actionChooseTournamentSize(8)">8 equipos</button>' +
@@ -386,7 +387,6 @@ function renderTorneoSizeSelect() {
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-primary btn-block" onclick="actionChooseTournamentSize(32)">32 equipos</button>' +
         '</div>' +
-        '<button class="btn btn-outline btn-block mt" onclick="actionBackToMenu()">Volver</button>' +
       '</div>' +
     '</div>'
   );
@@ -529,10 +529,10 @@ function renderDailyAlreadyPlayed() {
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
-        '<h2 class="panel-title">Ya has jugado hoy</h2>' +
+        '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
+        '<h2 class="panel-title mt">Ya has jugado hoy</h2>' +
         '<p class="dim">El Modo Diario se renueva cada día. Vuelve mañana para un nuevo reto.</p>' +
         '<p>' + (r.victory ? '¡Superaste el reto de hoy! 🏆' : 'Hoy llegaste a la etapa ' + (r.nodes || 0) + ' de ' + DAILY_SEQUENCE.length + '.') + '</p>' +
-        '<button class="btn btn-outline btn-block mt" onclick="actionBackToMenu()">Volver</button>' +
       '</div>' +
     '</div>'
   );
@@ -1074,7 +1074,8 @@ function renderModeSelect() {
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
-        '<h2 class="panel-title">Elige el modo de juego</h2>' +
+        '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
+        '<h2 class="panel-title mt">Elige el modo de juego</h2>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-primary btn-block" onclick="actionStartRunWithMode(false)">Modo Normal</button>' +
         '</div>' +
@@ -1087,7 +1088,6 @@ function renderModeSelect() {
         (unlocked
           ? '<p class="dim small">Los rivales meten algún gol más y paran algo más. El mapa tiene 4 jefes en vez de 3 (el último, muy difícil), y en los eventos especiales puede aparecer un jefe por sorpresa.</p>'
           : '<p class="dim small">Se desbloquea ganando el Modo Normal 3 veces y teniendo más de 10 personajes desbloqueados. Progreso: ' + (meta.normalWins || 0) + '/3 victorias, ' + totalUnlocked + '/11 personajes.</p>') +
-        '<button class="btn btn-outline btn-block mt" onclick="actionBackToMenu()">Volver</button>' +
       '</div>' +
     '</div>'
   );
@@ -1106,14 +1106,14 @@ function renderColeccionEquipos() {
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
-        '<h2 class="panel-title">Colección de equipos</h2>' +
+        '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
+        '<h2 class="panel-title mt">Colección de equipos</h2>' +
         '<p class="dim small">Todos los equipos rivales que pueden aparecer en el juego.</p>' +
       '</div>' +
       '<div class="panel"><h3 style="margin-bottom:8px">Equipos normales (' + RIVAL_TEAM_NAMES.length + ')</h3></div>' +
       normalItems +
       '<div class="panel"><h3 style="margin-bottom:8px">Equipos de jefe (' + RIVAL_TEAM_BOSSES.length + ')</h3></div>' +
       bossItems +
-      '<button class="btn btn-block mt" onclick="actionBackToMenu()">Volver</button>' +
     '</div>'
   );
 }
@@ -1152,12 +1152,12 @@ function renderColeccion() {
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
-        '<h2 class="panel-title">Colección de personajes</h2>' +
+        '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
+        '<h2 class="panel-title mt">Colección de personajes</h2>' +
         '<p class="dim small">' + unlockedCount + ' de ' + ROSTER.length + ' desbloqueados. Mostrando ' + filtered.length + '.</p>' +
         filterBtns +
       '</div>' +
       items +
-      '<button class="btn btn-block mt" onclick="actionBackToMenu()">Volver</button>' +
     '</div>'
   );
 }
@@ -2458,13 +2458,13 @@ function renderVestuario() {
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
-        '<h2 class="panel-title">Vestuario</h2>' +
+        '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
+        '<h2 class="panel-title mt">Vestuario</h2>' +
         '<p class="currency-display">' + spiritIcon() + ' ' + meta.points + ' Puntos de Espíritu</p>' +
         '<p class="dim small">Mostrando ' + filtered.length + ' de ' + locked.length + ' jugadores desbloqueables.</p>' +
         filterBtns +
       '</div>' +
       items +
-      '<button class="btn btn-block mt" onclick="actionBackToMenu()">Volver</button>' +
     '</div>'
   );
 }
@@ -2579,7 +2579,8 @@ function renderGacha() {
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
-        '<h2 class="panel-title mb0">Fichaje de Bolas</h2>' +
+        '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
+        '<h2 class="panel-title mt mb0">Fichaje de Bolas</h2>' +
         '<p class="dim small">Gira la máquina y ficha a un jugador real al azar entre los que aún no tienes. No se puede elegir a quién te toca.</p>' +
         '<p class="currency-display">' + spiritIcon() + ' ' + meta.points + ' Puntos de Espíritu</p>' +
       '</div>' +
@@ -2588,7 +2589,6 @@ function renderGacha() {
         '<button class="btn btn-primary btn-block mt" ' + (canSpin ? '' : 'disabled') + ' onclick="spinGacha()">' + spinLabel + '</button>' +
         resultHtml +
       '</div>' +
-      '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
     '</div>'
   );
 }
