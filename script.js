@@ -261,10 +261,11 @@ function generateOpponentSquad(depth, isBoss, isFinalBoss) {
 function randomTeamName(isBoss) { return choice(isBoss ? RIVAL_TEAM_BOSSES : RIVAL_TEAM_NAMES); }
 
 // Escudos de equipo (assets/escudos): solo unos pocos equipos rivales de las
-// listas de arriba tienen escudo propio hecho -- el resto usa un escudo
-// genérico (team1.png) para que ningún rival se quede sin insignia en el
-// marcador. Las claves se normalizan (minúsculas, sin tildes) para no fallar
-// por acentos ("Épsilon"/"Géminis") al comparar con el nombre generado.
+// listas de arriba tienen escudo propio hecho. Si el nombre del rival no
+// coincide con ninguno, NO se muestra ningún escudo (nada de genérico de
+// relleno) -- ese equipo se queda tal cual estaba, solo texto. Las claves se
+// normalizan (minúsculas, sin tildes) para no fallar por acentos
+// ("Épsilon"/"Géminis") al comparar con el nombre generado.
 var TEAM_SHIELD_FILES = {
   'Royal Academy': 'royal-academy.png',
   'Zeus': 'zeus.png',
@@ -276,7 +277,9 @@ var TEAM_SHIELD_FILES = {
   'Pequeños Gigantes': 'pequeños-gigantes.png',
   'Épsilon': 'epsilon.png'
 };
-var TEAM_SHIELD_FALLBACK = 'assets/escudos/team1.png';
+// team1.png es el escudo del propio jugador ("Tu equipo"), no un relleno
+// genérico para rivales sin escudo -- por eso vive fuera de TEAM_SHIELD_FILES.
+var PLAYER_SHIELD = 'assets/escudos/team1.png';
 function normalizeTeamKey(name) {
   return String(name).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
 }
@@ -286,7 +289,7 @@ Object.keys(TEAM_SHIELD_FILES).forEach(function (name) {
 });
 function teamShieldPath(name) {
   var bare = String(name).replace(/^Jefe:\s*/, '');
-  return TEAM_SHIELDS[normalizeTeamKey(bare)] || TEAM_SHIELD_FALLBACK;
+  return TEAM_SHIELDS[normalizeTeamKey(bare)] || null;
 }
 
 /* ---------------------------------------------------------------------
@@ -711,13 +714,14 @@ function roundNameForIndex(idx, totalRounds) {
 }
 
 function bracketShieldHtml(side) {
-  if (side.isPlayer) return '';
-  return '<img class="bracket-shield" src="' + escapeHtml(teamShieldPath(side.name)) + '" alt="">';
+  var path = side.isPlayer ? PLAYER_SHIELD : teamShieldPath(side.name);
+  if (!path) return '';
+  return '<img class="bracket-shield" src="' + escapeHtml(path) + '" alt="">';
 }
 
 function bracketMatchHtml(m) {
-  var aLabel = m.a.isPlayer ? 'Tú' : bracketShieldHtml(m.a) + escapeHtml(m.a.name) + (m.a.tier === 'jefe' ? ' 👑' : '');
-  var bLabel = m.b.isPlayer ? 'Tú' : bracketShieldHtml(m.b) + escapeHtml(m.b.name) + (m.b.tier === 'jefe' ? ' 👑' : '');
+  var aLabel = bracketShieldHtml(m.a) + (m.a.isPlayer ? 'Tú' : escapeHtml(m.a.name) + (m.a.tier === 'jefe' ? ' 👑' : ''));
+  var bLabel = bracketShieldHtml(m.b) + (m.b.isPlayer ? 'Tú' : escapeHtml(m.b.name) + (m.b.tier === 'jefe' ? ' 👑' : ''));
   var isPlayerMatch = m.a.isPlayer || m.b.isPlayer;
   var resultText = m.winner
     ? ('Gana: ' + (m.winner.isPlayer ? 'Tú' : escapeHtml(m.winner.name)))
@@ -1834,7 +1838,7 @@ function renderMatch() {
   return (
     '<div class="screen">' +
       '<div class="match-scoreboard">' +
-        '<div class="score-side"><div class="score-name">Tu equipo</div><div class="score-num">' + m.playerScore + '</div></div>' +
+        '<div class="score-side"><img class="team-shield" src="' + PLAYER_SHIELD + '" alt=""><div class="score-name">Tu equipo</div><div class="score-num">' + m.playerScore + '</div></div>' +
         '<div class="score-vs">VS</div>' +
         '<div class="score-side">' + (m.oppShield ? '<img class="team-shield" src="' + escapeHtml(m.oppShield) + '" alt="">' : '') + '<div class="score-name">' + escapeHtml(m.oppName) + '</div><div class="score-num">' + m.oppScore + '</div></div>' +
       '</div>' +
