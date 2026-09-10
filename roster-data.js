@@ -119,7 +119,7 @@ var ROSTER = [
   {
     id: 'r01', nombre: 'Mark Evans', original: 'Endou Mamoru',
     posicion: 'Portero', tipo: 'Montaña',
-    tiro: 42, pase: 55, defensa: 88, especial: 67,
+    tiro: 42, pase: 55, defensa: 88, especial: 80,
     hissatsu: ['Mano Mágica'],
     desc: 'Portero legendario y capitán de corazón indomable.',
     locked: true, cost: 140
@@ -127,7 +127,7 @@ var ROSTER = [
   {
     id: 'r02', nombre: 'Axel Blaze', original: 'Gouenji Shuuya',
     posicion: 'Delantero', tipo: 'Fuego',
-    tiro: 89, pase: 50, defensa: 32, especial: 74,
+    tiro: 89, pase: 50, defensa: 32, especial: 80,
     hissatsu: ['Tornado de Fuego'],
     desc: 'El delantero estrella, el mejor rematador del equipo.',
     locked: true, cost: 190
@@ -135,7 +135,7 @@ var ROSTER = [
   {
     id: 'r03', nombre: 'Nathan Swift', original: 'Kazemaru Ichirouta',
     posicion: 'Defensa', tipo: 'Viento',
-    tiro: 68, pase: 66, defensa: 75, especial: 58,
+    tiro: 68, pase: 66, defensa: 75, especial: 65,
     hissatsu: ['Defensa Huracán'],
     desc: 'El jugador más veloz del Raimon.',
     locked: true, cost: 75
@@ -143,7 +143,7 @@ var ROSTER = [
   {
     id: 'r04', nombre: 'Jude Sharp', original: 'Kidou Yuuto',
     posicion: 'Centrocampista', tipo: 'Viento',
-    tiro: 74, pase: 81, defensa: 60, especial: 74,
+    tiro: 74, pase: 81, defensa: 60, especial: 77,
     hissatsu: ['Pingüino Emperador III'],
     desc: 'Estratega frío y calculador, el cerebro del equipo.',
     locked: true, cost: 75
@@ -151,7 +151,7 @@ var ROSTER = [
   {
     id: 'r05', nombre: 'Kevin Dragonfly', original: 'Someoka Ryuugo',
     posicion: 'Delantero', tipo: 'Bosque',
-    tiro: 75, pase: 59, defensa: 40, especial: 66,
+    tiro: 75, pase: 59, defensa: 40, especial: 70,
     hissatsu: ['Remate Dragón'],
     desc: 'Delantero fogoso, uno de los fundadores del club.',
     locked: false
@@ -159,7 +159,7 @@ var ROSTER = [
   {
     id: 'r06', nombre: 'Jack Wallside', original: 'Kabeyama Heigorou',
     posicion: 'Defensa', tipo: 'Montaña',
-    tiro: 36, pase: 67, defensa: 79, especial: 65,
+    tiro: 36, pase: 67, defensa: 79, especial: 70,
     hissatsu: ['El Muro'],
     desc: 'Un muro humano casi imposible de traspasar.',
     locked: true, cost: 99
@@ -175,7 +175,7 @@ var ROSTER = [
   {
     id: 'r08', nombre: 'Shawn Froste', original: 'Fubuki Shirou',
     posicion: 'Defensa', tipo: 'Viento',
-    tiro: 73, pase: 56, defensa: 76, especial: 72,
+    tiro: 73, pase: 56, defensa: 76, especial: 77,
     hissatsu: ['Paisaje Helado'],
     desc: 'Frío como el hielo, letal frente a la portería.',
     locked: true, cost: 144
@@ -199,7 +199,7 @@ var ROSTER = [
   {
     id: 'r11', nombre: 'Darren LaChance', original: 'Tachimukai Yuuki',
     posicion: 'Portero', tipo: 'Montaña',
-    tiro: 20, pase: 48, defensa: 81, especial: 75,
+    tiro: 20, pase: 48, defensa: 81, especial: 72,
     hissatsu: ['Mano Mágica'],
     desc: 'Guardameta suplente que se ganó su titularidad a pulso.',
     locked: true, cost: 83
@@ -207,7 +207,7 @@ var ROSTER = [
   {
     id: 'r12', nombre: 'Todd Ironside', original: 'Kurimatsu Teppei',
     posicion: 'Defensa', tipo: 'Montaña',
-    tiro: 34, pase: 61, defensa: 77, especial: 48,
+    tiro: 34, pase: 64, defensa: 77, especial: 48,
     hissatsu: ['Corte Giratorio'],
     desc: 'Defensa fornido con un don inesperado para el regate.',
     locked: false
@@ -216,7 +216,7 @@ var ROSTER = [
   {
     id: 'r13', nombre: 'Joseph King', original: 'Genda Koujirou',
     posicion: 'Portero', tipo: 'Fuego',
-    tiro: 24, pase: 56, defensa: 83, especial: 75,
+    tiro: 24, pase: 56, defensa: 83, especial: 73,
     hissatsu: ['Escudo de Fuerza'],
     desc: 'Guardameta de la Royal, orgulloso e inquebrantable.',
     locked: true, cost: 102
@@ -1066,74 +1066,90 @@ var ROSTER = [
   // de su atributo personal -- revísalo si te importa la precisión exacta.
   {
     id: 'r121', nombre: 'Sol Daystar', original: 'Amemiya Taiyou',
-    posicion: 'Delantero', tipo: 'Fuego',
-    tiro: 85, pase: 65, defensa: 40, especial: 85,
+    posicion: 'Mediocentro', tipo: 'Fuego',
+    tiro: 85, pase: 80, defensa: 40, especial: 80,
     hissatsu: ['Tormenta Solar'],
-    desc: 'Capitán de Arakumo Gakuen, considerado el genio del fútbol de su generación.',
+    desc: 'Capitán del Universal, considerado el genio del fútbol de su generación.',
     locked: false, cost: 145
   },
   {
     id: 'r122', nombre: 'Gocker', original: 'Gokukawa Kantarou',
     posicion: 'Defensa', tipo: 'Montaña',
-    tiro: 25, pase: 45, defensa: 88, especial: 70,
-    hissatsu: ['Robo Congelado'],
-    desc: 'Defensa corpulento de Diamond Dust, temido por su fuerza bruta.',
-    locked: false, cost: 125
+    tiro: 25, pase: 55, defensa: 86, especial: 70,
+    hissatsu: ['Rompehielos'],
+    desc: 'Defensa corpulento del Polvo de Diamantes, temido por su fuerza bruta.',
+    locked: false, cost: 150
   },
   {
     id: 'r123', nombre: 'Bomber', original: 'Honba Geki',
-    posicion: 'Centrocampista', tipo: 'Fuego',
-    tiro: 60, pase: 55, defensa: 72, especial: 75,
-    hissatsu: ['Robo Incendiario'],
-    desc: 'Centrocampista de Prominence que forma una defensa temible junto a Gocker.',
-    locked: false, cost: 120
+    posicion: 'Defensa', tipo: 'Fuego',
+    tiro: 30, pase: 55, defensa: 86, especial: 70,
+    hissatsu: ['Cortefuegos'],
+    desc: 'Defensa de Prominence que forma una defensa temible junto a Gocker.',
+    locked: false, cost: 150
   },
   {
     id: 'r124', nombre: 'Goldie Lemmon', original: 'Nanobana Kinako',
     posicion: 'Defensa', tipo: 'Fuego',
-    tiro: 45, pase: 55, defensa: 80, especial: 78,
-    hissatsu: ['Tornillo Llameante'],
+    tiro: 60, pase: 58, defensa: 82, especial: 82,
+    hissatsu: ['Grumo Pegapasta'],
     desc: 'Defensa polivalente que ha jugado en varios de los grandes equipos de su generación.',
     locked: false, cost: 125
   },
   {
     id: 'r125', nombre: 'Heat', original: 'Atsuishi Shigeto',
     posicion: 'Centrocampista', tipo: 'Fuego',
-    tiro: 55, pase: 58, defensa: 68, especial: 74,
-    hissatsu: ['Colmillo Bestial'],
+    tiro: 69, pase: 73, defensa: 70, especial: 74,
+    hissatsu: ['Lluvia de Meteoros'],
     desc: 'Centrocampista de Prominence, aprendió una técnica prohibida de un portero legendario.',
     locked: false, cost: 118
   },
   {
     id: 'r126', nombre: 'Lean', original: 'Hasuike An',
     posicion: 'Centrocampista', tipo: 'Fuego',
-    tiro: 50, pase: 78, defensa: 45, especial: 70,
-    hissatsu: ['Cruz Britania'],
+    tiro: 60, pase: 78, defensa: 60, especial: 70,
+    hissatsu: ['Cruz del sur'],
     desc: 'Centrocampista de Prominence con un regate entre los mejores de su generación.',
     locked: false, cost: 122
   },
   {
     id: 'r127', nombre: 'Julio Acuto', original: 'Demonio Strada',
     posicion: 'Centrocampista', tipo: 'Fuego',
-    tiro: 60, pase: 75, defensa: 55, especial: 88,
-    hissatsu: ['Ruptura Inazuma'],
+    tiro: 75, pase: 75, defensa: 60, especial: 85,
+    hissatsu: ['Pinguino Emperador X'],
     desc: 'Idéntico a Jude Sharp, del que llegó a ser una copia casi perfecta.',
     locked: false, cost: 130
   },
   {
     id: 'r128', nombre: 'Davy Jones', original: 'Namikawa Rensuke',
     posicion: 'Delantero', tipo: 'Viento',
-    tiro: 78, pase: 50, defensa: 42, especial: 80,
-    hissatsu: ['Poseidón Marino'],
+    tiro: 81, pase: 50, defensa: 42, especial: 80,
+    hissatsu: ['Remate Poseidón'],
     desc: 'Capitán y delantero de Kaiou Gakuen, orgulloso de defender su honor.',
     locked: false, cost: 128
   },
   {
     id: 'r129', nombre: 'Choi', original: 'Choi Chang-soo',
     posicion: 'Centrocampista', tipo: 'Fuego',
-    tiro: 55, pase: 85, defensa: 50, especial: 75,
+    tiro: 65, pase: 87, defensa: 70, especial: 75,
     hissatsu: ['Caída Infernal'],
     desc: 'Capitán de Fire Dragon, la selección de Corea, uno de los grandes creadores de juego.',
+    locked: false, cost: 128
+  },
+  {
+    id: 'r130', nombre: 'Soundtown', original: 'Cadence Soundtown',
+    posicion: 'Centrocampista', tipo: 'Fuego',
+    tiro: 60, pase: 82, defensa: 76, especial: 75,
+    hissatsu: ['Baile de Llamas'],
+    desc: 'Capitán de Mary Times',
+    locked: false, cost: 128
+  },
+  {
+    id: 'r131', nombre: 'Alan Master', original: 'Alan Master',
+    posicion: 'Centrocampista', tipo: 'Bosque',
+    tiro: 61, pase: 73, defensa: 73, especial: 65,
+    hissatsu: ['Robo rápido'],
+    desc: 'Creador de juego de la Royal.',
     locked: false, cost: 128
   },
 ];
