@@ -2837,32 +2837,46 @@ var FUTDRAFT_FORMATIONS = [
   { id: '442', name: '4-4-2', rows: [
       { pos: 'Delantero', count: 2 }, { pos: 'Centrocampista', count: 4 },
       { pos: 'Defensa', count: 4 }, { pos: 'Portero', count: 1 }
-    ], atk: 1.0, def: 1.12, desc: 'Equilibrada, sólida atrás.' },
+    ], atk: 1.0, def: 1.12 },
   { id: '433', name: '4-3-3', rows: [
       { pos: 'Delantero', count: 3 }, { pos: 'Centrocampista', count: 3 },
       { pos: 'Defensa', count: 4 }, { pos: 'Portero', count: 1 }
-    ], atk: 1.2, def: 0.85, desc: 'Todo al ataque, arriesgada atrás.' },
+    ], atk: 1.2, def: 0.85 },
   { id: '352', name: '3-5-2', rows: [
       { pos: 'Delantero', count: 2 }, { pos: 'Centrocampista', count: 5 },
       { pos: 'Defensa', count: 3 }, { pos: 'Portero', count: 1 }
-    ], atk: 1.08, def: 1.0, desc: 'Control del centro del campo.' },
+    ], atk: 1.08, def: 1.0 },
   { id: '334', name: '3-3-4', rows: [
       { pos: 'Delantero', count: 4 }, { pos: 'Centrocampista', count: 3 },
       { pos: 'Defensa', count: 3 }, { pos: 'Portero', count: 1 }
-    ], atk: 1.35, def: 0.7, desc: 'Ataque total, cuatro delanteros.' },
+    ], atk: 1.35, def: 0.7 },
   { id: '343', name: '3-4-3', rows: [
       { pos: 'Delantero', count: 3 }, { pos: 'Centrocampista', count: 4 },
       { pos: 'Defensa', count: 3 }, { pos: 'Portero', count: 1 }
-    ], atk: 1.28, def: 0.78, desc: 'Máxima presión ofensiva, línea corta atrás.' },
+    ], atk: 1.28, def: 0.78 },
   { id: '532', name: '5-3-2', rows: [
       { pos: 'Delantero', count: 2 }, { pos: 'Centrocampista', count: 3 },
       { pos: 'Defensa', count: 5 }, { pos: 'Portero', count: 1 }
-    ], atk: 0.85, def: 1.28, desc: 'Muro defensivo, contragolpes con dos puntas.' },
+    ], atk: 0.85, def: 1.28 },
   { id: '541', name: '5-4-1', rows: [
       { pos: 'Delantero', count: 1 }, { pos: 'Centrocampista', count: 4 },
       { pos: 'Defensa', count: 5 }, { pos: 'Portero', count: 1 }
-    ], atk: 0.8, def: 1.3, desc: 'Ultradefensiva, un solo delantero de referencia.' }
+    ], atk: 0.8, def: 1.3 }
 ];
+
+// Cada draft ofrece solo 4 de las 7 formaciones (al azar), no las 7 de
+// golpe -- se elige una vez por draft y se usa tanto en Clásico (antes de
+// draftear) como en Libre (al elegir formación en la pantalla de equipo),
+// para que las opciones sean las mismas en las dos pantallas de una misma
+// partida.
+function pickFutDraftFormationChoices() {
+  var shuffled = FUTDRAFT_FORMATIONS.slice().sort(function () { return Math.random() - 0.5; });
+  return shuffled.slice(0, 4).map(function (f) { return f.id; });
+}
+function futDraftAvailableFormations() {
+  var ids = G.futdraftFormationChoices || FUTDRAFT_FORMATIONS.map(function (f) { return f.id; });
+  return FUTDRAFT_FORMATIONS.filter(function (f) { return ids.indexOf(f.id) !== -1; });
+}
 
 function actionGoFutDraftModeSelect() { G.screen = 'futdraftModeSelect'; render(); }
 
@@ -2876,20 +2890,24 @@ function renderFutDraftModeSelect() {
           '<button class="btn btn-primary btn-block" onclick="actionStartFutDraft(\'libre\')">Libre<br><small class="dim">Eliges a quien quieras, decides la formación al final.</small></button>' +
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionGoFutDraftFormationSelect()">Estricto<br><small class="dim">Eliges la formación antes: el draft solo te ofrece jugadores para los huecos que falten.</small></button>' +
+          '<button class="btn btn-block" onclick="actionGoFutDraftFormationSelect()">Clásico<br><small class="dim">Eliges la formación antes: el draft solo te ofrece jugadores para los huecos que falten.</small></button>' +
         '</div>' +
       '</div>' +
     '</div>'
   );
 }
 
-function actionGoFutDraftFormationSelect() { G.screen = 'futdraftFormationSelect'; render(); }
+function actionGoFutDraftFormationSelect() {
+  G.futdraftFormationChoices = pickFutDraftFormationChoices();
+  G.screen = 'futdraftFormationSelect';
+  render();
+}
 
 function renderFutDraftFormationSelect() {
-  var btns = FUTDRAFT_FORMATIONS.map(function (f) {
+  var btns = futDraftAvailableFormations().map(function (f) {
     return (
       '<div class="btn-row" style="justify-content:center">' +
-        '<button class="btn btn-primary btn-block" onclick="actionChooseFutDraftFormation(\'' + f.id + '\')">' + f.name + '<br><small class="dim">' + f.desc + '</small></button>' +
+        '<button class="btn btn-primary btn-block" onclick="actionChooseFutDraftFormation(\'' + f.id + '\')">' + f.name + '</button>' +
       '</div>'
     );
   }).join('');
@@ -2897,7 +2915,7 @@ function renderFutDraftFormationSelect() {
     '<div class="screen">' +
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionGoFutDraftModeSelect()">Volver</button>' +
-        '<h2 class="panel-title mt">FutDraft Estricto</h2>' +
+        '<h2 class="panel-title mt">FutDraft Clásico</h2>' +
         '<p class="dim small">Elige la formación antes de nada: el draft solo te ofrecerá jugadores para los huecos que aún falten en ella.</p>' +
         btns +
       '</div>' +
@@ -2906,14 +2924,15 @@ function renderFutDraftFormationSelect() {
 }
 
 function actionChooseFutDraftFormation(id) {
-  G.futdraft = { squad: [], formation: id, mode: 'estricto', matches: [], matchIndex: 0 };
+  G.futdraft = { squad: [], formation: id, mode: 'clasico', matches: [], matchIndex: 0 };
   G.futdraftOptions = generateFutDraftOptions();
   G.screen = 'futdraftPick';
   render();
 }
 
 function actionStartFutDraft(mode) {
-  G.futdraft = { squad: [], formation: '442', mode: mode || 'libre', matches: [], matchIndex: 0 };
+  G.futdraftFormationChoices = pickFutDraftFormationChoices();
+  G.futdraft = { squad: [], formation: G.futdraftFormationChoices[0], mode: mode || 'libre', matches: [], matchIndex: 0 };
   G.futdraftOptions = generateFutDraftOptions();
   G.screen = 'futdraftPick';
   render();
@@ -2925,7 +2944,7 @@ function futDraftPosCounts(squad) {
   return c;
 }
 
-// En modo estricto los huecos que aún faltan los marca la formación
+// En modo clásico los huecos que aún faltan los marca la formación
 // elegida al principio (no los topes fijos de FUTDRAFT_POS_CAPS): si ya
 // están las 4 defensas de un 4-4-2, no vuelve a salir ningún defensa como
 // opción, aunque en modo libre sí podría.
@@ -2936,7 +2955,7 @@ function futDraftNeededCounts(formation, squad) {
   return needed;
 }
 
-// Orden fijo del draft en modo estricto: portero, luego defensas hasta
+// Orden fijo del draft en modo clásico: portero, luego defensas hasta
 // cubrir los que pida la formación, luego centrocampistas, luego
 // delanteros -- no se ofrece un delantero mientras aún falten defensas.
 var FUTDRAFT_DRAFT_ORDER = ['Portero', 'Defensa', 'Centrocampista', 'Delantero'];
@@ -2953,7 +2972,7 @@ function generateFutDraftOptions() {
   var squad = f.squad;
   var squadIds = squad.map(function (p) { return p.id; });
   var pool;
-  if (f.mode === 'estricto') {
+  if (f.mode === 'clasico') {
     var formation = FUTDRAFT_FORMATIONS.find(function (x) { return x.id === f.formation; });
     var currentPos = futDraftCurrentNeededPos(formation, squad);
     pool = ROSTER.filter(function (p) {
@@ -2988,9 +3007,9 @@ window.pickFutDraftPlayer = function (instanceId) {
 function renderFutDraftPick() {
   var f = G.futdraft;
   var squad = f.squad;
-  var modeLabel = f.mode === 'estricto' ? 'Estricto' : 'Libre';
+  var modeLabel = f.mode === 'clasico' ? 'Clásico' : 'Libre';
   var subtitle = 'Elige a tu jugador ' + (squad.length + 1) + ' de ' + FUTDRAFT_SQUAD_SIZE + '.';
-  if (f.mode === 'estricto') {
+  if (f.mode === 'clasico') {
     var formation = FUTDRAFT_FORMATIONS.find(function (x) { return x.id === f.formation; });
     var currentPos = futDraftCurrentNeededPos(formation, squad);
     var needed = futDraftNeededCounts(formation, squad);
@@ -3098,10 +3117,9 @@ window.setFutDraftFormation = function (id) {
 function renderFutDraftTeam() {
   var f = G.futdraft;
   var score = futDraftTeamScore(f.squad);
-  var formationBtns = FUTDRAFT_FORMATIONS.map(function (ft) {
+  var formationBtns = futDraftAvailableFormations().map(function (ft) {
     return '<button class="btn-tiny' + (f.formation === ft.id ? ' active' : '') + '" onclick="setFutDraftFormation(\'' + ft.id + '\')">' + ft.name + '</button>';
   }).join('');
-  var activeFormation = FUTDRAFT_FORMATIONS.find(function (ft) { return ft.id === f.formation; });
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
@@ -3112,7 +3130,6 @@ function renderFutDraftTeam() {
       '<div class="panel">' +
         '<h3 style="margin-bottom:8px">Formación</h3>' +
         '<div class="view-toggle view-toggle-wrap">' + formationBtns + '</div>' +
-        '<p class="dim small" style="margin:8px 0 10px">' + activeFormation.desc + '</p>' +
         renderFutDraftPitch(f.squad, f.formation) +
       '</div>' +
       '<button class="btn btn-primary btn-block" onclick="startFutDraftMatches()">Jugar torneo (8 equipos)</button>' +
