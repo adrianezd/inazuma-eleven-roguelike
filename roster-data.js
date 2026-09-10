@@ -1058,4 +1058,82 @@ var ROSTER = [
     desc: 'Procede de una remota región llamada Costail y tiene un potencial enorme.',
     locked: false, cost: 190
   },
+  // r121-r129: ronda de ampliación adicional, misma confianza media que
+  // r17-r21 (posición y elemento verificados por búsqueda, hissatsu real
+  // atribuido correctamente cuando se ha podido confirmar con una fuente
+  // clara). El elemento de Choi es una inferencia razonable a partir del
+  // nombre de su equipo (Fire Dragon / Corea), no una confirmación directa
+  // de su atributo personal -- revísalo si te importa la precisión exacta.
+  {
+    id: 'r121', nombre: 'Sol Daystar', original: 'Amemiya Taiyou',
+    posicion: 'Delantero', tipo: 'Fuego',
+    tiro: 85, pase: 65, defensa: 40, especial: 85,
+    hissatsu: ['Tormenta Solar'],
+    desc: 'Capitán de Arakumo Gakuen, considerado el genio del fútbol de su generación.',
+    locked: false, cost: 145
+  },
+  {
+    id: 'r122', nombre: 'Gocker', original: 'Gokukawa Kantarou',
+    posicion: 'Defensa', tipo: 'Montaña',
+    tiro: 25, pase: 45, defensa: 88, especial: 70,
+    hissatsu: ['Robo Congelado'],
+    desc: 'Defensa corpulento de Diamond Dust, temido por su fuerza bruta.',
+    locked: false, cost: 125
+  },
+  {
+    id: 'r123', nombre: 'Bomber', original: 'Honba Geki',
+    posicion: 'Centrocampista', tipo: 'Fuego',
+    tiro: 60, pase: 55, defensa: 72, especial: 75,
+    hissatsu: ['Robo Incendiario'],
+    desc: 'Centrocampista de Prominence que forma una defensa temible junto a Gocker.',
+    locked: false, cost: 120
+  },
+  {
+    id: 'r124', nombre: 'Goldie Lemmon', original: 'Nanobana Kinako',
+    posicion: 'Defensa', tipo: 'Fuego',
+    tiro: 45, pase: 55, defensa: 80, especial: 78,
+    hissatsu: ['Tornillo Llameante'],
+    desc: 'Defensa polivalente que ha jugado en varios de los grandes equipos de su generación.',
+    locked: false, cost: 125
+  },
+  {
+    id: 'r125', nombre: 'Heat', original: 'Atsuishi Shigeto',
+    posicion: 'Centrocampista', tipo: 'Fuego',
+    tiro: 55, pase: 58, defensa: 68, especial: 74,
+    hissatsu: ['Colmillo Bestial'],
+    desc: 'Centrocampista de Prominence, aprendió una técnica prohibida de un portero legendario.',
+    locked: false, cost: 118
+  },
+  {
+    id: 'r126', nombre: 'Lean', original: 'Hasuike An',
+    posicion: 'Centrocampista', tipo: 'Fuego',
+    tiro: 50, pase: 78, defensa: 45, especial: 70,
+    hissatsu: ['Cruz Britania'],
+    desc: 'Centrocampista de Prominence con un regate entre los mejores de su generación.',
+    locked: false, cost: 122
+  },
+  {
+    id: 'r127', nombre: 'Julio Acuto', original: 'Demonio Strada',
+    posicion: 'Centrocampista', tipo: 'Fuego',
+    tiro: 60, pase: 75, defensa: 55, especial: 88,
+    hissatsu: ['Ruptura Inazuma'],
+    desc: 'Idéntico a Jude Sharp, del que llegó a ser una copia casi perfecta.',
+    locked: false, cost: 130
+  },
+  {
+    id: 'r128', nombre: 'Davy Jones', original: 'Namikawa Rensuke',
+    posicion: 'Delantero', tipo: 'Viento',
+    tiro: 78, pase: 50, defensa: 42, especial: 80,
+    hissatsu: ['Poseidón Marino'],
+    desc: 'Capitán y delantero de Kaiou Gakuen, orgulloso de defender su honor.',
+    locked: false, cost: 128
+  },
+  {
+    id: 'r129', nombre: 'Choi', original: 'Choi Chang-soo',
+    posicion: 'Centrocampista', tipo: 'Fuego',
+    tiro: 55, pase: 85, defensa: 50, especial: 75,
+    hissatsu: ['Caída Infernal'],
+    desc: 'Capitán de Fire Dragon, la selección de Corea, uno de los grandes creadores de juego.',
+    locked: false, cost: 128
+  },
 ];
