@@ -119,7 +119,7 @@ var ROSTER = [
   {
     id: 'r01', nombre: 'Mark Evans', original: 'Endou Mamoru',
     posicion: 'Portero', tipo: 'Montaña',
-    tiro: 42, pase: 55, defensa: 88, especial: 80,
+    tiro: 42, pase: 55, defensa: 88, especial: 88,
     hissatsu: ['Mano Mágica'],
     desc: 'Portero legendario y capitán de corazón indomable.',
     locked: true, cost: 140
@@ -127,7 +127,7 @@ var ROSTER = [
   {
     id: 'r02', nombre: 'Axel Blaze', original: 'Gouenji Shuuya',
     posicion: 'Delantero', tipo: 'Fuego',
-    tiro: 89, pase: 50, defensa: 32, especial: 80,
+    tiro: 89, pase: 65, defensa: 32, especial: 87,
     hissatsu: ['Tornado de Fuego'],
     desc: 'El delantero estrella, el mejor rematador del equipo.',
     locked: true, cost: 190
@@ -135,7 +135,7 @@ var ROSTER = [
   {
     id: 'r03', nombre: 'Nathan Swift', original: 'Kazemaru Ichirouta',
     posicion: 'Defensa', tipo: 'Viento',
-    tiro: 68, pase: 66, defensa: 75, especial: 65,
+    tiro: 70, pase: 72, defensa: 69, especial: 65,
     hissatsu: ['Defensa Huracán'],
     desc: 'El jugador más veloz del Raimon.',
     locked: true, cost: 75
@@ -143,7 +143,7 @@ var ROSTER = [
   {
     id: 'r04', nombre: 'Jude Sharp', original: 'Kidou Yuuto',
     posicion: 'Centrocampista', tipo: 'Viento',
-    tiro: 74, pase: 81, defensa: 60, especial: 77,
+    tiro: 75, pase: 81, defensa: 60, especial: 80,
     hissatsu: ['Pingüino Emperador III'],
     desc: 'Estratega frío y calculador, el cerebro del equipo.',
     locked: true, cost: 75
@@ -151,7 +151,7 @@ var ROSTER = [
   {
     id: 'r05', nombre: 'Kevin Dragonfly', original: 'Someoka Ryuugo',
     posicion: 'Delantero', tipo: 'Bosque',
-    tiro: 75, pase: 59, defensa: 40, especial: 70,
+    tiro: 77, pase: 61, defensa: 40, especial: 70,
     hissatsu: ['Remate Dragón'],
     desc: 'Delantero fogoso, uno de los fundadores del club.',
     locked: false
@@ -183,7 +183,7 @@ var ROSTER = [
   {
     id: 'r09', nombre: 'Austin Hobbs', original: 'Toramaru Utsunomiya',
     posicion: 'Delantero', tipo: 'Bosque',
-    tiro: 78, pase: 63, defensa: 32, especial: 72,
+    tiro: 78, pase: 70, defensa: 32, especial: 72,
     hissatsu: ['Remate del Tigre'],
     desc: 'El delantero más joven, con un instinto feroz.',
     locked: true, cost: 96
@@ -249,7 +249,7 @@ var ROSTER = [
   {
     id: 'r17', nombre: 'Bryce Withingale', original: 'Suzuno Fuusuke',
     posicion: 'Delantero', tipo: 'Viento',
-    tiro: 79, pase: 60, defensa: 38, especial: 73,
+    tiro: 82, pase: 60, defensa: 38, especial: 73,
     hissatsu: ['Balón Iceberg'],
     desc: 'Capitán de Diamond Dust, frío y calculador frente a la portería.',
     locked: true, cost: 131
@@ -265,7 +265,7 @@ var ROSTER = [
   {
     id: 'r19', nombre: 'Claude Beacons', original: 'Nagumo Haruya',
     posicion: 'Delantero', tipo: 'Fuego',
-    tiro: 80, pase: 60, defensa: 32, especial: 72,
+    tiro: 83, pase: 60, defensa: 32, especial: 72,
     hissatsu: ['Llamarada Atómica'],
     desc: 'Capitán de Prominence, ambicioso y ardiente ante el gol.',
     locked: true, cost: 105
@@ -273,7 +273,7 @@ var ROSTER = [
   {
     id: 'r20', nombre: 'Byron Love', original: 'Afuro Terumi',
     posicion: 'Centrocampista', tipo: 'Bosque',
-    tiro: 81, pase: 76, defensa: 42, especial: 80,
+    tiro: 84, pase: 76, defensa: 42, especial: 80,
     hissatsu: ['Sabiduría Divina'],
     desc: 'Capitán de Zeus, el centrocampista más elegante y letal.',
     locked: true, cost: 177
@@ -1165,5 +1165,141 @@ var ROSTER = [
     hissatsu: ['Muralla de Atlantis'],
     desc: 'Defensa Físico y amigable',
     locked: false, cost: 128
+  },
+   {
+    id: 'r134', nombre: 'Ray Dark', original: 'Kageyama Reiji',
+    posicion: 'Centrocampista', tipo: 'Bosque',
+    tiro: 78, pase: 82, defensa: 65, especial: 88,
+    hissatsu: ['Pingüino Emperador Nº2'],
+    desc: 'El legendario entrenador y estratega de la Royal Academy, maestro de las tácticas más oscuras.',
+    locked: true, cost: 99999
+  },
+  {
+    id: 'r135', nombre: 'Beta', original: 'Beta',
+    posicion: 'Delantera', tipo: 'Viento',
+    tiro: 85, pase: 68, defensa: 42, especial: 78,
+    hissatsu: ['Comando de Disparo 07'],
+    desc: 'Capitana del Protocolo Omega 2.0, capaz de cambiar por completo su personalidad durante los partidos.',
+    locked: true, cost: 180
+  },
+  {
+    id: 'r136', nombre: 'Alpha', original: 'Alpha',
+    posicion: 'Delantero', tipo: 'Fuego',
+    tiro: 84, pase: 70, defensa: 44, especial: 76,
+    hissatsu: ['Comando de Disparo 05'],
+    desc: 'Capitán del Protocolo Omega 1.0, calculador y extremadamente preciso en el campo.',
+    locked: true, cost: 180
+  },
+  {
+    id: 'r137', nombre: 'Gamma', original: 'Gamma',
+    posicion: 'Delantero', tipo: 'Bosque',
+    tiro: 86, pase: 66, defensa: 48, especial: 77,
+    hissatsu: ['Comando de Disparo 13'],
+    desc: 'Líder del Protocolo Omega 3.0, un delantero frío que confía plenamente en sus capacidades.',
+    locked: true, cost: 170
+  },
+  {
+    id: 'r138', nombre: 'J.P. Lapin', original: 'Nishizono Shinsuke',
+    posicion: 'Portero', tipo: 'Montaña',
+    tiro: 42, pase: 55, defensa: 81, especial: 78,
+    hissatsu: ['Parada en Plancha'],
+    desc: 'Portero de pequeño tamaño pero enorme determinación, siempre dispuesto a proteger su portería.',
+    locked: true, cost: 140
+  },
+  {
+    id: 'r139', nombre: 'Terry Archibald', original: 'Ibuki Munemasa',
+    posicion: 'Portero', tipo: 'Viento',
+    tiro: 45, pase: 58, defensa: 86, especial: 81,
+    hissatsu: ['Mate Salvaje'],
+    desc: 'Portero de largos brazos y enorme fuerza, antiguo jugador de baloncesto acostumbrado a actuar por su cuenta.',
+    locked: true, cost: 190
+  },
+  {
+    id: 'r140', nombre: 'Lucas Star', original: 'Ichihoshi Hikaru',
+    posicion: 'Centrocampista', tipo: 'Viento',
+    tiro: 79, pase: 82, defensa: 55, especial: 80,
+    hissatsu: ['Órbita Celestial'],
+    desc: 'Centrocampista de enorme talento cuya verdadera identidad esconde una historia mucho más compleja.',
+    locked: true, cost: 180
+  },
+  {
+    id: 'r141', nombre: 'Frank Foreman', original: 'Tetsukado Shin',
+    posicion: 'Defensa', tipo: 'Fuego',
+    tiro: 58, pase: 52, defensa: 83, especial: 78,
+    hissatsu: ['Juego de piernas'],
+    desc: 'Defensa corpulento y directo, antiguo boxeador acostumbrado a enfrentarse a sus rivales sin miedo.',
+    locked: true, cost: 160
+  },
+  {
+    id: 'r142', nombre: 'Falco Flashman', original: 'Matatagi Hayato',
+    posicion: 'Delantero', tipo: 'Viento',
+    tiro: 86, pase: 72, defensa: 38, especial: 80,
+    hissatsu: ['Taconazo Parkour'],
+    desc: 'Delantero extremadamente veloz y talentoso, capaz de convertirse en una amenaza constante para cualquier defensa.',
+    locked: true, cost: 165
+  },
+  {
+    id: 'r143', nombre: 'Keenan Sharpe', original: 'Minaho Kazuto',
+    posicion: 'Defensa', tipo: 'Montaña',
+    tiro: 52, pase: 76, defensa: 83, especial: 80,
+    hissatsu: ['Copia y corta'],
+    desc: 'Defensa inteligente y observador, destaca por analizar rápidamente las jugadas de sus rivales.',
+    locked: true, cost: 160
+  },
+  {
+    id: 'r144', nombre: 'Zippy Lermer', original: 'Manabe Jinichirou',
+    posicion: 'Defensa', tipo: 'Viento',
+    tiro: 48, pase: 80, defensa: 85, especial: 80,
+    hissatsu: ['Cálculo Perfecto'],
+    desc: 'Defensa brillante capaz de analizar las trayectorias y calcular con precisión las jugadas del partido.',
+    locked: true, cost: 160
+  },
+  {
+    id: 'r145', nombre: 'Trina Verdure', original: 'Morimura Konoha',
+    posicion: 'Defensa', tipo: 'Bosque',
+    tiro: 42, pase: 61, defensa: 80, especial: 78,
+    hissatsu: ['Bola de Hojas'],
+    desc: 'Defensa inicialmente tímida que consigue superar sus miedos y convertirse en una jugadora muy importante.',
+    locked: true, cost: 160
+  },
+  {
+    id: 'r146', nombre: 'Cerise Blossom', original: 'Nozaki Sakura',
+    posicion: 'Centrocampista', tipo: 'Viento',
+    tiro: 70, pase: 82, defensa: 51, especial: 84,
+    hissatsu: ['Aro-AleHop'],
+    desc: 'Centrocampista elegante y habilidosa, con una gran coordinación gracias a su experiencia en gimnasia rítmica.',
+    locked: true, cost: 150
+  },
+  {
+    id: 'r147', nombre: 'Simeon Ayp', original: 'Saru',
+    posicion: 'Delantero', tipo: 'Montaña',
+    tiro: 89, pase: 86, defensa: 48, especial: 85,
+    hissatsu: ['Cañon de Fragmentos'],
+    desc: 'Líder y capitán del Ragnah y uno de los jugadores más poderosos de la era de Chrono Stone.',
+    locked: true, cost: 200
+  },
+  {
+    id: 'r148', nombre: 'Mac Robingo', original: 'Mac Robingo',
+    posicion: 'Delantero', tipo: 'Fuego',
+    tiro: 89, pase: 73, defensa: 40, especial: 87,
+    hissatsu: ['Golpe de Samba'],
+    desc: 'Delantero brasileño de gran potencia y presencia física, capaz de imponerse en el área rival.',
+    locked: true, cost: 200
+  },
+    {
+    id: 'r149', nombre: 'Gigi Blasi', original: 'Gigi Blasi',
+    posicion: 'Portero', tipo: 'Aire',
+    tiro: 38, pase: 51, defensa: 85, especial: 84,
+    hissatsu: ['Guardia del Coliseo'],
+    desc: 'Guardameta italiano.',
+    locked: true, cost: 180
+  },
+    {
+    id: 'r150', nombre: 'Xene', original: 'Xavier Foster',
+    posicion: 'Delantero', tipo: 'Fuego',
+    tiro: 87, pase: 75, defensa: 38, especial: 82,
+    hissatsu: ['Supernova'],
+    desc: 'Delantero del Génesis y capitán.',
+    locked: false, cost: 200
   },
 ];
