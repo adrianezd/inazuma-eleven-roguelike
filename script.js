@@ -2828,6 +2828,12 @@ function renderPenaltyModeEnd(p) {
    --------------------------------------------------------------------- */
 
 var FUTDRAFT_SQUAD_SIZE = 11;
+// Solo en modo Libre: 3 suplentes además del once (14 picks en total), y
+// como en fútbol de verdad puedes meter a un máximo de 2 de esos suplentes
+// antes de empezar el torneo, cambiándolos por titulares del once que ya
+// tenías armado.
+var FUTDRAFT_LIBRE_TOTAL = 14;
+var FUTDRAFT_MAX_SWAPS = 2;
 // Topes por posición durante el draft (modo Libre): altos para no
 // restringir de más, pero justos para que nunca sobren jugadores fuera de
 // sitio (el máximo que pide cualquiera de las formaciones de abajo).
@@ -2991,11 +2997,21 @@ function generateFutDraftOptions() {
   return shuffled.slice(0, 3).map(rosterInstance);
 }
 
+function futDraftDraftTarget(mode) {
+  return mode === 'libre' ? FUTDRAFT_LIBRE_TOTAL : FUTDRAFT_SQUAD_SIZE;
+}
+
 window.pickFutDraftPlayer = function (instanceId) {
+  var f = G.futdraft;
   var picked = G.futdraftOptions.find(function (p) { return p.instanceId === instanceId; });
   if (!picked) return;
-  G.futdraft.squad.push(picked);
-  if (G.futdraft.squad.length >= FUTDRAFT_SQUAD_SIZE) {
+  f.squad.push(picked);
+  if (f.squad.length >= futDraftDraftTarget(f.mode)) {
+    if (f.mode === 'libre') {
+      f.benchedIds = futDraftComputeBench(f.squad, f.formation).map(function (p) { return p.id; });
+      f.swapsUsed = 0;
+      f.swapSelectedBenchId = null;
+    }
     G.screen = 'futdraftTeam';
     render();
   } else {
@@ -3008,14 +3024,18 @@ function renderFutDraftPick() {
   var f = G.futdraft;
   var squad = f.squad;
   var modeLabel = f.mode === 'clasico' ? 'Clásico' : 'Libre';
-  var subtitle = 'Elige a tu jugador ' + (squad.length + 1) + ' de ' + FUTDRAFT_SQUAD_SIZE + '.';
+  var target = futDraftDraftTarget(f.mode);
+  var subtitle = 'Elige a tu jugador ' + (squad.length + 1) + ' de ' + target + '.';
   if (f.mode === 'clasico') {
     var formation = FUTDRAFT_FORMATIONS.find(function (x) { return x.id === f.formation; });
     var currentPos = futDraftCurrentNeededPos(formation, squad);
     var needed = futDraftNeededCounts(formation, squad);
     var counts = futDraftPosCounts(squad);
     subtitle = 'Elige tu ' + currentPos + ' (' + ((counts[currentPos] || 0) + 1) + ' de ' + (needed[currentPos] + (counts[currentPos] || 0)) + ').';
+  } else if (squad.length >= FUTDRAFT_SQUAD_SIZE) {
+    subtitle = 'Elige a tu suplente ' + (squad.length - FUTDRAFT_SQUAD_SIZE + 1) + ' de ' + (target - FUTDRAFT_SQUAD_SIZE) + '.';
   }
+  var benchPreview = f.mode === 'libre' ? futDraftComputeBench(squad, f.formation) : [];
   var optionsHtml = G.futdraftOptions.map(function (c) {
     return playerCardHtml(c, 'pickFutDraftPlayer(\'' + c.instanceId + '\')', false, false);
   }).join('');
@@ -3027,6 +3047,11 @@ function renderFutDraftPick() {
         '<h3 style="margin-bottom:8px">Tu plantilla</h3>' +
         renderFutDraftPitch(squad, f.formation, true) +
       '</div>' +
+      (benchPreview.length
+        ? '<div class="panel"><h3 style="margin-bottom:8px">Suplentes</h3><div class="pitch-row" style="justify-content:center">' +
+          benchPreview.map(function (p) { return '<div class="pitch-player">' + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>'; }).join('') +
+          '</div></div>'
+        : '') +
       '<div class="panel"><h3 style="margin-bottom:8px">Elige uno</h3><div class="card-grid">' + optionsHtml + '</div></div>' +
     '</div>'
   );
@@ -3052,6 +3077,26 @@ function futDraftTeamScore(squad) {
   if (!squad.length) return 0;
   var total = squad.reduce(function (sum, p) { return sum + futDraftPlayerScore(p); }, 0);
   return Math.round(total / squad.length);
+}
+
+// Solo modo Libre: quién juega de verdad (el once) descontando a quien esté
+// en el banquillo. En Clásico no hay banquillo (se draftea justo el once),
+// así que devuelve la plantilla tal cual.
+function futDraftStartingXI(f) {
+  if (!f.benchedIds || !f.benchedIds.length) return f.squad;
+  return f.squad.filter(function (p) { return f.benchedIds.indexOf(p.id) === -1; });
+}
+
+// Devuelve quién se queda fuera del once al repartir la plantilla en la
+// formación dada -- solo tiene sentido si hay más de 11 (banquillo real o
+// vista previa durante el draft de suplentes en modo Libre).
+function futDraftComputeBench(squad, formationId) {
+  if (squad.length <= FUTDRAFT_SQUAD_SIZE) return [];
+  var formation = FUTDRAFT_FORMATIONS.find(function (f) { return f.id === formationId; });
+  var rows = assignFutDraftFormation(squad, formation);
+  var startingIds = {};
+  rows.forEach(function (row) { row.players.forEach(function (p) { startingIds[p.id] = true; }); });
+  return squad.filter(function (p) { return !startingIds[p.id]; });
 }
 
 // Reparte a los 11 del draft en los huecos de la formación elegida en DOS
@@ -3091,13 +3136,17 @@ function assignFutDraftFormation(squad, formation) {
 
 // showEmptySlots (draft en curso, plantilla aún incompleta) añade un hueco
 // marcado por cada sitio de la formación que todavía no tiene jugador, para
-// que se vea de un vistazo cuánto queda de cada línea.
-function renderFutDraftPitch(squad, formationId, showEmptySlots) {
+// que se vea de un vistazo cuánto queda de cada línea. swappable (pantalla
+// de equipo en modo Libre, con banquillo) hace clicable a cada titular
+// para completar un cambio con el suplente ya seleccionado.
+function renderFutDraftPitch(squad, formationId, showEmptySlots, swappable) {
   var formation = FUTDRAFT_FORMATIONS.find(function (f) { return f.id === formationId; });
   var rows = assignFutDraftFormation(squad, formation);
   var rowsHtml = rows.map(function (row) {
     var itemsHtml = row.players.map(function (p) {
-      return '<div class="pitch-player">' + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
+      var cls = 'pitch-player' + (swappable ? ' futdraft-swappable' : '');
+      var attr = swappable ? ' onclick="selectFutDraftStarterPlayer(\'' + p.id + '\')"' : '';
+      return '<div class="' + cls + '"' + attr + '>' + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
     }).join('');
     if (showEmptySlots) {
       for (var k = row.players.length; k < row.count; k++) {
@@ -3114,12 +3163,50 @@ window.setFutDraftFormation = function (id) {
   render();
 };
 
+window.selectFutDraftBenchPlayer = function (id) {
+  var f = G.futdraft;
+  if (f.swapsUsed >= FUTDRAFT_MAX_SWAPS) return;
+  f.swapSelectedBenchId = (f.swapSelectedBenchId === id) ? null : id;
+  render();
+};
+
+window.selectFutDraftStarterPlayer = function (id) {
+  var f = G.futdraft;
+  if (!f.swapSelectedBenchId || f.swapsUsed >= FUTDRAFT_MAX_SWAPS) return;
+  var idx = f.benchedIds.indexOf(f.swapSelectedBenchId);
+  if (idx === -1) return;
+  f.benchedIds.splice(idx, 1, id); // el titular pasa al banquillo, el suplente entra al once
+  f.swapSelectedBenchId = null;
+  f.swapsUsed++;
+  render();
+};
+
 function renderFutDraftTeam() {
   var f = G.futdraft;
-  var score = futDraftTeamScore(f.squad);
+  var hasBench = f.mode === 'libre' && f.benchedIds && f.benchedIds.length > 0;
+  var startingXI = futDraftStartingXI(f);
+  var score = futDraftTeamScore(startingXI);
   var formationBtns = futDraftAvailableFormations().map(function (ft) {
     return '<button class="btn-tiny' + (f.formation === ft.id ? ' active' : '') + '" onclick="setFutDraftFormation(\'' + ft.id + '\')">' + ft.name + '</button>';
   }).join('');
+  var benchHtml = '';
+  if (hasBench) {
+    var canSwap = f.swapsUsed < FUTDRAFT_MAX_SWAPS;
+    var benchPlayers = f.squad.filter(function (p) { return f.benchedIds.indexOf(p.id) !== -1; });
+    var benchItemsHtml = benchPlayers.map(function (p) {
+      var selected = f.swapSelectedBenchId === p.id;
+      var cls = 'pitch-player' + (canSwap ? ' futdraft-swappable' : '') + (selected ? ' selected' : '');
+      var attr = canSwap ? ' onclick="selectFutDraftBenchPlayer(\'' + p.id + '\')"' : '';
+      return '<div class="' + cls + '"' + attr + '>' + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
+    }).join('');
+    var hint = !canSwap ? '' : (f.swapSelectedBenchId ? 'Ahora toca al titular que quieres mandar al banquillo.' : 'Toca a un suplente y luego a un titular para cambiarlos.');
+    benchHtml =
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:4px">Banquillo</h3>' +
+        '<p class="dim small" style="margin-bottom:10px">Cambios usados: ' + f.swapsUsed + ' / ' + FUTDRAFT_MAX_SWAPS + (hint ? ' &middot; ' + hint : '') + '</p>' +
+        '<div class="pitch-row" style="justify-content:center">' + benchItemsHtml + '</div>' +
+      '</div>';
+  }
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
@@ -3130,8 +3217,9 @@ function renderFutDraftTeam() {
       '<div class="panel">' +
         '<h3 style="margin-bottom:8px">Formación</h3>' +
         '<div class="view-toggle view-toggle-wrap">' + formationBtns + '</div>' +
-        renderFutDraftPitch(f.squad, f.formation) +
+        renderFutDraftPitch(startingXI, f.formation, false, hasBench && f.swapsUsed < FUTDRAFT_MAX_SWAPS && !!f.swapSelectedBenchId) +
       '</div>' +
+      benchHtml +
       '<button class="btn btn-primary btn-block" onclick="startFutDraftMatches()">Jugar torneo (8 equipos)</button>' +
     '</div>'
   );
@@ -3173,7 +3261,7 @@ window.playFutDraftMatch = function () {
   var match = round.filter(function (m) { return (m.a.isPlayer || m.b.isPlayer) && m.winner === null; })[0];
   var oppSide = match.a.isPlayer ? match.b : match.a;
   var formation = FUTDRAFT_FORMATIONS.find(function (ft) { return ft.id === f.formation; });
-  var score = futDraftTeamScore(f.squad);
+  var score = futDraftTeamScore(futDraftStartingXI(f));
   var oppPower = teamPower(oppSide);
   var myAtk = score * formation.atk;
   var myDef = score * formation.def;

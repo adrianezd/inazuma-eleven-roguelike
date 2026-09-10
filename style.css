@@ -317,6 +317,12 @@ a { color: var(--accent); }
   color: rgba(255,255,255,0.35);
   font-size: 0.9rem;
 }
+/* FutDraft: cambios entre titulares y banquillo */
+.futdraft-swappable { cursor: pointer; }
+.futdraft-swappable .avatar { transition: box-shadow 0.15s ease; }
+.futdraft-swappable:hover .avatar,
+.futdraft-swappable:active .avatar { box-shadow: 0 0 0 2px var(--accent) inset; }
+.pitch-player.selected .avatar { box-shadow: 0 0 0 3px var(--accent-2); border-radius: 50%; }
 .pitch-center-line { position: absolute; left: 8%; right: 8%; top: 50%; height: 1px; background: rgba(255,255,255,0.18); }
 .pitch-center-circle {
   position: absolute; left: 50%; top: 50%; width: 70px; height: 70px;
