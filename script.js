@@ -2240,14 +2240,14 @@ function advanceTurn() {
   continueMatch();
 }
 
-// Penalti-bonus: evento aleatorio (4% cada vez que el partido sigue tras un
+// Penalti-bonus: evento aleatorio (2% cada vez que el partido sigue tras un
 // cambio de turno) que interrumpe brevemente el flujo normal para un
 // mini-juego de 3 zonas -- no consume el turno en curso, solo se resuelve
 // antes de él y luego el partido sigue exactamente donde iba.
 function maybeTriggerPenalty() {
   var m = G.match;
   if (!m || m.finished || m.penalty) return;
-  if (Math.random() >= 0.04) return;
+  if (Math.random() >= 0.02) return;
   var playerShoots = Math.random() < 0.5;
   var shooterSquad = playerShoots ? G.run.squad : m.oppSquad;
   var keeperSquad = playerShoots ? m.oppSquad : G.run.squad;
