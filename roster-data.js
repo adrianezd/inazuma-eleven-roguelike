@@ -59,7 +59,7 @@ var TYPE_MARK = { Fuego: 'F', Bosque: 'B', Viento: 'V', 'Montaña': 'M' };
 var RIVAL_TEAM_NAMES = [
   'Royal Academy', 'Zeus', 'Occult', 'Instituto Osaka',
   'Alpino', 'Unicorn', 'Big Waves',
-  'Brain', 'Wild', 'Shuriken', 'Kirkwwood', 'Umbrella',
+  'Brain', 'Wild', 'Shuriken', 'Kirkwood', 'Umbrella',
   'Tarjeteros', 'Veteranos Inazuma', 'Instituto Alius',
   'Cala Pirata', 'Sallys', 'Leones del desierto',
   'Academia Universal', 'Instituto Cherrybloom', 'Instituto Plenilunio',
@@ -73,7 +73,7 @@ var RIVAL_TEAM_BOSSES = [
   'Genesis', 'Prominence', 'Polvo de Diamante', 'Tormenta de Géminis', 'Dragones de Fuego',
   'Pequeños Gigantes', 'Épsilon', 'Los Emperadores', 'Os Reis', 'Neo Japón',
   'Protocolo Omega', 'Caos', 'El Dorado 01', 'Resistencia Japón', 'Resistencia Japón GO',
-  'Gir', 'Gar', 'Ragnah', 'Alius Masters', 'Inazuma Japan', 'Inazuma Japan GO',
+  'Gir', 'Gar', 'Ragnah', 'Alius Masters', 'Inazuma Japon', 'Inazuma Japon GO',
   'Chrono Storm', 'Dragon Link', 'Desesperdidos', 'Dinastía Galáctica',
   'Earth Eleven', 'Eclipse de Orión', 'El Dorado 02', 'El Dorado 03', 
   'Protocolo Omega 2.0', 'Protocolo Omega 3.0', 'Zanark Domain', 'Equipo Zero',
@@ -90,7 +90,7 @@ var TEAM_POWER = {
   // Solo en RIVAL_TEAM_NAMES (nivel normal)
   'Occult': 28, 'Instituto Osaka': 25,
   'Alpino': 33, 'Unicorn': 40, 'Big Waves': 30,
-  'Brain': 30, 'Wild': 32, 'Shuriken': 34, 'Kirkwwood': 39, 'Umbrella': 18,
+  'Brain': 30, 'Wild': 32, 'Shuriken': 34, 'Kirkwood': 39, 'Umbrella': 18,
   'Tarjeteros': 16, 'Veteranos Inazuma': 38,
   'Cala Pirata': 21, 'Sallys': 24, 'Leones del desierto': 33,
   'Academia Universal': 29, 'Instituto Cherrybloom': 26, 'Instituto Plenilunio': 34,
@@ -102,8 +102,8 @@ var TEAM_POWER = {
   'Academia Ogre': 60, 'Emperadores Oscuros': 85, 'Genesis': 90,
   'Prominence': 73, 'Polvo de Diamante': 73, 'Tormenta de Géminis': 70, 'Dragones de Fuego': 70,
   'Pequeños Gigantes': 82, 'Épsilon': 74, 'Los Emperadores': 75, 'Os Reis': 75, 'Neo Japón': 74,
-  'Protocolo Omega': 66, 'Caos': 75, 'El Dorado 01': 57, 'Resistencia Japón': 70, 'Resistencia Japón GO': 70,
-  'Gir': 56, 'Gar': 56, 'Ragnah': 80, 'Alius Masters': 73, 'Inazuma Japan': 88, 'Inazuma Japan GO': 96,
+  'Protocolo Omega': 66, 'Caos': 75, 'El Dorado 01': 57, 'Resistencia Japon': 70, 'Resistencia Japón GO': 70,
+  'Gir': 56, 'Gar': 56, 'Ragnah': 80, 'Alius Masters': 73, 'Inazuma Japon': 88, 'Inazuma Japon GO': 96,
   'Chrono Storm': 77, 'Dragon Link': 74, 'Desesperdidos': 70, 'Dinastía Galáctica': 78,
   'Earth Eleven': 88, 'Eclipse de Orión': 85, 'El Dorado 02': 75, 'El Dorado 03': 79,
   'Protocolo Omega 2.0': 76, 'Protocolo Omega 3.0': 78, 'Zanark Domain': 78, 'Equipo Zero': 81,
@@ -1066,7 +1066,7 @@ var ROSTER = [
   // de su atributo personal -- revísalo si te importa la precisión exacta.
   {
     id: 'r121', nombre: 'Sol Daystar', original: 'Amemiya Taiyou',
-    posicion: 'Mediocentro', tipo: 'Fuego',
+    posicion: 'Centrocampista', tipo: 'Fuego',
     tiro: 85, pase: 80, defensa: 40, especial: 80,
     hissatsu: ['Tormenta Solar'],
     desc: 'Capitán del Universal, considerado el genio del fútbol de su generación.',
@@ -1150,6 +1150,20 @@ var ROSTER = [
     tiro: 61, pase: 73, defensa: 73, especial: 65,
     hissatsu: ['Robo rápido'],
     desc: 'Creador de juego de la Royal.',
+    locked: false, cost: 128
+  },
+    {id: 'r132', nombre: 'Ganymede', original: 'Ganymede',
+    posicion: 'Defensa', tipo: 'Montaña',
+    tiro: 43, pase: 60, defensa: 78, especial: 65,
+    hissatsu: ['Robo planetario'],
+    desc: 'Defensa de Tormenta de Géminis',
+    locked: false, cost: 128
+  },
+  {id: 'r133', nombre: 'Wanli Chang-Cheng', original: 'Wanli',
+    posicion: 'Defensa', tipo: 'Montaña',
+    tiro: 45, pase: 50, defensa: 79, especial: 60,
+    hissatsu: ['Muralla de Atlantis'],
+    desc: 'Defensa Físico y amigable',
     locked: false, cost: 128
   },
 ];

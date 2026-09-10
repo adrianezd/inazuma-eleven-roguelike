@@ -298,7 +298,10 @@ var TEAM_SHIELD_FILES = {
   'Shuriken': 'shuriken.png',
   'Zanark Domain': 'zanark-domain.png',
   'Equipo Zero': 'zero.png',
-  'Desesperdidos': 'desesperados.png'
+  'Desesperdidos': 'desesperados.png',
+  'Kirkwood': 'kirkwood.png',
+  'Cala Pirata': 'cala-pirata.png',
+  'Flota Ixar': 'flota-ixar.png'
 };
 // team1.png es el escudo del propio jugador ("Tu equipo"), no un relleno
 // genérico para rivales sin escudo -- por eso vive fuera de TEAM_SHIELD_FILES.
