@@ -2870,14 +2870,13 @@ var FUTDRAFT_FORMATIONS = [
     ], atk: 0.8, def: 1.3 }
 ];
 
-// Cada draft ofrece solo 4 de las 7 formaciones (al azar), no las 7 de
-// golpe -- se elige una vez por draft y se usa tanto en Clásico (antes de
-// draftear) como en Libre (al elegir formación en la pantalla de equipo),
-// para que las opciones sean las mismas en las dos pantallas de una misma
-// partida.
-function pickFutDraftFormationChoices() {
+// Cada draft ofrece solo unas pocas formaciones al azar, no las 7 de
+// golpe -- se elige una vez al principio (antes de draftear, en los dos
+// modos) y esas mismas son las que luego se pueden alternar en la
+// pantalla de equipo. Clásico ofrece 4, Libre ofrece 3.
+function pickFutDraftFormationChoices(n) {
   var shuffled = FUTDRAFT_FORMATIONS.slice().sort(function () { return Math.random() - 0.5; });
-  return shuffled.slice(0, 4).map(function (f) { return f.id; });
+  return shuffled.slice(0, n).map(function (f) { return f.id; });
 }
 function futDraftAvailableFormations() {
   var ids = G.futdraftFormationChoices || FUTDRAFT_FORMATIONS.map(function (f) { return f.id; });
@@ -2893,23 +2892,31 @@ function renderFutDraftModeSelect() {
         '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
         '<h2 class="panel-title mt">FutDraft</h2>' +
         '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-primary btn-block" onclick="actionStartFutDraft(\'libre\')">Libre<br><small class="dim">Eliges a quien quieras, decides la formación al final.</small></button>' +
+          '<button class="btn btn-primary btn-block" onclick="actionGoFutDraftFormationSelect(\'libre\')">Libre<br><small class="dim">Eliges a quien quieras, sin restricción de posición.</small></button>' +
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionGoFutDraftFormationSelect()">Clásico<br><small class="dim">Eliges la formación antes: el draft solo te ofrece jugadores para los huecos que falten.</small></button>' +
+          '<button class="btn btn-block" onclick="actionGoFutDraftFormationSelect(\'clasico\')">Clásico<br><small class="dim">El draft solo te ofrece jugadores para los huecos que falten en tu formación.</small></button>' +
         '</div>' +
       '</div>' +
     '</div>'
   );
 }
 
-function actionGoFutDraftFormationSelect() {
-  G.futdraftFormationChoices = pickFutDraftFormationChoices();
+// Los dos modos eligen formación ANTES de draftear: Clásico ofrece 4
+// formaciones al azar, Libre 3. La formación no restringe el draft Libre
+// (sigue siendo libre de verdad), pero fija la vista previa del campo
+// durante el draft y la formación inicial de la pantalla de equipo.
+var FUTDRAFT_FORMATION_CHOICES_BY_MODE = { libre: 3, clasico: 4 };
+
+function actionGoFutDraftFormationSelect(mode) {
+  G.futdraftPendingMode = mode;
+  G.futdraftFormationChoices = pickFutDraftFormationChoices(FUTDRAFT_FORMATION_CHOICES_BY_MODE[mode]);
   G.screen = 'futdraftFormationSelect';
   render();
 }
 
 function renderFutDraftFormationSelect() {
+  var mode = G.futdraftPendingMode;
   var btns = futDraftAvailableFormations().map(function (f) {
     return (
       '<div class="btn-row" style="justify-content:center">' +
@@ -2917,12 +2924,15 @@ function renderFutDraftFormationSelect() {
       '</div>'
     );
   }).join('');
+  var hint = mode === 'clasico'
+    ? 'Elige la formación antes de nada: el draft solo te ofrecerá jugadores para los huecos que aún falten en ella.'
+    : 'Elige la formación con la que vas a empezar. En Libre puedes seguir cambiándola luego en la pantalla de equipo.';
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionGoFutDraftModeSelect()">Volver</button>' +
-        '<h2 class="panel-title mt">FutDraft Clásico</h2>' +
-        '<p class="dim small">Elige la formación antes de nada: el draft solo te ofrecerá jugadores para los huecos que aún falten en ella.</p>' +
+        '<h2 class="panel-title mt">FutDraft ' + (mode === 'clasico' ? 'Clásico' : 'Libre') + '</h2>' +
+        '<p class="dim small">' + hint + '</p>' +
         btns +
       '</div>' +
     '</div>'
@@ -2930,15 +2940,8 @@ function renderFutDraftFormationSelect() {
 }
 
 function actionChooseFutDraftFormation(id) {
-  G.futdraft = { squad: [], formation: id, mode: 'clasico', matches: [], matchIndex: 0 };
-  G.futdraftOptions = generateFutDraftOptions();
-  G.screen = 'futdraftPick';
-  render();
-}
-
-function actionStartFutDraft(mode) {
-  G.futdraftFormationChoices = pickFutDraftFormationChoices();
-  G.futdraft = { squad: [], formation: G.futdraftFormationChoices[0], mode: mode || 'libre', matches: [], matchIndex: 0 };
+  var mode = G.futdraftPendingMode || 'clasico';
+  G.futdraft = { squad: [], formation: id, mode: mode, matches: [], matchIndex: 0 };
   G.futdraftOptions = generateFutDraftOptions();
   G.screen = 'futdraftPick';
   render();
@@ -3008,7 +3011,7 @@ window.pickFutDraftPlayer = function (instanceId) {
   f.squad.push(picked);
   if (f.squad.length >= futDraftDraftTarget(f.mode)) {
     if (f.mode === 'libre') {
-      f.benchedIds = futDraftComputeBench(f.squad, f.formation).map(function (p) { return p.id; });
+      f.benchedIds = futDraftComputeBench(f.squad).map(function (p) { return p.id; });
       f.swapsUsed = 0;
       f.swapSelectedBenchId = null;
     }
@@ -3035,7 +3038,7 @@ function renderFutDraftPick() {
   } else if (squad.length >= FUTDRAFT_SQUAD_SIZE) {
     subtitle = 'Elige a tu suplente ' + (squad.length - FUTDRAFT_SQUAD_SIZE + 1) + ' de ' + (target - FUTDRAFT_SQUAD_SIZE) + '.';
   }
-  var benchPreview = f.mode === 'libre' ? futDraftComputeBench(squad, f.formation) : [];
+  var benchPreview = f.mode === 'libre' ? futDraftComputeBench(squad) : [];
   var optionsHtml = G.futdraftOptions.map(function (c) {
     return playerCardHtml(c, 'pickFutDraftPlayer(\'' + c.instanceId + '\')', false, false);
   }).join('');
@@ -3087,16 +3090,13 @@ function futDraftStartingXI(f) {
   return f.squad.filter(function (p) { return f.benchedIds.indexOf(p.id) === -1; });
 }
 
-// Devuelve quién se queda fuera del once al repartir la plantilla en la
-// formación dada -- solo tiene sentido si hay más de 11 (banquillo real o
-// vista previa durante el draft de suplentes en modo Libre).
-function futDraftComputeBench(squad, formationId) {
+// Los "cambios" (picks 12-14 del draft Libre) van siempre al banquillo por
+// defecto -- son justo los que draftas DESPUÉS de completar el once, así
+// que no tiene sentido recalcular con las stats quién se queda fuera: el
+// jugador ya sabe que esos 3 son los suplentes en el momento de elegirlos.
+function futDraftComputeBench(squad) {
   if (squad.length <= FUTDRAFT_SQUAD_SIZE) return [];
-  var formation = FUTDRAFT_FORMATIONS.find(function (f) { return f.id === formationId; });
-  var rows = assignFutDraftFormation(squad, formation);
-  var startingIds = {};
-  rows.forEach(function (row) { row.players.forEach(function (p) { startingIds[p.id] = true; }); });
-  return squad.filter(function (p) { return !startingIds[p.id]; });
+  return squad.slice(FUTDRAFT_SQUAD_SIZE);
 }
 
 // Reparte a los 11 del draft en los huecos de la formación elegida en DOS
