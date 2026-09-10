@@ -1288,7 +1288,7 @@ var ROSTER = [
   },
     {
     id: 'r149', nombre: 'Gigi Blasi', original: 'Gigi Blasi',
-    posicion: 'Portero', tipo: 'Aire',
+    posicion: 'Portero', tipo: 'Viento',
     tiro: 38, pase: 51, defensa: 85, especial: 84,
     hissatsu: ['Guardia del Coliseo'],
     desc: 'Guardameta italiano.',
