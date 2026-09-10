@@ -576,6 +576,28 @@ function renderDailyAlreadyPlayed() {
    --------------------------------------------------------------------- */
 
 var SURVIVAL_CYCLE = ['partido', 'entrenoOEvento', 'partido', 'entrenoOEvento', 'jefe', 'entrenoOEvento'];
+var SURVIVAL_CASHOUT_EVERY = 5;
+
+function renderSurvivalCashout() {
+  var run = G.run;
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<h2 class="panel-title mt">¿Sigues o te retiras?</h2>' +
+        '<p class="dim small">Llevas ' + run.matchesWon + ' partidos ganados y <strong style="color:var(--accent-2)">' + run.spiritEarned + '</strong> Puntos de Espíritu acumulados en esta partida. Si sigues y acabas perdiendo, te los quedas igual -- esto es solo para poder parar cuando quieras sin arriesgarte a nada más.</p>' +
+        '<div class="btn-row" style="justify-content:center"><button class="btn btn-primary btn-block" onclick="actionContinueSurvival()">Seguir jugando</button></div>' +
+        '<div class="btn-row" style="justify-content:center"><button class="btn btn-outline btn-block" onclick="actionCashOutSurvival()">Retirarte con tus puntos</button></div>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function actionContinueSurvival() { advanceSurvivalStage(); }
+
+function actionCashOutSurvival() {
+  G.run.retired = true;
+  finishRun();
+}
 
 function advanceSurvivalStage() {
   var stepType = SURVIVAL_CYCLE[G.run.survivalStep % SURVIVAL_CYCLE.length];
@@ -1037,6 +1059,7 @@ function render() {
     case 'coleccionEquipos': html = renderColeccionEquipos(); break;
     case 'draftPick': html = renderDraftPick(); break;
     case 'dailyAlreadyPlayed': html = renderDailyAlreadyPlayed(); break;
+    case 'survivalCashout': html = renderSurvivalCashout(); break;
     case 'torneoBracket': html = renderTournamentBracket(); break;
     case 'torneoSizeSelect': html = renderTorneoSizeSelect(); break;
     case 'futdraftModeSelect': html = renderFutDraftModeSelect(); break;
@@ -2397,6 +2420,14 @@ function afterMatchWin() {
   if (G.run.mode === 'supervivencia') {
     if (G.match.isBoss) G.run.squad.forEach(function (p) { p.fatigado = false; });
     G.match = null;
+    // Cada SURVIVAL_CASHOUT_EVERY partidos ganados se ofrece la opción de
+    // retirarse con los Puntos de Espíritu ya acumulados en esta partida,
+    // en vez de forzar a seguir hasta perder para poder cobrarlos.
+    if (G.run.matchesWon > 0 && G.run.matchesWon % SURVIVAL_CASHOUT_EVERY === 0) {
+      G.screen = 'survivalCashout';
+      render();
+      return;
+    }
     advanceSurvivalStage();
     return;
   }
@@ -2458,14 +2489,17 @@ function finishRun() {
   if (G.run.matchesWon > meta.bestWins) meta.bestWins = G.run.matchesWon;
   saveMeta(meta);
   G.meta = meta;
-  showEndAnimation(G.run.victory, G.run.mode);
+  showEndAnimation(G.run.victory, G.run.mode, G.run.retired);
   G.screen = 'summary';
   render();
 }
 
-function showEndAnimation(victory, mode) {
+function showEndAnimation(victory, mode, retired) {
   var div = document.createElement('div');
-  if (mode === 'torneo' && victory) {
+  if (retired) {
+    div.className = 'victory-animation';
+    div.textContent = '💰';
+  } else if (mode === 'torneo' && victory) {
     div.className = 'tournament-victory';
     div.innerHTML = '<div class="trophy-icon">🏆</div><div class="victory-text">¡CAMPEÓN!</div>';
   } else if (victory) {
@@ -2485,11 +2519,12 @@ function showEndAnimation(victory, mode) {
 
 function renderSummary() {
   var run = G.run;
+  var title = run.retired ? 'Te retiras con tus puntos a salvo' : (run.victory ? '¡Campeones de la temporada!' : 'Resumen de la temporada');
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
-        '<h2 class="panel-title">' + (run.victory ? '¡Campeones de la temporada!' : 'Resumen de la temporada') + '</h2>' +
-        (run.victory ? '<p class="dim">Has superado todo el bracket sin perder ni un partido. ¡Enhorabuena!</p>' : '') +
+        '<h2 class="panel-title">' + title + '</h2>' +
+        (run.retired ? '<p class="dim">Te llevas todo lo ganado en esta partida sin arriesgarte a más.</p>' : (run.victory ? '<p class="dim">Has superado todo el bracket sin perder ni un partido. ¡Enhorabuena!</p>' : '')) +
         '<div class="stats-summary">' +
           '<div class="stat-tile"><div class="num">' + run.clearedCount + '</div><div class="label">Nodos superados</div></div>' +
           '<div class="stat-tile"><div class="num">' + run.matchesWon + '</div><div class="label">Partidos ganados</div></div>' +
