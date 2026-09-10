@@ -1176,7 +1176,7 @@ var ROSTER = [
   },
   {
     id: 'r135', nombre: 'Beta', original: 'Beta',
-    posicion: 'Delantera', tipo: 'Viento',
+    posicion: 'Delantero', tipo: 'Viento',
     tiro: 85, pase: 68, defensa: 42, especial: 78,
     hissatsu: ['Comando de Disparo 07'],
     desc: 'Capitana del Protocolo Omega 2.0, capaz de cambiar por completo su personalidad durante los partidos.',

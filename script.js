@@ -2828,12 +2828,13 @@ function renderPenaltyModeEnd(p) {
    --------------------------------------------------------------------- */
 
 var FUTDRAFT_SQUAD_SIZE = 11;
-// Solo en modo Libre: 3 suplentes además del once (14 picks en total), y
-// como en fútbol de verdad puedes meter a un máximo de 2 de esos suplentes
-// antes de empezar el torneo, cambiándolos por titulares del once que ya
-// tenías armado.
+// Solo en modo Libre: 3 suplentes además del once (14 picks en total). En
+// la pantalla de equipo se pueden hacer cambios ILIMITADOS antes de
+// empezar el torneo, tanto entre titular y suplente como entre dos
+// titulares (para reubicarlos de línea) -- en los dos modos, Libre y
+// Clásico (Clásico no tiene banquillo, así que ahí solo tiene sentido el
+// cambio titular-titular).
 var FUTDRAFT_LIBRE_TOTAL = 14;
-var FUTDRAFT_MAX_SWAPS = 2;
 // Topes por posición durante el draft (modo Libre): altos para no
 // restringir de más, pero justos para que nunca sobren jugadores fuera de
 // sitio (el máximo que pide cualquiera de las formaciones de abajo).
@@ -3010,11 +3011,10 @@ window.pickFutDraftPlayer = function (instanceId) {
   if (!picked) return;
   f.squad.push(picked);
   if (f.squad.length >= futDraftDraftTarget(f.mode)) {
-    if (f.mode === 'libre') {
-      f.benchedIds = futDraftComputeBench(f.squad).map(function (p) { return p.id; });
-      f.swapsUsed = 0;
-      f.swapSelectedBenchId = null;
-    }
+    var starters = f.squad.slice(0, FUTDRAFT_SQUAD_SIZE);
+    f.bench = f.squad.slice(FUTDRAFT_SQUAD_SIZE);
+    f.lineup = futDraftBuildLineup(starters, f.formation);
+    f.swapSelectedId = null;
     G.screen = 'futdraftTeam';
     render();
   } else {
@@ -3072,7 +3072,10 @@ var FUTDRAFT_SCORE_STATS = {
   Delantero: ['tiro', 'pase', 'especial']
 };
 function futDraftPlayerScore(p) {
-  var stats = FUTDRAFT_SCORE_STATS[p.posicion];
+  // Reserva por si algún jugador del roster tuviera una posición mal
+  // escrita (p.ej. "Delantera" en vez de "Delantero"): mejor promediar
+  // las 4 stats que romper toda la pantalla de equipo por un typo de dato.
+  var stats = FUTDRAFT_SCORE_STATS[p.posicion] || ['tiro', 'pase', 'defensa', 'especial'];
   var sum = stats.reduce(function (s, key) { return s + p[key]; }, 0);
   return sum / stats.length;
 }
@@ -3082,21 +3085,30 @@ function futDraftTeamScore(squad) {
   return Math.round(total / squad.length);
 }
 
-// Solo modo Libre: quién juega de verdad (el once) descontando a quien esté
-// en el banquillo. En Clásico no hay banquillo (se draftea justo el once),
-// así que devuelve la plantilla tal cual.
-function futDraftStartingXI(f) {
-  if (!f.benchedIds || !f.benchedIds.length) return f.squad;
-  return f.squad.filter(function (p) { return f.benchedIds.indexOf(p.id) === -1; });
-}
-
-// Los "cambios" (picks 12-14 del draft Libre) van siempre al banquillo por
-// defecto -- son justo los que draftas DESPUÉS de completar el once, así
-// que no tiene sentido recalcular con las stats quién se queda fuera: el
-// jugador ya sabe que esos 3 son los suplentes en el momento de elegirlos.
+// Vista previa durante el draft Libre (picks 12-14, antes de llegar a la
+// pantalla de equipo): los "cambios" van siempre al banquillo por
+// defecto, son justo los que draftas DESPUÉS de completar el once, así
+// que no tiene sentido recalcular con las stats quién se queda fuera.
 function futDraftComputeBench(squad) {
   if (squad.length <= FUTDRAFT_SQUAD_SIZE) return [];
   return squad.slice(FUTDRAFT_SQUAD_SIZE);
+}
+
+// A partir de aquí: el once real de la pantalla de equipo (f.lineup) ya no
+// se recalcula solo -- se construye una vez al acabar el draft (o al
+// cambiar de formación) y luego el jugador lo edita a mano con cambios
+// ilimitados (ver selectFutDraftPlayer). f.lineup es un array de 11
+// { pos, player }: pos es la línea del hueco (fija), player es quien lo
+// ocupa (cambia con cada cambio). f.bench (solo Libre) son los suplentes,
+// sin línea asignada.
+function futDraftBuildLineup(starters, formationId) {
+  var formation = FUTDRAFT_FORMATIONS.find(function (f) { return f.id === formationId; });
+  var rows = assignFutDraftFormation(starters, formation);
+  var lineup = [];
+  rows.forEach(function (row) {
+    row.players.forEach(function (p) { lineup.push({ pos: row.pos, player: p }); });
+  });
+  return lineup;
 }
 
 // Reparte a los 11 del draft en los huecos de la formación elegida en DOS
@@ -3135,18 +3147,16 @@ function assignFutDraftFormation(squad, formation) {
 }
 
 // showEmptySlots (draft en curso, plantilla aún incompleta) añade un hueco
-// marcado por cada sitio de la formación que todavía no tiene jugador, para
-// que se vea de un vistazo cuánto queda de cada línea. swappable (pantalla
-// de equipo en modo Libre, con banquillo) hace clicable a cada titular
-// para completar un cambio con el suplente ya seleccionado.
-function renderFutDraftPitch(squad, formationId, showEmptySlots, swappable) {
+// marcado por cada sitio de la formación que todavía no tiene jugador,
+// para que se vea de un vistazo cuánto queda de cada línea. Se usa solo
+// durante el draft (vista previa, aún sin cambios posibles) -- la
+// pantalla de equipo usa renderFutDraftLineupPitch, que sí es editable.
+function renderFutDraftPitch(squad, formationId, showEmptySlots) {
   var formation = FUTDRAFT_FORMATIONS.find(function (f) { return f.id === formationId; });
   var rows = assignFutDraftFormation(squad, formation);
   var rowsHtml = rows.map(function (row) {
     var itemsHtml = row.players.map(function (p) {
-      var cls = 'pitch-player' + (swappable ? ' futdraft-swappable' : '');
-      var attr = swappable ? ' onclick="selectFutDraftStarterPlayer(\'' + p.id + '\')"' : '';
-      return '<div class="' + cls + '"' + attr + '>' + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
+      return '<div class="pitch-player">' + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
     }).join('');
     if (showEmptySlots) {
       for (var k = row.players.length; k < row.count; k++) {
@@ -3158,52 +3168,78 @@ function renderFutDraftPitch(squad, formationId, showEmptySlots, swappable) {
   return '<div class="pitch pitch-11">' + rowsHtml + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div>';
 }
 
+// Campo de la pantalla de equipo: cada titular es clicable para hacer
+// cambios ilimitados (con otro titular o con un suplente del banquillo).
+function renderFutDraftLineupPitch(f) {
+  var formation = FUTDRAFT_FORMATIONS.find(function (x) { return x.id === f.formation; });
+  var rowsHtml = formation.rows.map(function (row) {
+    var itemsHtml = f.lineup.filter(function (slot) { return slot.pos === row.pos; }).map(function (slot) {
+      var p = slot.player;
+      var cls = 'pitch-player futdraft-swappable' + (f.swapSelectedId === p.id ? ' selected' : '');
+      return '<div class="' + cls + '" onclick="selectFutDraftPlayer(\'' + p.id + '\')">' + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
+    }).join('');
+    return '<div class="pitch-row">' + itemsHtml + '</div>';
+  }).join('');
+  return '<div class="pitch pitch-11">' + rowsHtml + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div>';
+}
+
 window.setFutDraftFormation = function (id) {
-  G.futdraft.formation = id;
+  var f = G.futdraft;
+  f.formation = id;
+  var starters = f.lineup.map(function (slot) { return slot.player; });
+  f.lineup = futDraftBuildLineup(starters, id);
+  f.swapSelectedId = null;
   render();
 };
 
-window.selectFutDraftBenchPlayer = function (id) {
+// Cambio ilimitado entre dos jugadores cualquiera -- dos titulares (se
+// reubican de línea) o un titular y un suplente (el suplente entra al
+// once, el titular pasa al banquillo). Toca a uno, luego al otro.
+window.selectFutDraftPlayer = function (id) {
   var f = G.futdraft;
-  if (f.swapsUsed >= FUTDRAFT_MAX_SWAPS) return;
-  f.swapSelectedBenchId = (f.swapSelectedBenchId === id) ? null : id;
-  render();
-};
-
-window.selectFutDraftStarterPlayer = function (id) {
-  var f = G.futdraft;
-  if (!f.swapSelectedBenchId || f.swapsUsed >= FUTDRAFT_MAX_SWAPS) return;
-  var idx = f.benchedIds.indexOf(f.swapSelectedBenchId);
-  if (idx === -1) return;
-  f.benchedIds.splice(idx, 1, id); // el titular pasa al banquillo, el suplente entra al once
-  f.swapSelectedBenchId = null;
-  f.swapsUsed++;
+  if (f.swapSelectedId === id) { f.swapSelectedId = null; render(); return; }
+  if (!f.swapSelectedId) { f.swapSelectedId = id; render(); return; }
+  var otherId = f.swapSelectedId;
+  var lineupIdxA = f.lineup.findIndex(function (s) { return s.player.id === otherId; });
+  var lineupIdxB = f.lineup.findIndex(function (s) { return s.player.id === id; });
+  if (lineupIdxA !== -1 && lineupIdxB !== -1) {
+    var tmp = f.lineup[lineupIdxA].player;
+    f.lineup[lineupIdxA].player = f.lineup[lineupIdxB].player;
+    f.lineup[lineupIdxB].player = tmp;
+  } else {
+    var benchIdxA = f.bench.findIndex(function (p) { return p.id === otherId; });
+    var benchIdxB = f.bench.findIndex(function (p) { return p.id === id; });
+    if (lineupIdxA !== -1 && benchIdxB !== -1) {
+      var starterOut = f.lineup[lineupIdxA].player;
+      f.lineup[lineupIdxA].player = f.bench[benchIdxB];
+      f.bench[benchIdxB] = starterOut;
+    } else if (lineupIdxB !== -1 && benchIdxA !== -1) {
+      var starterOut2 = f.lineup[lineupIdxB].player;
+      f.lineup[lineupIdxB].player = f.bench[benchIdxA];
+      f.bench[benchIdxA] = starterOut2;
+    }
+  }
+  f.swapSelectedId = null;
   render();
 };
 
 function renderFutDraftTeam() {
   var f = G.futdraft;
-  var hasBench = f.mode === 'libre' && f.benchedIds && f.benchedIds.length > 0;
-  var startingXI = futDraftStartingXI(f);
-  var score = futDraftTeamScore(startingXI);
+  var hasBench = f.mode === 'libre' && f.bench.length > 0;
+  var score = futDraftTeamScore(f.lineup.map(function (s) { return s.player; }));
   var formationBtns = futDraftAvailableFormations().map(function (ft) {
     return '<button class="btn-tiny' + (f.formation === ft.id ? ' active' : '') + '" onclick="setFutDraftFormation(\'' + ft.id + '\')">' + ft.name + '</button>';
   }).join('');
   var benchHtml = '';
   if (hasBench) {
-    var canSwap = f.swapsUsed < FUTDRAFT_MAX_SWAPS;
-    var benchPlayers = f.squad.filter(function (p) { return f.benchedIds.indexOf(p.id) !== -1; });
-    var benchItemsHtml = benchPlayers.map(function (p) {
-      var selected = f.swapSelectedBenchId === p.id;
-      var cls = 'pitch-player' + (canSwap ? ' futdraft-swappable' : '') + (selected ? ' selected' : '');
-      var attr = canSwap ? ' onclick="selectFutDraftBenchPlayer(\'' + p.id + '\')"' : '';
-      return '<div class="' + cls + '"' + attr + '>' + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
+    var benchItemsHtml = f.bench.map(function (p) {
+      var cls = 'pitch-player futdraft-swappable' + (f.swapSelectedId === p.id ? ' selected' : '');
+      return '<div class="' + cls + '" onclick="selectFutDraftPlayer(\'' + p.id + '\')">' + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
     }).join('');
-    var hint = !canSwap ? '' : (f.swapSelectedBenchId ? 'Ahora toca al titular que quieres mandar al banquillo.' : 'Toca a un suplente y luego a un titular para cambiarlos.');
     benchHtml =
       '<div class="panel">' +
         '<h3 style="margin-bottom:4px">Banquillo</h3>' +
-        '<p class="dim small" style="margin-bottom:10px">Cambios usados: ' + f.swapsUsed + ' / ' + FUTDRAFT_MAX_SWAPS + (hint ? ' &middot; ' + hint : '') + '</p>' +
+        '<p class="dim small" style="margin-bottom:10px">Cambios ilimitados: toca a un jugador y luego a otro (titular o suplente) para cambiarlos.</p>' +
         '<div class="pitch-row" style="justify-content:center">' + benchItemsHtml + '</div>' +
       '</div>';
   }
@@ -3213,11 +3249,12 @@ function renderFutDraftTeam() {
         '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
         '<h2 class="panel-title mt mb0">Tu once inicial</h2>' +
         '<p class="dim small">Puntuación de equipo: <strong style="color:var(--accent-2)">' + score + '</strong> / 100</p>' +
+        (hasBench ? '' : '<p class="dim small">Cambios ilimitados: toca a dos titulares para cambiarlos de línea.</p>') +
       '</div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:8px">Formación</h3>' +
         '<div class="view-toggle view-toggle-wrap">' + formationBtns + '</div>' +
-        renderFutDraftPitch(startingXI, f.formation, false, hasBench && f.swapsUsed < FUTDRAFT_MAX_SWAPS && !!f.swapSelectedBenchId) +
+        renderFutDraftLineupPitch(f) +
       '</div>' +
       benchHtml +
       '<button class="btn btn-primary btn-block" onclick="startFutDraftMatches()">Jugar torneo (8 equipos)</button>' +
@@ -3261,7 +3298,7 @@ window.playFutDraftMatch = function () {
   var match = round.filter(function (m) { return (m.a.isPlayer || m.b.isPlayer) && m.winner === null; })[0];
   var oppSide = match.a.isPlayer ? match.b : match.a;
   var formation = FUTDRAFT_FORMATIONS.find(function (ft) { return ft.id === f.formation; });
-  var score = futDraftTeamScore(futDraftStartingXI(f));
+  var score = futDraftTeamScore(f.lineup.map(function (s) { return s.player; }));
   var oppPower = teamPower(oppSide);
   var myAtk = score * formation.atk;
   var myDef = score * formation.def;
