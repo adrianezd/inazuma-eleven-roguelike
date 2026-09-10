@@ -3010,9 +3010,25 @@ function renderFutDraftPick() {
   );
 }
 
+// Solo cuentan las estadísticas relevantes para el puesto de cada uno --
+// promediar las 4 por igual diluía el tiro de un delantero con su defensa
+// (floja a propósito) y al revés con los defensas, así que casi todos los
+// jugadores acababan con una media parecida y la puntuación de equipo
+// apenas se movía draftases a quien draftases.
+var FUTDRAFT_SCORE_STATS = {
+  Portero: ['defensa', 'especial'],
+  Defensa: ['pase', 'defensa', 'especial'],
+  Centrocampista: ['tiro', 'pase', 'defensa', 'especial'],
+  Delantero: ['tiro', 'pase', 'especial']
+};
+function futDraftPlayerScore(p) {
+  var stats = FUTDRAFT_SCORE_STATS[p.posicion];
+  var sum = stats.reduce(function (s, key) { return s + p[key]; }, 0);
+  return sum / stats.length;
+}
 function futDraftTeamScore(squad) {
   if (!squad.length) return 0;
-  var total = squad.reduce(function (sum, p) { return sum + (p.tiro + p.pase + p.defensa + p.especial) / 4; }, 0);
+  var total = squad.reduce(function (sum, p) { return sum + futDraftPlayerScore(p); }, 0);
   return Math.round(total / squad.length);
 }
 
