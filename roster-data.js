@@ -72,7 +72,7 @@ var RIVAL_TEAM_BOSSES = [
   'Instituto Alius','Emperadores Oscuros',
   'Genesis', 'Prominence', 'Polvo de Diamante', 'Tormenta de Géminis', 'Dragones de Fuego',
   'Pequeños Gigantes', 'Épsilon', 'Los Emperadores', 'Os Reis', 'Neo Japón',
-  'Protocolo Omega', 'Caos', 'El Dorado 01', 'Resistencia Japón', 'Resistencia Japón GO',
+  'Protocolo Omega', 'Caos', 'El Dorado 01', 'Resistencia Japon', 'Resistencia Japón GO',
   'Gir', 'Gar', 'Ragnah', 'Alius Masters', 'Inazuma Japon', 'Inazuma Japon GO',
   'Chrono Storm', 'Dragon Link', 'Desesperdidos', 'Dinastía Galáctica',
   'Earth Eleven', 'Eclipse de Orión', 'El Dorado 02', 'El Dorado 03', 
