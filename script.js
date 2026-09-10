@@ -2237,14 +2237,14 @@ function advanceTurn() {
   continueMatch();
 }
 
-// Penalti-bonus: evento aleatorio (5% cada vez que el partido sigue tras un
+// Penalti-bonus: evento aleatorio (4% cada vez que el partido sigue tras un
 // cambio de turno) que interrumpe brevemente el flujo normal para un
 // mini-juego de 3 zonas -- no consume el turno en curso, solo se resuelve
 // antes de él y luego el partido sigue exactamente donde iba.
 function maybeTriggerPenalty() {
   var m = G.match;
   if (!m || m.finished || m.penalty) return;
-  if (Math.random() >= 0.05) return;
+  if (Math.random() >= 0.04) return;
   var playerShoots = Math.random() < 0.5;
   var shooterSquad = playerShoots ? G.run.squad : m.oppSquad;
   var keeperSquad = playerShoots ? m.oppSquad : G.run.squad;
@@ -3123,6 +3123,11 @@ function renderFutDraftTeam() {
 // partido del jugador: en vez de jugarse a golpes, se simula igual que los
 // de la CPU pero usando la puntuación de equipo y el multiplicador de la
 // formación elegida en vez de TEAM_POWER.
+// Recompensa en Puntos de Espíritu: 40 fijos por jugar el torneo (ganes o
+// pierdas) + 10 más por cada partido propio ganado en el bracket.
+var FUTDRAFT_BASE_REWARD = 40;
+var FUTDRAFT_WIN_REWARD = 10;
+
 window.startFutDraftMatches = function () {
   var bracket = generateTournamentBracket(8);
   var round1 = [];
@@ -3130,6 +3135,7 @@ window.startFutDraftMatches = function () {
   G.futdraft.tournament = { rounds: [round1], size: 8 };
   G.futdraft.champion = null;
   G.futdraft.eliminated = false;
+  G.futdraft.winsCount = 0;
   G.screen = 'futdraftBracket';
   render();
 };
@@ -3161,18 +3167,28 @@ window.playFutDraftMatch = function () {
   }
   var playerWon = myGoals > oppGoals;
   match.winner = playerWon ? (match.a.isPlayer ? match.a : match.b) : (match.a.isPlayer ? match.b : match.a);
+  if (playerWon) f.winsCount++;
   f.lastMatchResult = { oppName: oppSide.name, oppShield: teamShieldPath(oppSide.name), oppPower: oppPower, myGoals: myGoals, oppGoals: oppGoals, playerWon: playerWon };
   G.screen = 'futdraftMatchResult';
   render();
 };
+
+function finishFutDraftRun() {
+  var f = G.futdraft;
+  var meta = G.meta;
+  f.reward = FUTDRAFT_BASE_REWARD + FUTDRAFT_WIN_REWARD * f.winsCount;
+  meta.points += f.reward;
+  saveMeta(meta);
+  G.screen = 'futdraftSummary';
+  render();
+}
 
 window.continueFutDraftMatch = function () {
   var f = G.futdraft;
   var round = f.tournament.rounds[f.tournament.rounds.length - 1];
   if (!f.lastMatchResult.playerWon) {
     f.eliminated = true;
-    G.screen = 'futdraftSummary';
-    render();
+    finishFutDraftRun();
     return;
   }
   // El jugador ganó su partido: se resuelve el resto de la ronda sola,
@@ -3180,8 +3196,7 @@ window.continueFutDraftMatch = function () {
   round.forEach(function (m) { if (m.winner === null) m.winner = simulateCpuMatch(m.a, m.b); });
   if (round.length === 1) {
     f.champion = round[0].winner;
-    G.screen = 'futdraftSummary';
-    render();
+    finishFutDraftRun();
     return;
   }
   var winners = round.map(function (m) { return m.winner; });
@@ -3256,6 +3271,8 @@ function renderFutDraftSummary() {
         '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
         '<h2 class="panel-title mt">' + title + '</h2>' +
         (won ? '<div class="bracket-trophy" style="margin:0 auto">🏆</div>' : '<p class="dim small">Tu once no llegó hasta el final esta vez.</p>') +
+        '<p class="dim small">' + f.winsCount + ' partido' + (f.winsCount === 1 ? '' : 's') + ' ganado' + (f.winsCount === 1 ? '' : 's') + '</p>' +
+        '<p class="currency-display">' + spiritIcon() + ' +' + f.reward + ' Puntos de Espíritu</p>' +
         '<button class="btn btn-primary btn-block mt" onclick="actionGoFutDraftModeSelect()">Nuevo draft</button>' +
       '</div>' +
     '</div>'
