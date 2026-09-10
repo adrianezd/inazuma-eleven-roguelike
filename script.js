@@ -1504,7 +1504,7 @@ function returnToMap() {
    --------------------------------------------------------------------- */
 
 var STAT_KEYS = ['tiro', 'pase', 'defensa', 'especial'];
-var STAT_LABELS = { tiro: 'Tiro', pase: 'Pase', defensa: 'Defensa', especial: 'Especial' };
+var STAT_LABELS = { tiro: 'Tiro', pase: 'Regate', defensa: 'Defensa', especial: 'Especial' };
 
 function generateTrainingOptions() {
   var options = [];
