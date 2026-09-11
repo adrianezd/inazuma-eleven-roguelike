@@ -1524,12 +1524,12 @@ var ROSTER = [
   id:'r178', nombre:'Sam Kincaid', original:'Shishido Sakichi',
   posicion:'Centrocampista', tipo:'Fuego',
   tiro:70,pase:60,defensa:52,especial:66,
-  hissatsu:['Tiro Granada'],
-  desc:'Centrocampista del Raimon, creador de su propio Tiro Granada en pleno partido.',
+  hissatsu:['Chut Granada'],
+  desc:'Centrocampista del Raimon, creador de su propio Chut Granada en pleno partido.',
   locked:true,cost:130
 },
 {
-  id:'r179', nombre:'Grant Cook', original:'Ooiwa Kurando',
+  id:'r179', nombre:'Grant Cook', original:'Ooiwa Kurando', sprite:'assets/sprites/r179.webp',
   posicion:'Portero', tipo:'Fuego',
   tiro:22,pase:52,defensa:85,especial:80,
   hissatsu:['Burnout'],
@@ -1537,59 +1537,59 @@ var ROSTER = [
   locked:true,cost:170
 },
 {
-  id:'r180', nombre:'Val Flamewood', original:'Hagakure Koutarou',
+  id:'r180', nombre:'Val Flamewood', original:'Hagakure Koutarou', sprite:'assets/sprites/r180.webp',
   posicion:'Defensa', tipo:'Fuego',
-  tiro:40,pase:55,defensa:88,especial:78,
+  tiro:40,pase:55,defensa:80,especial:78,
   hissatsu:['Gravitación'],
   desc:'Defensa del Prominence, conocido como "Bakurei". Su Gravitación es casi infranqueable.',
   locked:true,cost:165
 },
 {
-  id:'r181', nombre:'Denzel Freezer', original:'Mikoori Rei',
+  id:'r181', nombre:'Denzel Freezer', original:'Mikoori Rei', sprite:'assets/sprites/r181.webp',
   posicion:'Delantero', tipo:'Montaña',
-  tiro:85,pase:50,defensa:38,especial:88,
+  tiro:82,pase:50,defensa:38,especial:88,
   hissatsu:['Supernova'],
   desc:'Delantero del Diamond Dust, conocido como "Frost". Su Supernova es una de las técnicas más temidas de Aliea Academy.',
   locked:true,cost:190
 },
 {
-  id:'r182', nombre:'Ben North', original:'Shirai Ikkaku',
+  id:'r182', nombre:'Ben North', original:'Shirai Ikkaku', sprite:'assets/sprites/r182.webp',
   posicion:'Portero', tipo:'Montaña',
-  tiro:18,pase:48,defensa:86,especial:80,
+  tiro:18,pase:48,defensa:83,especial:80,
   hissatsu:['Bloque de Hielo'],
-  desc:'Portero del Diamond Dust, conocido como "Beluga". Nadie se libra de su Atrapada Tornado.',
+  desc:'Portero del Diamond Dust, conocido como "Beluga". Nadie supera su Bloque de Hielo.',
   locked:true,cost:170
 },
 {
-  id:'r183', nombre:'Claire Lesnow', original:'Kurakake Clara',
+  id:'r183', nombre:'Claire Lesnow', original:'Kurakake Clara', sprite:'assets/sprites/r183.webp',
   posicion:'Defensa', tipo:'Viento',
   tiro:36,pase:58,defensa:80,especial:76,
   hissatsu:['Rompehielos'],
-  desc:'Defensa del Diamond Dust, conocida como "Clear" y única chica del equipo. Protege su línea con Velo de Agua.',
+  desc:'Defensa del Diamond Dust, conocida como "Clear" y única chica del equipo. Protege su línea con Rompehielos.',
   locked:true,cost:160
 },
 {
-  id:'r184', nombre:'Gordon Star', original:'Goryuu Reo',
+  id:'r184', nombre:'Gordon Star', original:'Goryuu Reo', sprite:'assets/sprites/r184.webp',
   posicion:'Portero', tipo:'Bosque',
   tiro:22,pase:50,defensa:84,especial:78,
-  hissatsu:['Taladro Destructor'],
-  desc:'Portero del Gemini Storm, del proyecto Aliea Academy, conocido como "Gorleo". Su Taladro Destructor perfora cualquier tiro.',
+  hissatsu:['Agujero de Gusano'],
+  desc:'Portero del Gemini Storm, del proyecto Aliea Academy, conocido como "Gorleo". Su Agujero de Gusano se traga cualquier tiro.',
   locked:true,cost:168
 },
 {
-  id:'r185', nombre:'Daniel Hatch', original:'Jimon Daiki',
+  id:'r185', nombre:'Daniel Hatch', original:'Jimon Daiki', sprite:'assets/sprites/r185.webp',
   posicion:'Delantero', tipo:'Bosque',
   tiro:80,pase:48,defensa:36,especial:72,
-  hissatsu:['Tiro Centuple'],
-  desc:'Delantero del Royal Academy, letal cerca del área con su Tiro Centuple.',
+  hissatsu:['Chut de los 100 toques'],
+  desc:'Delantero del Royal Academy, letal cerca del área con su Chut de los 100 toques.',
   locked:true,cost:150
 },
 {
-  id:'r186', nombre:'Cliff Tomlinson', original:'Ena Kazuki',
-  posicion:'Delantero', tipo:'Viento',
-  tiro:70,pase:50,defensa:48,especial:66,
-  hissatsu:['Entrada Asesina'],
-  desc:'Delantero del Royal Academy que no duda en recurrir a su Entrada Asesina para recuperar el balón.',
+  id:'r186', nombre:'Derek Swing', original:'Ena Kazuki', sprite:'assets/sprites/r186.webp',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:70,pase:70,defensa:48,especial:66,
+  hissatsu:['Remate misil'],
+  desc:'Centrocampista del Royal Academy que sorprende al rival rematando desde su Remate misil.',
   locked:true,cost:140
 },
 ];
