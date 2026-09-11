@@ -57,14 +57,14 @@ var TYPE_MARK = { Fuego: 'F', Bosque: 'B', Viento: 'V', 'Montaña': 'M' };
 // pero no se han verificado con la misma rigurosidad que el resto; revísalos
 // si te importa la precisión exacta del doblaje español.
 var RIVAL_TEAM_NAMES = [
-  'Royal Academy', 'Zeus', 'Occult', 'Instituto Otaku',
+  'Royal Academy', 'Zeus', 'Occult', 'Otaku',
   'Alpino', 'Unicorn', 'Big Waves',
   'Brain', 'Wild', 'Shuriken', 'Kirkwood', 'Umbrella',
   'Tarjeteros', 'Veteranos Inazuma', 'Instituto Alius',
   'Cala Pirata', 'Sallys', 'Leones del desierto',
   'Academia Universal', 'Instituto Cherrybloom', 'Instituto Plenilunio',
   'Raimon Inakuni', 'Mary Times', 'Mar de Luna', 'Farm', 'Fauxshore',
-  'Los orions', 'Mar de Árboles', 'Otaku'
+  'Los orions', 'Mar de Árboles'
 ];
 
 var RIVAL_TEAM_BOSSES = [
