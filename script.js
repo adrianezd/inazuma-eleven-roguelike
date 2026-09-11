@@ -79,6 +79,13 @@ function bossBonusRange(depth) {
 
 function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+// Convierte un diccionario {clave: {..., count}} (goleadores/asistentes,
+// de partidos por turnos o de FutDraft/Liga) en una lista ordenada de
+// mayor a menor count. Uso compartido por renderSummary y las pantallas
+// de resumen de FutDraft/Liga.
+function sortedStatsList(dict) {
+  return Object.keys(dict || {}).map(function (k) { return dict[k]; }).sort(function (a, b) { return b.count - a.count; });
+}
 
 // Generador determinista (mulberry32), usado SOLO para el Modo Diario: hace
 // que la plantilla y el mapa sean iguales para todo el mundo ese día. El
@@ -796,6 +803,19 @@ function simulateCpuMatch(a, b) {
   return powerA >= powerB ? a : b;
 }
 
+// Marcador de un partido CPU-vs-CPU (ninguno de los dos bandos es "tú"):
+// usado por el resto del bracket de FutDraft y por los partidos de cada
+// jornada de Liga que no son el tuyo, solo para poder repartir goles
+// (y por tanto goleadores/asistentes fantasma) entre esos partidos que
+// nunca se juegan de verdad. No decide el ganador -- eso lo sigue
+// haciendo simulateCpuMatch con su propia tirada, sin relación con esto.
+function simulateCpuMatchGoals(sideA, sideB) {
+  var powerA = teamPower(sideA), powerB = teamPower(sideB);
+  var golA = futDraftRandomGoals(futDraftExpectedGoals(powerA, powerB));
+  var golB = futDraftRandomGoals(futDraftExpectedGoals(powerB, powerA));
+  return [golA, golB];
+}
+
 function startTournamentMatch() {
   var t = G.tournament;
   var round = t.rounds[t.rounds.length - 1];
@@ -1148,8 +1168,27 @@ function newRun(modeOrHard) {
     matchesWon: 0,
     spiritEarned: 0,
     victory: false,
-    startedAt: Date.now()
+    startedAt: Date.now(),
+    // Goleadores de toda la partida (Normal/Difícil/Torneo/Supervivencia/
+    // Diario): los rivales aquí no tienen identidad real (se regeneran de
+    // cero en cada partido, ver generateRivalPlayer), así que se agregan
+    // por su etiqueta genérica de posición ("Delantero rival", etc.).
+    goalStats: { scorers: {} }
   };
+}
+
+// Se llama en cada gol de un partido por turnos (ver resolveAttack). No se
+// usa en FutDraft/Liga, que llevan su propio sistema de goleadores +
+// asistentes (ver futDraftRecordGoalEvents) porque ahí sí se puede simular
+// una asistencia con sentido; en un partido por turnos no hay "pase que
+// genera el disparo", así que aquí solo se cuenta goleador.
+function recordRunGoalScorer(attackerRaw, isPlayerAttacking) {
+  if (!G.run || !G.run.goalStats) return;
+  var key = isPlayerAttacking ? ('p:' + attackerRaw.id) : ('r:' + attackerRaw.nombre);
+  var scorers = G.run.goalStats.scorers;
+  var bucket = scorers[key] || { nombre: attackerRaw.nombre + (isPlayerAttacking ? '' : ' (rival)'), count: 0 };
+  bucket.count++;
+  scorers[key] = bucket;
 }
 
 /* ---------------------------------------------------------------------
@@ -2339,6 +2378,7 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
   // de abajo (el log), no en el mensaje grande de arriba bajo el turno.
   if (success) {
     m[scoreKey]++;
+    recordRunGoalScorer(attackerRaw, isPlayerAttacking);
     var verb = action === 'especial' ? ('¡' + escapeHtml(moveName || 'jugada especial') + ' imparable!') : (action === 'tiro' ? '¡GOL!' : '¡Gol tras un gran pase!');
     m.lastEvent = actorLabel + ': ' + verb + defenderTag;
     m.lastEventClass = 'goal';
@@ -2660,6 +2700,15 @@ function showEndAnimation(victory, mode, retired) {
 function renderSummary() {
   var run = G.run;
   var title = run.retired ? 'Te retiras con tus puntos a salvo' : (run.victory ? '¡Campeones de la temporada!' : 'Resumen de la temporada');
+  var scorers = sortedStatsList((run.goalStats || { scorers: {} }).scorers).slice(0, 8);
+  var scorersHtml = scorers.length
+    ? '<div class="panel">' +
+        '<h3 style="margin-bottom:8px">Goleadores de la partida</h3>' +
+        scorers.map(function (s, i) {
+          return '<div class="futdraft-timeline-row"><span>' + (i + 1) + '.</span><span style="flex:1;text-align:left">' + escapeHtml(s.nombre) + '</span><span class="dim">' + s.count + '</span></div>';
+        }).join('') +
+      '</div>'
+    : '';
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
@@ -2671,6 +2720,9 @@ function renderSummary() {
           '<div class="stat-tile"><div class="num">' + run.spiritEarned + '</div><div class="label">Puntos de Espíritu ganados</div></div>' +
           '<div class="stat-tile"><div class="num">' + G.meta.points + '</div><div class="label">Total acumulado</div></div>' +
         '</div>' +
+      '</div>' +
+      scorersHtml +
+      '<div class="panel center-text">' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-primary btn-block" onclick="actionBackToMenu()">Volver al menú</button>' +
         '</div>' +
@@ -3635,6 +3687,7 @@ window.startFutDraftMatches = function () {
   G.futdraft.champion = null;
   G.futdraft.eliminated = false;
   G.futdraft.winsCount = 0;
+  G.futdraft.stats = { scorers: {}, assists: {} };
   G.screen = 'futdraftBracket';
   render();
 };
@@ -3655,11 +3708,12 @@ function futDraftExtraTimeGoals(myAtk, oppDef) {
 }
 
 // Los partidos de FutDraft no se juegan a golpes, pero se simula igualmente
-// quién marca y quién da la asistencia en cada gol propio (del rival solo
-// se sabe el equipo, no tiene plantel individual) -- ponderado por puesto:
-// un delantero marca mucho más que un defensa, un centrocampista asiste
-// mucho más que nadie. El portero puede, rarísima vez, aparecer en
-// cualquiera de los dos papeles (un gol o un pase muy largo y afortunado).
+// quién marca y quién da la asistencia en cada gol, tanto propio (tu
+// plantel real) como rival (el pool de no drafteados, ver
+// futDraftUndraftedPool) -- ponderado por puesto: un delantero marca mucho
+// más que un defensa, un centrocampista asiste mucho más que nadie. El
+// portero puede, rarísima vez, aparecer en cualquiera de los dos papeles
+// (un gol o un pase muy largo y afortunado).
 var FUTDRAFT_GOAL_WEIGHT = { Delantero: 6, Centrocampista: 3, Defensa: 1, Portero: 0.2 };
 var FUTDRAFT_ASSIST_WEIGHT = { Centrocampista: 5, Delantero: 3, Defensa: 2, Portero: 0.3 };
 function futDraftWeightedPick(players, weightMap) {
@@ -3678,13 +3732,24 @@ function futDraftGoalEvent(myPlayers) {
   return { scorer: scorer, assist: assist };
 }
 
+// Jugadores reales del roster que NO se han drafteado en esta partida de
+// FutDraft/Liga: sirven de plantel "fantasma" para el rival, que no tiene
+// datos propios -- así sus goles y asistencias también se pueden atribuir
+// a alguien con nombre real, en vez de quedar en blanco.
+function futDraftUndraftedPool() {
+  var f = G.futdraft;
+  var squadIds = (f && f.squad ? f.squad : []).map(function (p) { return p.id; });
+  return ROSTER.filter(function (p) { return squadIds.indexOf(p.id) === -1; });
+}
+
 // Construye la línea temporal entre minMinute y maxMinute (por defecto 1 a
 // 90; la prórroga reutiliza esto mismo para 91-120): reparte tantos
 // minutos distintos (sin repetir) como goles totales haya, los ordena, y
 // decide al azar (barajando qué bando marca cada uno) quién anota en cada
-// uno -- solo los goles propios llevan goleador/asistencia real, los del
-// rival solo muestran el nombre del equipo.
-function futDraftBuildTimeline(myGoals, oppGoals, myPlayers, minMinute, maxMinute) {
+// uno. Los goles propios usan tu plantel real; los del rival usan el pool
+// de jugadores no drafteados (ver futDraftUndraftedPool) como plantel
+// "fantasma", ya que el rival no tiene datos propios.
+function futDraftBuildTimeline(myGoals, oppGoals, myPlayers, oppPlayers, minMinute, maxMinute) {
   minMinute = minMinute || 1;
   maxMinute = maxMinute || 90;
   var minutePool = [];
@@ -3695,11 +3760,30 @@ function futDraftBuildTimeline(myGoals, oppGoals, myPlayers, minMinute, maxMinut
   for (var j = 0; j < oppGoals; j++) sides.push('opp');
   sides = sides.sort(function () { return Math.random() - 0.5; });
   return shuffledMinutes.map(function (minute, idx) {
-    if (sides[idx] === 'me') {
-      var ev = futDraftGoalEvent(myPlayers);
-      return { minute: minute, side: 'me', scorer: ev.scorer, assist: ev.assist };
+    var side = sides[idx];
+    var ev = futDraftGoalEvent(side === 'me' ? myPlayers : oppPlayers);
+    return { minute: minute, side: side, scorer: ev.scorer, assist: ev.assist };
+  });
+}
+
+// Suma los goles/asistencias de una lista de eventos {scorer, assist} a un
+// diccionario de estadísticas { scorers: {}, assists: {} }, etiquetados
+// con el nombre del equipo al que pertenecían en ese partido concreto
+// (informativo -- un jugador fantasma puede "jugar" para equipos
+// distintos en partidos distintos, no se le fija ninguno).
+function futDraftRecordGoalEvents(stats, events, teamLabel) {
+  events.forEach(function (ev) {
+    if (!ev.scorer) return;
+    var sBucket = stats.scorers[ev.scorer.id] || { nombre: ev.scorer.nombre, team: teamLabel, count: 0 };
+    sBucket.count++;
+    sBucket.team = teamLabel;
+    stats.scorers[ev.scorer.id] = sBucket;
+    if (ev.assist) {
+      var aBucket = stats.assists[ev.assist.id] || { nombre: ev.assist.nombre, team: teamLabel, count: 0 };
+      aBucket.count++;
+      aBucket.team = teamLabel;
+      stats.assists[ev.assist.id] = aBucket;
     }
-    return { minute: minute, side: 'opp' };
   });
 }
 
@@ -3726,7 +3810,8 @@ function futDraftSimulateMatchCore(oppPower) {
   var myGoals = futDraftRandomGoals(futDraftExpectedGoals(myAtk, effectiveOppPower));
   var oppGoals = futDraftRandomGoals(futDraftExpectedGoals(effectiveOppPower, myDef));
   var myPlayers = f.lineup.map(function (s) { return s.player; });
-  var timeline = futDraftBuildTimeline(myGoals, oppGoals, myPlayers);
+  var oppPlayers = futDraftUndraftedPool();
+  var timeline = futDraftBuildTimeline(myGoals, oppGoals, myPlayers, oppPlayers);
   return { myGoals: myGoals, oppGoals: oppGoals, weather: weather, timeline: timeline, myAtk: myAtk, myDef: myDef, effectiveOppPower: effectiveOppPower };
 }
 
@@ -3759,7 +3844,7 @@ window.playFutDraftMatch = function () {
 function futDraftAddExtraTime(live, myPlayers) {
   var etMyGoals = futDraftExtraTimeGoals(live.myAtk, live.effectiveOppPower);
   var etOppGoals = futDraftExtraTimeGoals(live.effectiveOppPower, live.myDef);
-  var etTimeline = futDraftBuildTimeline(etMyGoals, etOppGoals, myPlayers, 91, 120);
+  var etTimeline = futDraftBuildTimeline(etMyGoals, etOppGoals, myPlayers, futDraftUndraftedPool(), 91, 120);
   live.pending = live.pending.concat(etTimeline);
   live.finalMyGoals += etMyGoals;
   live.finalOppGoals += etOppGoals;
@@ -3779,6 +3864,8 @@ function finishFutDraftRegularTime() {
   var timeline = live.revealed;
   var weather = live.weather;
   f.live = null;
+  futDraftRecordGoalEvents(f.stats, timeline.filter(function (e) { return e.side === 'me'; }), 'Tu equipo');
+  futDraftRecordGoalEvents(f.stats, timeline.filter(function (e) { return e.side === 'opp'; }), oppSide.name);
   if (myGoals === oppGoals) {
     f.pendingMatch = match;
     f.pendingOppSide = oppSide;
@@ -3855,14 +3942,22 @@ window.futDraftSkipLive = function () {
   live.onFinish();
 };
 
+// Fila de la línea temporal para un gol: el nombre real de quien marca
+// (tuyo o del pool fantasma del rival) y su asistencia si la hubo. En los
+// goles rivales se añade el nombre del equipo entre paréntesis, porque el
+// nombre del jugador fantasma no dice por sí solo para quién "juega".
+function futDraftTimelineRowHtml(ev, oppName) {
+  var text = '<strong>' + escapeHtml(ev.scorer.nombre) + '</strong>' +
+    (ev.assist ? ' <span class="dim">(asist. ' + escapeHtml(ev.assist.nombre) + ')</span>' : ' <span class="dim">(gol en solitario)</span>');
+  if (ev.side !== 'me') text += ' <span class="dim">· ' + escapeHtml(oppName) + '</span>';
+  return '<div class="futdraft-timeline-row"><span class="futdraft-timeline-minute">' + ev.minute + '\'</span><span>⚽</span><span>' + text + '</span></div>';
+}
+
 function renderFutDraftLive() {
   var live = G.futdraft.live;
   var oppName = live.oppSide.name;
   var logHtml = live.revealed.slice().reverse().map(function (ev) {
-    var text = ev.side === 'me'
-      ? '<strong>' + escapeHtml(ev.scorer.nombre) + '</strong>' + (ev.assist ? ' <span class="dim">(asist. ' + escapeHtml(ev.assist.nombre) + ')</span>' : ' <span class="dim">(gol en solitario)</span>')
-      : escapeHtml(oppName);
-    return '<div class="futdraft-timeline-row"><span class="futdraft-timeline-minute">' + ev.minute + '\'</span><span>⚽</span><span>' + text + '</span></div>';
+    return futDraftTimelineRowHtml(ev, oppName);
   }).join('');
   return (
     '<div class="screen">' +
@@ -4008,8 +4103,24 @@ window.continueFutDraftMatch = function () {
     return;
   }
   // El jugador ganó su partido: se resuelve el resto de la ronda sola,
-  // igual que en el Modo Torneo normal.
-  round.forEach(function (m) { if (m.winner === null) m.winner = simulateCpuMatch(m.a, m.b); });
+  // igual que en el Modo Torneo normal. De paso se reparten goles
+  // (fantasma, del pool de no drafteados) entre esos partidos que nunca se
+  // juegan de verdad, solo para que la tabla de goleadores/asistentes del
+  // torneo entero tenga en cuenta también esos partidos -- no cambia en
+  // nada quién gana cada uno, eso lo sigue decidiendo simulateCpuMatch
+  // con su propia tirada independiente.
+  var undraftedPool = futDraftUndraftedPool();
+  round.forEach(function (m) {
+    if (m.winner === null) {
+      var goles = simulateCpuMatchGoals(m.a, m.b);
+      var eventsA = [], eventsB = [];
+      for (var gi = 0; gi < goles[0]; gi++) eventsA.push(futDraftGoalEvent(undraftedPool));
+      for (var gj = 0; gj < goles[1]; gj++) eventsB.push(futDraftGoalEvent(undraftedPool));
+      futDraftRecordGoalEvents(f.stats, eventsA, m.a.name);
+      futDraftRecordGoalEvents(f.stats, eventsB, m.b.name);
+      m.winner = simulateCpuMatch(m.a, m.b);
+    }
+  });
   if (round.length === 1) {
     f.champion = round[0].winner;
     finishFutDraftRun();
@@ -4071,12 +4182,7 @@ function renderFutDraftMatchResult() {
     ? '<div class="panel">' +
         '<h3 style="margin-bottom:8px">Resumen del partido</h3>' +
         '<div class="futdraft-timeline">' +
-          r.timeline.map(function (ev) {
-            var text = ev.side === 'me'
-              ? '<strong>' + escapeHtml(ev.scorer.nombre) + '</strong>' + (ev.assist ? ' <span class="dim">(asist. ' + escapeHtml(ev.assist.nombre) + ')</span>' : ' <span class="dim">(gol en solitario)</span>')
-              : escapeHtml(r.oppName);
-            return '<div class="futdraft-timeline-row"><span class="futdraft-timeline-minute">' + ev.minute + '\'</span><span>⚽</span><span>' + text + '</span></div>';
-          }).join('') +
+          r.timeline.map(function (ev) { return futDraftTimelineRowHtml(ev, r.oppName); }).join('') +
         '</div>' +
       '</div>'
     : '<p class="dim small center-text">Partido sin goles en el tiempo reglamentario.</p>';
@@ -4100,6 +4206,33 @@ function renderFutDraftMatchResult() {
   );
 }
 
+// Panel de "Máximo goleador y asistente" + top 8 de cada uno, compartido
+// por el resumen del torneo de FutDraft y el de Liga -- stats es
+// { scorers: {}, assists: {} } (ver futDraftRecordGoalEvents).
+function renderTopScorersAssistsPanel(stats) {
+  stats = stats || { scorers: {}, assists: {} };
+  var scorers = sortedStatsList(stats.scorers).slice(0, 8);
+  var assists = sortedStatsList(stats.assists).slice(0, 8);
+  if (!scorers.length && !assists.length) return '';
+  var topScorer = scorers[0], topAssist = assists[0];
+  function listHtml(list) {
+    return list.map(function (s, i) {
+      return '<div class="futdraft-timeline-row"><span>' + (i + 1) + '.</span><span style="flex:1;text-align:left">' + escapeHtml(s.nombre) + ' <span class="dim">(' + escapeHtml(s.team) + ')</span></span><span class="dim">' + s.count + '</span></div>';
+    }).join('');
+  }
+  return (
+    '<div class="panel">' +
+      '<h3 style="margin-bottom:8px">Goleadores y asistentes del torneo</h3>' +
+      (topScorer ? '<p class="dim small">⚽ Máximo goleador: <strong>' + escapeHtml(topScorer.nombre) + '</strong> (' + escapeHtml(topScorer.team) + ') — ' + topScorer.count + ' gol' + (topScorer.count === 1 ? '' : 'es') + '</p>' : '') +
+      (topAssist ? '<p class="dim small">🅰️ Máximo asistente: <strong>' + escapeHtml(topAssist.nombre) + '</strong> (' + escapeHtml(topAssist.team) + ') — ' + topAssist.count + ' asistencia' + (topAssist.count === 1 ? '' : 's') + '</p>' : '') +
+      '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">' +
+        '<div style="flex:1;min-width:140px"><h4 style="margin-bottom:4px">Goleadores</h4>' + listHtml(scorers) + '</div>' +
+        '<div style="flex:1;min-width:140px"><h4 style="margin-bottom:4px">Asistentes</h4>' + listHtml(assists) + '</div>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
 function renderFutDraftSummary() {
   var f = G.futdraft;
   var won = f.champion && f.champion.isPlayer;
@@ -4112,7 +4245,10 @@ function renderFutDraftSummary() {
         (won ? '<div class="bracket-trophy" style="margin:0 auto">🏆</div>' : '<p class="dim small">Tu once no llegó hasta el final esta vez.</p>') +
         '<p class="dim small">' + f.winsCount + ' partido' + (f.winsCount === 1 ? '' : 's') + ' ganado' + (f.winsCount === 1 ? '' : 's') + '</p>' +
         '<p class="currency-display">' + spiritIcon() + ' +' + f.reward + ' Puntos de Espíritu</p>' +
-        '<button class="btn btn-primary btn-block mt" onclick="actionGoFutDraftModeSelect()">Nuevo draft</button>' +
+      '</div>' +
+      renderTopScorersAssistsPanel(f.stats) +
+      '<div class="panel center-text">' +
+        '<button class="btn btn-primary btn-block" onclick="actionGoFutDraftModeSelect()">Nuevo draft</button>' +
       '</div>' +
     '</div>'
   );
@@ -4198,13 +4334,9 @@ function ligaSortedTable(table) {
 }
 // Resuelve un partido CPU-vs-CPU de la liga con las mismas fórmulas que
 // usa FutDraft para sus propios partidos, pero con TEAM_POWER en los dos
-// bandos (ninguno de los dos es "tu" equipo).
+// bandos (ninguno de los dos es "tu" equipo). Delega en simulateCpuMatchGoals.
 function ligaSimulateCpuVsCpu(nameA, nameB) {
-  var powerA = teamPower({ name: nameA });
-  var powerB = teamPower({ name: nameB });
-  var golA = futDraftRandomGoals(futDraftExpectedGoals(powerA, powerB));
-  var golB = futDraftRandomGoals(futDraftExpectedGoals(powerB, powerA));
-  return [golA, golB];
+  return simulateCpuMatchGoals({ name: nameA }, { name: nameB });
 }
 
 function actionGoLigaTierSelect() { G.screen = 'ligaTierSelect'; render(); }
@@ -4272,7 +4404,7 @@ function startLigaRun() {
   var teamNames = [null].concat(rivalNames); // índice 0 = tú (null porque se muestra aparte, "Tú")
   var table = teamNames.map(function () { return ligaEmptyStanding(); });
   var schedule = generateRoundRobin(LIGA_TEAM_COUNT);
-  f.liga = { tier: f.ligaTier, pool: f.ligaPool, teamNames: teamNames, table: table, schedule: schedule, matchdayIndex: 0, finished: false };
+  f.liga = { tier: f.ligaTier, pool: f.ligaPool, teamNames: teamNames, table: table, schedule: schedule, matchdayIndex: 0, finished: false, stats: { scorers: {}, assists: {} } };
   G.screen = 'ligaTable';
   render();
 }
@@ -4347,6 +4479,8 @@ function finishLigaMatch() {
   var homeGoals = live.youAreHome ? myGoals : oppGoals;
   var awayGoals = live.youAreHome ? oppGoals : myGoals;
   ligaApplyResult(liga.table, homeIdx, awayIdx, homeGoals, awayGoals);
+  futDraftRecordGoalEvents(liga.stats, live.revealed.filter(function (e) { return e.side === 'me'; }), 'Tu equipo');
+  futDraftRecordGoalEvents(liga.stats, live.revealed.filter(function (e) { return e.side === 'opp'; }), oppName);
   f.lastMatchResult = {
     oppName: oppName, oppShield: teamShieldPath(oppName), oppPower: teamPower({ name: oppName }),
     myGoals: myGoals, oppGoals: oppGoals, playerWon: myGoals > oppGoals,
@@ -4363,11 +4497,20 @@ function finishLigaMatch() {
 window.continueLigaMatchday = function () {
   var f = G.futdraft;
   var liga = f.liga;
+  var undraftedPool = futDraftUndraftedPool();
   liga.schedule[liga.matchdayIndex].forEach(function (fx) {
     if (fx[0] === 0 || fx[1] === 0) return;
     var nameA = liga.teamNames[fx[0]], nameB = liga.teamNames[fx[1]];
     var goles = ligaSimulateCpuVsCpu(nameA, nameB);
     ligaApplyResult(liga.table, fx[0], fx[1], goles[0], goles[1]);
+    // Igual que en el bracket de FutDraft: goles fantasma (del pool de no
+    // drafteados) solo para la tabla de goleadores/asistentes de la Liga,
+    // no afectan al resultado ya decidido arriba.
+    var eventsA = [], eventsB = [];
+    for (var gi = 0; gi < goles[0]; gi++) eventsA.push(futDraftGoalEvent(undraftedPool));
+    for (var gj = 0; gj < goles[1]; gj++) eventsB.push(futDraftGoalEvent(undraftedPool));
+    futDraftRecordGoalEvents(liga.stats, eventsA, nameA);
+    futDraftRecordGoalEvents(liga.stats, eventsB, nameB);
   });
   liga.matchdayIndex++;
   G.screen = 'ligaTable';
@@ -4411,7 +4554,10 @@ function renderLigaSummary() {
         '<p class="dim small">Terminaste ' + liga.finalPosition + 'º de ' + LIGA_TEAM_COUNT + '.</p>' +
         (unlockedNext ? '<p class="dim small">¡Nivel ' + ligaTierName(LIGA_TIERS[nextTierIdx]) + ' desbloqueado!</p>' : '') +
         '<p class="currency-display">' + spiritIcon() + ' +' + liga.reward + ' Puntos de Espíritu</p>' +
-        '<button class="btn btn-primary btn-block mt" onclick="actionGoLigaTierSelect()">Volver a Liga</button>' +
+      '</div>' +
+      renderTopScorersAssistsPanel(liga.stats) +
+      '<div class="panel center-text">' +
+        '<button class="btn btn-primary btn-block" onclick="actionGoLigaTierSelect()">Volver a Liga</button>' +
       '</div>' +
     '</div>'
   );
