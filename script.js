@@ -540,6 +540,7 @@ function finishDraft() {
   if (mode === 'supervivencia') {
     G.run.survivalStep = 0;
     G.run.survivalWave = 0;
+    G.run.survivalMatchCount = 0;
     G.pendingDraftMode = null;
     G.pendingDraftSquad = [];
     advanceSurvivalStage();
@@ -705,12 +706,16 @@ function advanceSurvivalStage() {
 }
 
 function startSurvivalMatch(isBoss) {
-  // Sin techo de dificultad: la oleada crece sin normalizar, así cada jefe
-  // sucesivo es claramente más duro que el anterior (ver bossBonusRange).
-  var depth = G.run.survivalWave || 0;
+  // Sin techo de dificultad: la dificultad sube un poco CADA partido (no
+  // solo al pasar de oleada) -- 3 partidos por ciclo (2 normales + 1 jefe),
+  // así que cada uno suma 1/3 de "oleada" de profundidad. El jefe sigue
+  // sintiéndose un pico aparte gracias a su bonus propio (ver
+  // bossBonusRange), que se suma encima de esta base ya más alta.
+  var depth = (G.run.survivalMatchCount || 0) / 3;
+  G.run.survivalMatchCount = (G.run.survivalMatchCount || 0) + 1;
   var oppSquad = generateOpponentSquad(depth, isBoss, false);
   var oppTeamName = randomTeamName(isBoss);
-  var oppName = (isBoss ? 'Jefe: ' : '') + oppTeamName;
+  var oppName = oppTeamName;
   G.match = {
     weather: rollWeather(),
     isBoss: isBoss, oppName: oppName, oppShield: teamShieldPath(oppTeamName), oppSquad: oppSquad, turn: 1, order: buildTurnOrder(),
@@ -1791,7 +1796,7 @@ function resolveEventoNode() {
     var pSab = choice(squad);
     var statKey = choice(stats);
     applyStatChange(pSab, statKey, -20);
-    return { type: 'malus', text: 'Sabotaje del autobús: ' + escapeHtml(pSab.nombre) + ' llega dolorido por el viaje y pierde 20 puntos en ' + statKey.charAt(0).toUpperCase() + statKey.slice(1) + '.' };
+    return { type: 'malus', text: 'Sabotaje del autobús: ' + escapeHtml(pSab.nombre) + ' llega dolorido por el viaje y pierde 20 puntos en ' + STAT_LABELS[statKey] + '.' };
   }
   if (roll === 9) {
     var squadIdsSecret = squad.map(function (x) { return x.id; });
@@ -2991,11 +2996,11 @@ function renderPenaltyModeEnd(p) {
    --------------------------------------------------------------------- */
 
 var FUTDRAFT_SQUAD_SIZE = 11;
-// Los 3 modos (Libre, Clásico, Afinidad) draftean siempre 3 suplentes
-// además del once (14 picks en total). En la pantalla de equipo se pueden
+// Los 3 modos (Libre, Clásico, Afinidad) draftean siempre 4 suplentes
+// además del once (15 picks en total). En la pantalla de equipo se pueden
 // hacer cambios ILIMITADOS antes de empezar el torneo, tanto entre
 // titular y suplente como entre dos titulares (para reubicarlos de línea).
-var FUTDRAFT_LIBRE_TOTAL = 14;
+var FUTDRAFT_LIBRE_TOTAL = 15;
 // Topes por posición durante el draft (banquillo, o todo el draft en modo
 // Libre): altos para no restringir de más, pero justos para que nunca sobren
 // jugadores fuera de sitio (el máximo que pide cualquiera de las formaciones
@@ -3615,6 +3620,14 @@ function futDraftExpectedGoals(myAtk, oppDef) {
 function futDraftRandomGoals(expected) {
   return clamp(Math.round(expected + rand(-1.2, 1.2)), 0, 8);
 }
+// Prórroga (30 min, minutos 91-120): un tercio de la duración de un
+// partido completo, así que se prorratea la expectativa de gol a un
+// tercio -- y con un rango más contenido, porque las prórrogas rara vez
+// son goleadas.
+function futDraftExtraTimeGoals(myAtk, oppDef) {
+  var expected = futDraftExpectedGoals(myAtk, oppDef) / 3;
+  return clamp(Math.round(expected + rand(-0.6, 0.6)), 0, 4);
+}
 
 // Los partidos de FutDraft no se juegan a golpes, pero se simula igualmente
 // quién marca y quién da la asistencia en cada gol propio (del rival solo
@@ -3640,14 +3653,17 @@ function futDraftGoalEvent(myPlayers) {
   return { scorer: scorer, assist: assist };
 }
 
-// Construye la línea temporal del minuto 1 al 90: reparte tantos minutos
-// distintos (sin repetir) como goles totales haya, los ordena, y decide al
-// azar (barajando qué bando marca cada uno) quién anota en cada uno --
-// solo los goles propios llevan goleador/asistencia real, los del rival
-// solo muestran el nombre del equipo.
-function futDraftBuildTimeline(myGoals, oppGoals, myPlayers) {
+// Construye la línea temporal entre minMinute y maxMinute (por defecto 1 a
+// 90; la prórroga reutiliza esto mismo para 91-120): reparte tantos
+// minutos distintos (sin repetir) como goles totales haya, los ordena, y
+// decide al azar (barajando qué bando marca cada uno) quién anota en cada
+// uno -- solo los goles propios llevan goleador/asistencia real, los del
+// rival solo muestran el nombre del equipo.
+function futDraftBuildTimeline(myGoals, oppGoals, myPlayers, minMinute, maxMinute) {
+  minMinute = minMinute || 1;
+  maxMinute = maxMinute || 90;
   var minutePool = [];
-  for (var m = 1; m <= 90; m++) minutePool.push(m);
+  for (var m = minMinute; m <= maxMinute; m++) minutePool.push(m);
   var shuffledMinutes = minutePool.sort(function () { return Math.random() - 0.5; }).slice(0, myGoals + oppGoals).sort(function (a, b) { return a - b; });
   var sides = [];
   for (var i = 0; i < myGoals; i++) sides.push('me');
@@ -3689,12 +3705,29 @@ window.playFutDraftMatch = function () {
     match: match, oppSide: oppSide, weather: weather,
     minute: 0, pending: timeline.slice(), revealed: [],
     myGoals: 0, oppGoals: 0, finalMyGoals: myGoals, finalOppGoals: oppGoals,
-    done: false
+    // Se guardan para poder generar la prórroga más tarde sin recalcular
+    // nada (mismo ataque/defensa/clima que ya se usaron en el 1-90).
+    myAtk: myAtk, myDef: myDef, effectiveOppPower: effectiveOppPower,
+    inExtraTime: false, done: false
   };
   G.screen = 'futdraftLive';
   render();
   futDraftLiveTick();
 };
+
+// Se llama una sola vez, justo cuando el marcador sigue empatado al llegar
+// al 90': genera los goles y la mini-timeline de la prórroga (91-120) y
+// los añade a la simulación en curso para que el mismo ciclo de
+// futDraftLiveTick los revele igual que los del tiempo reglamentario.
+function futDraftAddExtraTime(live, myPlayers) {
+  var etMyGoals = futDraftExtraTimeGoals(live.myAtk, live.effectiveOppPower);
+  var etOppGoals = futDraftExtraTimeGoals(live.effectiveOppPower, live.myDef);
+  var etTimeline = futDraftBuildTimeline(etMyGoals, etOppGoals, myPlayers, 91, 120);
+  live.pending = live.pending.concat(etTimeline);
+  live.finalMyGoals += etMyGoals;
+  live.finalOppGoals += etOppGoals;
+  live.inExtraTime = true;
+}
 
 // Resuelve lo que pasa una vez terminados los 90 minutos simulados (llega
 // aquí tanto si se ha visto la simulación entera como si se ha saltado):
@@ -3733,14 +3766,23 @@ function finishFutDraftRegularTime() {
 function futDraftLiveTick() {
   if (G.screen !== 'futdraftLive' || !G.futdraft || !G.futdraft.live || G.futdraft.live.done) return;
   var live = G.futdraft.live;
-  live.minute = Math.min(90, live.minute + rand(3, 7));
+  var cap = live.inExtraTime ? 120 : 90;
+  live.minute = Math.min(cap, live.minute + rand(3, 7));
   while (live.pending.length && live.pending[0].minute <= live.minute) {
     var ev = live.pending.shift();
     if (ev.side === 'me') live.myGoals++; else live.oppGoals++;
     live.revealed.push(ev);
   }
   render();
-  if (live.minute >= 90) {
+  if (live.minute >= cap) {
+    if (!live.inExtraTime && live.myGoals === live.oppGoals) {
+      // Empate al 90': se juega una prórroga de verdad antes de pensar en
+      // penaltis, en vez de ir directos a la tanda.
+      var myPlayers = G.futdraft.lineup.map(function (s) { return s.player; });
+      futDraftAddExtraTime(live, myPlayers);
+      setTimeout(futDraftLiveTick, 400);
+      return;
+    }
     live.done = true;
     setTimeout(finishFutDraftRegularTime, 500);
   } else {
@@ -3749,16 +3791,26 @@ function futDraftLiveTick() {
 }
 
 // Salta directamente al final: revela todos los goles pendientes de golpe
-// y resuelve el partido sin esperar a que el temporizador llegue solo.
+// (generando también la prórroga si sigue habiendo empate al 90') y
+// resuelve el partido sin esperar a que el temporizador llegue solo.
 window.futDraftSkipLive = function () {
   var live = G.futdraft.live;
   if (!live || live.done) return;
+  function dumpPending() {
+    live.pending.forEach(function (ev) {
+      if (ev.side === 'me') live.myGoals++; else live.oppGoals++;
+      live.revealed.push(ev);
+    });
+    live.pending = [];
+  }
+  dumpPending();
   live.minute = 90;
-  live.pending.forEach(function (ev) {
-    if (ev.side === 'me') live.myGoals++; else live.oppGoals++;
-    live.revealed.push(ev);
-  });
-  live.pending = [];
+  if (!live.inExtraTime && live.myGoals === live.oppGoals) {
+    var myPlayers = G.futdraft.lineup.map(function (s) { return s.player; });
+    futDraftAddExtraTime(live, myPlayers);
+    dumpPending();
+    live.minute = 120;
+  }
   live.done = true;
   finishFutDraftRegularTime();
 };
@@ -3779,7 +3831,8 @@ function renderFutDraftLive() {
         '<div class="score-vs">VS</div>' +
         '<div class="score-side"><img class="team-shield" src="' + escapeHtml(teamShieldPath(oppName)) + '" alt=""><div class="score-name">' + escapeHtml(oppName) + '</div><div class="score-num">' + live.oppGoals + '</div></div>' +
       '</div>' +
-      '<div class="turn-indicator">Minuto ' + live.minute + '\' de 90\'</div>' +
+      '<div class="turn-indicator">' + (live.inExtraTime ? 'Prórroga — minuto ' + live.minute + '\' de 120\'' : 'Minuto ' + live.minute + '\' de 90\'') + '</div>' +
+      (live.inExtraTime && live.minute <= 91 ? '<p class="dim small center-text">Empate al término del tiempo reglamentario: se juega la prórroga.</p>' : '') +
       (live.weather ? '<p class="dim small center-text">🌦️ ' + WEATHER_CONDITIONS[live.weather].label + ': ' + WEATHER_CONDITIONS[live.weather].desc + '</p>' : '') +
       '<div class="panel">' +
         '<div class="futdraft-timeline">' + (logHtml || '<p class="dim small center-text">Aún no ha pasado nada…</p>') + '</div>' +
