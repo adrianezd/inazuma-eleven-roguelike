@@ -289,7 +289,7 @@ a { color: var(--accent); }
   overflow: hidden;
 }
 .pitch-row { display: flex; justify-content: center; gap: 18px; flex-wrap: wrap; position: relative; z-index: 1; }
-.pitch-player { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 56px; }
+.pitch-player { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; width: 56px; }
 .pitch-player-name {
   font-size: 0.62rem;
   font-weight: 600;
@@ -323,6 +323,11 @@ a { color: var(--accent); }
 .futdraft-swappable:hover .avatar,
 .futdraft-swappable:active .avatar { box-shadow: 0 0 0 2px var(--accent) inset; }
 .pitch-player.selected .avatar { box-shadow: 0 0 0 3px var(--accent-2); border-radius: 50%; }
+.futdraft-captain-badge {
+  position: absolute; top: -4px; right: 6px; font-size: 0.85rem; line-height: 1; z-index: 2;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.6));
+}
+.futdraft-out-of-position .avatar { box-shadow: 0 0 0 2px var(--danger) inset; }
 .pitch-center-line { position: absolute; left: 8%; right: 8%; top: 50%; height: 1px; background: rgba(255,255,255,0.18); }
 .pitch-center-circle {
   position: absolute; left: 50%; top: 50%; width: 70px; height: 70px;

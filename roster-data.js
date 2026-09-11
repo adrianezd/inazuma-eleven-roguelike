@@ -1409,7 +1409,7 @@ var ROSTER = [
 {
   id:'r164', nombre:'Albert Green', original:'Albert Green', sprite:'assets/sprites/r164.webp',
   posicion:'Portero', tipo:'Fuego',
-  tiro:35,pase:52,defensa:78,especial:92,
+  tiro:35,pase:52,defensa:80,especial:84,
   hissatsu:['Despeje de leñador'],
   desc:'Capitán y portero del Instituto Farm, especialista en técnicas defensivas.',
   locked:true,cost:180
@@ -1417,7 +1417,7 @@ var ROSTER = [
 {
   id:'r165', nombre:'Mark Hillvalley', original:'Mark Hillvalley', sprite:'assets/sprites/r165.webp',
   posicion:'Defensa', tipo:'Montaña',
-  tiro:45,pase:58,defensa:82,especial:76,
+  tiro:45,pase:58,defensa:84,especial:80,
   hissatsu:['Rueda infernal'],
   desc:'Defensa del Instituto Farm, resistente y especializado en recuperar el balón.',
   locked:true,cost:150
@@ -1425,7 +1425,7 @@ var ROSTER = [
 {
   id:'r166', nombre:'Herb Sherman', original:'Herb Sherman', sprite:'assets/sprites/r166.webp',
   posicion:'Defensa', tipo:'Bosque',
-  tiro:55,pase:54,defensa:79,especial:72,
+  tiro:55,pase:54,defensa:79,especial:77,
   hissatsu:['Chut granada'],
   desc:'Defensa del Instituto Farm con un potente disparo como recurso ofensivo.',
   locked:true,cost:145
@@ -1441,7 +1441,7 @@ var ROSTER = [
 {
   id:'r168', nombre:'Orville Newman', original:'Orville Newman', sprite:'assets/sprites/r168.webp',
   posicion:'Centrocampista', tipo:'Viento',
-  tiro:66,pase:68,defensa:51,especial:73,
+  tiro:74,pase:68,defensa:51,especial:73,
   hissatsu:['Cabezazo Kung-fu'],
   desc:'Centrocampista del Instituto Farm con buen control del balón.',
   locked:true,cost:140

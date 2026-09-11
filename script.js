@@ -404,6 +404,22 @@ function generateDraftOptions() {
   var squad = G.pendingDraftSquad;
   var squadIds = squad.map(function (p) { return p.id; });
   var unlocked = getUnlockedIds();
+
+  // Modo Torneo: draft estructurado de 4 picks, uno por posición en el
+  // orden de POSITIONS (Portero, Defensa, Centrocampista, Delantero) --
+  // así siempre sales con un 1-1-1-1 en vez de un plantel al azar que
+  // podía salir con 2 defensas y ningún centrocampista.
+  if (G.pendingDraftMode === 'torneo') {
+    var requiredPos = POSITIONS[squad.length];
+    var poolTorneo = ROSTER.filter(function (p) {
+      if (squadIds.indexOf(p.id) !== -1) return false;
+      if (p.locked && unlocked.indexOf(p.id) === -1) return false;
+      return p.posicion === requiredPos;
+    });
+    var shuffledTorneo = poolTorneo.slice().sort(function () { return Math.random() - 0.5; });
+    return shuffledTorneo.slice(0, 3).map(rosterInstance);
+  }
+
   var alreadyHasPortero = squad.some(function (p) { return p.posicion === 'Portero'; });
   var defensaCount = squad.filter(function (p) { return p.posicion === 'Defensa'; }).length;
   var pool = ROSTER.filter(function (p) {
@@ -504,10 +520,13 @@ function renderDraftPick() {
     return playerCardHtml(c, 'pickDraftPlayer(\'' + c.instanceId + '\')', false, false);
   }).join('');
   var modeLabel = G.pendingDraftMode === 'torneo' ? 'Torneo' : 'Supervivencia';
+  var pickSubtitle = G.pendingDraftMode === 'torneo'
+    ? 'Elige tu ' + POSITIONS[G.pendingDraftSquad.length] + ' (' + (G.pendingDraftSquad.length + 1) + ' de ' + MAX_SQUAD + ').'
+    : 'Elige a tu jugador ' + (G.pendingDraftSquad.length + 1) + ' de ' + MAX_SQUAD + '.';
   return (
     '<div class="screen">' +
       '<div class="panel"><h2 class="panel-title mb0">Draft inicial — ' + modeLabel + '</h2>' +
-        '<p class="dim small">Elige a tu jugador ' + (G.pendingDraftSquad.length + 1) + ' de ' + MAX_SQUAD + '.</p></div>' +
+        '<p class="dim small">' + pickSubtitle + '</p></div>' +
       squadHtml +
       '<div class="panel"><h3 style="margin-bottom:8px">Elige uno</h3><div class="card-grid">' + optionsHtml + '</div></div>' +
     '</div>'
@@ -1094,6 +1113,7 @@ function render() {
     case 'torneoBracket': html = renderTournamentBracket(); break;
     case 'torneoSizeSelect': html = renderTorneoSizeSelect(); break;
     case 'futdraftModeSelect': html = renderFutDraftModeSelect(); break;
+    case 'futdraftAffinitySelect': html = renderFutDraftAffinitySelect(); break;
     case 'futdraftFormationSelect': html = renderFutDraftFormationSelect(); break;
     case 'futdraftPick': html = renderFutDraftPick(); break;
     case 'futdraftTeam': html = renderFutDraftTeam(); break;
@@ -2908,6 +2928,10 @@ var FUTDRAFT_SQUAD_SIZE = 11;
 // Clásico (Clásico no tiene banquillo, así que ahí solo tiene sentido el
 // cambio titular-titular).
 var FUTDRAFT_LIBRE_TOTAL = 14;
+// Cambios manuales máximos en la pantalla de equipo (titular-titular o
+// titular-suplente) antes de empezar el torneo. Antes eran ilimitados; se
+// limita a 5 para que la formación automática del draft siga importando.
+var FUTDRAFT_MAX_SWAPS = 5;
 // Topes por posición durante el draft (modo Libre): altos para no
 // restringir de más, pero justos para que nunca sobren jugadores fuera de
 // sitio (el máximo que pide cualquiera de las formaciones de abajo).
@@ -2971,16 +2995,52 @@ function renderFutDraftModeSelect() {
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-block" onclick="actionGoFutDraftFormationSelect(\'clasico\')">Clásico<br><small class="dim">El draft solo te ofrece jugadores para los huecos que falten en tu formación.</small></button>' +
         '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionGoFutDraftAffinitySelect()">Afinidad<br><small class="dim">Eliges un tipo elemental antes de nada: todo tu draft sale de ese tipo.</small></button>' +
+        '</div>' +
       '</div>' +
     '</div>'
   );
+}
+
+function actionGoFutDraftAffinitySelect() {
+  G.futdraftPendingMode = 'afinidad';
+  G.screen = 'futdraftAffinitySelect';
+  render();
+}
+
+function renderFutDraftAffinitySelect() {
+  var btns = TYPES.map(function (t) {
+    return (
+      '<div class="btn-row" style="justify-content:center">' +
+        '<button class="btn btn-primary btn-block" onclick="actionChooseFutDraftAffinity(\'' + t + '\')">' + typeBadge(t) + '</button>' +
+      '</div>'
+    );
+  }).join('');
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<button class="btn btn-outline btn-block" onclick="actionGoFutDraftModeSelect()">Volver</button>' +
+        '<h2 class="panel-title mt">FutDraft Afinidad</h2>' +
+        '<p class="dim small">Elige un tipo elemental: todo tu draft (portero incluido) saldrá de jugadores de ese tipo.</p>' +
+        btns +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function actionChooseFutDraftAffinity(tipo) {
+  G.futdraftAffinity = tipo;
+  G.futdraftFormationChoices = pickFutDraftFormationChoices(FUTDRAFT_FORMATION_CHOICES_BY_MODE.afinidad);
+  G.screen = 'futdraftFormationSelect';
+  render();
 }
 
 // Los dos modos eligen formación ANTES de draftear: Clásico ofrece 4
 // formaciones al azar, Libre 3. La formación no restringe el draft Libre
 // (sigue siendo libre de verdad), pero fija la vista previa del campo
 // durante el draft y la formación inicial de la pantalla de equipo.
-var FUTDRAFT_FORMATION_CHOICES_BY_MODE = { libre: 3, clasico: 4 };
+var FUTDRAFT_FORMATION_CHOICES_BY_MODE = { libre: 3, clasico: 4, afinidad: 4 };
 
 function actionGoFutDraftFormationSelect(mode) {
   G.futdraftPendingMode = mode;
@@ -3000,12 +3060,15 @@ function renderFutDraftFormationSelect() {
   }).join('');
   var hint = mode === 'clasico'
     ? 'Elige la formación antes de nada: el draft solo te ofrecerá jugadores para los huecos que aún falten en ella.'
-    : 'Elige la formación con la que vas a empezar. En Libre puedes seguir cambiándola luego en la pantalla de equipo.';
+    : mode === 'afinidad'
+      ? 'Elige la formación: el draft irá cubriendo sus huecos, pero solo con jugadores de tipo ' + G.futdraftAffinity + '.'
+      : 'Elige la formación con la que vas a empezar. En Libre puedes seguir cambiándola luego en la pantalla de equipo.';
+  var modeTitle = mode === 'clasico' ? 'Clásico' : (mode === 'afinidad' ? 'Afinidad' : 'Libre');
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionGoFutDraftModeSelect()">Volver</button>' +
-        '<h2 class="panel-title mt">FutDraft ' + (mode === 'clasico' ? 'Clásico' : 'Libre') + '</h2>' +
+        '<h2 class="panel-title mt">FutDraft ' + modeTitle + '</h2>' +
         '<p class="dim small">' + hint + '</p>' +
         btns +
       '</div>' +
@@ -3015,7 +3078,12 @@ function renderFutDraftFormationSelect() {
 
 function actionChooseFutDraftFormation(id) {
   var mode = G.futdraftPendingMode || 'clasico';
-  G.futdraft = { squad: [], formation: id, mode: mode, matches: [], matchIndex: 0 };
+  G.futdraft = {
+    squad: [], formation: id, mode: mode,
+    affinity: mode === 'afinidad' ? G.futdraftAffinity : null,
+    captainId: null, swapsLeft: FUTDRAFT_MAX_SWAPS,
+    matches: [], matchIndex: 0
+  };
   G.futdraftOptions = generateFutDraftOptions();
   G.screen = 'futdraftPick';
   render();
@@ -3055,11 +3123,12 @@ function generateFutDraftOptions() {
   var squad = f.squad;
   var squadIds = squad.map(function (p) { return p.id; });
   var pool;
-  if (f.mode === 'clasico') {
+  if (f.mode === 'clasico' || f.mode === 'afinidad') {
     var formation = FUTDRAFT_FORMATIONS.find(function (x) { return x.id === f.formation; });
     var currentPos = futDraftCurrentNeededPos(formation, squad);
     pool = ROSTER.filter(function (p) {
       if (squadIds.indexOf(p.id) !== -1) return false;
+      if (f.mode === 'afinidad' && p.tipo !== f.affinity) return false;
       return p.posicion === currentPos;
     });
   } else {
@@ -3099,10 +3168,10 @@ window.pickFutDraftPlayer = function (instanceId) {
 function renderFutDraftPick() {
   var f = G.futdraft;
   var squad = f.squad;
-  var modeLabel = f.mode === 'clasico' ? 'Clásico' : 'Libre';
+  var modeLabel = f.mode === 'clasico' ? 'Clásico' : (f.mode === 'afinidad' ? 'Afinidad · ' + f.affinity : 'Libre');
   var target = futDraftDraftTarget(f.mode);
   var subtitle = 'Elige a tu jugador ' + (squad.length + 1) + ' de ' + target + '.';
-  if (f.mode === 'clasico') {
+  if (f.mode === 'clasico' || f.mode === 'afinidad') {
     var formation = FUTDRAFT_FORMATIONS.find(function (x) { return x.id === f.formation; });
     var currentPos = futDraftCurrentNeededPos(formation, squad);
     var needed = futDraftNeededCounts(formation, squad);
@@ -3152,10 +3221,38 @@ function futDraftPlayerScore(p) {
   var sum = stats.reduce(function (s, key) { return s + p[key]; }, 0);
   return sum / stats.length;
 }
-function futDraftTeamScore(squad) {
-  if (!squad.length) return 0;
-  var total = squad.reduce(function (sum, p) { return sum + futDraftPlayerScore(p); }, 0);
-  return Math.round(total / squad.length);
+
+// El capitán cuenta el doble en la media del equipo (su nivel "arrastra"
+// más al resto). La sinergia premia tener varios jugadores del mismo tipo
+// elemental en el once (no hay dato de club real en el roster, así que el
+// tipo hace de sustituto). La penalización castiga colocar a un titular en
+// una línea que no es su posición real -- el banquillo nunca cuenta aquí,
+// solo quien sale de inicio.
+var FUTDRAFT_CAPTAIN_WEIGHT = 2;
+var FUTDRAFT_SYNERGY_THRESHOLD = 4;
+var FUTDRAFT_SYNERGY_BONUS = 3;
+var FUTDRAFT_OUT_OF_POSITION_PENALTY = 3;
+
+// lineup: array de { pos, player } (la línea de la formación y quien la
+// ocupa -- ver f.lineup). captainId: id del jugador capitán, o null.
+function futDraftTeamScore(lineup, captainId) {
+  if (!lineup.length) return 0;
+  var weightedSum = 0, weightTotal = 0, misplaced = 0;
+  var typeCounts = {};
+  lineup.forEach(function (slot) {
+    var p = slot.player;
+    var weight = (captainId && p.id === captainId) ? FUTDRAFT_CAPTAIN_WEIGHT : 1;
+    weightedSum += futDraftPlayerScore(p) * weight;
+    weightTotal += weight;
+    if (slot.pos !== p.posicion) misplaced++;
+    typeCounts[p.tipo] = (typeCounts[p.tipo] || 0) + 1;
+  });
+  var base = weightedSum / weightTotal;
+  var synergyBonus = 0;
+  Object.keys(typeCounts).forEach(function (t) {
+    if (typeCounts[t] >= FUTDRAFT_SYNERGY_THRESHOLD) synergyBonus += FUTDRAFT_SYNERGY_BONUS;
+  });
+  return Math.round(clamp(base + synergyBonus - misplaced * FUTDRAFT_OUT_OF_POSITION_PENALTY, 0, 100));
 }
 
 // Vista previa durante el draft Libre (picks 12-14, antes de llegar a la
@@ -3248,8 +3345,13 @@ function renderFutDraftLineupPitch(f) {
   var rowsHtml = formation.rows.map(function (row) {
     var itemsHtml = f.lineup.filter(function (slot) { return slot.pos === row.pos; }).map(function (slot) {
       var p = slot.player;
-      var cls = 'pitch-player futdraft-swappable' + (f.swapSelectedId === p.id ? ' selected' : '');
-      return '<div class="' + cls + '" onclick="selectFutDraftPlayer(\'' + p.id + '\')">' + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
+      var outOfPosition = slot.pos !== p.posicion;
+      var cls = 'pitch-player futdraft-swappable' +
+        (f.swapSelectedId === p.id ? ' selected' : '') +
+        (outOfPosition ? ' futdraft-out-of-position' : '');
+      var badge = f.captainId === p.id ? '<span class="futdraft-captain-badge" title="Capitán">👑</span>' : '';
+      var nameSuffix = outOfPosition ? ' <span class="dim">(' + p.posicion + ')</span>' : '';
+      return '<div class="' + cls + '" onclick="selectFutDraftPlayer(\'' + p.id + '\')">' + badge + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + nameSuffix + '</span></div>';
     }).join('');
     return '<div class="pitch-row">' + itemsHtml + '</div>';
   }).join('');
@@ -3265,20 +3367,26 @@ window.setFutDraftFormation = function (id) {
   render();
 };
 
-// Cambio ilimitado entre dos jugadores cualquiera -- dos titulares (se
-// reubican de línea) o un titular y un suplente (el suplente entra al
-// once, el titular pasa al banquillo). Toca a uno, luego al otro.
+// Cambios limitados (FUTDRAFT_MAX_SWAPS) entre dos jugadores cualquiera --
+// dos titulares (se reubican de línea) o un titular y un suplente (el
+// suplente entra al once, el titular pasa al banquillo). Toca a uno, luego
+// al otro. Si el modo "elegir capitán" está activo, el toque se interpreta
+// como elección de capitán en vez de cambio (ver toggleFutDraftCaptainMode).
 window.selectFutDraftPlayer = function (id) {
   var f = G.futdraft;
+  if (f.pickingCaptain) { pickFutDraftCaptainInternal(id); return; }
   if (f.swapSelectedId === id) { f.swapSelectedId = null; render(); return; }
+  if (f.swapsLeft <= 0) { render(); return; }
   if (!f.swapSelectedId) { f.swapSelectedId = id; render(); return; }
   var otherId = f.swapSelectedId;
   var lineupIdxA = f.lineup.findIndex(function (s) { return s.player.id === otherId; });
   var lineupIdxB = f.lineup.findIndex(function (s) { return s.player.id === id; });
+  var swapped = false;
   if (lineupIdxA !== -1 && lineupIdxB !== -1) {
     var tmp = f.lineup[lineupIdxA].player;
     f.lineup[lineupIdxA].player = f.lineup[lineupIdxB].player;
     f.lineup[lineupIdxB].player = tmp;
+    swapped = true;
   } else {
     var benchIdxA = f.bench.findIndex(function (p) { return p.id === otherId; });
     var benchIdxB = f.bench.findIndex(function (p) { return p.id === id; });
@@ -3286,23 +3394,53 @@ window.selectFutDraftPlayer = function (id) {
       var starterOut = f.lineup[lineupIdxA].player;
       f.lineup[lineupIdxA].player = f.bench[benchIdxB];
       f.bench[benchIdxB] = starterOut;
+      if (f.captainId === starterOut.id) f.captainId = null;
+      swapped = true;
     } else if (lineupIdxB !== -1 && benchIdxA !== -1) {
       var starterOut2 = f.lineup[lineupIdxB].player;
       f.lineup[lineupIdxB].player = f.bench[benchIdxA];
       f.bench[benchIdxA] = starterOut2;
+      if (f.captainId === starterOut2.id) f.captainId = null;
+      swapped = true;
     }
   }
+  if (swapped) f.swapsLeft--;
   f.swapSelectedId = null;
   render();
 };
 
+// Capitán: cuenta x2 en la media del equipo (ver futDraftTeamScore). Solo
+// puede ser un titular -- tocar un suplente en modo "elegir capitán" no
+// hace nada. Tocar al capitán actual otra vez le quita el brazalete.
+window.toggleFutDraftCaptainMode = function () {
+  var f = G.futdraft;
+  f.pickingCaptain = !f.pickingCaptain;
+  f.swapSelectedId = null;
+  render();
+};
+function pickFutDraftCaptainInternal(id) {
+  var f = G.futdraft;
+  var isStarter = f.lineup.some(function (s) { return s.player.id === id; });
+  if (!isStarter) { render(); return; }
+  f.captainId = (f.captainId === id) ? null : id;
+  f.pickingCaptain = false;
+  render();
+}
+
 function renderFutDraftTeam() {
   var f = G.futdraft;
   var hasBench = f.mode === 'libre' && f.bench.length > 0;
-  var score = futDraftTeamScore(f.lineup.map(function (s) { return s.player; }));
+  var score = futDraftTeamScore(f.lineup, f.captainId);
+  var captain = f.captainId ? f.lineup.find(function (s) { return s.player.id === f.captainId; }) : null;
   var formationBtns = futDraftAvailableFormations().map(function (ft) {
     return '<button class="btn-tiny' + (f.formation === ft.id ? ' active' : '') + '" onclick="setFutDraftFormation(\'' + ft.id + '\')">' + ft.name + '</button>';
   }).join('');
+  var swapHint = f.swapsLeft > 0
+    ? 'Cambios restantes: <strong>' + f.swapsLeft + '</strong> de ' + FUTDRAFT_MAX_SWAPS + '. Toca a dos jugadores (titulares o suplente) para cambiarlos.'
+    : 'Ya no te quedan cambios disponibles.';
+  var captainHint = captain
+    ? 'Capitán: <strong>' + escapeHtml(captain.player.nombre) + '</strong> (cuenta x2 en la puntuación).'
+    : 'Sin capitán elegido.';
   var benchHtml = '';
   if (hasBench) {
     var benchItemsHtml = f.bench.map(function (p) {
@@ -3312,7 +3450,6 @@ function renderFutDraftTeam() {
     benchHtml =
       '<div class="panel">' +
         '<h3 style="margin-bottom:4px">Banquillo</h3>' +
-        '<p class="dim small" style="margin-bottom:10px">Cambios ilimitados: toca a un jugador y luego a otro (titular o suplente) para cambiarlos.</p>' +
         '<div class="pitch-row" style="justify-content:center">' + benchItemsHtml + '</div>' +
       '</div>';
   }
@@ -3322,12 +3459,15 @@ function renderFutDraftTeam() {
         '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
         '<h2 class="panel-title mt mb0">Tu once inicial</h2>' +
         '<p class="dim small">Puntuación de equipo: <strong style="color:var(--accent-2)">' + score + '</strong> / 100</p>' +
-        (hasBench ? '' : '<p class="dim small">Cambios ilimitados: toca a dos titulares para cambiarlos de línea.</p>') +
+        '<p class="dim small">' + swapHint + '</p>' +
+        '<p class="dim small">' + captainHint + '</p>' +
+        '<button class="btn btn-tiny' + (f.pickingCaptain ? ' active' : '') + '" onclick="toggleFutDraftCaptainMode()">' + (f.pickingCaptain ? 'Toca a un titular para hacerlo capitán…' : 'Elegir capitán 👑') + '</button>' +
       '</div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:8px">Formación</h3>' +
         '<div class="view-toggle view-toggle-wrap">' + formationBtns + '</div>' +
         renderFutDraftLineupPitch(f) +
+        '<p class="dim small" style="margin-top:8px">Un jugador fuera de su posición real baja la puntuación del equipo. Tener 4 o más titulares del mismo tipo elemental la sube.</p>' +
       '</div>' +
       benchHtml +
       '<button class="btn btn-primary btn-block" onclick="startFutDraftMatches()">Jugar torneo (8 equipos)</button>' +
@@ -3371,7 +3511,7 @@ window.playFutDraftMatch = function () {
   var match = round.filter(function (m) { return (m.a.isPlayer || m.b.isPlayer) && m.winner === null; })[0];
   var oppSide = match.a.isPlayer ? match.b : match.a;
   var formation = FUTDRAFT_FORMATIONS.find(function (ft) { return ft.id === f.formation; });
-  var score = futDraftTeamScore(f.lineup.map(function (s) { return s.player; }));
+  var score = futDraftTeamScore(f.lineup, f.captainId);
   var oppPower = teamPower(oppSide);
   var myAtk = score * formation.atk;
   var myDef = score * formation.def;
