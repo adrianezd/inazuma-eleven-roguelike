@@ -1489,7 +1489,7 @@ var ROSTER = [
   locked:true,cost:200
 },
 {
-  id:'r174', nombre:'Benkei Kumano', original:'Benkei Kumano', sprite:'assets/sprites/r175.webp',
+  id:'r174', nombre:'Bay Froste', original:'Benkei Kumano', sprite:'assets/sprites/r175.webp',
   posicion:'Defensa', tipo:'Viento',
   tiro:65,pase:71,defensa:82,especial:86,
   hissatsu:['Hielo Futurista'],
@@ -1497,7 +1497,7 @@ var ROSTER = [
   locked:true,cost:200
 },
 {
-  id:'r175', nombre:'Shiryu Shiratori', original:'Shiryu Shiratori', sprite:'assets/sprites/r174.webp',
+  id:'r175', nombre:'Mount Wallside', original:'Shiryu Shiratori', sprite:'assets/sprites/r174.webp',
   posicion:'Delantero', tipo:'Montaña',
   tiro:82,pase:65,defensa:67,especial:83,
   hissatsu:['Remate del muro'],
@@ -1591,5 +1591,45 @@ var ROSTER = [
   hissatsu:['Remate misil'],
   desc:'Centrocampista del Royal Academy que sorprende al rival rematando desde su Remate misil.',
   locked:true,cost:140
+},
+{
+  id:'r187', nombre:'Bilal Kalil', original:'Bilal Kalil', sprite:'assets/sprites/r187.webp',
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:58,pase:63,defensa:86,especial:82,
+  hissatsu:['Tormenta de Arena'],
+  desc:'Defensa de los Leones del Desierto y uno de los jugadores más destacados de Catar.',
+  locked:true,cost:180
+},
+{
+  id:'r188', nombre:'Dolph Hensen', original:'Dolph Hensen', sprite:'assets/sprites/r188.webp',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:76,pase:82,defensa:55,especial:84,
+  hissatsu:['Megalodon'],
+  desc:'Centrocampista y capitán de los Big Waves, especialista en jugadas ofensivas.',
+  locked:true,cost:180
+},
+{
+  id:'r189', nombre:'Phil A. Minion', original:'Phil A. Minion', sprite:'assets/sprites/r189.webp',
+  posicion:'Defensa', tipo:'Fuego',
+  tiro:62,pase:66,defensa:84,especial:80,
+  hissatsu:['Piroquinesis'],
+  desc:'Defensa vinculado a Zoolan Rice y a sus equipos de jugadores seleccionados.',
+  locked:true,cost:175
+},
+{
+  id:'r190', nombre:'Julien Rousseau', original:'Julien Rousseau', sprite:'assets/sprites/r190.webp',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:79,pase:79,defensa:52,especial:78,
+  hissatsu:['Cómo ser popular'],
+  desc:'Centrocampista francés de los Grifos de la Rosa.',
+  locked:true,cost:160
+},
+{
+  id:'r191', nombre:'Blake Obscura', original:'Blake Obscura', sprite:'assets/sprites/r191.webp',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:55,pase:65,defensa:84,especial:85,
+  hissatsu:['Picadora'],
+  desc:'Defensa de Luz y Oscuridad y miembro del equipo Zero.',
+  locked:true,cost:185
 },
 ];
