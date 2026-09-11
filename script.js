@@ -954,17 +954,31 @@ function generateMap(hardMode) {
     : [rand(3, 5), rand(3, 5), rand(3, 5), 1, rand(3, 5), rand(3, 5), rand(3, 5), 1, rand(3, 5), rand(3, 5), 1];
   var rows = [];
   var idCounter = 0;
+  // Cuenta los nodos de Fichaje del tramo actual (entre un jefe y el
+  // siguiente, o desde el principio hasta el primer jefe) para no pasar de
+  // MAX_FICHAJE_PER_SEGMENT -- se reinicia cada vez que se cruza un jefe.
+  var fichajeInSegment = 0;
 
   rowDefs.forEach(function (count, rowIndex) {
     var isBoss = count === 1;
     var nodes = [];
     for (var c = 0; c < count; c++) {
-      // La primera fila siempre es Fichaje o Entrenamiento: nunca un partido
-      // (ni evento/descanso) nada más empezar la partida con un plantel de
-      // un solo jugador, para dar margen a prepararse antes del primer choque.
-      var type = isBoss ? 'jefe' : (rowIndex === 0 ? choice(['fichaje', 'entrenamiento']) : weightedNodeType());
+      var canFichaje = fichajeInSegment < MAX_FICHAJE_PER_SEGMENT;
+      var type;
+      if (isBoss) {
+        type = 'jefe';
+      } else if (rowIndex === 0) {
+        // La primera fila siempre es Fichaje o Entrenamiento: nunca un
+        // partido (ni evento/descanso) nada más empezar la partida con un
+        // plantel de un solo jugador, para dar margen a prepararse.
+        type = canFichaje ? choice(['fichaje', 'entrenamiento']) : 'entrenamiento';
+      } else {
+        type = weightedNodeType(canFichaje);
+      }
+      if (type === 'fichaje') fichajeInSegment++;
       nodes.push({ id: 'n' + (idCounter++), row: rowIndex, col: c, type: type, cleared: false });
     }
+    if (isBoss) fichajeInSegment = 0;
     rows.push(nodes);
   });
 
@@ -1015,12 +1029,19 @@ function generateMap(hardMode) {
   return { rows: rows, edges: edges };
 }
 
-function weightedNodeType() {
+// Tope de nodos de Fichaje por tramo (entre un jefe y el siguiente), para
+// que subir su probabilidad no inunde el mapa de fichajes -- pedido
+// explícito: "como máximo en 3 nodos distintos" entre jefe y jefe.
+var MAX_FICHAJE_PER_SEGMENT = 3;
+
+// allowFichaje: si el tramo actual ya llegó a MAX_FICHAJE_PER_SEGMENT, el
+// hueco que le tocaría a Fichaje pasa a Descanso en su lugar.
+function weightedNodeType(allowFichaje) {
   var roll = Math.random() * 100;
-  if (roll < 40) return 'partido';
-  if (roll < 56) return 'entrenamiento';
-  if (roll < 67) return 'fichaje';
-  if (roll < 82) return 'descanso';
+  if (roll < 38) return 'partido';
+  if (roll < 52) return 'entrenamiento';
+  if (roll < 72) return allowFichaje ? 'fichaje' : 'descanso';
+  if (roll < 86) return 'descanso';
   return 'evento';
 }
 
@@ -2961,7 +2982,11 @@ var FUTDRAFT_FORMATIONS = [
   { id: '541', name: '5-4-1', rows: [
       { pos: 'Delantero', count: 1 }, { pos: 'Centrocampista', count: 4 },
       { pos: 'Defensa', count: 5 }, { pos: 'Portero', count: 1 }
-    ], atk: 0.8, def: 1.3 }
+    ], atk: 0.8, def: 1.3 },
+  { id: '424', name: '4-2-4', rows: [
+      { pos: 'Delantero', count: 4 }, { pos: 'Centrocampista', count: 2 },
+      { pos: 'Defensa', count: 4 }, { pos: 'Portero', count: 1 }
+    ], atk: 1.25, def: 1.05 }
 ];
 
 // Cada draft ofrece solo unas pocas formaciones al azar, no las 7 de
@@ -3226,37 +3251,52 @@ function futDraftPlayerScore(p) {
   return sum / stats.length;
 }
 
-// El capitán cuenta el doble en la media del equipo (su nivel "arrastra"
-// más al resto). La sinergia premia tener varios jugadores del mismo tipo
-// elemental en el once (no hay dato de club real en el roster, así que el
-// tipo hace de sustituto). La penalización castiga colocar a un titular en
-// una línea que no es su posición real -- el banquillo nunca cuenta aquí,
-// solo quien sale de inicio.
-var FUTDRAFT_CAPTAIN_WEIGHT = 2;
+// El capitán aporta un bonus (o penalización) directo a la puntuación de
+// equipo según lo BUENO que sea comparado con la media del resto del once
+// -- no un simple "cuenta doble en la media", que con 11 titulares diluía
+// tanto el efecto que muchas veces no se notaba nada al elegir capitán.
+// Se recorta a [-8, 8] para que ni un fichaje estrella dispare la nota ni
+// un capitán flojo la hunda de golpe. La sinergia premia tener varios
+// jugadores del mismo tipo elemental en el once (no hay dato de club real
+// en el roster, así que el tipo hace de sustituto). La penalización
+// castiga colocar a un titular en una línea que no es su posición real --
+// el banquillo nunca cuenta aquí, solo quien sale de inicio.
+var FUTDRAFT_CAPTAIN_BONUS_FACTOR = 0.4;
+var FUTDRAFT_CAPTAIN_BONUS_CAP = 8;
 var FUTDRAFT_SYNERGY_THRESHOLD = 4;
 var FUTDRAFT_SYNERGY_BONUS = 3;
 var FUTDRAFT_OUT_OF_POSITION_PENALTY = 3;
 
 // lineup: array de { pos, player } (la línea de la formación y quien la
 // ocupa -- ver f.lineup). captainId: id del jugador capitán, o null.
-function futDraftTeamScore(lineup, captainId) {
-  if (!lineup.length) return 0;
-  var weightedSum = 0, weightTotal = 0, misplaced = 0;
+// Devuelve el desglose completo (para explicarlo en pantalla) en vez de
+// solo el número final -- ver futDraftTeamScore para cuando solo hace
+// falta el total (p.ej. al resolver un partido).
+function futDraftScoreBreakdown(lineup, captainId) {
+  if (!lineup.length) return { base: 0, captainBonus: 0, synergyBonus: 0, misplaced: 0, misplacedPenalty: 0, total: 0 };
+  var sum = 0, misplaced = 0, captainScore = null;
   var typeCounts = {};
   lineup.forEach(function (slot) {
     var p = slot.player;
-    var weight = (captainId && p.id === captainId) ? FUTDRAFT_CAPTAIN_WEIGHT : 1;
-    weightedSum += futDraftPlayerScore(p) * weight;
-    weightTotal += weight;
+    var score = futDraftPlayerScore(p);
+    sum += score;
+    if (captainId && p.id === captainId) captainScore = score;
     if (slot.pos !== p.posicion) misplaced++;
     typeCounts[p.tipo] = (typeCounts[p.tipo] || 0) + 1;
   });
-  var base = weightedSum / weightTotal;
+  var base = sum / lineup.length;
+  var captainBonus = captainScore === null ? 0 : clamp(Math.round((captainScore - base) * FUTDRAFT_CAPTAIN_BONUS_FACTOR), -FUTDRAFT_CAPTAIN_BONUS_CAP, FUTDRAFT_CAPTAIN_BONUS_CAP);
   var synergyBonus = 0;
   Object.keys(typeCounts).forEach(function (t) {
     if (typeCounts[t] >= FUTDRAFT_SYNERGY_THRESHOLD) synergyBonus += FUTDRAFT_SYNERGY_BONUS;
   });
-  return Math.round(clamp(base + synergyBonus - misplaced * FUTDRAFT_OUT_OF_POSITION_PENALTY, 0, 100));
+  var misplacedPenalty = misplaced * FUTDRAFT_OUT_OF_POSITION_PENALTY;
+  var total = Math.round(clamp(base + captainBonus + synergyBonus - misplacedPenalty, 0, 100));
+  return { base: Math.round(base), captainBonus: captainBonus, synergyBonus: synergyBonus, misplaced: misplaced, misplacedPenalty: misplacedPenalty, total: total };
+}
+
+function futDraftTeamScore(lineup, captainId) {
+  return futDraftScoreBreakdown(lineup, captainId).total;
 }
 
 // Vista previa durante el draft Libre (picks 12-14, antes de llegar a la
@@ -3425,18 +3465,43 @@ function pickFutDraftCaptainInternal(id) {
   render();
 }
 
+// Cuenta cuántos jugadores hay de cada tipo elemental en TODO el plantel
+// drafteado (los 11 titulares + los 3 del banquillo, no solo el once) --
+// pedido explícito: se quiere ver este resumen nada más completar el
+// draft entero, banquillo incluido.
+function futDraftElementCounts(f) {
+  var counts = {};
+  TYPES.forEach(function (t) { counts[t] = 0; });
+  f.lineup.forEach(function (slot) { counts[slot.player.tipo] = (counts[slot.player.tipo] || 0) + 1; });
+  f.bench.forEach(function (p) { counts[p.tipo] = (counts[p.tipo] || 0) + 1; });
+  return counts;
+}
+
 function renderFutDraftTeam() {
   var f = G.futdraft;
   var hasBench = f.bench.length > 0;
-  var score = futDraftTeamScore(f.lineup, f.captainId);
+  var breakdown = futDraftScoreBreakdown(f.lineup, f.captainId);
   var captain = f.captainId ? f.lineup.find(function (s) { return s.player.id === f.captainId; }) : null;
   var formationBtns = futDraftAvailableFormations().map(function (ft) {
     return '<button class="btn-tiny' + (f.formation === ft.id ? ' active' : '') + '" onclick="setFutDraftFormation(\'' + ft.id + '\')">' + ft.name + '</button>';
   }).join('');
   var swapHint = 'Cambios ilimitados: toca a dos jugadores (titulares o suplente) para cambiarlos.';
-  var captainHint = captain
-    ? 'Capitán: <strong>' + escapeHtml(captain.player.nombre) + '</strong> (cuenta x2 en la puntuación).'
-    : 'Sin capitán elegido.';
+  var captainHint;
+  if (!captain) {
+    captainHint = 'Sin capitán elegido.';
+  } else if (breakdown.captainBonus > 0) {
+    captainHint = 'Capitán: <strong>' + escapeHtml(captain.player.nombre) + '</strong> (<span style="color:var(--accent-2)">+' + breakdown.captainBonus + '</span> a la puntuación, por encima de la media del equipo).';
+  } else if (breakdown.captainBonus < 0) {
+    captainHint = 'Capitán: <strong>' + escapeHtml(captain.player.nombre) + '</strong> (<span style="color:var(--danger)">' + breakdown.captainBonus + '</span> a la puntuación, por debajo de la media del equipo).';
+  } else {
+    captainHint = 'Capitán: <strong>' + escapeHtml(captain.player.nombre) + '</strong> (a la altura de la media del equipo, no suma ni resta).';
+  }
+  var elementCounts = futDraftElementCounts(f);
+  var elementCountsHtml = TYPES.map(function (t) {
+    return '<span class="type-badge type-' + t.toLowerCase().replace('ñ', 'n') + '" style="margin:2px">' +
+      '<span class="type-mark" aria-hidden="true">' + TYPE_MARK[t] + '</span>' + t + ': ' + elementCounts[t] +
+    '</span>';
+  }).join(' ');
   var benchHtml = '';
   if (hasBench) {
     var benchItemsHtml = f.bench.map(function (p) {
@@ -3454,7 +3519,7 @@ function renderFutDraftTeam() {
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
         '<h2 class="panel-title mt mb0">Tu once inicial</h2>' +
-        '<p class="dim small">Puntuación de equipo: <strong style="color:var(--accent-2)">' + score + '</strong> / 100</p>' +
+        '<p class="dim small">Puntuación de equipo: <strong style="color:var(--accent-2)">' + breakdown.total + '</strong> / 100</p>' +
         '<p class="dim small">' + swapHint + '</p>' +
         '<p class="dim small">' + captainHint + '</p>' +
         '<button class="btn btn-tiny' + (f.pickingCaptain ? ' active' : '') + '" onclick="toggleFutDraftCaptainMode()">' + (f.pickingCaptain ? 'Toca a un titular para hacerlo capitán…' : 'Elegir capitán 👑') + '</button>' +
@@ -3464,6 +3529,10 @@ function renderFutDraftTeam() {
         '<div class="view-toggle view-toggle-wrap">' + formationBtns + '</div>' +
         renderFutDraftLineupPitch(f) +
         '<p class="dim small" style="margin-top:8px">Un jugador fuera de su posición real baja la puntuación del equipo. Tener 4 o más titulares del mismo tipo elemental la sube.</p>' +
+      '</div>' +
+      '<div class="panel center-text">' +
+        '<h3 style="margin-bottom:8px">Tipos elementales del plantel (' + (f.lineup.length + f.bench.length) + ')</h3>' +
+        '<div>' + elementCountsHtml + '</div>' +
       '</div>' +
       benchHtml +
       '<button class="btn btn-primary btn-block" onclick="startFutDraftMatches()">Jugar torneo (8 equipos)</button>' +
