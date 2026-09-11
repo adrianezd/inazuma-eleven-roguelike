@@ -1632,4 +1632,103 @@ var ROSTER = [
   desc:'Defensa de Luz y Oscuridad y miembro del equipo Zero.',
   locked:true,cost:185
 },
+{
+  id:'r192', nombre:'Wolfram Vulpeen', original:'Wolfram Vulpeen',
+  sprite:'assets/sprites/r192.webp',
+  posicion:'Delantero', tipo:'Montaña',
+  tiro:91,pase:76,defensa:43,especial:90,
+  hissatsu:['Aullido de Licántropo'],
+  desc:'Capitán de Aullido Lunar y segundo al mando de las Criaturas de la Noche. Miximax: Gen L.',
+  locked:true,cost:210
+},
+{
+  id:'r193', nombre:'Desmodus Drakul', original:'Desmodus Drakul',
+  sprite:'assets/sprites/r193.webp',
+  posicion:'Centrocampista', tipo:'Montaña',
+  tiro:84,pase:82,defensa:55,especial:91,
+  hissatsu:['Mordisco de Vampiro'],
+  desc:'Capitán de los Nosfanáticos y líder de las Criaturas de la Noche. Miximax: Gen V.',
+  locked:true,cost:210
+},
+{
+  id:'r194', nombre:'Saru', original:'Simeon Ayp',
+  sprite:'assets/sprites/r194.webp',
+  posicion:'Delantero', tipo:'Montaña',
+  tiro:90,pase:88,defensa:45,especial:94,
+  hissatsu:['Cañonazo de Fragmentos V2'],
+  desc:'Saru en su versión Miximax con Gen S.',
+  locked:true,cost:280
+},
+{
+  id:'r195', nombre:'Aster', original:'Aster',
+  sprite:'assets/sprites/r195.webp',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:87,pase:72,defensa:43,especial:88,
+  hissatsu:['Tormenta Dimensional'],
+  desc:'Capitán de los Desesperdidos y compañero de Flora.',
+  locked:true,cost:210
+},
+{
+  id:'r196', nombre:'Flora', original:'Flora',
+  sprite:'assets/sprites/r196.webp',
+  posicion:'Delantero', tipo:'Viento',
+  tiro:88,pase:78,defensa:42,especial:91,
+  hissatsu:['Tiro Supermasivo'],
+  desc:'Jugadora de los Desesperdidos. Puede realizar Miximax con Rosa Negra.',
+  locked:true,cost:210
+},
+{
+  id:'r197', nombre:'Lotus', original:'Lotus',
+  sprite:'assets/sprites/r197.webp',
+  posicion:'Portero', tipo:'Montaña',
+  tiro:35,pase:58,defensa:85,especial:87,
+  hissatsu:['Agujero Blanco'],
+  desc:'Guardameta de los Desesperdidos y uno de los duplicados de Aster.',
+  locked:true,cost:210
+},
+{
+  id:'r198', nombre:'Holly Waters', original:'Holly Waters',
+  sprite:'assets/sprites/r198.webp',
+  posicion:'Defensa', tipo:'Fuego',
+  tiro:48,pase:63,defensa:81,especial:86,
+  hissatsu:['Luz Cegadora'],
+  desc:'Defensa de los Nosfanáticos y de las Criaturas de la Noche.',
+  locked:true,cost:190
+},
+{
+  id:'r199', nombre:'Ron Innwater', original:'Ron Innwater',
+  sprite:'assets/sprites/r199.webp',
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:45,pase:65,defensa:81,especial:84,
+  hissatsu:['Muralla de Atlantis'],
+  desc:'Defensa de los Nosfanáticos y posteriormente de las Criaturas de la Noche.',
+  locked:true,cost:185
+},
+{
+  id:'r200', nombre:'Magnol', original:'Magnol',
+  sprite:'assets/sprites/r200.webp',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:52,pase:67,defensa:81,especial:82,
+  hissatsu:['Muralla de Atlantis'],
+  desc:'Miembro de los Desesperdidos y uno de los duplicados de Aster.',
+  locked:true,cost:180
+},
+{
+  id:'r201', nombre:'Gentian', original:'Gentian',
+  sprite:'assets/sprites/r201.webp',
+  posicion:'Delantero', tipo:'Bosque',
+  tiro:83,pase:70,defensa:43,especial:85,
+  hissatsu:['Polen Devastador'],
+  desc:'Delantero de los Desesperdidos, especializado en técnicas relacionadas con las plantas.',
+  locked:true,cost:190
+},
+{
+  id:'r202', nombre:'Flora', original:'Flora',
+  sprite:'assets/sprites/r202.webp',
+  posicion:'Delantero', tipo:'Viento',
+  tiro:91,pase:79,defensa:42,especial:91,
+  hissatsu:['Tiro Supermasivo V2'],
+  desc:'Flora Miximax con Rosa Negra.',
+  locked:true,cost:280
+},
 ];
