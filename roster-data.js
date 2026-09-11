@@ -1731,4 +1731,49 @@ var ROSTER = [
   desc:'Flora Miximax con Rosa Negra.',
   locked:true,cost:280
 },
+{
+  id:'r203', nombre:'Mehr', original:'Mehr',
+  sprite:'assets/sprites/r203.webp',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:78,pase:86,defensa:71,especial:83,
+  hissatsu:['Danza del viento'],
+  desc:'Capitana del Gir y una de las líderes de los Chicos de la Segunda Fase. Posteriormente se une al Ragnah.',
+  locked:true,cost:210
+},
+{
+  id:'r204', nombre:'Ghiris', original:'Ghiris',
+  sprite:'assets/sprites/r204.webp',
+  posicion:'Centrocampista', tipo:'Fuego',
+  tiro:82,pase:84,defensa:65,especial:83,
+  hissatsu:['Futuro Negativo'],
+  desc:'Centrocampista del Gir y compañero de Mehr. Posteriormente se une al Ragnah.',
+  locked:true,cost:205
+},
+{
+  id:'r205', nombre:'Chell', original:'Chell',
+  sprite:'assets/sprites/r205.webp',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:83,pase:70,defensa:60,especial:75,
+  hissatsu:['Entrada huracán'],
+  desc:'Centrocampista destacado del Gir. Posee el Espíritu Guerrero Guerrero del Oeste, Baihu.',
+  locked:true,cost:195
+},
+{
+  id:'r206', nombre:'Zetoh', original:'Zetoh',
+  sprite:'assets/sprites/r206.webp',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:83,pase:68,defensa:40,especial:74,
+  hissatsu:['Llamarada atómica'],
+  desc:'Delantero del Gir, orgulloso y extremadamente trabajador. Posee el Espíritu Guerrero Gigante de Fuego, Surtur.',
+  locked:true,cost:200
+},
+{
+  id:'r207', nombre:'Kyon Canis', original:'Kyon Canis',
+  sprite:'assets/sprites/r207.webp',
+  posicion:'Delantero', tipo:'Montaña',
+  tiro:85,pase:69,defensa:45,especial:75,
+  hissatsu:['Lanza letal'],
+  desc:'Delantero del Ragnah con el Espíritu Guerrero Adalid leonino, Jmet.',
+  locked:true,cost:195
+},
 ];
