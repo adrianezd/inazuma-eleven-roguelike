@@ -479,7 +479,7 @@ var ROSTER = [
     locked: false, cost: 68
   },
   {
-    id: 'r50', nombre: 'Isaac Glass', original: 'Kazuto Megane',
+    id: 'r50', nombre: 'Isaac Glass', original: 'Kazuto Megane', sprite: 'assets/sprites/r50.webp',
     posicion: 'Delantero', tipo: 'Bosque',
     tiro: 69, pase: 62, defensa: 36, especial: 70,
     hissatsu: ['Remate Gafas v2'],
@@ -763,7 +763,7 @@ var ROSTER = [
     locked: false, cost: 115
   },
   {
-    id: 'r85', nombre: 'Fishman', original: 'Wilson Fishman',
+    id: 'r85', nombre: 'Fishman', original: 'Wilson Fishman', sprite: 'assets/sprites/r85.webp',
     posicion: 'Defensa', tipo: 'Bosque',
     tiro: 38, pase: 52, defensa: 75, especial: 58,
     hissatsu: ['Robo Rápido'],
@@ -771,7 +771,7 @@ var ROSTER = [
     locked: false, cost: 90
   },
   {
-    id: 'r86', nombre: 'Toad', original: 'Peter Johnson',
+    id: 'r86', nombre: 'Toad', original: 'Peter Johnson', sprite: 'assets/sprites/r86.webp',
     posicion: 'Defensa', tipo: 'Bosque',
     tiro: 34, pase: 46, defensa: 73, especial: 58,
     hissatsu: ['Barrido Defensivo'],
@@ -779,7 +779,7 @@ var ROSTER = [
     locked: false, cost: 88
   },
   {
-    id: 'r87', nombre: 'Lion', original: 'Leonard O\'Shea',
+    id: 'r87', nombre: 'Lion', original: 'Leonard O\'Shea', sprite: 'assets/sprites/r87.webp',
     posicion: 'Defensa', tipo: 'Montaña',
     tiro: 45, pase: 48, defensa: 76, especial: 66,
     hissatsu: ['Embestida'],
@@ -787,7 +787,7 @@ var ROSTER = [
     locked: false, cost: 105
   },
   {
-    id: 'r88', nombre: 'Chameleon', original: 'Cham Lion',
+    id: 'r88', nombre: 'Chameleon', original: 'Cham Lion', sprite: 'assets/sprites/r88.webp',
     posicion: 'Defensa', tipo: 'Bosque',
     tiro: 42, pase: 75, defensa: 73, especial: 62,
     hissatsu: ['Robo Rápido'],
@@ -795,7 +795,7 @@ var ROSTER = [
     locked: false, cost: 92
   },
   {
-    id: 'r89', nombre: 'Eagle', original: 'Steve Eagle',
+    id: 'r89', nombre: 'Eagle', original: 'Steve Eagle', sprite: 'assets/sprites/r89.webp',
     posicion: 'Centrocampista', tipo: 'Viento',
     tiro: 68, pase: 64, defensa: 48, especial: 70,
     hissatsu: ['Ataque de Cóndor'],
@@ -803,7 +803,7 @@ var ROSTER = [
     locked: false, cost: 108
   },
   {
-    id: 'r90', nombre: 'Monkey', original: 'Bruce Monkey',
+    id: 'r90', nombre: 'Monkey', original: 'Bruce Monkey', sprite: 'assets/sprites/r90.webp',
     posicion: 'Centrocampista', tipo: 'Bosque',
     tiro: 64, pase: 65, defensa: 61, especial: 68,
     hissatsu: ['Giro de Mono'],
@@ -811,7 +811,7 @@ var ROSTER = [
     locked: false, cost: 102
   },
   {
-    id: 'r91', nombre: 'Gorilla', original: 'Gary Lancaster',
+    id: 'r91', nombre: 'Gorilla', original: 'Gary Lancaster', sprite: 'assets/sprites/r91.webp',
     posicion: 'Delantero', tipo: 'Montaña',
     tiro: 75, pase: 42, defensa: 45, especial: 70,
     hissatsu: ['Remate Tarzán'],
@@ -819,7 +819,7 @@ var ROSTER = [
     locked: false, cost: 120
   },
   {
-    id: 'r92', nombre: 'Snake', original: 'Harry Snake',
+    id: 'r92', nombre: 'Snake', original: 'Harry Snake', sprite: 'assets/sprites/r92.webp',
     posicion: 'Delantero', tipo: 'Bosque',
     tiro: 73, pase: 50, defensa: 38, especial: 72,
     hissatsu: ['Remate Serpiente'],
@@ -836,7 +836,7 @@ var ROSTER = [
   },
 
   {
-    id: 'r94', nombre: 'Styx', original: 'Russell Walk',
+    id: 'r94', nombre: 'Styx', original: 'Russell Walk', sprite: 'assets/sprites/r94.webp',
     posicion: 'Defensa', tipo: 'Bosque',
     tiro: 42, pase: 50, defensa: 73, especial: 72,
     hissatsu: ['Gravedad'],
@@ -844,7 +844,7 @@ var ROSTER = [
     locked: false, cost: 105
   },
   {
-    id: 'r95', nombre: 'Creepy', original: 'Jason Jones',
+    id: 'r95', nombre: 'Creepy', original: 'Jason Jones', sprite: 'assets/sprites/r95.webp',
     posicion: 'Defensa', tipo: 'Viento',
     tiro: 38, pase: 48, defensa: 72, especial: 70,
     hissatsu: ['Doppelgänger'],
@@ -852,7 +852,7 @@ var ROSTER = [
     locked: false, cost: 100
   },
   {
-    id: 'r96', nombre: 'Franky', original: 'Ken Furan',
+    id: 'r96', nombre: 'Franky', original: 'Ken Furan', sprite: 'assets/sprites/r96.webp',
     posicion: 'Defensa', tipo: 'Montaña',
     tiro: 38, pase: 45, defensa: 74, especial: 65,
     hissatsu: ['Frankstein'],
@@ -860,7 +860,7 @@ var ROSTER = [
     locked: false, cost: 108
   },
   {
-    id: 'r97', nombre: 'Undead', original: 'Jerry Fulton',
+    id: 'r97', nombre: 'Undead', original: 'Jerry Fulton', sprite: 'assets/sprites/r97.webp',
     posicion: 'Defensa', tipo: 'Fuego',
     tiro: 40, pase: 47, defensa: 71, especial: 68,
     hissatsu: ['Doppelgänger'],
@@ -868,7 +868,7 @@ var ROSTER = [
     locked: false, cost: 102
   },
   {
-    id: 'r98', nombre: 'Jiangshi', original: 'Ray Mannings',
+    id: 'r98', nombre: 'Jiangshi', original: 'Ray Mannings', sprite: 'assets/sprites/r98.webp',
     posicion: 'Centrocampista', tipo: 'Viento',
     tiro: 58, pase: 67, defensa: 50, especial: 73,
     hissatsu: ['Gravedad'],
@@ -876,7 +876,7 @@ var ROSTER = [
     locked: false, cost: 108
   },
   {
-    id: 'r99', nombre: 'Mummy', original: 'Robert Mayer',
+    id: 'r99', nombre: 'Mummy', original: 'Robert Mayer', sprite: 'assets/sprites/r99.webp',
     posicion: 'Centrocampista', tipo: 'Bosque',
     tiro: 56, pase: 64, defensa: 53, especial: 70,
     hissatsu: ['Gravedad'],
@@ -884,7 +884,7 @@ var ROSTER = [
     locked: false, cost: 102
   },
   {
-    id: 'r100', nombre: 'Grave', original: 'Alexander Brave',
+    id: 'r100', nombre: 'Grave', original: 'Alexander Brave', sprite: 'assets/sprites/r100.webp',
     posicion: 'Centrocampista', tipo: 'Fuego',
     tiro: 62, pase: 60, defensa: 48, especial: 74,
     hissatsu: ['Maldición'],
@@ -892,7 +892,7 @@ var ROSTER = [
     locked: false, cost: 108
   },
   {
-    id: 'r101', nombre: 'Blood', original: 'Burt Wolf',
+    id: 'r101', nombre: 'Blood', original: 'Burt Wolf', sprite: 'assets/sprites/r101.webp',
     posicion: 'Centrocampista', tipo: 'Montaña',
     tiro: 64, pase: 56, defensa: 50, especial: 76,
     hissatsu: ['Tiro Fantasma'],
@@ -1453,5 +1453,54 @@ var ROSTER = [
   hissatsu:['Balón rodante'],
   desc:'Centrocampista del Instituto Farm, especialista en regates y jugadas rápidas.',
   locked:true,cost:145
+},
+{
+  id:'r170', nombre:'Miles Ryan', original:'Miles Ryan', sprite:'assets/sprites/r170.webp',
+  posicion:'Defensa', tipo:'Viento',
+  tiro:64,pase:72,defensa:73,especial:74,
+  hissatsu:['Ciclon'],
+  desc:'Amigo de Nathan, veloz como el viento',
+  locked:true,cost:145
+},
+
+{
+  id:'r171', nombre:'Saggy', original:'Sagamineta', sprite:'assets/sprites/r171.webp',
+  posicion:'Delantero', tipo:'Bosque',
+  tiro:78,pase:67,defensa:60,especial:84,
+  hissatsu:['Remate Misil'],
+  desc:'Delantero especial de Inazuma Eleven 2, conocido como Saggy.',
+  locked:true,cost:160
+},
+{
+  id:'r172', nombre:'Syon Blaze', original:'Masato Goenji', sprite:'assets/sprites/r172.webp',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:86,pase:63,defensa:38,especial:84,
+  hissatsu:['Tornado de Fuego'],
+  desc:'Extraordinario delantero y primo de Axel Blaze.',
+  locked:true,cost:190
+},
+{
+  id:'r173', nombre:'Canon Evans', original:'Kanon Endou', sprite:'assets/sprites/r173.webp',
+  posicion:'Delantero', tipo:'Viento',
+  tiro:86,pase:67,defensa:40,especial:86,
+  hissatsu:['Cañón Celestial'],
+  desc:'Delantero del futuro y descendiente de Mark Evans.',
+  locked:true,cost:200
+},
+{
+  id:'r174', nombre:'Benkei Kumano', original:'Benkei Kumano', sprite:'assets/sprites/r174.webp',
+  posicion:'Defensa', tipo:'Viento',
+  tiro:65,pase:71,defensa:82,especial:86,
+  hissatsu:['Hielo Futurista'],
+  desc:'Defensa del futuro y descendiente de Shawn.',
+  locked:true,cost:200
+},
+{
+  id:'r175', nombre:'Shiryu Shiratori', original:'Shiryu Shiratori', sprite:'assets/sprites/r175.webp',
+  posicion:'Delantero', tipo:'Montaña',
+  tiro:82,pase:65,defensa:67,especial:83,
+  hissatsu:['Remate del muro'],
+  desc:'Delantero del futuro y descendiente de Jack.',
+  locked:true,cost:200
 },
 ];
