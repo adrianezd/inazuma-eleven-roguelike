@@ -1520,4 +1520,76 @@ var ROSTER = [
   desc:'Tiene voz atronadora. Sus amigos se tapan los oídos cuando habla.',
   locked:true,cost:100
 },
+{
+  id:'r178', nombre:'Sam Kincaid', original:'Shishido Sakichi',
+  posicion:'Centrocampista', tipo:'Fuego',
+  tiro:70,pase:60,defensa:52,especial:66,
+  hissatsu:['Tiro Granada'],
+  desc:'Centrocampista del Raimon, creador de su propio Tiro Granada en pleno partido.',
+  locked:true,cost:130
+},
+{
+  id:'r179', nombre:'Grant Cook', original:'Ooiwa Kurando',
+  posicion:'Portero', tipo:'Fuego',
+  tiro:22,pase:52,defensa:85,especial:80,
+  hissatsu:['Burnout'],
+  desc:'Portero del Prominence, del proyecto Aliea Academy, conocido como "Grent". Protege su portería con Burnout.',
+  locked:true,cost:170
+},
+{
+  id:'r180', nombre:'Val Flamewood', original:'Hagakure Koutarou',
+  posicion:'Defensa', tipo:'Fuego',
+  tiro:40,pase:55,defensa:88,especial:78,
+  hissatsu:['Gravitación'],
+  desc:'Defensa del Prominence, conocido como "Bakurei". Su Gravitación es casi infranqueable.',
+  locked:true,cost:165
+},
+{
+  id:'r181', nombre:'Denzel Freezer', original:'Mikoori Rei',
+  posicion:'Delantero', tipo:'Montaña',
+  tiro:85,pase:50,defensa:38,especial:88,
+  hissatsu:['Supernova'],
+  desc:'Delantero del Diamond Dust, conocido como "Frost". Su Supernova es una de las técnicas más temidas de Aliea Academy.',
+  locked:true,cost:190
+},
+{
+  id:'r182', nombre:'Ben North', original:'Shirai Ikkaku',
+  posicion:'Portero', tipo:'Montaña',
+  tiro:18,pase:48,defensa:86,especial:80,
+  hissatsu:['Bloque de Hielo'],
+  desc:'Portero del Diamond Dust, conocido como "Beluga". Nadie se libra de su Atrapada Tornado.',
+  locked:true,cost:170
+},
+{
+  id:'r183', nombre:'Claire Lesnow', original:'Kurakake Clara',
+  posicion:'Defensa', tipo:'Viento',
+  tiro:36,pase:58,defensa:80,especial:76,
+  hissatsu:['Rompehielos'],
+  desc:'Defensa del Diamond Dust, conocida como "Clear" y única chica del equipo. Protege su línea con Velo de Agua.',
+  locked:true,cost:160
+},
+{
+  id:'r184', nombre:'Gordon Star', original:'Goryuu Reo',
+  posicion:'Portero', tipo:'Bosque',
+  tiro:22,pase:50,defensa:84,especial:78,
+  hissatsu:['Taladro Destructor'],
+  desc:'Portero del Gemini Storm, del proyecto Aliea Academy, conocido como "Gorleo". Su Taladro Destructor perfora cualquier tiro.',
+  locked:true,cost:168
+},
+{
+  id:'r185', nombre:'Daniel Hatch', original:'Jimon Daiki',
+  posicion:'Delantero', tipo:'Bosque',
+  tiro:80,pase:48,defensa:36,especial:72,
+  hissatsu:['Tiro Centuple'],
+  desc:'Delantero del Royal Academy, letal cerca del área con su Tiro Centuple.',
+  locked:true,cost:150
+},
+{
+  id:'r186', nombre:'Cliff Tomlinson', original:'Ena Kazuki',
+  posicion:'Delantero', tipo:'Viento',
+  tiro:70,pase:50,defensa:48,especial:66,
+  hissatsu:['Entrada Asesina'],
+  desc:'Delantero del Royal Academy que no duda en recurrir a su Entrada Asesina para recuperar el balón.',
+  locked:true,cost:140
+},
 ];
