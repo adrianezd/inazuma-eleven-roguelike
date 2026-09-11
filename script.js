@@ -1183,6 +1183,7 @@ function render() {
     case 'futdraftPick': html = renderFutDraftPick(); break;
     case 'futdraftTeam': html = renderFutDraftTeam(); break;
     case 'futdraftBracket': html = renderFutDraftBracket(); break;
+    case 'futdraftLive': html = renderFutDraftLive(); break;
     case 'futdraftPenalty': html = renderFutDraftPenalty(); break;
     case 'futdraftMatchResult': html = renderFutDraftMatchResult(); break;
     case 'futdraftSummary': html = renderFutDraftSummary(); break;
@@ -3512,15 +3513,13 @@ function pickFutDraftCaptainInternal(id) {
   render();
 }
 
-// Cuenta cuántos jugadores hay de cada tipo elemental en TODO el plantel
-// drafteado (los 11 titulares + los 3 del banquillo, no solo el once) --
-// pedido explícito: se quiere ver este resumen nada más completar el
-// draft entero, banquillo incluido.
+// Cuenta cuántos titulares hay de cada tipo elemental -- SOLO el once
+// titular (f.lineup), el banquillo no cuenta para nada aquí, igual que en
+// futDraftScoreBreakdown. Cambia en cuanto se hace un cambio en el once.
 function futDraftElementCounts(f) {
   var counts = {};
   TYPES.forEach(function (t) { counts[t] = 0; });
   f.lineup.forEach(function (slot) { counts[slot.player.tipo] = (counts[slot.player.tipo] || 0) + 1; });
-  f.bench.forEach(function (p) { counts[p.tipo] = (counts[p.tipo] || 0) + 1; });
   return counts;
 }
 
@@ -3546,7 +3545,7 @@ function renderFutDraftTeam() {
   var elementCounts = futDraftElementCounts(f);
   var elementCountsHtml = TYPES.map(function (t) {
     return '<span class="type-badge type-' + t.toLowerCase().replace('ñ', 'n') + '" style="margin:2px">' +
-      '<span class="type-mark" aria-hidden="true">' + TYPE_MARK[t] + '</span>' + t + ': ' + elementCounts[t] +
+      'Bonificación atributo ' + getTypeSymbol(t) + ' ' + elementCounts[t] + '/' + FUTDRAFT_SYNERGY_THRESHOLD +
     '</span>';
   }).join(' ');
   var benchHtml = '';
@@ -3578,7 +3577,7 @@ function renderFutDraftTeam() {
         '<p class="dim small" style="margin-top:8px">Un jugador fuera de su posición real baja la puntuación del equipo. Tener 4 o más titulares del mismo tipo elemental la sube.</p>' +
       '</div>' +
       '<div class="panel center-text">' +
-        '<h3 style="margin-bottom:8px">Tipos elementales del plantel (' + (f.lineup.length + f.bench.length) + ')</h3>' +
+        '<h3 style="margin-bottom:8px">Bonificación de atributo (once titular)</h3>' +
         '<div>' + elementCountsHtml + '</div>' +
       '</div>' +
       benchHtml +
@@ -3663,6 +3662,11 @@ function futDraftBuildTimeline(myGoals, oppGoals, myPlayers) {
   });
 }
 
+// El resultado (goles, timeline, clima) se calcula entero de golpe, pero
+// se REVELA poco a poco -- ver renderFutDraftLive/futDraftLiveTick -- para
+// que se sienta como un partido en marcha en vez de un número que aparece
+// de la nada. Si acaba en empate, no se decide aquí: se pasa a una tanda
+// de penaltis real al terminar los 90 minutos simulados.
 window.playFutDraftMatch = function () {
   var f = G.futdraft;
   var round = f.tournament.rounds[f.tournament.rounds.length - 1];
@@ -3681,11 +3685,30 @@ window.playFutDraftMatch = function () {
   var myPlayers = f.lineup.map(function (s) { return s.player; });
   var timeline = futDraftBuildTimeline(myGoals, oppGoals, myPlayers);
 
-  // En el bracket no puede haber empate -- si el marcador del tiempo
-  // reglamentario sale igualado, se juega una tanda de penaltis de verdad
-  // (interactiva, igual que el Modo Penaltis) en vez de decidirlo con un
-  // sorteo abstracto. El resultado del tiempo reglamentario se guarda para
-  // mostrarlo junto al de los penaltis al terminar la tanda.
+  f.live = {
+    match: match, oppSide: oppSide, weather: weather,
+    minute: 0, pending: timeline.slice(), revealed: [],
+    myGoals: 0, oppGoals: 0, finalMyGoals: myGoals, finalOppGoals: oppGoals,
+    done: false
+  };
+  G.screen = 'futdraftLive';
+  render();
+  futDraftLiveTick();
+};
+
+// Resuelve lo que pasa una vez terminados los 90 minutos simulados (llega
+// aquí tanto si se ha visto la simulación entera como si se ha saltado):
+// empate real -> tanda de penaltis; si no, guarda el resultado y va a la
+// pantalla de resultado de siempre.
+function finishFutDraftRegularTime() {
+  var f = G.futdraft;
+  var live = f.live;
+  var match = live.match, oppSide = live.oppSide;
+  var myGoals = live.finalMyGoals, oppGoals = live.finalOppGoals;
+  var oppPower = teamPower(oppSide);
+  var timeline = live.revealed;
+  var weather = live.weather;
+  f.live = null;
   if (myGoals === oppGoals) {
     f.pendingMatch = match;
     f.pendingOppSide = oppSide;
@@ -3699,7 +3722,72 @@ window.playFutDraftMatch = function () {
   f.lastMatchResult = { oppName: oppSide.name, oppShield: teamShieldPath(oppSide.name), oppPower: oppPower, myGoals: myGoals, oppGoals: oppGoals, playerWon: playerWon, timeline: timeline, weather: weather };
   G.screen = 'futdraftMatchResult';
   render();
+}
+
+// Avanza la simulación un puñado de minutos (3 a 7) cada 150ms y va
+// revelando los goles cuyo minuto ya se ha alcanzado. Se reprograma solo
+// mientras sigamos en la pantalla 'futdraftLive' con esta misma
+// simulación activa -- así, si el jugador navega a otro sitio (o salta la
+// simulación), la cadena se para sola en vez de seguir mutando estado en
+// segundo plano.
+function futDraftLiveTick() {
+  if (G.screen !== 'futdraftLive' || !G.futdraft || !G.futdraft.live || G.futdraft.live.done) return;
+  var live = G.futdraft.live;
+  live.minute = Math.min(90, live.minute + rand(3, 7));
+  while (live.pending.length && live.pending[0].minute <= live.minute) {
+    var ev = live.pending.shift();
+    if (ev.side === 'me') live.myGoals++; else live.oppGoals++;
+    live.revealed.push(ev);
+  }
+  render();
+  if (live.minute >= 90) {
+    live.done = true;
+    setTimeout(finishFutDraftRegularTime, 500);
+  } else {
+    setTimeout(futDraftLiveTick, 150);
+  }
+}
+
+// Salta directamente al final: revela todos los goles pendientes de golpe
+// y resuelve el partido sin esperar a que el temporizador llegue solo.
+window.futDraftSkipLive = function () {
+  var live = G.futdraft.live;
+  if (!live || live.done) return;
+  live.minute = 90;
+  live.pending.forEach(function (ev) {
+    if (ev.side === 'me') live.myGoals++; else live.oppGoals++;
+    live.revealed.push(ev);
+  });
+  live.pending = [];
+  live.done = true;
+  finishFutDraftRegularTime();
 };
+
+function renderFutDraftLive() {
+  var live = G.futdraft.live;
+  var oppName = live.oppSide.name;
+  var logHtml = live.revealed.slice().reverse().map(function (ev) {
+    var text = ev.side === 'me'
+      ? '<strong>' + escapeHtml(ev.scorer.nombre) + '</strong>' + (ev.assist ? ' <span class="dim">(asist. ' + escapeHtml(ev.assist.nombre) + ')</span>' : ' <span class="dim">(gol en solitario)</span>')
+      : escapeHtml(oppName);
+    return '<div class="futdraft-timeline-row"><span class="futdraft-timeline-minute">' + ev.minute + '\'</span><span>⚽</span><span>' + text + '</span></div>';
+  }).join('');
+  return (
+    '<div class="screen">' +
+      '<div class="match-scoreboard">' +
+        '<div class="score-side"><img class="team-shield" src="' + PLAYER_SHIELD + '" alt=""><div class="score-name">Tú</div><div class="score-num">' + live.myGoals + '</div></div>' +
+        '<div class="score-vs">VS</div>' +
+        '<div class="score-side"><img class="team-shield" src="' + escapeHtml(teamShieldPath(oppName)) + '" alt=""><div class="score-name">' + escapeHtml(oppName) + '</div><div class="score-num">' + live.oppGoals + '</div></div>' +
+      '</div>' +
+      '<div class="turn-indicator">Minuto ' + live.minute + '\' de 90\'</div>' +
+      (live.weather ? '<p class="dim small center-text">🌦️ ' + WEATHER_CONDITIONS[live.weather].label + ': ' + WEATHER_CONDITIONS[live.weather].desc + '</p>' : '') +
+      '<div class="panel">' +
+        '<div class="futdraft-timeline">' + (logHtml || '<p class="dim small center-text">Aún no ha pasado nada…</p>') + '</div>' +
+      '</div>' +
+      '<button class="btn btn-outline btn-block" onclick="futDraftSkipLive()">Saltar simulación</button>' +
+    '</div>'
+  );
+}
 
 // Tanda de penaltis de FutDraft: mismo motor (zonas 0-2, portero al azar,
 // 5 lanzamientos + muerte súbita) que el Modo Penaltis independiente, pero
