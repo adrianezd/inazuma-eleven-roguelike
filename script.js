@@ -3013,7 +3013,7 @@ function renderFutDraftAffinitySelect() {
   var btns = TYPES.map(function (t) {
     return (
       '<div class="btn-row" style="justify-content:center">' +
-        '<button class="btn btn-primary btn-block" onclick="actionChooseFutDraftAffinity(\'' + t + '\')">' + typeBadge(t) + '</button>' +
+        '<button class="btn btn-block" onclick="actionChooseFutDraftAffinity(\'' + t + '\')">' + typeBadge(t) + '</button>' +
       '</div>'
     );
   }).join('');
