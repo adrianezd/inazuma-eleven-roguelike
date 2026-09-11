@@ -301,7 +301,19 @@ var TEAM_SHIELD_FILES = {
   'Desesperdidos': 'desesperados.png',
   'Kirkwood': 'kirkwood.png',
   'Cala Pirata': 'cala-pirata.png',
-  'Flota Ixar': 'flota-ixar.png'
+  'Flota Ixar': 'flota-ixar.png',
+  'Dragones de Fuego': 'dragones-de-fuego.png',
+  'Earth Eleven': 'earth-eleven.png',
+  'Eclipse de Orión': 'eclipse-de-orion.png',
+  'Guardianes de La Reina': 'guardianes-de-la-reina.png',
+  'Inazuma Japon': 'inazuma-japon.png',
+  'Leones del desierto': 'leones-del-desierto.png',
+  'Academia Ogre': 'ogro.png',
+  'Otaku': 'otaku.png',
+  'Instituto Plenilunio': 'plenilunio.png',
+  'Resistencia Japón GO': 'resistencia-japon-go.png',
+  'Umbrella': 'umbrella.png',
+  'Veteranos Inazuma': 'veteranos-inazuma.png'
 };
 // team1.png es el escudo del propio jugador ("Tu equipo"), no un relleno
 // genérico para rivales sin escudo -- por eso vive fuera de TEAM_SHIELD_FILES.
@@ -711,7 +723,7 @@ function startTournamentMatch() {
   // siempre llega al tope, escalando proporcionalmente al nº de rondas.
   var normDepth = totalRounds > 1 ? (roundIndex / (totalRounds - 1)) * 10 : 10;
   var oppSquad = generateOpponentSquad(normDepth, isBoss, isFinalBoss);
-  var oppName = (isBoss ? 'Jefe: ' : '') + opp.name;
+  var oppName = opp.name;
   var oppShield = teamShieldPath(opp.name);
   G.match = {
     isBoss: isBoss, oppName: oppName, oppShield: oppShield, oppSquad: oppSquad, turn: 1, order: buildTurnOrder(),
@@ -1797,7 +1809,7 @@ function startMatch(nodeId, isBoss) {
   var normDepth = maxDepth > 0 ? (depth / maxDepth) * 10 : depth;
   var oppSquad = generateOpponentSquad(normDepth, isBoss, isFinalBoss);
   var oppTeamName = randomTeamName(isBoss);
-  var oppName = (isBoss ? 'Jefe: ' : '') + oppTeamName;
+  var oppName = oppTeamName;
   G.match = {
     isBoss: isBoss,
     oppName: oppName,
