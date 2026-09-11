@@ -964,9 +964,9 @@ function loadMeta() {
     var raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) throw new Error('none');
     var data = JSON.parse(raw);
-    return Object.assign({ points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0, normalWins: 0, bestSurvivalWave: 0, tournamentsWon: 0, dailyLastDate: null, dailyLastResult: null }, data);
+    return Object.assign({ points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0, normalWins: 0, bestSurvivalWave: 0, tournamentsWon: 0, dailyLastDate: null, dailyLastResult: null, ligaTierUnlocked: { normal: true, dificil: false, extremo: false } }, data);
   } catch (e) {
-    return { points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0, normalWins: 0, bestSurvivalWave: 0, tournamentsWon: 0, dailyLastDate: null, dailyLastResult: null };
+    return { points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0, normalWins: 0, bestSurvivalWave: 0, tournamentsWon: 0, dailyLastDate: null, dailyLastResult: null, ligaTierUnlocked: { normal: true, dificil: false, extremo: false } };
   }
 }
 
@@ -1117,7 +1117,7 @@ function findNode(map, nodeId) {
 
 var G = {
   screen: 'menu',
-  meta: (typeof localStorage !== 'undefined') ? loadMeta() : { points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0, normalWins: 0, bestSurvivalWave: 0, tournamentsWon: 0, dailyLastDate: null, dailyLastResult: null },
+  meta: (typeof localStorage !== 'undefined') ? loadMeta() : { points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0, normalWins: 0, bestSurvivalWave: 0, tournamentsWon: 0, dailyLastDate: null, dailyLastResult: null, ligaTierUnlocked: { normal: true, dificil: false, extremo: false } },
   run: null,
   match: null,
   pendingCaptainOffers: null,
@@ -1192,6 +1192,10 @@ function render() {
     case 'futdraftPenalty': html = renderFutDraftPenalty(); break;
     case 'futdraftMatchResult': html = renderFutDraftMatchResult(); break;
     case 'futdraftSummary': html = renderFutDraftSummary(); break;
+    case 'ligaTierSelect': html = renderLigaTierSelect(); break;
+    case 'ligaPoolSelect': html = renderLigaPoolSelect(); break;
+    case 'ligaTable': html = renderLigaTable(); break;
+    case 'ligaSummary': html = renderLigaSummary(); break;
     default: html = renderMenu();
   }
   appEl.innerHTML = html;
@@ -1229,6 +1233,9 @@ function renderMenu() {
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-block" onclick="actionGoFutDraftModeSelect()">FutDraft</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionGoLigaTierSelect()">Liga</button>' +
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-block" onclick="actionGoVestuario()">Vestuario</button>' +
@@ -3136,12 +3143,15 @@ function renderFutDraftFormationSelect() {
     ? 'Elige la formación antes de nada: el draft solo te ofrecerá jugadores para los huecos que aún falten en ella.'
     : mode === 'afinidad'
       ? 'Elige la formación: el draft irá cubriendo sus huecos, pero solo con jugadores de tipo ' + G.futdraftAffinity + '.'
-      : 'Elige la formación con la que vas a empezar. En Libre puedes seguir cambiándola luego en la pantalla de equipo.';
-  var modeTitle = mode === 'clasico' ? 'Clásico' : (mode === 'afinidad' ? 'Afinidad' : 'Libre');
+      : mode === 'liga'
+        ? 'Elige la formación antes de nada: el draft irá cubriendo sus huecos en orden, igual que en Clásico.'
+        : 'Elige la formación con la que vas a empezar. En Libre puedes seguir cambiándola luego en la pantalla de equipo.';
+  var modeTitle = mode === 'clasico' ? 'Clásico' : (mode === 'afinidad' ? 'Afinidad' : (mode === 'liga' ? ('Liga · ' + ligaTierName(G.ligaPendingTier)) : 'Libre'));
+  var backAction = mode === 'liga' ? 'actionChooseLigaTier(\'' + G.ligaPendingTier + '\')' : 'actionGoFutDraftModeSelect()';
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
-        '<button class="btn btn-outline btn-block" onclick="actionGoFutDraftModeSelect()">Volver</button>' +
+        '<button class="btn btn-outline btn-block" onclick="' + backAction + '">Volver</button>' +
         '<h2 class="panel-title mt">FutDraft ' + modeTitle + '</h2>' +
         '<p class="dim small">' + hint + '</p>' +
         btns +
@@ -3155,6 +3165,8 @@ function actionChooseFutDraftFormation(id) {
   G.futdraft = {
     squad: [], formation: id, mode: mode,
     affinity: mode === 'afinidad' ? G.futdraftAffinity : null,
+    ligaPool: mode === 'liga' ? G.ligaPendingPool : null,
+    ligaTier: mode === 'liga' ? G.ligaPendingTier : null,
     captainId: null,
     matches: [], matchIndex: 0
   };
@@ -3198,18 +3210,28 @@ function futDraftCurrentNeededPos(formation, squad) {
 // últimos picks (banquillo) pasan al mismo criterio que Libre: cualquier
 // posición dentro de los topes de FUTDRAFT_POS_CAPS -- en Afinidad, además,
 // siempre del tipo elemental elegido, también en el banquillo.
+// En modo Liga con el pool "desbloqueados", solo se puede draftear a
+// quien ya tengas desbloqueado en el Vestuario -- igual que el plantel de
+// Puntos de Espíritu en Normal/Torneo/Supervivencia. Con "todos" (o en
+// cualquier otro modo de FutDraft) no hay restricción, como siempre.
+function futDraftPassesLigaPool(f, p) {
+  if (f.mode !== 'liga' || f.ligaPool !== 'desbloqueados') return true;
+  return !p.locked || getUnlockedIds().indexOf(p.id) !== -1;
+}
+
 function generateFutDraftOptions() {
   var f = G.futdraft;
   var squad = f.squad;
   var squadIds = squad.map(function (p) { return p.id; });
   var pool;
   var draftingStarters = squad.length < FUTDRAFT_SQUAD_SIZE;
-  if ((f.mode === 'clasico' || f.mode === 'afinidad') && draftingStarters) {
+  if ((f.mode === 'clasico' || f.mode === 'afinidad' || f.mode === 'liga') && draftingStarters) {
     var formation = FUTDRAFT_FORMATIONS.find(function (x) { return x.id === f.formation; });
     var currentPos = futDraftCurrentNeededPos(formation, squad);
     pool = ROSTER.filter(function (p) {
       if (squadIds.indexOf(p.id) !== -1) return false;
       if (f.mode === 'afinidad' && p.tipo !== f.affinity) return false;
+      if (!futDraftPassesLigaPool(f, p)) return false;
       return p.posicion === currentPos;
     });
   } else {
@@ -3217,6 +3239,7 @@ function generateFutDraftOptions() {
     pool = ROSTER.filter(function (p) {
       if (squadIds.indexOf(p.id) !== -1) return false;
       if (f.mode === 'afinidad' && p.tipo !== f.affinity) return false;
+      if (!futDraftPassesLigaPool(f, p)) return false;
       if (counts[p.posicion] >= FUTDRAFT_POS_CAPS[p.posicion]) return false;
       return true;
     });
@@ -3250,10 +3273,10 @@ window.pickFutDraftPlayer = function (instanceId) {
 function renderFutDraftPick() {
   var f = G.futdraft;
   var squad = f.squad;
-  var modeLabel = f.mode === 'clasico' ? 'Clásico' : (f.mode === 'afinidad' ? 'Afinidad · ' + f.affinity : 'Libre');
+  var modeLabel = f.mode === 'clasico' ? 'Clásico' : (f.mode === 'afinidad' ? 'Afinidad · ' + f.affinity : (f.mode === 'liga' ? 'Liga · ' + ligaTierName(f.ligaTier) : 'Libre'));
   var target = futDraftDraftTarget(f.mode);
   var subtitle = 'Elige a tu jugador ' + (squad.length + 1) + ' de ' + target + '.';
-  if ((f.mode === 'clasico' || f.mode === 'afinidad') && squad.length < FUTDRAFT_SQUAD_SIZE) {
+  if ((f.mode === 'clasico' || f.mode === 'afinidad' || f.mode === 'liga') && squad.length < FUTDRAFT_SQUAD_SIZE) {
     var formation = FUTDRAFT_FORMATIONS.find(function (x) { return x.id === f.formation; });
     var currentPos = futDraftCurrentNeededPos(formation, squad);
     var needed = futDraftNeededCounts(formation, squad);
@@ -3586,7 +3609,9 @@ function renderFutDraftTeam() {
         '<div>' + elementCountsHtml + '</div>' +
       '</div>' +
       benchHtml +
-      '<button class="btn btn-primary btn-block" onclick="startFutDraftMatches()">Jugar torneo (8 equipos)</button>' +
+      (f.mode === 'liga'
+        ? '<button class="btn btn-primary btn-block" onclick="startLigaRun()">Empezar Liga (18 equipos)</button>'
+        : '<button class="btn btn-primary btn-block" onclick="startFutDraftMatches()">Jugar torneo (8 equipos)</button>') +
     '</div>'
   );
 }
@@ -3683,14 +3708,16 @@ function futDraftBuildTimeline(myGoals, oppGoals, myPlayers, minMinute, maxMinut
 // que se sienta como un partido en marcha en vez de un número que aparece
 // de la nada. Si acaba en empate, no se decide aquí: se pasa a una tanda
 // de penaltis real al terminar los 90 minutos simulados.
-window.playFutDraftMatch = function () {
+// Núcleo de simulación compartido por el bracket de FutDraft y la Liga:
+// calcula clima, ataque/defensa propios (con formación + capitán +
+// sinergia ya incluidos vía futDraftTeamScore) y goles de los 90 minutos
+// reglamentarios, con su línea temporal. No decide nada sobre el destino
+// del partido (bracket vs liga, empate permitido o no) -- eso lo hace
+// quien lo llama.
+function futDraftSimulateMatchCore(oppPower) {
   var f = G.futdraft;
-  var round = f.tournament.rounds[f.tournament.rounds.length - 1];
-  var match = round.filter(function (m) { return (m.a.isPlayer || m.b.isPlayer) && m.winner === null; })[0];
-  var oppSide = match.a.isPlayer ? match.b : match.a;
   var formation = FUTDRAFT_FORMATIONS.find(function (ft) { return ft.id === f.formation; });
   var score = futDraftTeamScore(f.lineup, f.captainId);
-  var oppPower = teamPower(oppSide);
   var weather = rollWeather();
   var weatherMult = weatherFutDraftMultiplier(weather);
   var myAtk = score * formation.atk * weatherMult;
@@ -3700,15 +3727,25 @@ window.playFutDraftMatch = function () {
   var oppGoals = futDraftRandomGoals(futDraftExpectedGoals(effectiveOppPower, myDef));
   var myPlayers = f.lineup.map(function (s) { return s.player; });
   var timeline = futDraftBuildTimeline(myGoals, oppGoals, myPlayers);
+  return { myGoals: myGoals, oppGoals: oppGoals, weather: weather, timeline: timeline, myAtk: myAtk, myDef: myDef, effectiveOppPower: effectiveOppPower };
+}
+
+window.playFutDraftMatch = function () {
+  var f = G.futdraft;
+  var round = f.tournament.rounds[f.tournament.rounds.length - 1];
+  var match = round.filter(function (m) { return (m.a.isPlayer || m.b.isPlayer) && m.winner === null; })[0];
+  var oppSide = match.a.isPlayer ? match.b : match.a;
+  var sim = futDraftSimulateMatchCore(teamPower(oppSide));
 
   f.live = {
-    match: match, oppSide: oppSide, weather: weather,
-    minute: 0, pending: timeline.slice(), revealed: [],
-    myGoals: 0, oppGoals: 0, finalMyGoals: myGoals, finalOppGoals: oppGoals,
+    match: match, oppSide: oppSide, weather: sim.weather,
+    minute: 0, pending: sim.timeline.slice(), revealed: [],
+    myGoals: 0, oppGoals: 0, finalMyGoals: sim.myGoals, finalOppGoals: sim.oppGoals,
     // Se guardan para poder generar la prórroga más tarde sin recalcular
     // nada (mismo ataque/defensa/clima que ya se usaron en el 1-90).
-    myAtk: myAtk, myDef: myDef, effectiveOppPower: effectiveOppPower,
-    inExtraTime: false, done: false
+    myAtk: sim.myAtk, myDef: sim.myDef, effectiveOppPower: sim.effectiveOppPower,
+    inExtraTime: false, allowDraw: false, onFinish: finishFutDraftRegularTime,
+    done: false
   };
   G.screen = 'futdraftLive';
   render();
@@ -3775,24 +3812,27 @@ function futDraftLiveTick() {
   }
   render();
   if (live.minute >= cap) {
-    if (!live.inExtraTime && live.myGoals === live.oppGoals) {
-      // Empate al 90': se juega una prórroga de verdad antes de pensar en
-      // penaltis, en vez de ir directos a la tanda.
+    // En la Liga el empate es un resultado válido (allowDraw): no hay
+    // prórroga ni penaltis, se queda como está y suma su punto a cada uno.
+    if (!live.inExtraTime && !live.allowDraw && live.myGoals === live.oppGoals) {
+      // Empate al 90' en el bracket: se juega una prórroga de verdad antes
+      // de pensar en penaltis, en vez de ir directos a la tanda.
       var myPlayers = G.futdraft.lineup.map(function (s) { return s.player; });
       futDraftAddExtraTime(live, myPlayers);
       setTimeout(futDraftLiveTick, 400);
       return;
     }
     live.done = true;
-    setTimeout(finishFutDraftRegularTime, 500);
+    setTimeout(live.onFinish, 500);
   } else {
     setTimeout(futDraftLiveTick, 150);
   }
 }
 
 // Salta directamente al final: revela todos los goles pendientes de golpe
-// (generando también la prórroga si sigue habiendo empate al 90') y
-// resuelve el partido sin esperar a que el temporizador llegue solo.
+// (generando también la prórroga si sigue habiendo empate al 90' y no se
+// permite empate, ver allowDraw) y resuelve el partido sin esperar a que
+// el temporizador llegue solo.
 window.futDraftSkipLive = function () {
   var live = G.futdraft.live;
   if (!live || live.done) return;
@@ -3805,14 +3845,14 @@ window.futDraftSkipLive = function () {
   }
   dumpPending();
   live.minute = 90;
-  if (!live.inExtraTime && live.myGoals === live.oppGoals) {
+  if (!live.inExtraTime && !live.allowDraw && live.myGoals === live.oppGoals) {
     var myPlayers = G.futdraft.lineup.map(function (s) { return s.player; });
     futDraftAddExtraTime(live, myPlayers);
     dumpPending();
     live.minute = 120;
   }
   live.done = true;
-  finishFutDraftRegularTime();
+  live.onFinish();
 };
 
 function renderFutDraftLive() {
@@ -4020,7 +4060,7 @@ function renderFutDraftBracket() {
 
 function renderFutDraftMatchResult() {
   var r = G.futdraft.lastMatchResult;
-  var resultLabel = r.playerWon ? '🏆 ¡Victoria!' : 'Derrota';
+  var resultLabel = r.myGoals === r.oppGoals && !r.penalty ? 'Empate' : (r.playerWon ? '🏆 ¡Victoria!' : 'Derrota');
   var weatherHtml = r.weather
     ? '<p class="dim small">🌦️ ' + WEATHER_CONDITIONS[r.weather].label + ': ' + WEATHER_CONDITIONS[r.weather].desc + '</p>'
     : '';
@@ -4053,7 +4093,9 @@ function renderFutDraftMatchResult() {
         weatherHtml + penaltyHtml +
       '</div>' +
       timelineHtml +
-      '<button class="btn btn-primary btn-block mt" onclick="continueFutDraftMatch()">' + (r.playerWon ? 'Continuar' : 'Ver resultado') + '</button>' +
+      (r.isLiga
+        ? '<button class="btn btn-primary btn-block mt" onclick="continueLigaMatchday()">Ver jornada</button>'
+        : '<button class="btn btn-primary btn-block mt" onclick="continueFutDraftMatch()">' + (r.playerWon ? 'Continuar' : 'Ver resultado') + '</button>') +
     '</div>'
   );
 }
@@ -4071,6 +4113,305 @@ function renderFutDraftSummary() {
         '<p class="dim small">' + f.winsCount + ' partido' + (f.winsCount === 1 ? '' : 's') + ' ganado' + (f.winsCount === 1 ? '' : 's') + '</p>' +
         '<p class="currency-display">' + spiritIcon() + ' +' + f.reward + ' Puntos de Espíritu</p>' +
         '<button class="btn btn-primary btn-block mt" onclick="actionGoFutDraftModeSelect()">Nuevo draft</button>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+/* ---------------------------------------------------------------------
+   15f. LIGA: reutiliza por completo el motor de FutDraft (draft de 15,
+   formación, capitán, sinergia, simulación en vivo con clima y prórroga)
+   pero en vez de un bracket de 8 con eliminación directa, es una liga de
+   18 equipos a una vuelta (17 jornadas, todos contra todos una vez). Los
+   empates cuentan como empates de verdad (no hay penaltis en Liga: 1
+   punto para cada uno). 2 ejes independientes al empezar:
+   - Personajes: "desbloqueados" (solo tu plantel real) o "todos".
+   - Nivel: Normal / Difícil / Extremo, con desbloqueo secuencial (hay
+     que ser CAMPEÓN de un nivel para desbloquear el siguiente).
+   --------------------------------------------------------------------- */
+
+var LIGA_TEAM_COUNT = 18; // tú + 17 rivales
+var LIGA_BASE_REWARD = 60;
+var LIGA_TIERS = ['normal', 'dificil', 'extremo'];
+var LIGA_TIER_NAMES = { normal: 'Normal', dificil: 'Difícil', extremo: 'Extremo' };
+function ligaTierName(tier) { return LIGA_TIER_NAMES[tier] || tier; }
+
+function ligaTierUnlocked(meta, tier) {
+  if (tier === 'normal') return true;
+  var unlocked = meta.ligaTierUnlocked || {};
+  return !!unlocked[tier];
+}
+
+// Cuanto más alto el nivel, más se tira de RIVAL_TEAM_BOSSES (equipos de
+// nivel jefe, con TEAM_POWER más alto) en vez de RIVAL_TEAM_NAMES
+// (equipos normales) para elegir los 17 rivales de la liga.
+var LIGA_TIER_BOSS_CHANCE = { normal: 0.15, dificil: 0.5, extremo: 0.85 };
+function ligaPickRivalNames(tier) {
+  var bossChance = LIGA_TIER_BOSS_CHANCE[tier] || 0.15;
+  var used = {};
+  var names = [];
+  var guard = 0;
+  while (names.length < LIGA_TEAM_COUNT - 1 && guard < 2000) {
+    guard++;
+    var pool = Math.random() < bossChance ? RIVAL_TEAM_BOSSES : RIVAL_TEAM_NAMES;
+    var name = choice(pool);
+    if (!used[name]) { used[name] = true; names.push(name); }
+  }
+  return names;
+}
+
+// Método del círculo: liga a una vuelta con N equipos (par). Devuelve
+// N-1 jornadas, cada una con N/2 partidos, cada partido [idxLocal, idxVisitante].
+function generateRoundRobin(n) {
+  var arr = [];
+  for (var i = 0; i < n; i++) arr.push(i);
+  var rounds = [];
+  for (var r = 0; r < n - 1; r++) {
+    var round = [];
+    for (var i2 = 0; i2 < n / 2; i2++) round.push([arr[i2], arr[n - 1 - i2]]);
+    rounds.push(round);
+    var fixed = arr[0];
+    var rest = arr.slice(1);
+    rest.unshift(rest.pop());
+    arr = [fixed].concat(rest);
+  }
+  return rounds;
+}
+
+function ligaEmptyStanding() { return { pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0 }; }
+function ligaApplyResult(table, homeIdx, awayIdx, homeGoals, awayGoals) {
+  var h = table[homeIdx], a = table[awayIdx];
+  h.pj++; a.pj++;
+  h.gf += homeGoals; h.gc += awayGoals;
+  a.gf += awayGoals; a.gc += homeGoals;
+  if (homeGoals > awayGoals) { h.pg++; h.pts += 3; a.pp++; }
+  else if (homeGoals < awayGoals) { a.pg++; a.pts += 3; h.pp++; }
+  else { h.pe++; a.pe++; h.pts++; a.pts++; }
+}
+function ligaSortedTable(table) {
+  return table.map(function (t, i) { return Object.assign({ idx: i }, t); }).sort(function (a, b) {
+    if (b.pts !== a.pts) return b.pts - a.pts;
+    var gdA = a.gf - a.gc, gdB = b.gf - b.gc;
+    if (gdB !== gdA) return gdB - gdA;
+    return b.gf - a.gf;
+  });
+}
+// Resuelve un partido CPU-vs-CPU de la liga con las mismas fórmulas que
+// usa FutDraft para sus propios partidos, pero con TEAM_POWER en los dos
+// bandos (ninguno de los dos es "tu" equipo).
+function ligaSimulateCpuVsCpu(nameA, nameB) {
+  var powerA = teamPower({ name: nameA });
+  var powerB = teamPower({ name: nameB });
+  var golA = futDraftRandomGoals(futDraftExpectedGoals(powerA, powerB));
+  var golB = futDraftRandomGoals(futDraftExpectedGoals(powerB, powerA));
+  return [golA, golB];
+}
+
+function actionGoLigaTierSelect() { G.screen = 'ligaTierSelect'; render(); }
+
+function renderLigaTierSelect() {
+  var meta = G.meta;
+  var btns = LIGA_TIERS.map(function (tier) {
+    var unlocked = ligaTierUnlocked(meta, tier);
+    return (
+      '<div class="btn-row" style="justify-content:center">' +
+        '<button class="btn btn-block" ' + (unlocked ? '' : 'disabled style="opacity:0.5;cursor:not-allowed;"') + ' onclick="actionChooseLigaTier(\'' + tier + '\')">' +
+          ligaTierName(tier) + (unlocked ? '' : ' 🔒') +
+        '</button>' +
+      '</div>' +
+      (unlocked ? '' : '<p class="dim small center-text">Sé campeón del nivel anterior para desbloquearlo.</p>')
+    );
+  }).join('');
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
+        '<h2 class="panel-title mt">Liga</h2>' +
+        '<p class="dim small">Liga de ' + LIGA_TEAM_COUNT + ' equipos a una vuelta (' + (LIGA_TEAM_COUNT - 1) + ' jornadas, todos contra todos una vez). Los empates cuentan como empates: no hay prórroga ni penaltis en Liga.</p>' +
+        btns +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function actionChooseLigaTier(tier) {
+  if (!ligaTierUnlocked(G.meta, tier)) return;
+  G.ligaPendingTier = tier;
+  G.screen = 'ligaPoolSelect';
+  render();
+}
+
+function renderLigaPoolSelect() {
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<button class="btn btn-outline btn-block" onclick="actionGoLigaTierSelect()">Volver</button>' +
+        '<h2 class="panel-title mt">Liga · ' + ligaTierName(G.ligaPendingTier) + '</h2>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-primary btn-block" onclick="actionChooseLigaPool(\'desbloqueados\')">Personajes desbloqueados<br><small class="dim">Solo puedes draftear a quien ya tengas desbloqueado en el Vestuario.</small></button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionChooseLigaPool(\'todos\')">Todos los personajes<br><small class="dim">Draftea a cualquiera del roster, estén desbloqueados o no.</small></button>' +
+        '</div>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function actionChooseLigaPool(pool) {
+  G.ligaPendingPool = pool;
+  G.futdraftPendingMode = 'liga';
+  G.futdraftFormationChoices = pickFutDraftFormationChoices(FUTDRAFT_FORMATION_CHOICES_BY_MODE.clasico);
+  G.screen = 'futdraftFormationSelect';
+  render();
+}
+
+function startLigaRun() {
+  var f = G.futdraft;
+  var rivalNames = ligaPickRivalNames(f.ligaTier);
+  var teamNames = [null].concat(rivalNames); // índice 0 = tú (null porque se muestra aparte, "Tú")
+  var table = teamNames.map(function () { return ligaEmptyStanding(); });
+  var schedule = generateRoundRobin(LIGA_TEAM_COUNT);
+  f.liga = { tier: f.ligaTier, pool: f.ligaPool, teamNames: teamNames, table: table, schedule: schedule, matchdayIndex: 0, finished: false };
+  G.screen = 'ligaTable';
+  render();
+}
+
+function ligaTeamLabel(liga, idx) { return idx === 0 ? 'Tú' : liga.teamNames[idx]; }
+
+function renderLigaTable() {
+  var liga = G.futdraft.liga;
+  var sorted = ligaSortedTable(liga.table);
+  var rows = sorted.map(function (t, pos) {
+    var isYou = t.idx === 0;
+    return '<tr class="' + (isYou ? 'liga-you' : '') + '">' +
+      '<td>' + (pos + 1) + '</td>' +
+      '<td>' + escapeHtml(ligaTeamLabel(liga, t.idx)) + '</td>' +
+      '<td>' + t.pj + '</td><td>' + t.pg + '</td><td>' + t.pe + '</td><td>' + t.pp + '</td>' +
+      '<td>' + t.gf + '</td><td>' + t.gc + '</td><td>' + (t.gf - t.gc) + '</td>' +
+      '<td><strong>' + t.pts + '</strong></td>' +
+    '</tr>';
+  }).join('');
+  var seasonOver = liga.matchdayIndex >= liga.schedule.length;
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
+        '<h2 class="panel-title mt mb0">Liga · ' + ligaTierName(liga.tier) + '</h2>' +
+        '<p class="dim small">Jornada ' + Math.min(liga.matchdayIndex + 1, liga.schedule.length) + ' de ' + liga.schedule.length + '</p>' +
+      '</div>' +
+      '<div class="panel" style="overflow-x:auto">' +
+        '<table class="liga-table"><thead><tr><th>#</th><th>Equipo</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>Pts</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody></table>' +
+      '</div>' +
+      (seasonOver
+        ? '<button class="btn btn-primary btn-block" onclick="finishLigaRun()">Ver resultado final</button>'
+        : '<button class="btn btn-primary btn-block" onclick="playLigaMatch()">Jugar mi partido</button>') +
+    '</div>'
+  );
+}
+
+window.playLigaMatch = function () {
+  var f = G.futdraft;
+  var liga = f.liga;
+  var fixtures = liga.schedule[liga.matchdayIndex];
+  var fixture = fixtures.find(function (fx) { return fx[0] === 0 || fx[1] === 0; });
+  var youAreHome = fixture[0] === 0;
+  var oppIdx = youAreHome ? fixture[1] : fixture[0];
+  var oppName = liga.teamNames[oppIdx];
+  var sim = futDraftSimulateMatchCore(teamPower({ name: oppName }));
+
+  f.live = {
+    oppSide: { name: oppName }, weather: sim.weather,
+    minute: 0, pending: sim.timeline.slice(), revealed: [],
+    myGoals: 0, oppGoals: 0, finalMyGoals: sim.myGoals, finalOppGoals: sim.oppGoals,
+    myAtk: sim.myAtk, myDef: sim.myDef, effectiveOppPower: sim.effectiveOppPower,
+    inExtraTime: false, allowDraw: true, onFinish: finishLigaMatch,
+    fixtureOppIdx: oppIdx, youAreHome: youAreHome,
+    done: false
+  };
+  G.screen = 'futdraftLive';
+  render();
+  futDraftLiveTick();
+};
+
+function finishLigaMatch() {
+  var f = G.futdraft;
+  var live = f.live;
+  var liga = f.liga;
+  var oppIdx = live.fixtureOppIdx;
+  var oppName = liga.teamNames[oppIdx];
+  var myGoals = live.finalMyGoals, oppGoals = live.finalOppGoals;
+  var homeIdx = live.youAreHome ? 0 : oppIdx;
+  var awayIdx = live.youAreHome ? oppIdx : 0;
+  var homeGoals = live.youAreHome ? myGoals : oppGoals;
+  var awayGoals = live.youAreHome ? oppGoals : myGoals;
+  ligaApplyResult(liga.table, homeIdx, awayIdx, homeGoals, awayGoals);
+  f.lastMatchResult = {
+    oppName: oppName, oppShield: teamShieldPath(oppName), oppPower: teamPower({ name: oppName }),
+    myGoals: myGoals, oppGoals: oppGoals, playerWon: myGoals > oppGoals,
+    timeline: live.revealed, weather: live.weather, isLiga: true
+  };
+  f.live = null;
+  G.screen = 'futdraftMatchResult';
+  render();
+}
+
+// Al continuar desde el resultado de TU partido, se resuelven de golpe
+// (simulados, sin verlos) los demás partidos de la misma jornada, y se
+// avanza a la siguiente -- o al resumen final si era la última.
+window.continueLigaMatchday = function () {
+  var f = G.futdraft;
+  var liga = f.liga;
+  liga.schedule[liga.matchdayIndex].forEach(function (fx) {
+    if (fx[0] === 0 || fx[1] === 0) return;
+    var nameA = liga.teamNames[fx[0]], nameB = liga.teamNames[fx[1]];
+    var goles = ligaSimulateCpuVsCpu(nameA, nameB);
+    ligaApplyResult(liga.table, fx[0], fx[1], goles[0], goles[1]);
+  });
+  liga.matchdayIndex++;
+  G.screen = 'ligaTable';
+  render();
+};
+
+function finishLigaRun() {
+  var f = G.futdraft;
+  var liga = f.liga;
+  var meta = G.meta;
+  var sorted = ligaSortedTable(liga.table);
+  var myPosition = sorted.findIndex(function (t) { return t.idx === 0; }) + 1;
+  var champion = myPosition === 1;
+  if (champion) {
+    meta.ligaTierUnlocked = meta.ligaTierUnlocked || { normal: true, dificil: false, extremo: false };
+    if (liga.tier === 'normal') meta.ligaTierUnlocked.dificil = true;
+    else if (liga.tier === 'dificil') meta.ligaTierUnlocked.extremo = true;
+  }
+  var reward = LIGA_BASE_REWARD + Math.max(0, LIGA_TEAM_COUNT - myPosition) * 5;
+  meta.points += reward;
+  saveMeta(meta);
+  liga.finished = true;
+  liga.finalPosition = myPosition;
+  liga.champion = champion;
+  liga.reward = reward;
+  G.screen = 'ligaSummary';
+  render();
+}
+
+function renderLigaSummary() {
+  var liga = G.futdraft.liga;
+  var title = liga.champion ? '🏆 ¡Campeón de la Liga ' + ligaTierName(liga.tier) + '!' : 'Liga terminada';
+  var nextTierIdx = LIGA_TIERS.indexOf(liga.tier) + 1;
+  var unlockedNext = liga.champion && nextTierIdx < LIGA_TIERS.length;
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
+        '<h2 class="panel-title mt">' + title + '</h2>' +
+        (liga.champion ? '<div class="bracket-trophy" style="margin:0 auto">🏆</div>' : '') +
+        '<p class="dim small">Terminaste ' + liga.finalPosition + 'º de ' + LIGA_TEAM_COUNT + '.</p>' +
+        (unlockedNext ? '<p class="dim small">¡Nivel ' + ligaTierName(LIGA_TIERS[nextTierIdx]) + ' desbloqueado!</p>' : '') +
+        '<p class="currency-display">' + spiritIcon() + ' +' + liga.reward + ' Puntos de Espíritu</p>' +
+        '<button class="btn btn-primary btn-block mt" onclick="actionGoLigaTierSelect()">Volver a Liga</button>' +
       '</div>' +
     '</div>'
   );

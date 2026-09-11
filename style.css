@@ -726,6 +726,23 @@ a { color: var(--accent); }
   text-align: right;
 }
 
+/* ===== Tabla de la Liga ===== */
+.liga-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+.liga-table th, .liga-table td {
+  padding: 5px 8px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+.liga-table th { color: var(--text-dim); font-weight: 600; }
+.liga-table td:nth-child(2) { text-align: left; }
+.liga-table tr.liga-you { background: var(--accent-2); color: #06202f; font-weight: 700; }
+.liga-table tr.liga-you td { border-bottom-color: var(--accent-2); }
+
 /* ===== Choice cards (training / recruit) ===== */
 
 .choice-card {
