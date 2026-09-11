@@ -1197,10 +1197,17 @@ function actionGoColeccionEquipos() { G.screen = 'coleccionEquipos'; render(); }
 
 function renderColeccionEquipos() {
   var normalItems = RIVAL_TEAM_NAMES.map(function (name) {
-    return '<div class="shop-item"><div><strong>' + escapeHtml(name) + '</strong></div></div>';
+    return '<div class="shop-item">' +
+      '<img class="team-shield-inline" src="' + escapeHtml(teamShieldPath(name)) + '" alt="">' +
+      '<div style="flex:1"><strong>' + escapeHtml(name) + '</strong></div>' +
+    '</div>';
   }).join('');
   var bossItems = RIVAL_TEAM_BOSSES.map(function (name) {
-    return '<div class="shop-item"><div><strong>' + escapeHtml(name) + '</strong></div><div class="cost"><span class="pill">👑 Jefe</span></div></div>';
+    return '<div class="shop-item">' +
+      '<img class="team-shield-inline" src="' + escapeHtml(teamShieldPath(name)) + '" alt="">' +
+      '<div style="flex:1"><strong>' + escapeHtml(name) + '</strong></div>' +
+      '<div class="cost"><span class="pill">👑 Jefe</span></div>' +
+    '</div>';
   }).join('');
   return (
     '<div class="screen">' +
