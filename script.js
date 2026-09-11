@@ -332,7 +332,8 @@ var TEAM_SHIELD_FILES = {
   'Tarjeteros': 'tarjeteros.webp',
   'Unicorn': 'unicorn.webp',
   'Academia Universal': 'universal.webp',
-  'Wild': 'wild.webp'
+  'Wild': 'wild.webp',
+  'Élite Omega': 'elite-omega.webp'
 };
 // team1.png es el escudo del propio jugador ("Tu equipo"), no un relleno
 // genérico para rivales sin escudo -- por eso vive fuera de TEAM_SHIELD_FILES.

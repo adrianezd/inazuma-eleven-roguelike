@@ -77,7 +77,7 @@ var RIVAL_TEAM_BOSSES = [
   'Chrono Storm', 'Dragon Link', 'Desesperdidos', 'Dinastía Galáctica',
   'Earth Eleven', 'Eclipse de Orión', 'El Dorado 02', 'El Dorado 03', 
   'Protocolo Omega 2.0', 'Protocolo Omega 3.0', 'Zanark Domain', 'Equipo Zero',
-  'Falam Medius', 'Flota Ixar', 'Guardianes de La Reina', 'Orfeo'
+  'Falam Medius', 'Flota Ixar', 'Guardianes de La Reina', 'Orfeo', 'Élite Omega'
 ];
 
 // Puntuación de "fuerza" de cada equipo (1-100), usada para que la CPU
@@ -107,7 +107,8 @@ var TEAM_POWER = {
   'Chrono Storm': 77, 'Dragon Link': 74, 'Desesperdidos': 70, 'Dinastía Galáctica': 78,
   'Earth Eleven': 88, 'Eclipse de Orión': 85, 'El Dorado 02': 75, 'El Dorado 03': 79,
   'Protocolo Omega 2.0': 76, 'Protocolo Omega 3.0': 78, 'Zanark Domain': 78, 'Equipo Zero': 81,
-  'Falam Medius': 82, 'Flota Ixar': 83, 'Guardianes de La Reina': 81, 'Orfeo': 80
+  'Falam Medius': 82, 'Flota Ixar': 83, 'Guardianes de La Reina': 81, 'Orfeo': 80,
+  'Élite Omega': 88
 };
 
 
@@ -1488,7 +1489,7 @@ var ROSTER = [
   locked:true,cost:200
 },
 {
-  id:'r174', nombre:'Benkei Kumano', original:'Benkei Kumano', sprite:'assets/sprites/r174.webp',
+  id:'r174', nombre:'Benkei Kumano', original:'Benkei Kumano', sprite:'assets/sprites/r175.webp',
   posicion:'Defensa', tipo:'Viento',
   tiro:65,pase:71,defensa:82,especial:86,
   hissatsu:['Hielo Futurista'],
@@ -1496,11 +1497,27 @@ var ROSTER = [
   locked:true,cost:200
 },
 {
-  id:'r175', nombre:'Shiryu Shiratori', original:'Shiryu Shiratori', sprite:'assets/sprites/r175.webp',
+  id:'r175', nombre:'Shiryu Shiratori', original:'Shiryu Shiratori', sprite:'assets/sprites/r174.webp',
   posicion:'Delantero', tipo:'Montaña',
   tiro:82,pase:65,defensa:67,especial:83,
   hissatsu:['Remate del muro'],
   desc:'Delantero del futuro y descendiente de Jack.',
   locked:true,cost:200
+},
+{
+  id:'r176', nombre:'Chester Horse Jr', original:'Chester Horse Jr', sprite:'assets/sprites/r176.webp',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:67,pase:65,defensa:67,especial:81,
+  hissatsu:['Remate Misil'],
+  desc:'Comentarista del Raimon.',
+  locked:true,cost:100
+},
+{
+  id:'r177', nombre:'Rory Boomer', original:'Rory Boomer', sprite:'assets/sprites/r177.webp',
+  posicion:'Centrocampista', tipo:'Montaña',
+  tiro:72,pase:71,defensa:67,especial:69,
+  hissatsu:['Disparo con rebotes'],
+  desc:'Tiene voz atronadora. Sus amigos se tapan los oídos cuando habla.',
+  locked:true,cost:100
 },
 ];
