@@ -278,7 +278,7 @@ var TEAM_SHIELD_FILES = {
   'Épsilon': 'epsilon.png',
   'Big Waves': 'big-waves.png',
   'Caos': 'caos.png',
-  'Chrono Storm': 'chrono-storm.webp',
+  'Chrono Storm': 'chrono-storm.png',
   'Dragon Link': 'dragon-link.png',
   'El Dorado 01': 'eldorado01.png',
   'Farm': 'farm.png',

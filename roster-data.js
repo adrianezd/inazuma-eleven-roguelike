@@ -57,7 +57,7 @@ var TYPE_MARK = { Fuego: 'F', Bosque: 'B', Viento: 'V', 'Montaña': 'M' };
 // pero no se han verificado con la misma rigurosidad que el resto; revísalos
 // si te importa la precisión exacta del doblaje español.
 var RIVAL_TEAM_NAMES = [
-  'Royal Academy', 'Zeus', 'Occult', 'Instituto Osaka',
+  'Royal Academy', 'Zeus', 'Occult', 'Instituto Otaku',
   'Alpino', 'Unicorn', 'Big Waves',
   'Brain', 'Wild', 'Shuriken', 'Kirkwood', 'Umbrella',
   'Tarjeteros', 'Veteranos Inazuma', 'Instituto Alius',
@@ -88,7 +88,7 @@ var RIVAL_TEAM_BOSSES = [
 // mano con el tiempo, no una medición objetiva de nada.
 var TEAM_POWER = {
   // Solo en RIVAL_TEAM_NAMES (nivel normal)
-  'Occult': 28, 'Instituto Osaka': 25,
+  'Occult': 28,
   'Alpino': 33, 'Unicorn': 40, 'Big Waves': 30,
   'Brain': 30, 'Wild': 32, 'Shuriken': 34, 'Kirkwood': 39, 'Umbrella': 18,
   'Tarjeteros': 16, 'Veteranos Inazuma': 38,
@@ -1302,4 +1302,60 @@ var ROSTER = [
     desc: 'Delantero del Génesis y capitán.',
     locked: false, cost: 200
   },
+  {
+    id: 'r151', nombre: 'Feldt', original: 'Thomas Feldt',
+    posicion: 'Portero', tipo: 'Bosque',
+    tiro: 18, pase: 55, defensa: 82, especial: 78,
+    hissatsu: ['Campo de fuerza'],
+    desc: 'Capitán y portero del Brain. Un jugador inteligente que recupera su verdadero espíritu deportivo.',
+    locked: true, cost: 125
+  },
+  {
+    id: 'r152', nombre: 'Philip Marvel', original: 'Philip Marvel',
+    posicion: 'Defensa', tipo: 'Montaña',
+    tiro: 35, pase: 60, defensa: 78, especial: 71,
+    hissatsu: ['Escáner Defensa'],
+    desc: 'Defensa del Brain que destaca por su físico.',
+    locked: true, cost: 105
+  },
+  {
+    id: 'r153', nombre: 'Stronger', original: 'Terry Stronger',
+    posicion: 'Defensa', tipo: 'Fuego',
+    tiro: 48, pase: 58, defensa: 75, especial: 70,
+    hissatsu: ['Escáner Defensa'],
+    desc: 'Defensa de gran fuerza física que fue sometido al lavado de cerebro del Brain.',
+    locked: true, cost: 108
+  },
+  {
+  id:'r154', nombre:'Francis Tell', original:'Francis Tell',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:68,pase:75,defensa:55,especial:76,
+  hissatsu:['Cañonazo'],
+  desc:'Centrocampista del Instituto Brain, especialista en analizar el juego rival.',
+  locked:true,cost:150
+},
+{
+  id:'r155', nombre:'Samuel Buster', original:'Samuel Buster',
+  posicion:'Centrocampista', tipo:'Fuego',
+  tiro:72,pase:70,defensa:52,especial:75,
+  hissatsu:['Tiro dinamita'],
+  desc:'Centrocampista del Instituto Brain con gran potencia de tiro.',
+  locked:true,cost:150
+},
+{
+  id:'r156', nombre:'Jonathan Seller', original:'Jonathan Seller',
+  posicion:'Delantero', tipo:'Viento',
+  tiro:80,pase:65,defensa:38,especial:78,
+  hissatsu:['Remate Misil'],
+  desc:'Delantero del Instituto Brain y uno de sus principales atacantes.',
+  locked:true,cost:170
+},
+{
+  id:'r157', nombre:'Neil Turner', original:'Neil Turner',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:81,pase:60,defensa:42,especial:82,
+  hissatsu:['Tornado de fuego'],
+  desc:'Delantero estrella del Brain, conocido por su potente Tornado de fuego.',
+  locked:true,cost:190
+},
 ];
