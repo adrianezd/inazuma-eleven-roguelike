@@ -313,7 +313,26 @@ var TEAM_SHIELD_FILES = {
   'Instituto Plenilunio': 'plenilunio.png',
   'Resistencia Japón GO': 'resistencia-japon-go.png',
   'Umbrella': 'umbrella.png',
-  'Veteranos Inazuma': 'veteranos-inazuma.png'
+  'Veteranos Inazuma': 'veteranos-inazuma.png',
+  'Alius Masters': 'alius-masters.webp',
+  'Los arions': 'arions.webp',
+  'Brain': 'brain.webp',
+  'Dinastía Galáctica': 'dinastia-galactica.webp',
+  'El Dorado 02': 'eldorado02.webp',
+  'El Dorado 03': 'eldorado03.webp',
+  'Emperadores Oscuros': 'emperadores-oscuros.webp',
+  'Los Emperadores': 'emperadores.webp',
+  'Falam Medius': 'falam-medius.webp',
+  'Raimon Inakuni': 'inakuni.webp',
+  'Inazuma Japon GO': 'inazuma-japon-go.webp',
+  'Instituto Alius': 'instituto-alius.webp',
+  'Mar de Luna': 'mar-de-luna.webp',
+  'Resistencia Japon': 'resistencia-japon.png',
+  'Sallys': 'sallys.webp',
+  'Tarjeteros': 'tarjeteros.webp',
+  'Unicorn': 'unicorn.webp',
+  'Academia Universal': 'universal.webp',
+  'Wild': 'wild.webp'
 };
 // team1.png es el escudo del propio jugador ("Tu equipo"), no un relleno
 // genérico para rivales sin escudo -- por eso vive fuera de TEAM_SHIELD_FILES.

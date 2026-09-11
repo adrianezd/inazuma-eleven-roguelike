@@ -62,9 +62,9 @@ var RIVAL_TEAM_NAMES = [
   'Brain', 'Wild', 'Shuriken', 'Kirkwood', 'Umbrella',
   'Tarjeteros', 'Veteranos Inazuma', 'Instituto Alius',
   'Cala Pirata', 'Sallys', 'Leones del desierto',
-  'Academia Universal', 'Instituto Cherrybloom', 'Instituto Plenilunio',
+  'Academia Universal', 'Instituto Plenilunio',
   'Raimon Inakuni', 'Mary Times', 'Mar de Luna', 'Farm', 'Fauxshore',
-  'Los orions', 'Mar de Árboles'
+  'Los arions', 'Mar de Árboles'
 ];
 
 var RIVAL_TEAM_BOSSES = [
@@ -93,9 +93,9 @@ var TEAM_POWER = {
   'Brain': 30, 'Wild': 32, 'Shuriken': 34, 'Kirkwood': 39, 'Umbrella': 18,
   'Tarjeteros': 16, 'Veteranos Inazuma': 38,
   'Cala Pirata': 21, 'Sallys': 24, 'Leones del desierto': 33,
-  'Academia Universal': 29, 'Instituto Cherrybloom': 26, 'Instituto Plenilunio': 34,
+  'Academia Universal': 29, 'Instituto Plenilunio': 34,
   'Raimon Inakuni': 17, 'Mary Times': 36, 'Mar de Luna': 29, 'Farm': 38, 'Fauxshore': 31,
-  'Los orions': 27, 'Mar de Árboles': 37, 'Otaku': 23,
+  'Los arions': 27, 'Mar de Árboles': 37, 'Otaku': 23,
   // En las dos listas a la vez (versátiles, gama media-alta)
   'Royal Academy': 61, 'Zeus': 64, 'Instituto Alius': 65,
   // Solo en RIVAL_TEAM_BOSSES (nivel jefe)
@@ -1357,5 +1357,101 @@ var ROSTER = [
   hissatsu:['Tornado de fuego'],
   desc:'Delantero estrella del Brain, conocido por su potente Tornado de fuego.',
   locked:true,cost:190
+},
+{
+  id:'r158', nombre:'Jim Hillfort', original:'Jim Hillfort', sprite:'assets/sprites/r158.webp',
+  posicion:'Defensa', tipo:'Viento',
+  tiro:48,pase:57,defensa:78,especial:72,
+  hissatsu:['Telaraña'],
+  desc:'Defensa del Instituto Shuriken, propenso a enfermar con facilidad.',
+  locked:true,cost:130
+},
+{
+  id:'r159', nombre:'Phil Wingate', original:'Phil Wingate', sprite:'assets/sprites/r159.webp',
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:54,pase:64,defensa:70,especial:75,
+  hissatsu:['Telaraña'],
+  desc:'Defensa del Shuriken que utiliza códigos para coordinar al equipo.',
+  locked:true,cost:150
+},
+{
+  id:'r160', nombre:'Jupiter Jumper', original:'Jupiter Jumper', sprite:'assets/sprites/r160.webp',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:63,pase:70,defensa:48,especial:73,
+  hissatsu:['Giro de Mono'],
+  desc:'Centrocampista del Shuriken, ágil y experto en desplazarse con rapidez.',
+  locked:true,cost:140
+},
+{
+  id:'r161', nombre:'Sam Samurai', original:'Sam Samurai', sprite:'assets/sprites/r161.webp',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:75,pase:57,defensa:40,especial:79,
+  hissatsu:['Remate Múltiple'],
+  desc:'Delantero del Shuriken y maestro de la espada.',
+  locked:true,cost:170
+},
+{
+  id:'r162', nombre:'Hank Sullivan', original:'Hank Sullivan', sprite:'assets/sprites/r162.webp',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:67,pase:76,defensa:52,especial:77,
+  hissatsu:['Espejismo'],
+  desc:'Centrocampista organizador del Shuriken, especializado en coordinar al equipo.',
+  locked:true,cost:150
+},
+{
+  id:'r163', nombre:'Sail Bluesea', original:'Sail Bluesea', sprite:'assets/sprites/r163.webp',
+  posicion:'Delantero', tipo:'Viento',
+  tiro:81,pase:68,defensa:39,especial:84,
+  hissatsu:['Bola de Fango'],
+  desc:'Capitán y delantero del Instituto Shuriken.',
+  locked:true,cost:180
+},
+{
+  id:'r164', nombre:'Albert Green', original:'Albert Green', sprite:'assets/sprites/r164.webp',
+  posicion:'Portero', tipo:'Fuego',
+  tiro:35,pase:52,defensa:78,especial:92,
+  hissatsu:['Despeje de leñador'],
+  desc:'Capitán y portero del Instituto Farm, especialista en técnicas defensivas.',
+  locked:true,cost:180
+},
+{
+  id:'r165', nombre:'Mark Hillvalley', original:'Mark Hillvalley', sprite:'assets/sprites/r165.webp',
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:45,pase:58,defensa:82,especial:76,
+  hissatsu:['Rueda infernal'],
+  desc:'Defensa del Instituto Farm, resistente y especializado en recuperar el balón.',
+  locked:true,cost:150
+},
+{
+  id:'r166', nombre:'Herb Sherman', original:'Herb Sherman', sprite:'assets/sprites/r166.webp',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:55,pase:54,defensa:79,especial:72,
+  hissatsu:['Chut granada'],
+  desc:'Defensa del Instituto Farm con un potente disparo como recurso ofensivo.',
+  locked:true,cost:145
+},
+{
+  id:'r167', nombre:'Joe Small', original:'Joe Small', sprite:'assets/sprites/r167.webp',
+  posicion:'Centrocampista', tipo:'Montaña',
+  tiro:61,pase:70,defensa:57,especial:75,
+  hissatsu:['Remolino cortante'],
+  desc:'Centrocampista del Instituto Farm, hábil y difícil de superar.',
+  locked:true,cost:145
+},
+{
+  id:'r168', nombre:'Orville Newman', original:'Orville Newman', sprite:'assets/sprites/r168.webp',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:66,pase:68,defensa:51,especial:73,
+  hissatsu:['Cabezazo Kung-fu'],
+  desc:'Centrocampista del Instituto Farm con buen control del balón.',
+  locked:true,cost:140
+},
+{
+  id:'r169', nombre:'Daniel Dawson', original:'Daniel Dawson', sprite:'assets/sprites/r169.webp',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:64,pase:72,defensa:53,especial:74,
+  hissatsu:['Balón rodante'],
+  desc:'Centrocampista del Instituto Farm, especialista en regates y jugadas rápidas.',
+  locked:true,cost:145
 },
 ];
