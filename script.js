@@ -2921,20 +2921,15 @@ function renderPenaltyModeEnd(p) {
    --------------------------------------------------------------------- */
 
 var FUTDRAFT_SQUAD_SIZE = 11;
-// Solo en modo Libre: 3 suplentes además del once (14 picks en total). En
-// la pantalla de equipo se pueden hacer cambios ILIMITADOS antes de
-// empezar el torneo, tanto entre titular y suplente como entre dos
-// titulares (para reubicarlos de línea) -- en los dos modos, Libre y
-// Clásico (Clásico no tiene banquillo, así que ahí solo tiene sentido el
-// cambio titular-titular).
+// Los 3 modos (Libre, Clásico, Afinidad) draftean siempre 3 suplentes
+// además del once (14 picks en total). En la pantalla de equipo se pueden
+// hacer cambios ILIMITADOS antes de empezar el torneo, tanto entre
+// titular y suplente como entre dos titulares (para reubicarlos de línea).
 var FUTDRAFT_LIBRE_TOTAL = 14;
-// Cambios manuales máximos en la pantalla de equipo (titular-titular o
-// titular-suplente) antes de empezar el torneo. Antes eran ilimitados; se
-// limita a 5 para que la formación automática del draft siga importando.
-var FUTDRAFT_MAX_SWAPS = 5;
-// Topes por posición durante el draft (modo Libre): altos para no
-// restringir de más, pero justos para que nunca sobren jugadores fuera de
-// sitio (el máximo que pide cualquiera de las formaciones de abajo).
+// Topes por posición durante el draft (banquillo, o todo el draft en modo
+// Libre): altos para no restringir de más, pero justos para que nunca sobren
+// jugadores fuera de sitio (el máximo que pide cualquiera de las formaciones
+// de abajo).
 var FUTDRAFT_POS_CAPS = { Portero: 1, Defensa: 5, Centrocampista: 5, Delantero: 4 };
 
 var FUTDRAFT_FORMATIONS = [
@@ -3081,7 +3076,7 @@ function actionChooseFutDraftFormation(id) {
   G.futdraft = {
     squad: [], formation: id, mode: mode,
     affinity: mode === 'afinidad' ? G.futdraftAffinity : null,
-    captainId: null, swapsLeft: FUTDRAFT_MAX_SWAPS,
+    captainId: null,
     matches: [], matchIndex: 0
   };
   G.futdraftOptions = generateFutDraftOptions();
@@ -3118,12 +3113,19 @@ function futDraftCurrentNeededPos(formation, squad) {
   return null;
 }
 
+// Los 3 modos draftean siempre 11 titulares + 3 suplentes (14 en total).
+// Clásico y Afinidad piden los 11 titulares en el orden fijo de la
+// formación (ver futDraftCurrentNeededPos); una vez cubiertos, los 3
+// últimos picks (banquillo) pasan al mismo criterio que Libre: cualquier
+// posición dentro de los topes de FUTDRAFT_POS_CAPS -- en Afinidad, además,
+// siempre del tipo elemental elegido, también en el banquillo.
 function generateFutDraftOptions() {
   var f = G.futdraft;
   var squad = f.squad;
   var squadIds = squad.map(function (p) { return p.id; });
   var pool;
-  if (f.mode === 'clasico' || f.mode === 'afinidad') {
+  var draftingStarters = squad.length < FUTDRAFT_SQUAD_SIZE;
+  if ((f.mode === 'clasico' || f.mode === 'afinidad') && draftingStarters) {
     var formation = FUTDRAFT_FORMATIONS.find(function (x) { return x.id === f.formation; });
     var currentPos = futDraftCurrentNeededPos(formation, squad);
     pool = ROSTER.filter(function (p) {
@@ -3135,6 +3137,7 @@ function generateFutDraftOptions() {
     var counts = futDraftPosCounts(squad);
     pool = ROSTER.filter(function (p) {
       if (squadIds.indexOf(p.id) !== -1) return false;
+      if (f.mode === 'afinidad' && p.tipo !== f.affinity) return false;
       if (counts[p.posicion] >= FUTDRAFT_POS_CAPS[p.posicion]) return false;
       return true;
     });
@@ -3144,7 +3147,7 @@ function generateFutDraftOptions() {
 }
 
 function futDraftDraftTarget(mode) {
-  return mode === 'libre' ? FUTDRAFT_LIBRE_TOTAL : FUTDRAFT_SQUAD_SIZE;
+  return FUTDRAFT_LIBRE_TOTAL;
 }
 
 window.pickFutDraftPlayer = function (instanceId) {
@@ -3171,7 +3174,7 @@ function renderFutDraftPick() {
   var modeLabel = f.mode === 'clasico' ? 'Clásico' : (f.mode === 'afinidad' ? 'Afinidad · ' + f.affinity : 'Libre');
   var target = futDraftDraftTarget(f.mode);
   var subtitle = 'Elige a tu jugador ' + (squad.length + 1) + ' de ' + target + '.';
-  if (f.mode === 'clasico' || f.mode === 'afinidad') {
+  if ((f.mode === 'clasico' || f.mode === 'afinidad') && squad.length < FUTDRAFT_SQUAD_SIZE) {
     var formation = FUTDRAFT_FORMATIONS.find(function (x) { return x.id === f.formation; });
     var currentPos = futDraftCurrentNeededPos(formation, squad);
     var needed = futDraftNeededCounts(formation, squad);
@@ -3180,7 +3183,7 @@ function renderFutDraftPick() {
   } else if (squad.length >= FUTDRAFT_SQUAD_SIZE) {
     subtitle = 'Elige a tu suplente ' + (squad.length - FUTDRAFT_SQUAD_SIZE + 1) + ' de ' + (target - FUTDRAFT_SQUAD_SIZE) + '.';
   }
-  var benchPreview = f.mode === 'libre' ? futDraftComputeBench(squad) : [];
+  var benchPreview = futDraftComputeBench(squad);
   var optionsHtml = G.futdraftOptions.map(function (c) {
     return playerCardHtml(c, 'pickFutDraftPlayer(\'' + c.instanceId + '\')', false, false);
   }).join('');
@@ -3367,26 +3370,23 @@ window.setFutDraftFormation = function (id) {
   render();
 };
 
-// Cambios limitados (FUTDRAFT_MAX_SWAPS) entre dos jugadores cualquiera --
-// dos titulares (se reubican de línea) o un titular y un suplente (el
-// suplente entra al once, el titular pasa al banquillo). Toca a uno, luego
-// al otro. Si el modo "elegir capitán" está activo, el toque se interpreta
-// como elección de capitán en vez de cambio (ver toggleFutDraftCaptainMode).
+// Cambios ilimitados entre dos jugadores cualquiera -- dos titulares (se
+// reubican de línea) o un titular y un suplente (el suplente entra al
+// once, el titular pasa al banquillo). Toca a uno, luego al otro. Si el
+// modo "elegir capitán" está activo, el toque se interpreta como elección
+// de capitán en vez de cambio (ver toggleFutDraftCaptainMode).
 window.selectFutDraftPlayer = function (id) {
   var f = G.futdraft;
   if (f.pickingCaptain) { pickFutDraftCaptainInternal(id); return; }
   if (f.swapSelectedId === id) { f.swapSelectedId = null; render(); return; }
-  if (f.swapsLeft <= 0) { render(); return; }
   if (!f.swapSelectedId) { f.swapSelectedId = id; render(); return; }
   var otherId = f.swapSelectedId;
   var lineupIdxA = f.lineup.findIndex(function (s) { return s.player.id === otherId; });
   var lineupIdxB = f.lineup.findIndex(function (s) { return s.player.id === id; });
-  var swapped = false;
   if (lineupIdxA !== -1 && lineupIdxB !== -1) {
     var tmp = f.lineup[lineupIdxA].player;
     f.lineup[lineupIdxA].player = f.lineup[lineupIdxB].player;
     f.lineup[lineupIdxB].player = tmp;
-    swapped = true;
   } else {
     var benchIdxA = f.bench.findIndex(function (p) { return p.id === otherId; });
     var benchIdxB = f.bench.findIndex(function (p) { return p.id === id; });
@@ -3395,16 +3395,13 @@ window.selectFutDraftPlayer = function (id) {
       f.lineup[lineupIdxA].player = f.bench[benchIdxB];
       f.bench[benchIdxB] = starterOut;
       if (f.captainId === starterOut.id) f.captainId = null;
-      swapped = true;
     } else if (lineupIdxB !== -1 && benchIdxA !== -1) {
       var starterOut2 = f.lineup[lineupIdxB].player;
       f.lineup[lineupIdxB].player = f.bench[benchIdxA];
       f.bench[benchIdxA] = starterOut2;
       if (f.captainId === starterOut2.id) f.captainId = null;
-      swapped = true;
     }
   }
-  if (swapped) f.swapsLeft--;
   f.swapSelectedId = null;
   render();
 };
@@ -3429,15 +3426,13 @@ function pickFutDraftCaptainInternal(id) {
 
 function renderFutDraftTeam() {
   var f = G.futdraft;
-  var hasBench = f.mode === 'libre' && f.bench.length > 0;
+  var hasBench = f.bench.length > 0;
   var score = futDraftTeamScore(f.lineup, f.captainId);
   var captain = f.captainId ? f.lineup.find(function (s) { return s.player.id === f.captainId; }) : null;
   var formationBtns = futDraftAvailableFormations().map(function (ft) {
     return '<button class="btn-tiny' + (f.formation === ft.id ? ' active' : '') + '" onclick="setFutDraftFormation(\'' + ft.id + '\')">' + ft.name + '</button>';
   }).join('');
-  var swapHint = f.swapsLeft > 0
-    ? 'Cambios restantes: <strong>' + f.swapsLeft + '</strong> de ' + FUTDRAFT_MAX_SWAPS + '. Toca a dos jugadores (titulares o suplente) para cambiarlos.'
-    : 'Ya no te quedan cambios disponibles.';
+  var swapHint = 'Cambios ilimitados: toca a dos jugadores (titulares o suplente) para cambiarlos.';
   var captainHint = captain
     ? 'Capitán: <strong>' + escapeHtml(captain.player.nombre) + '</strong> (cuenta x2 en la puntuación).'
     : 'Sin capitán elegido.';
