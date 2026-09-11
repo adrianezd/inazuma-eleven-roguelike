@@ -145,6 +145,46 @@ function escapeHtml(s) {
   });
 }
 
+/* ---------------------------------------------------------------------
+   2b. CONDICIÓN DE TERRENO: con baja probabilidad (5%), un partido puede
+   arrancar con una condición climática que da un pequeño empujón o
+   penalización -- solo variedad, el 95% de las veces no hay ninguna.
+   Se usa tanto en los partidos por turnos (resolveAttack) como en
+   FutDraft (que no resuelve ataque a ataque, así que usa un multiplicador
+   simétrico sobre la puntuación de equipo en vez de un ajuste por tipo).
+   --------------------------------------------------------------------- */
+var WEATHER_CHANCE = 0.05;
+var WEATHER_CONDITIONS = {
+  lluvia: { label: 'Lluvia', desc: 'El balón resbala: cuesta más acertar los tiros.' },
+  viento: { label: 'Viento fuerte', desc: 'Favorece a los jugadores de tipo Viento.' },
+  barro: { label: 'Terreno embarrado', desc: 'Favorece la fuerza física (tipo Montaña), penaliza la velocidad (Bosque y Viento).' }
+};
+function rollWeather() {
+  if (Math.random() >= WEATHER_CHANCE) return null;
+  var keys = Object.keys(WEATHER_CONDITIONS);
+  return keys[rand(0, keys.length - 1)];
+}
+// Ajuste de "chance" de acierto en partidos por turnos, según la acción y
+// el tipo elemental de quien ataca.
+function weatherChanceDelta(weather, action, attackerTipo) {
+  if (!weather) return 0;
+  if (weather === 'lluvia') return (action === 'tiro' || action === 'regate') ? -4 : 0;
+  if (weather === 'viento') return attackerTipo === 'Viento' ? 6 : -2;
+  if (weather === 'barro') {
+    if (attackerTipo === 'Montaña') return 6;
+    if (attackerTipo === 'Bosque' || attackerTipo === 'Viento') return -3;
+    return 0;
+  }
+  return 0;
+}
+// Multiplicador simétrico (mismo % para los dos bandos) para FutDraft, que
+// no tiene ataques individuales, solo una puntuación de equipo agregada.
+function weatherFutDraftMultiplier(weather) {
+  if (weather === 'lluvia') return 0.9;
+  if (weather === 'viento') return 1.1;
+  return 1;
+}
+
 function typeAdvantage(a, b) {
   if (a === b) return 0;
   var ia = CYCLE.indexOf(a), ib = CYCLE.indexOf(b);
@@ -593,6 +633,7 @@ function startDailyMatch(isBoss) {
   var oppTeamName = randomTeamName(isBoss);
   var oppName = (isBoss ? 'Jefe: ' : '') + oppTeamName;
   G.match = {
+    weather: rollWeather(),
     isBoss: isBoss, oppName: oppName, oppShield: teamShieldPath(oppTeamName), oppSquad: oppSquad, turn: 1, order: buildTurnOrder(),
     playerScore: 0, oppScore: 0,
     playerAtkCount: 0, playerLastSpecialAt: 0, playerCooldownNeeded: rand(2, 3), playerCooldownBoost: 0, playerUsedSpecialByPlayer: {},
@@ -671,6 +712,7 @@ function startSurvivalMatch(isBoss) {
   var oppTeamName = randomTeamName(isBoss);
   var oppName = (isBoss ? 'Jefe: ' : '') + oppTeamName;
   G.match = {
+    weather: rollWeather(),
     isBoss: isBoss, oppName: oppName, oppShield: teamShieldPath(oppTeamName), oppSquad: oppSquad, turn: 1, order: buildTurnOrder(),
     playerScore: 0, oppScore: 0,
     playerAtkCount: 0, playerLastSpecialAt: 0, playerCooldownNeeded: rand(2, 3), playerCooldownBoost: 0, playerUsedSpecialByPlayer: {},
@@ -765,6 +807,7 @@ function startTournamentMatch() {
   var oppName = opp.name;
   var oppShield = teamShieldPath(opp.name);
   G.match = {
+    weather: rollWeather(),
     isBoss: isBoss, oppName: oppName, oppShield: oppShield, oppSquad: oppSquad, turn: 1, order: buildTurnOrder(),
     playerScore: 0, oppScore: 0,
     playerAtkCount: 0, playerLastSpecialAt: 0, playerCooldownNeeded: rand(2, 3), playerCooldownBoost: 0, playerUsedSpecialByPlayer: {},
@@ -1140,6 +1183,7 @@ function render() {
     case 'futdraftPick': html = renderFutDraftPick(); break;
     case 'futdraftTeam': html = renderFutDraftTeam(); break;
     case 'futdraftBracket': html = renderFutDraftBracket(); break;
+    case 'futdraftPenalty': html = renderFutDraftPenalty(); break;
     case 'futdraftMatchResult': html = renderFutDraftMatchResult(); break;
     case 'futdraftSummary': html = renderFutDraftSummary(); break;
     default: html = renderMenu();
@@ -1879,6 +1923,7 @@ function startMatch(nodeId, isBoss) {
   var oppTeamName = randomTeamName(isBoss);
   var oppName = oppTeamName;
   G.match = {
+    weather: rollWeather(),
     isBoss: isBoss,
     oppName: oppName,
     oppShield: teamShieldPath(oppTeamName),
@@ -2034,6 +2079,7 @@ function renderMatch() {
         '<div class="score-side"><img class="team-shield" src="' + escapeHtml(m.oppShield) + '" alt=""><div class="score-name">' + escapeHtml(m.oppName) + '</div><div class="score-num">' + m.oppScore + '</div></div>' +
       '</div>' +
       '<div class="turn-indicator">' + (m.suddenDeath ? 'Muerte súbita — ronda ' + m.sdRound : 'Turno ' + Math.min(m.turn, MATCH_TURNS) + ' de ' + MATCH_TURNS) + (m.finished ? '' : (isPlayerTurn ? ' · Tu ataque' : ' · Ataque rival')) + '</div>' +
+      (m.weather ? '<p class="dim small center-text">🌦️ ' + WEATHER_CONDITIONS[m.weather].label + ': ' + WEATHER_CONDITIONS[m.weather].desc + '</p>' : '') +
       (m.suddenDeath && !m.finished ? '<p class="dim small center-text">Gol de oro: gana quien marque primero. Si nadie marca esta ronda, continúa otra.</p>' : '') +
       '<div class="' + fieldClass + '">' + fieldIconHtml(m.lastEventClass) + '<div class="field-event">' + (m.lastEvent || (isPlayerTurn ? 'Elige a tu jugador y tu jugada' : '')) + '</div></div>' +
       '<div class="meter-wrap">' +
@@ -2199,6 +2245,7 @@ function resolveAttack(attackerRaw, defenderRaw, action, isPlayerAttacking, defe
   }
 
   chance += adv * (action === 'especial' ? 8 : 10);
+  chance += weatherChanceDelta(m.weather, action, attacker.tipo);
 
   // El equipo rival marca muchos menos goles en general (bajado a petición
   // explícita tras varias partidas injustamente duras para el jugador).
@@ -3570,6 +3617,52 @@ function futDraftRandomGoals(expected) {
   return clamp(Math.round(expected + rand(-1.2, 1.2)), 0, 8);
 }
 
+// Los partidos de FutDraft no se juegan a golpes, pero se simula igualmente
+// quién marca y quién da la asistencia en cada gol propio (del rival solo
+// se sabe el equipo, no tiene plantel individual) -- ponderado por puesto:
+// un delantero marca mucho más que un defensa, un centrocampista asiste
+// mucho más que nadie. El portero puede, rarísima vez, aparecer en
+// cualquiera de los dos papeles (un gol o un pase muy largo y afortunado).
+var FUTDRAFT_GOAL_WEIGHT = { Delantero: 6, Centrocampista: 3, Defensa: 1, Portero: 0.2 };
+var FUTDRAFT_ASSIST_WEIGHT = { Centrocampista: 5, Delantero: 3, Defensa: 2, Portero: 0.3 };
+function futDraftWeightedPick(players, weightMap) {
+  var total = players.reduce(function (s, p) { return s + (weightMap[p.posicion] || 1); }, 0);
+  var roll = Math.random() * total;
+  for (var i = 0; i < players.length; i++) {
+    roll -= (weightMap[players[i].posicion] || 1);
+    if (roll <= 0) return players[i];
+  }
+  return players[players.length - 1];
+}
+function futDraftGoalEvent(myPlayers) {
+  var scorer = futDraftWeightedPick(myPlayers, FUTDRAFT_GOAL_WEIGHT);
+  var rest = myPlayers.filter(function (p) { return p.id !== scorer.id; });
+  var assist = (rest.length && Math.random() < 0.75) ? futDraftWeightedPick(rest, FUTDRAFT_ASSIST_WEIGHT) : null;
+  return { scorer: scorer, assist: assist };
+}
+
+// Construye la línea temporal del minuto 1 al 90: reparte tantos minutos
+// distintos (sin repetir) como goles totales haya, los ordena, y decide al
+// azar (barajando qué bando marca cada uno) quién anota en cada uno --
+// solo los goles propios llevan goleador/asistencia real, los del rival
+// solo muestran el nombre del equipo.
+function futDraftBuildTimeline(myGoals, oppGoals, myPlayers) {
+  var minutePool = [];
+  for (var m = 1; m <= 90; m++) minutePool.push(m);
+  var shuffledMinutes = minutePool.sort(function () { return Math.random() - 0.5; }).slice(0, myGoals + oppGoals).sort(function (a, b) { return a - b; });
+  var sides = [];
+  for (var i = 0; i < myGoals; i++) sides.push('me');
+  for (var j = 0; j < oppGoals; j++) sides.push('opp');
+  sides = sides.sort(function () { return Math.random() - 0.5; });
+  return shuffledMinutes.map(function (minute, idx) {
+    if (sides[idx] === 'me') {
+      var ev = futDraftGoalEvent(myPlayers);
+      return { minute: minute, side: 'me', scorer: ev.scorer, assist: ev.assist };
+    }
+    return { minute: minute, side: 'opp' };
+  });
+}
+
 window.playFutDraftMatch = function () {
   var f = G.futdraft;
   var round = f.tournament.rounds[f.tournament.rounds.length - 1];
@@ -3578,23 +3671,142 @@ window.playFutDraftMatch = function () {
   var formation = FUTDRAFT_FORMATIONS.find(function (ft) { return ft.id === f.formation; });
   var score = futDraftTeamScore(f.lineup, f.captainId);
   var oppPower = teamPower(oppSide);
-  var myAtk = score * formation.atk;
-  var myDef = score * formation.def;
-  var myGoals = futDraftRandomGoals(futDraftExpectedGoals(myAtk, oppPower));
-  var oppGoals = futDraftRandomGoals(futDraftExpectedGoals(oppPower, myDef));
-  // En el bracket no puede haber empate -- si el marcador sale igualado se
-  // decide con un mano a mano final ponderado por fuerza (como unos
-  // penaltis abstractos), no con otro sorteo de goles.
+  var weather = rollWeather();
+  var weatherMult = weatherFutDraftMultiplier(weather);
+  var myAtk = score * formation.atk * weatherMult;
+  var myDef = score * formation.def * weatherMult;
+  var effectiveOppPower = oppPower * weatherMult;
+  var myGoals = futDraftRandomGoals(futDraftExpectedGoals(myAtk, effectiveOppPower));
+  var oppGoals = futDraftRandomGoals(futDraftExpectedGoals(effectiveOppPower, myDef));
+  var myPlayers = f.lineup.map(function (s) { return s.player; });
+  var timeline = futDraftBuildTimeline(myGoals, oppGoals, myPlayers);
+
+  // En el bracket no puede haber empate -- si el marcador del tiempo
+  // reglamentario sale igualado, se juega una tanda de penaltis de verdad
+  // (interactiva, igual que el Modo Penaltis) en vez de decidirlo con un
+  // sorteo abstracto. El resultado del tiempo reglamentario se guarda para
+  // mostrarlo junto al de los penaltis al terminar la tanda.
   if (myGoals === oppGoals) {
-    if ((myAtk + rand(-10, 10)) >= (oppPower + rand(-10, 10))) myGoals++; else oppGoals++;
+    f.pendingMatch = match;
+    f.pendingOppSide = oppSide;
+    f.pendingRegularResult = { myGoals: myGoals, oppGoals: oppGoals, oppPower: oppPower, timeline: timeline, weather: weather };
+    startFutDraftPenaltyShootout(oppSide);
+    return;
   }
   var playerWon = myGoals > oppGoals;
   match.winner = playerWon ? (match.a.isPlayer ? match.a : match.b) : (match.a.isPlayer ? match.b : match.a);
   if (playerWon) f.winsCount++;
-  f.lastMatchResult = { oppName: oppSide.name, oppShield: teamShieldPath(oppSide.name), oppPower: oppPower, myGoals: myGoals, oppGoals: oppGoals, playerWon: playerWon };
+  f.lastMatchResult = { oppName: oppSide.name, oppShield: teamShieldPath(oppSide.name), oppPower: oppPower, myGoals: myGoals, oppGoals: oppGoals, playerWon: playerWon, timeline: timeline, weather: weather };
   G.screen = 'futdraftMatchResult';
   render();
 };
+
+// Tanda de penaltis de FutDraft: mismo motor (zonas 0-2, portero al azar,
+// 5 lanzamientos + muerte súbita) que el Modo Penaltis independiente, pero
+// con su propio estado (G.futdraft.penalty) para no interferir con él, y
+// que al acabar retoma el bracket de FutDraft en vez de terminar la tanda.
+function startFutDraftPenaltyShootout(oppSide) {
+  G.futdraft.penalty = {
+    playerGoals: 0, rivalGoals: 0, round: 1, stage: 'shoot', suddenDeath: false, result: null,
+    oppName: oppSide.name, oppShield: teamShieldPath(oppSide.name)
+  };
+  G.screen = 'futdraftPenalty';
+  render();
+}
+
+window.resolveFutDraftPenaltyShot = function (zone) {
+  var p = G.futdraft.penalty;
+  if (!p || p.result) return;
+  var otherZone = rand(0, 2);
+  var saved = zone === otherZone;
+  if (p.stage === 'shoot') {
+    if (!saved) { p.playerGoals++; p.result = { type: 'goal', text: '¡Marcas el penalti!' }; }
+    else { p.result = { type: 'save', text: 'El portero rival ataja tu disparo.' }; }
+  } else {
+    if (!saved) { p.rivalGoals++; p.result = { type: 'goal', text: escapeHtml(p.oppName) + ' anota el penalti.' }; }
+    else { p.result = { type: 'save', text: '¡Detienes el penalti rival!' }; }
+  }
+  render();
+};
+
+window.continueFutDraftPenaltyShot = function () {
+  var p = G.futdraft.penalty;
+  if (!p || !p.result) return;
+  p.result = null;
+  if (p.stage === 'shoot') { p.stage = 'defend'; render(); return; }
+  p.stage = 'shoot';
+  if (p.suddenDeath) {
+    if (p.playerGoals !== p.rivalGoals) { finishFutDraftPenaltyShootout(); return; }
+  } else {
+    p.round++;
+    if (p.round > PENALTY_MODE_ROUNDS) {
+      if (p.playerGoals === p.rivalGoals) { p.suddenDeath = true; }
+      else { finishFutDraftPenaltyShootout(); return; }
+    }
+  }
+  render();
+};
+
+function finishFutDraftPenaltyShootout() {
+  var f = G.futdraft;
+  var p = f.penalty;
+  var match = f.pendingMatch;
+  var oppSide = f.pendingOppSide;
+  var regular = f.pendingRegularResult;
+  var playerWon = p.playerGoals > p.rivalGoals;
+  match.winner = playerWon ? (match.a.isPlayer ? match.a : match.b) : (match.a.isPlayer ? match.b : match.a);
+  if (playerWon) f.winsCount++;
+  f.lastMatchResult = {
+    oppName: oppSide.name, oppShield: teamShieldPath(oppSide.name), oppPower: regular.oppPower,
+    myGoals: regular.myGoals, oppGoals: regular.oppGoals, playerWon: playerWon,
+    timeline: regular.timeline, weather: regular.weather,
+    penalty: { myGoals: p.playerGoals, oppGoals: p.rivalGoals }
+  };
+  f.penalty = null; f.pendingMatch = null; f.pendingOppSide = null; f.pendingRegularResult = null;
+  G.screen = 'futdraftMatchResult';
+  render();
+}
+
+function renderFutDraftPenalty() {
+  var p = G.futdraft.penalty;
+  if (!p) return '';
+  var isShoot = p.stage === 'shoot';
+  var title = isShoot ? '⚽ Tu turno de chutar' : '🧤 Para el penalti rival';
+  var subtitle = isShoot ? 'Elige dónde tirar.' : 'Elige dónde tirarte a parar.';
+  var actionHtml;
+  if (p.result) {
+    actionHtml =
+      '<h3 style="margin-bottom:4px">' + (p.result.type === 'goal' ? '⚽ ¡Gol!' : '🧤 ¡Parada!') + '</h3>' +
+      '<p class="dim small">' + p.result.text + '</p>' +
+      '<button class="btn btn-primary btn-block mt" onclick="continueFutDraftPenaltyShot()">Continuar</button>';
+  } else {
+    actionHtml =
+      '<h3 style="margin-bottom:4px">' + title + '</h3>' +
+      '<p class="dim small">' + subtitle + '</p>' +
+      '<div class="penalty-goal">' +
+        '<img class="penalty-goal-img" src="assets/otros/penaltis.png" alt="">' +
+        '<div class="penalty-zones">' +
+          '<button class="penalty-zone" onclick="resolveFutDraftPenaltyShot(0)" aria-label="Izquierda"></button>' +
+          '<button class="penalty-zone" onclick="resolveFutDraftPenaltyShot(1)" aria-label="Centro"></button>' +
+          '<button class="penalty-zone" onclick="resolveFutDraftPenaltyShot(2)" aria-label="Derecha"></button>' +
+        '</div>' +
+      '</div>';
+  }
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<h2 class="panel-title mt mb0">Penaltis</h2>' +
+        '<p class="dim small">Empate en el tiempo reglamentario contra ' + escapeHtml(p.oppName) + '. Tanda a ' + PENALTY_MODE_ROUNDS + ', con muerte súbita si hay empate.</p>' +
+      '</div>' +
+      '<div class="match-scoreboard">' +
+        '<div class="score-side"><img class="team-shield" src="' + PLAYER_SHIELD + '" alt=""><div class="score-name">Tú</div><div class="score-num">' + p.playerGoals + '</div></div>' +
+        '<div class="score-vs">VS</div>' +
+        '<div class="score-side"><img class="team-shield" src="' + escapeHtml(p.oppShield) + '" alt=""><div class="score-name">' + escapeHtml(p.oppName) + '</div><div class="score-num">' + p.rivalGoals + '</div></div>' +
+      '</div>' +
+      '<div class="panel center-text">' + actionHtml + '</div>' +
+    '</div>'
+  );
+}
 
 function finishFutDraftRun() {
   var f = G.futdraft;
@@ -3668,6 +3880,25 @@ function renderFutDraftBracket() {
 function renderFutDraftMatchResult() {
   var r = G.futdraft.lastMatchResult;
   var resultLabel = r.playerWon ? '🏆 ¡Victoria!' : 'Derrota';
+  var weatherHtml = r.weather
+    ? '<p class="dim small">🌦️ ' + WEATHER_CONDITIONS[r.weather].label + ': ' + WEATHER_CONDITIONS[r.weather].desc + '</p>'
+    : '';
+  var penaltyHtml = r.penalty
+    ? '<p class="dim small">Empate a ' + r.myGoals + ' en el tiempo reglamentario. Penaltis: <strong>' + r.penalty.myGoals + ' - ' + r.penalty.oppGoals + '</strong></p>'
+    : '';
+  var timelineHtml = (r.timeline && r.timeline.length)
+    ? '<div class="panel">' +
+        '<h3 style="margin-bottom:8px">Resumen del partido</h3>' +
+        '<div class="futdraft-timeline">' +
+          r.timeline.map(function (ev) {
+            var text = ev.side === 'me'
+              ? '<strong>' + escapeHtml(ev.scorer.nombre) + '</strong>' + (ev.assist ? ' <span class="dim">(asist. ' + escapeHtml(ev.assist.nombre) + ')</span>' : ' <span class="dim">(gol en solitario)</span>')
+              : escapeHtml(r.oppName);
+            return '<div class="futdraft-timeline-row"><span class="futdraft-timeline-minute">' + ev.minute + '\'</span><span>⚽</span><span>' + text + '</span></div>';
+          }).join('') +
+        '</div>' +
+      '</div>'
+    : '<p class="dim small center-text">Partido sin goles en el tiempo reglamentario.</p>';
   return (
     '<div class="screen">' +
       '<div class="match-scoreboard">' +
@@ -3678,8 +3909,10 @@ function renderFutDraftMatchResult() {
       '<div class="panel center-text">' +
         '<h3 style="margin-bottom:4px">' + resultLabel + '</h3>' +
         '<p class="dim small">Fuerza de ' + escapeHtml(r.oppName) + ': ' + r.oppPower + ' / 100</p>' +
-        '<button class="btn btn-primary btn-block mt" onclick="continueFutDraftMatch()">' + (r.playerWon ? 'Continuar' : 'Ver resultado') + '</button>' +
+        weatherHtml + penaltyHtml +
       '</div>' +
+      timelineHtml +
+      '<button class="btn btn-primary btn-block mt" onclick="continueFutDraftMatch()">' + (r.playerWon ? 'Continuar' : 'Ver resultado') + '</button>' +
     '</div>'
   );
 }

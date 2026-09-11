@@ -701,6 +701,31 @@ a { color: var(--accent); }
 }
 .log-panel p { margin: 3px 0; }
 
+/* ===== Línea temporal del partido (FutDraft) ===== */
+.futdraft-timeline {
+  max-height: 260px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.futdraft-timeline-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+.futdraft-timeline-row:last-child { border-bottom: none; }
+.futdraft-timeline-minute {
+  font-family: var(--font-mono, monospace);
+  color: var(--accent-2);
+  font-weight: 700;
+  min-width: 2.6em;
+  text-align: right;
+}
+
 /* ===== Choice cards (training / recruit) ===== */
 
 .choice-card {
