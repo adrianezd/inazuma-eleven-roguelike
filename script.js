@@ -1543,13 +1543,22 @@ function renderColeccion() {
 
   var items = filtered.map(function (c) {
     var unlocked = isUnlocked(c);
+    // A diferencia de antes (solo "Bloqueado" como etiqueta), ahora se puede
+    // comprar directamente desde aquí igual que en Vestuario -- para no
+    // obligar a saltar a otra pantalla solo para desbloquear lo que ya
+    // estás viendo. Los "Secreto" (cost 99999) no se pueden comprar con
+    // puntos, se quedan igual que siempre.
+    var costHtml;
+    if (unlocked) costHtml = '<span class="pill">Desbloqueado</span>';
+    else if (c.cost === 99999) costHtml = '<span class="dim">Secreto</span>';
+    else costHtml = '<button class="btn btn-primary" ' + (meta.points >= c.cost ? '' : 'disabled') + ' onclick="buyCaptain(\'' + c.id + '\')">Comprar (' + c.cost + ' pts.)</button>';
     return (
       '<div class="shop-item" style="' + (unlocked ? '' : 'opacity:.55;') + '">' +
         '<div>' +
           avatarHtml(c) + ' <strong>' + escapeHtml(c.nombre) + '</strong> ' + typeBadge(c.tipo) + '<br>' +
           '<span class="dim small">' + escapeHtml(c.desc) + '</span>' +
         '</div>' +
-        '<div class="cost">' + (unlocked ? '<span class="pill">Desbloqueado</span>' : (c.cost === 99999 ? '<span class="dim">Secreto</span>' : '<span class="dim">Bloqueado</span>')) + '</div>' +
+        '<div class="cost">' + costHtml + '</div>' +
       '</div>'
     );
   }).join('');
@@ -1566,6 +1575,7 @@ function renderColeccion() {
         '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
         '<h2 class="panel-title mt">Colección de personajes</h2>' +
         '<p class="dim small">' + unlockedCount + ' de ' + ROSTER.length + ' desbloqueados. Mostrando ' + filtered.length + '.</p>' +
+        '<p class="currency-display">' + spiritIcon() + ' ' + meta.points + ' Puntos de Espíritu</p>' +
         filterBtns +
       '</div>' +
       items +
@@ -3138,9 +3148,16 @@ function buyCaptain(playerId) {
 
 var GACHA_COST = 120;
 var GACHA_SPIN_MS = 1600;
+// Segunda tirada, independiente, en la misma pantalla de Fichaje de Bolas:
+// da un escudo de equipo rival al azar (de los que aún no tienes) a cambio
+// de puntos, igual que la Máquina de Premios puede darte de gratis (ver
+// 15b-bis) pero aquí SÍ puedes elegir gastar puntos para intentarlo cuando
+// quieras, no solo esperar a ganar algo.
+var SHIELD_GACHA_COST = 250;
 
 function actionGoGacha() {
   G.gacha = { spinning: false, resultId: null };
+  G.shieldGacha = { spinning: false, resultName: null };
   G.screen = 'gacha';
   render();
 }
@@ -3148,6 +3165,12 @@ function actionGoGacha() {
 function gachaLockedPool() {
   var meta = G.meta;
   return ROSTER.filter(function (p) { return p.locked && meta.unlocked.indexOf(p.id) === -1; });
+}
+
+function shieldGachaLockedPool() {
+  var meta = G.meta;
+  var owned = meta.unlockedShields || [];
+  return REWARD_SHIELD_POOL.filter(function (name) { return owned.indexOf(name) === -1; });
 }
 
 function spinGacha() {
@@ -3167,6 +3190,28 @@ function spinGacha() {
     saveMeta(meta);
     G.gacha.spinning = false;
     G.gacha.resultId = won.id;
+    render();
+  }, GACHA_SPIN_MS);
+}
+
+function spinShieldGacha() {
+  var meta = G.meta;
+  if (G.shieldGacha.spinning) return;
+  if (meta.points < SHIELD_GACHA_COST) return;
+  var pool = shieldGachaLockedPool();
+  if (!pool.length) return;
+  meta.points -= SHIELD_GACHA_COST;
+  saveMeta(meta);
+  G.shieldGacha.spinning = true;
+  G.shieldGacha.resultName = null;
+  render();
+  setTimeout(function () {
+    var won = choice(pool);
+    meta.unlockedShields = meta.unlockedShields || [];
+    meta.unlockedShields.push(won);
+    saveMeta(meta);
+    G.shieldGacha.spinning = false;
+    G.shieldGacha.resultName = won;
     render();
   }, GACHA_SPIN_MS);
 }
@@ -3218,18 +3263,43 @@ function renderGacha() {
   var canSpin = !g.spinning && pool.length > 0 && meta.points >= GACHA_COST;
   var spinLabel = g.spinning ? 'Girando…' : ('Girar (' + GACHA_COST + ' pts.)');
 
+  var shieldPool = shieldGachaLockedPool();
+  var sg = G.shieldGacha || { spinning: false, resultName: null };
+  var shieldResultHtml = '';
+  if (sg.spinning) {
+    shieldResultHtml = '<p class="dim small center-text mt">Girando la máquina…</p>';
+  } else if (sg.resultName) {
+    shieldResultHtml =
+      '<div class="panel gacha-result mt center-text">' +
+        '<p style="color:var(--accent-2);font-weight:700;">¡Nuevo escudo!</p>' +
+        '<img class="team-shield-inline" style="width:64px;height:64px" src="' + escapeHtml(teamShieldPath(sg.resultName)) + '" alt="">' +
+        '<p class="dim small">' + escapeHtml(sg.resultName) + '. Puedes equipártelo desde Mi Colección.</p>' +
+      '</div>';
+  } else if (!shieldPool.length) {
+    shieldResultHtml = '<p class="dim small center-text mt">Ya tienes todos los escudos disponibles.</p>';
+  }
+  var canSpinShield = !sg.spinning && shieldPool.length > 0 && meta.points >= SHIELD_GACHA_COST;
+  var shieldSpinLabel = sg.spinning ? 'Girando…' : ('Girar (' + SHIELD_GACHA_COST + ' pts.)');
+
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
         '<h2 class="panel-title mt mb0">Fichaje de Bolas</h2>' +
-        '<p class="dim small">Gira la máquina y ficha a un jugador real al azar entre los que aún no tienes. No se puede elegir a quién te toca.</p>' +
+        '<p class="dim small">Dos máquinas independientes: una te ficha a un jugador real al azar, la otra te da un escudo de equipo rival al azar. No se puede elegir qué te toca.</p>' +
         '<p class="currency-display">' + spiritIcon() + ' ' + meta.points + ' Puntos de Espíritu</p>' +
       '</div>' +
       '<div class="panel center-text">' +
+        '<h3 style="margin-bottom:8px">Jugadores</h3>' +
         gachaMachineHtml(g.spinning) +
         '<button class="btn btn-primary btn-block mt" ' + (canSpin ? '' : 'disabled') + ' onclick="spinGacha()">' + spinLabel + '</button>' +
         resultHtml +
+      '</div>' +
+      '<div class="panel center-text">' +
+        '<h3 style="margin-bottom:8px">Escudos</h3>' +
+        gachaMachineHtml(sg.spinning) +
+        '<button class="btn btn-primary btn-block mt" ' + (canSpinShield ? '' : 'disabled') + ' onclick="spinShieldGacha()">' + shieldSpinLabel + '</button>' +
+        shieldResultHtml +
       '</div>' +
     '</div>'
   );
