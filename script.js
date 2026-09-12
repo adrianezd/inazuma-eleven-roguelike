@@ -1575,6 +1575,22 @@ function selectCaptain(instanceId) {
   render();
 }
 
+// Color de la "media" (ver playerCardHtml): por debajo de 70 en naranja
+// (floja), 70-75 amarillo, 75-80 verde clarito, y por encima de 80 sube de
+// tono PROGRESIVAMENTE (verde cada vez más intenso/azulado) para que una
+// plantilla de estrellas destaque de un vistazo frente a una simplemente
+// "buena" -- no es un salto brusco más, es un degradado continuo.
+function mediaBadgeColor(score) {
+  if (score < 70) return 'hsl(28, 88%, 50%)';
+  if (score < 75) return 'hsl(48, 88%, 50%)';
+  if (score < 80) return 'hsl(95, 55%, 55%)';
+  var t = clamp((score - 80) / 19, 0, 1);
+  var hue = 100 + t * 60;   // 100 (verde) -> 160 (verde azulado)
+  var sat = 60 + t * 25;    // 60% -> 85%
+  var light = 45 - t * 10;  // 45% -> 35% (mas intenso/oscuro = mas "premium")
+  return 'hsl(' + Math.round(hue) + ', ' + Math.round(sat) + '%, ' + Math.round(light) + '%)';
+}
+
 // showMedia: solo se pide en las tarjetas de un PICK de draft (FutDraft y
 // Liga, que reutiliza el mismo motor de draft -- ver generateFutDraftOptions/
 // pickFutDraftPlayer) para ayudar a decidir de un vistazo sin tener que leer
@@ -1587,7 +1603,10 @@ function playerCardHtml(p, onclickAttr, selected, disabled, showMedia) {
   var attr = disabled ? '' : ' onclick="' + onclickAttr + '"';
   var hissatsuHtml = p.hissatsu ? '<div class="hissatsu-tag">' + p.hissatsu.map(escapeHtml).join(' · ') + '</div>' : '';
   var origHtml = p.original ? '<span class="player-original">(' + escapeHtml(p.original) + ')</span>' : '';
-  var mediaHtml = showMedia ? '<span class="pill" title="Media según su posición">Media ' + Math.round(futDraftPlayerScore(p)) + '</span>' : '';
+  var mediaScore = showMedia ? Math.round(futDraftPlayerScore(p)) : null;
+  var mediaHtml = showMedia
+    ? '<span class="media-badge" style="background:' + mediaBadgeColor(mediaScore) + '" title="Media según su posición">' + mediaScore + '</span>'
+    : '';
   return (
     '<div class="' + cls + '"' + attr + '>' +
       '<div class="player-card-head">' +
