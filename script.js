@@ -3129,7 +3129,7 @@ var GACHA_SPIN_MS = 1600;
 // de puntos, igual que la Máquina de Premios puede darte de gratis (ver
 // 15b-bis) pero aquí SÍ puedes elegir gastar puntos para intentarlo cuando
 // quieras, no solo esperar a ganar algo.
-var SHIELD_GACHA_COST = 250;
+var SHIELD_GACHA_COST = 200;
 
 function actionGoGacha() {
   G.gacha = { spinning: false, resultId: null };
