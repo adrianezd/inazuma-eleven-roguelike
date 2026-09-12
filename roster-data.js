@@ -103,7 +103,7 @@ var TEAM_POWER = {
   'Prominence': 73, 'Polvo de Diamante': 73, 'Tormenta de Géminis': 70, 'Dragones de Fuego': 70,
   'Pequeños Gigantes': 90, 'Épsilon': 74, 'Los Emperadores': 75, 'Os Reis': 75, 'Neo Japón': 74,
   'Protocolo Omega': 66, 'Caos': 75, 'El Dorado 01': 57, 'Resistencia Japon': 80, 'Resistencia Japón GO': 70,
-  'Gir': 56, 'Gar': 56, 'Ragnah': 80, 'Alius Masters': 95, 'Inazuma Japon': 92, 'Inazuma Japon GO': 90,
+  'Gir': 56, 'Gar': 56, 'Ragnah': 80, 'Alius Masters': 90, 'Inazuma Japon': 90, 'Inazuma Japon GO': 90,
   'Chrono Storm': 95, 'Dragon Link': 80, 'Desesperdidos': 70, 'Dinastía Galáctica': 84,
   'Earth Eleven': 94, 'Eclipse de Orión': 85, 'El Dorado 02': 75, 'El Dorado 03': 79,
   'Protocolo Omega 2.0': 76, 'Protocolo Omega 3.0': 78, 'Zanark Domain': 78, 'Equipo Zero': 86,
