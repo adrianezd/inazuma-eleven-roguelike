@@ -401,6 +401,16 @@ function teamShieldPath(name) {
   return TEAM_SHIELDS[normalizeTeamKey(bare)] || SECRET_SHIELD;
 }
 
+// Escudo que se muestra como "el tuyo" en cualquier marcador/línea temporal:
+// por defecto PLAYER_SHIELD (team1.png), pero si el jugador ha desbloqueado
+// algún escudo en la Máquina de Premios (ver 15d) y lo ha equipado, se
+// muestra ese en su lugar.
+function getPlayerShieldPath() {
+  var meta = G.meta;
+  if (meta && meta.equippedShield) return teamShieldPath(meta.equippedShield);
+  return PLAYER_SHIELD;
+}
+
 /* ---------------------------------------------------------------------
    4. SELECCIÓN DE CAPITÁN / FICHAJES (plantel real)
    --------------------------------------------------------------------- */
@@ -911,7 +921,7 @@ function roundNameForIndex(idx, totalRounds) {
 }
 
 function bracketShieldHtml(side) {
-  var path = side.isPlayer ? PLAYER_SHIELD : teamShieldPath(side.name);
+  var path = side.isPlayer ? getPlayerShieldPath() : teamShieldPath(side.name);
   return '<img class="bracket-shield" src="' + escapeHtml(path) + '" alt="">';
 }
 
@@ -984,9 +994,9 @@ function loadMeta() {
     var raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) throw new Error('none');
     var data = JSON.parse(raw);
-    return Object.assign({ points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0, normalWins: 0, bestSurvivalWave: 0, tournamentsWon: 0, dailyLastDate: null, dailyLastResult: null, ligaTierUnlocked: { normal: true, dificil: false, extremo: false } }, data);
+    return Object.assign({ points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0, normalWins: 0, bestSurvivalWave: 0, tournamentsWon: 0, dailyLastDate: null, dailyLastResult: null, ligaTierUnlocked: { normal: true, dificil: false, extremo: false }, unlockedShields: [], equippedShield: null }, data);
   } catch (e) {
-    return { points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0, normalWins: 0, bestSurvivalWave: 0, tournamentsWon: 0, dailyLastDate: null, dailyLastResult: null, ligaTierUnlocked: { normal: true, dificil: false, extremo: false } };
+    return { points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0, normalWins: 0, bestSurvivalWave: 0, tournamentsWon: 0, dailyLastDate: null, dailyLastResult: null, ligaTierUnlocked: { normal: true, dificil: false, extremo: false }, unlockedShields: [], equippedShield: null };
   }
 }
 
@@ -1137,7 +1147,7 @@ function findNode(map, nodeId) {
 
 var G = {
   screen: 'menu',
-  meta: (typeof localStorage !== 'undefined') ? loadMeta() : { points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0, normalWins: 0, bestSurvivalWave: 0, tournamentsWon: 0, dailyLastDate: null, dailyLastResult: null, ligaTierUnlocked: { normal: true, dificil: false, extremo: false } },
+  meta: (typeof localStorage !== 'undefined') ? loadMeta() : { points: 0, unlocked: [], bestNode: 0, bestWins: 0, runsPlayed: 0, normalWins: 0, bestSurvivalWave: 0, tournamentsWon: 0, dailyLastDate: null, dailyLastResult: null, ligaTierUnlocked: { normal: true, dificil: false, extremo: false }, unlockedShields: [], equippedShield: null },
   run: null,
   match: null,
   pendingCaptainOffers: null,
@@ -1222,6 +1232,8 @@ function render() {
     case 'penaltyMode': html = renderPenaltyMode(); break;
     case 'coleccion': html = renderColeccion(); break;
     case 'coleccionEquipos': html = renderColeccionEquipos(); break;
+    case 'miColeccion': html = renderMiColeccion(); break;
+    case 'rewardMachine': html = renderRewardMachine(); break;
     case 'draftPick': html = renderDraftPick(); break;
     case 'dailyAlreadyPlayed': html = renderDailyAlreadyPlayed(); break;
     case 'survivalCashout': html = renderSurvivalCashout(); break;
@@ -1296,6 +1308,9 @@ function renderMenu() {
           '<button class="btn btn-outline btn-block" onclick="actionGoColeccionEquipos()">Colección de equipos</button>' +
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-outline btn-block" onclick="actionGoMiColeccion()">Mi Colección</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-outline btn-block" disabled style="opacity:0.5;cursor:not-allowed;">Supertécnicas 🔒</button>' +
         '</div>' +
         '<p class="dim small center-text">Proximamente</p>' +
@@ -1308,6 +1323,7 @@ function renderMenu() {
         '<h2 class="panel-title">La rueda elemental</h2>' +
         '<p class="dim small">Fuego vence a Bosque · Bosque vence a Viento · Viento vence a Montaña · Montaña vence a Fuego. Es la rueda de ventajas real de Inazuma Eleven.</p>' +
         '<div class="btn-row">' + TYPES.map(typeBadge).join('') + '</div>' +
+        '<img src="assets/otros/Afinidades.webp" alt="Rueda de afinidades elementales" style="max-width:100%;margin-top:12px;border-radius:8px;">' +
       '</div>' +
     '</div>'
   );
@@ -1361,6 +1377,73 @@ function renderModeSelect() {
 function actionGoVestuario() { G.screen = 'vestuario'; render(); }
 function actionGoColeccion() { G.screen = 'coleccion'; render(); }
 function actionGoColeccionEquipos() { G.screen = 'coleccionEquipos'; render(); }
+function actionGoMiColeccion() { G.screen = 'miColeccion'; render(); }
+
+function actionEquipShield(name) {
+  var meta = G.meta;
+  if ((meta.unlockedShields || []).indexOf(name) === -1) return;
+  meta.equippedShield = name;
+  saveMeta(meta);
+  render();
+}
+function actionUnequipShield() {
+  var meta = G.meta;
+  meta.equippedShield = null;
+  saveMeta(meta);
+  render();
+}
+
+// "Mi Colección": a diferencia de "Colección de personajes"/"de equipos"
+// (que muestran TODO el catálogo, desbloqueado o no, como referencia), esta
+// pantalla es un inventario -- solo lo que de verdad tienes: tus personajes
+// desbloqueados y los escudos que has ganado en la Máquina de Premios (ver
+// 15b-bis), con opción de equipar uno como tu escudo en partidos/marcadores.
+function renderMiColeccion() {
+  var meta = G.meta;
+  var isUnlocked = function (c) { return !c.locked || meta.unlocked.indexOf(c.id) !== -1; };
+  var myPlayers = ROSTER.filter(isUnlocked);
+  var myShields = meta.unlockedShields || [];
+
+  var playersHtml = myPlayers.map(function (c) {
+    return (
+      '<div class="shop-item">' +
+        '<div>' + avatarHtml(c) + ' <strong>' + escapeHtml(c.nombre) + '</strong> ' + typeBadge(c.tipo) + '</div>' +
+      '</div>'
+    );
+  }).join('');
+
+  var defaultEquipped = !meta.equippedShield;
+  var shieldsHtml =
+    '<div class="shop-item" style="' + (defaultEquipped ? 'background:rgba(255,255,255,.06);' : '') + '">' +
+      '<img class="team-shield-inline" src="' + PLAYER_SHIELD + '" alt="">' +
+      '<div style="flex:1"><strong>Escudo por defecto</strong></div>' +
+      '<div class="cost">' + (defaultEquipped ? '<span class="pill">Equipado</span>' : '<button class="btn btn-outline" onclick="actionUnequipShield()">Equipar</button>') + '</div>' +
+    '</div>' +
+    myShields.map(function (name) {
+      var equipped = meta.equippedShield === name;
+      return (
+        '<div class="shop-item" style="' + (equipped ? 'background:rgba(255,255,255,.06);' : '') + '">' +
+          '<img class="team-shield-inline" src="' + escapeHtml(teamShieldPath(name)) + '" alt="">' +
+          '<div style="flex:1"><strong>' + escapeHtml(name) + '</strong></div>' +
+          '<div class="cost">' + (equipped ? '<span class="pill">Equipado</span>' : '<button class="btn btn-outline" onclick="actionEquipShield(\'' + escapeHtml(name).replace(/'/g, "\\'") + '\')">Equipar</button>') + '</div>' +
+        '</div>'
+      );
+    }).join('');
+
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
+        '<h2 class="panel-title mt">Mi Colección</h2>' +
+        '<p class="dim small">Lo que ya es tuyo: personajes desbloqueados y escudos ganados en la Máquina de Premios.</p>' +
+      '</div>' +
+      '<div class="panel"><h3 style="margin-bottom:8px">Mis personajes (' + myPlayers.length + ' de ' + ROSTER.length + ')</h3></div>' +
+      playersHtml +
+      '<div class="panel"><h3 style="margin-bottom:8px">Mis escudos (' + myShields.length + ')</h3><p class="dim small">Elige el que se muestra como el tuyo en partidos y marcadores.</p></div>' +
+      shieldsHtml +
+    '</div>'
+  );
+}
 
 function renderColeccionEquipos() {
   var normalItems = RIVAL_TEAM_NAMES.map(function (name) {
@@ -2136,7 +2219,7 @@ function renderMatch() {
   return (
     '<div class="screen">' +
       '<div class="match-scoreboard">' +
-        '<div class="score-side"><img class="team-shield" src="' + PLAYER_SHIELD + '" alt=""><div class="score-name">Tu equipo</div><div class="score-num">' + m.playerScore + '</div></div>' +
+        '<div class="score-side"><img class="team-shield" src="' + getPlayerShieldPath() + '" alt=""><div class="score-name">Tu equipo</div><div class="score-num">' + m.playerScore + '</div></div>' +
         '<div class="score-vs">VS</div>' +
         '<div class="score-side"><img class="team-shield" src="' + escapeHtml(m.oppShield) + '" alt=""><div class="score-name">' + escapeHtml(m.oppName) + '</div><div class="score-num">' + m.oppScore + '</div></div>' +
       '</div>' +
@@ -2852,6 +2935,15 @@ function finishRun() {
   saveMeta(meta);
   G.meta = meta;
   showEndAnimation(G.run.victory, G.run.mode, G.run.retired);
+  // Tirada gratis en la Máquina de Premios: al ganar cualquier modo de
+  // Jugar (Normal/Difícil/Alternativo/Torneo/Diario), y siempre al acabar
+  // una partida de Supervivencia -- ahí no existe "ganar" de verdad (es un
+  // modo sin final), así que se premia terminarla, tanto si te retiras
+  // como si acabas cayendo.
+  if (G.run.victory || G.run.mode === 'supervivencia') {
+    triggerRewardMachine('summary');
+    return;
+  }
   G.screen = 'summary';
   render();
 }
@@ -3089,6 +3181,171 @@ function renderGacha() {
 }
 
 /* ---------------------------------------------------------------------
+   15b-bis. MÁQUINA DE PREMIOS: 1 tirada GRATIS (no cuesta puntos) que se
+   ofrece al ganar el Torneo o el FutDraft (ver finishRun/finishFutDraftRun).
+   Reparto de probabilidad (100 puntos en total):
+     - 1%  -> personaje bloqueado de más de 200 de coste (el mejor botín)
+     - 9%  -> cualquier otro personaje bloqueado (coste 200 o menos)
+     - 70% -> Puntos de Espíritu (20 a 80 al azar)
+     - 20% -> un escudo de equipo rival al azar (para poder equipártelo
+       como tu propio escudo, ver getPlayerShieldPath/actionEquipShield)
+   --------------------------------------------------------------------- */
+
+var REWARD_SPIN_MS = 1600;
+var REWARD_SHIELD_POOL = Object.keys(TEAM_SHIELD_FILES);
+
+function rewardLockedCharacterPool(minCost, maxCost) {
+  var meta = G.meta;
+  return ROSTER.filter(function (p) {
+    if (!p.locked || meta.unlocked.indexOf(p.id) !== -1) return false;
+    var cost = p.cost || 0;
+    return cost >= minCost && cost <= maxCost;
+  });
+}
+
+function rewardLockedShieldPool() {
+  var meta = G.meta;
+  var owned = meta.unlockedShields || [];
+  return REWARD_SHIELD_POOL.filter(function (name) { return owned.indexOf(name) === -1; });
+}
+
+// Decide el premio y aplica sus efectos sobre G.meta (puntos/desbloqueos),
+// pero NO guarda ni pinta nada -- eso lo hace spinRewardMachine(). Cadena de
+// respaldo si el tramo que toca ya no tiene nada que dar (p.ej. roster o
+// escudos completos): nunca se "pierde" la tirada, siempre cae a algo.
+function rollRewardMachine() {
+  var meta = G.meta;
+  var roll = Math.random() * 100;
+
+  if (roll < 1) {
+    var elite = rewardLockedCharacterPool(201, Infinity);
+    if (elite.length) {
+      var wonElite = choice(elite);
+      meta.unlocked.push(wonElite.id);
+      return { type: 'character', player: wonElite, rare: true };
+    }
+  }
+  if (roll < 10) {
+    var normal = rewardLockedCharacterPool(0, 200);
+    if (normal.length) {
+      var wonNormal = choice(normal);
+      meta.unlocked.push(wonNormal.id);
+      return { type: 'character', player: wonNormal, rare: false };
+    }
+    var anyLeft = rewardLockedCharacterPool(0, Infinity);
+    if (anyLeft.length) {
+      var wonAny = choice(anyLeft);
+      meta.unlocked.push(wonAny.id);
+      return { type: 'character', player: wonAny, rare: (wonAny.cost || 0) > 200 };
+    }
+  }
+  if (roll < 80) {
+    var amount = rand(20, 80);
+    meta.points += amount;
+    return { type: 'credits', amount: amount };
+  }
+  var shields = rewardLockedShieldPool();
+  if (shields.length) {
+    var wonShield = choice(shields);
+    meta.unlockedShields = meta.unlockedShields || [];
+    meta.unlockedShields.push(wonShield);
+    return { type: 'shield', name: wonShield };
+  }
+  // Sin escudos ni personajes que dar (todo desbloqueado): créditos de
+  // compensación, para que la tirada gratis nunca se quede en nada.
+  var fallback = rand(20, 80);
+  meta.points += fallback;
+  return { type: 'credits', amount: fallback };
+}
+
+function triggerRewardMachine(nextScreen) {
+  G.reward = { spinning: false, result: null, nextScreen: nextScreen };
+  G.screen = 'rewardMachine';
+  render();
+}
+
+function spinRewardMachine() {
+  var r = G.reward;
+  if (!r || r.spinning || r.result) return;
+  r.spinning = true;
+  render();
+  setTimeout(function () {
+    var meta = G.meta;
+    var result = rollRewardMachine();
+    saveMeta(meta);
+    G.meta = meta;
+    r.spinning = false;
+    r.result = result;
+    render();
+  }, REWARD_SPIN_MS);
+}
+
+function continueFromRewardMachine() {
+  var next = (G.reward && G.reward.nextScreen) || 'menu';
+  G.reward = null;
+  G.screen = next;
+  render();
+}
+
+function rewardResultHtml(result) {
+  if (result.type === 'character') {
+    var p = result.player;
+    return (
+      '<div class="panel gacha-result mt">' +
+        '<p class="center-text" style="color:var(--accent-2);font-weight:700;">' + (result.rare ? '¡FICHAJE DE LUJO!' : '¡Fichaje conseguido!') + '</p>' +
+        '<div class="player-card-head" style="justify-content:center;">' +
+          avatarHtml(p) +
+          '<div class="player-head-text"><span class="player-name">' + escapeHtml(p.nombre) + '</span>' +
+          (p.original ? '<span class="player-original">(' + escapeHtml(p.original) + ')</span>' : '') + '</div>' +
+          typeBadge(p.tipo) +
+        '</div>' +
+        '<p class="dim small center-text">' + escapeHtml(p.desc) + '</p>' +
+      '</div>'
+    );
+  }
+  if (result.type === 'shield') {
+    return (
+      '<div class="panel gacha-result mt center-text">' +
+        '<p style="color:var(--accent-2);font-weight:700;">¡Nuevo escudo!</p>' +
+        '<img class="team-shield-inline" style="width:64px;height:64px" src="' + escapeHtml(teamShieldPath(result.name)) + '" alt="">' +
+        '<p class="dim small">' + escapeHtml(result.name) + '. Puedes equipártelo desde Mi Colección.</p>' +
+      '</div>'
+    );
+  }
+  return (
+    '<div class="panel gacha-result mt center-text">' +
+      '<p style="color:var(--accent-2);font-weight:700;">¡Puntos de Espíritu!</p>' +
+      '<p class="currency-display">' + spiritIcon() + ' +' + result.amount + '</p>' +
+    '</div>'
+  );
+}
+
+function renderRewardMachine() {
+  var r = G.reward || { spinning: false, result: null };
+  var resultHtml = '';
+  if (r.spinning) {
+    resultHtml = '<p class="dim small center-text mt">Girando…</p>';
+  } else if (r.result) {
+    resultHtml = rewardResultHtml(r.result);
+  }
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<h2 class="panel-title mt mb0">¡Tirada gratis!</h2>' +
+        '<p class="dim small">Por ganar, te ganas una tirada gratis en la máquina de premios: personaje, escudo o Puntos de Espíritu.</p>' +
+      '</div>' +
+      '<div class="panel center-text">' +
+        gachaMachineHtml(r.spinning) +
+        (r.result
+          ? '<button class="btn btn-primary btn-block mt" onclick="continueFromRewardMachine()">Continuar</button>'
+          : '<button class="btn btn-primary btn-block mt" ' + (r.spinning ? 'disabled' : '') + ' onclick="spinRewardMachine()">' + (r.spinning ? 'Girando…' : 'Girar gratis') + '</button>') +
+        resultHtml +
+      '</div>' +
+    '</div>'
+  );
+}
+
+/* ---------------------------------------------------------------------
    15c. MODO PENALTIS: tanda rápida e independiente (sin plantilla, sin
    mapa), a 5 lanzamientos por bando con muerte súbita si hay empate.
    Reutiliza la imagen de 3 zonas del penalti-bonus de los partidos.
@@ -3161,6 +3418,12 @@ function finishPenaltyMode() {
   var p = G.penaltyRun;
   p.finished = true;
   p.winner = p.playerGoals > p.rivalGoals ? 'jugador' : 'rival';
+  if (p.winner === 'jugador') {
+    // 'penaltyMode' vuelve a la pantalla de siempre: como p.finished ya
+    // está a true, renderPenaltyMode() muestra directamente el resultado.
+    triggerRewardMachine('penaltyMode');
+    return;
+  }
   render();
 }
 
@@ -3201,7 +3464,7 @@ function renderPenaltyMode() {
         '<p class="dim small">Tanda a ' + PENALTY_MODE_ROUNDS + ', con muerte súbita si hay empate.</p>' +
       '</div>' +
       '<div class="match-scoreboard">' +
-        '<div class="score-side"><img class="team-shield" src="' + PLAYER_SHIELD + '" alt=""><div class="score-name">Tú</div><div class="score-num">' + p.playerGoals + '</div></div>' +
+        '<div class="score-side"><img class="team-shield" src="' + getPlayerShieldPath() + '" alt=""><div class="score-name">Tú</div><div class="score-num">' + p.playerGoals + '</div></div>' +
         '<div class="score-vs">' + (p.suddenDeath ? 'Muerte súbita' : ('Ronda ' + p.round + '/' + PENALTY_MODE_ROUNDS)) + '</div>' +
         '<div class="score-side"><img class="team-shield" src="' + escapeHtml(p.oppShield) + '" alt=""><div class="score-name">' + escapeHtml(p.oppName) + '</div><div class="score-num">' + p.rivalGoals + '</div></div>' +
       '</div>' +
@@ -4129,7 +4392,7 @@ window.futDraftSkipLive = function () {
 // goles rivales se añade el nombre del equipo entre paréntesis, porque el
 // nombre del jugador fantasma no dice por sí solo para quién "juega".
 function futDraftTimelineRowHtml(ev, oppName) {
-  var shieldSrc = ev.side === 'me' ? PLAYER_SHIELD : teamShieldPath(oppName);
+  var shieldSrc = ev.side === 'me' ? getPlayerShieldPath() : teamShieldPath(oppName);
   var text = '<strong>' + escapeHtml(ev.scorer.nombre) + '</strong>' +
     (ev.assist ? ' <span class="dim">(asist. ' + escapeHtml(ev.assist.nombre) + ')</span>' : ' <span class="dim">(gol en solitario)</span>');
   if (ev.side !== 'me') text += ' <span class="dim">· ' + escapeHtml(oppName) + '</span>';
@@ -4145,7 +4408,7 @@ function renderFutDraftLive() {
   return (
     '<div class="screen">' +
       '<div class="match-scoreboard">' +
-        '<div class="score-side"><img class="team-shield" src="' + PLAYER_SHIELD + '" alt=""><div class="score-name">Tú</div><div class="score-num">' + live.myGoals + '</div></div>' +
+        '<div class="score-side"><img class="team-shield" src="' + getPlayerShieldPath() + '" alt=""><div class="score-name">Tú</div><div class="score-num">' + live.myGoals + '</div></div>' +
         '<div class="score-vs">VS</div>' +
         '<div class="score-side"><img class="team-shield" src="' + escapeHtml(teamShieldPath(oppName)) + '" alt=""><div class="score-name">' + escapeHtml(oppName) + '</div><div class="score-num">' + live.oppGoals + '</div></div>' +
       '</div>' +
@@ -4258,7 +4521,7 @@ function renderFutDraftPenalty() {
         '<p class="dim small">Empate en el tiempo reglamentario contra ' + escapeHtml(p.oppName) + '. Tanda a ' + PENALTY_MODE_ROUNDS + ', con muerte súbita si hay empate.</p>' +
       '</div>' +
       '<div class="match-scoreboard">' +
-        '<div class="score-side"><img class="team-shield" src="' + PLAYER_SHIELD + '" alt=""><div class="score-name">Tú</div><div class="score-num">' + p.playerGoals + '</div></div>' +
+        '<div class="score-side"><img class="team-shield" src="' + getPlayerShieldPath() + '" alt=""><div class="score-name">Tú</div><div class="score-num">' + p.playerGoals + '</div></div>' +
         '<div class="score-vs">VS</div>' +
         '<div class="score-side"><img class="team-shield" src="' + escapeHtml(p.oppShield) + '" alt=""><div class="score-name">' + escapeHtml(p.oppName) + '</div><div class="score-num">' + p.rivalGoals + '</div></div>' +
       '</div>' +
@@ -4273,6 +4536,13 @@ function finishFutDraftRun() {
   f.reward = FUTDRAFT_BASE_REWARD + FUTDRAFT_WIN_REWARD * f.winsCount;
   meta.points += f.reward;
   saveMeta(meta);
+  // Tirada gratis en la Máquina de Premios solo si te proclamas campeón del
+  // FutDraft (f.champion solo existe al completar la última ronda, ver
+  // continueFutDraftMatch) -- quedar eliminado antes no cuenta como "ganar".
+  if (f.champion && f.champion.isPlayer) {
+    triggerRewardMachine('futdraftSummary');
+    return;
+  }
   G.screen = 'futdraftSummary';
   render();
 }
@@ -4372,7 +4642,7 @@ function renderFutDraftMatchResult() {
   return (
     '<div class="screen">' +
       '<div class="match-scoreboard">' +
-        '<div class="score-side"><img class="team-shield" src="' + PLAYER_SHIELD + '" alt=""><div class="score-name">Tú</div><div class="score-num">' + r.myGoals + '</div></div>' +
+        '<div class="score-side"><img class="team-shield" src="' + getPlayerShieldPath() + '" alt=""><div class="score-name">Tú</div><div class="score-num">' + r.myGoals + '</div></div>' +
         '<div class="score-vs">VS</div>' +
         '<div class="score-side"><img class="team-shield" src="' + escapeHtml(r.oppShield) + '" alt=""><div class="score-name">' + escapeHtml(r.oppName) + '</div><div class="score-num">' + r.oppGoals + '</div></div>' +
       '</div>' +
@@ -4400,7 +4670,7 @@ function renderTopScorersAssistsPanel(stats) {
   var topScorer = scorers[0], topAssist = assists[0];
   function listHtml(list) {
     return list.map(function (s, i) {
-      var shieldSrc = s.team === 'Tu equipo' ? PLAYER_SHIELD : teamShieldPath(s.team);
+      var shieldSrc = s.team === 'Tu equipo' ? getPlayerShieldPath() : teamShieldPath(s.team);
       return '<div class="futdraft-timeline-row"><span>' + (i + 1) + '.</span>' + avatarHtml(s.player) +
         '<img class="futdraft-timeline-shield" src="' + escapeHtml(shieldSrc) + '" alt="" title="' + escapeHtml(s.team) + '">' +
         '<span style="flex:1;text-align:left">' + escapeHtml(s.nombre) + '</span><span class="dim">' + s.count + '</span></div>';
@@ -4511,7 +4781,7 @@ function ligaApplyResult(table, homeIdx, awayIdx, homeGoals, awayGoals) {
   else { h.pe++; a.pe++; h.pts++; a.pts++; h.form.push('E'); a.form.push('E'); }
 }
 // Escudo del equipo de una fila de la tabla (el tuyo, o el real del rival).
-function ligaTeamShield(liga, idx) { return idx === 0 ? PLAYER_SHIELD : teamShieldPath(liga.teamNames[idx]); }
+function ligaTeamShield(liga, idx) { return idx === 0 ? getPlayerShieldPath() : teamShieldPath(liga.teamNames[idx]); }
 // Últimos 5 resultados como en una tabla de liga real: un círculo por
 // partido (V verde, E gris, D rojo), rellenando por la izquierda con
 // círculos vacíos mientras el equipo no lleve 5 partidos jugados todavía.
@@ -4740,6 +5010,10 @@ function finishLigaRun() {
   liga.finalPosition = myPosition;
   liga.champion = champion;
   liga.reward = reward;
+  if (champion) {
+    triggerRewardMachine('ligaSummary');
+    return;
+  }
   G.screen = 'ligaSummary';
   render();
 }

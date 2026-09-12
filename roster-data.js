@@ -1306,7 +1306,7 @@ var ROSTER = [
   {
     id: 'r151', nombre: 'Feldt', original: 'Thomas Feldt',
     posicion: 'Portero', tipo: 'Bosque',
-    tiro: 18, pase: 55, defensa: 82, especial: 78,
+    tiro: 18, pase: 55, defensa: 82, especial: 80,
     hissatsu: ['Campo de fuerza'],
     desc: 'Capitán y portero del Brain. Un jugador inteligente que recupera su verdadero espíritu deportivo.',
     locked: true, cost: 125
