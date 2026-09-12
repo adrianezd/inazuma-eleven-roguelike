@@ -4315,15 +4315,31 @@ function generateRoundRobin(n) {
   return rounds;
 }
 
-function ligaEmptyStanding() { return { pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0 }; }
+function ligaEmptyStanding() { return { pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0, form: [] }; }
 function ligaApplyResult(table, homeIdx, awayIdx, homeGoals, awayGoals) {
   var h = table[homeIdx], a = table[awayIdx];
   h.pj++; a.pj++;
   h.gf += homeGoals; h.gc += awayGoals;
   a.gf += awayGoals; a.gc += homeGoals;
-  if (homeGoals > awayGoals) { h.pg++; h.pts += 3; a.pp++; }
-  else if (homeGoals < awayGoals) { a.pg++; a.pts += 3; h.pp++; }
-  else { h.pe++; a.pe++; h.pts++; a.pts++; }
+  if (homeGoals > awayGoals) { h.pg++; h.pts += 3; a.pp++; h.form.push('V'); a.form.push('D'); }
+  else if (homeGoals < awayGoals) { a.pg++; a.pts += 3; h.pp++; h.form.push('D'); a.form.push('V'); }
+  else { h.pe++; a.pe++; h.pts++; a.pts++; h.form.push('E'); a.form.push('E'); }
+}
+// Escudo del equipo de una fila de la tabla (el tuyo, o el real del rival).
+function ligaTeamShield(liga, idx) { return idx === 0 ? PLAYER_SHIELD : teamShieldPath(liga.teamNames[idx]); }
+// Últimos 5 resultados como en una tabla de liga real: un círculo por
+// partido (V verde, E gris, D rojo), rellenando por la izquierda con
+// círculos vacíos mientras el equipo no lleve 5 partidos jugados todavía.
+function ligaFormHtml(form) {
+  var last5 = form.slice(-5);
+  var html = '';
+  for (var i = 0; i < 5 - last5.length; i++) html += '<span class="liga-form-dot liga-form-empty"></span>';
+  last5.forEach(function (r) {
+    var cls = r === 'V' ? 'liga-form-win' : (r === 'D' ? 'liga-form-loss' : 'liga-form-draw');
+    var symbol = r === 'V' ? '✓' : (r === 'D' ? '✕' : '–');
+    html += '<span class="liga-form-dot ' + cls + '">' + symbol + '</span>';
+  });
+  return '<span class="liga-form">' + html + '</span>';
 }
 function ligaSortedTable(table) {
   return table.map(function (t, i) { return Object.assign({ idx: i }, t); }).sort(function (a, b) {
@@ -4419,10 +4435,12 @@ function renderLigaTable() {
     var isYou = t.idx === 0;
     return '<tr class="' + (isYou ? 'liga-you' : '') + '">' +
       '<td>' + (pos + 1) + '</td>' +
+      '<td><img class="liga-row-shield" src="' + escapeHtml(ligaTeamShield(liga, t.idx)) + '" alt=""></td>' +
       '<td>' + escapeHtml(ligaTeamLabel(liga, t.idx)) + '</td>' +
       '<td>' + t.pj + '</td><td>' + t.pg + '</td><td>' + t.pe + '</td><td>' + t.pp + '</td>' +
       '<td>' + t.gf + '</td><td>' + t.gc + '</td><td>' + (t.gf - t.gc) + '</td>' +
       '<td><strong>' + t.pts + '</strong></td>' +
+      '<td>' + ligaFormHtml(t.form) + '</td>' +
     '</tr>';
   }).join('');
   var seasonOver = liga.matchdayIndex >= liga.schedule.length;
@@ -4434,7 +4452,7 @@ function renderLigaTable() {
         '<p class="dim small">Jornada ' + Math.min(liga.matchdayIndex + 1, liga.schedule.length) + ' de ' + liga.schedule.length + '</p>' +
       '</div>' +
       '<div class="panel" style="overflow-x:auto">' +
-        '<table class="liga-table"><thead><tr><th>#</th><th>Equipo</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>Pts</th></tr></thead>' +
+        '<table class="liga-table"><thead><tr><th>#</th><th></th><th>Equipo</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>Pts</th><th>Últimos</th></tr></thead>' +
         '<tbody>' + rows + '</tbody></table>' +
       '</div>' +
       (seasonOver

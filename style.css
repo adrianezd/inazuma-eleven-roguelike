@@ -740,9 +740,21 @@ a { color: var(--accent); }
   border-bottom: 1px solid var(--border);
 }
 .liga-table th { color: var(--text-dim); font-weight: 600; }
-.liga-table td:nth-child(2) { text-align: left; }
+.liga-table td:nth-child(3) { text-align: left; }
 .liga-table tr.liga-you { background: var(--accent-2); color: #06202f; font-weight: 700; }
 .liga-table tr.liga-you td { border-bottom-color: var(--accent-2); }
+.liga-row-shield { width: 22px; height: 22px; object-fit: contain; display: block; }
+.liga-form { display: inline-flex; gap: 3px; }
+.liga-form-dot {
+  width: 18px; height: 18px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.62rem; font-weight: 700; line-height: 1; color: #fff;
+}
+.liga-form-win { background: var(--success, #22c55e); }
+.liga-form-draw { background: var(--text-dim); color: var(--bg); }
+.liga-form-loss { background: var(--danger); }
+.liga-form-empty { background: transparent; border: 1px solid var(--border); }
+.liga-table tr.liga-you .liga-form-draw { color: var(--bg); }
 
 /* ===== Choice cards (training / recruit) ===== */
 
