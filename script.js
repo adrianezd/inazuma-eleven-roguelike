@@ -1429,38 +1429,15 @@ function actionUnequipShield() {
   render();
 }
 
-// Los personajes desbloqueados pueden ser muchísimos (roster de 200+), así
-// que por defecto la lista sale COLAPSADA en Mi Colección -- así se llega
-// antes a los escudos sin tener que hacer scroll por todo el plantel.
-function miColeccionPlayersCollapsed() {
-  return G.miColeccionPlayersCollapsed === undefined ? true : G.miColeccionPlayersCollapsed;
-}
-function actionToggleMiColeccionPlayers() {
-  G.miColeccionPlayersCollapsed = !miColeccionPlayersCollapsed();
-  render();
-}
-
-// "Mi Colección": a diferencia de "Colección de personajes"/"de equipos"
-// (que muestran TODO el catálogo, desbloqueado o no, como referencia), esta
-// pantalla es un inventario -- solo lo que de verdad tienes: tus personajes
-// desbloqueados y los escudos que has ganado en la Máquina de Premios (ver
+// "Mi Colección": los personajes ya se ven completos en "Colección de
+// personajes" (que además permite comprarlos directamente ahí, ver
+// renderColeccion), así que meterlos aquí también era pura redundancia --
+// esta pantalla se queda solo con lo que no vive en ningún otro sitio: el
+// acceso a Vestuario y los escudos ganados en la Máquina de Premios (ver
 // 15b-bis), con opción de equipar uno como tu escudo en partidos/marcadores.
-// También enlaza al Vestuario (donde SÍ eliges a quién desbloquear a
-// cambio de puntos), que antes vivía suelto en el menú principal.
 function renderMiColeccion() {
   var meta = G.meta;
-  var isUnlocked = function (c) { return !c.locked || meta.unlocked.indexOf(c.id) !== -1; };
-  var myPlayers = ROSTER.filter(isUnlocked);
   var myShields = meta.unlockedShields || [];
-  var playersCollapsed = miColeccionPlayersCollapsed();
-
-  var playersHtml = myPlayers.map(function (c) {
-    return (
-      '<div class="shop-item">' +
-        '<div>' + avatarHtml(c) + ' <strong>' + escapeHtml(c.nombre) + '</strong> ' + typeBadge(c.tipo) + '</div>' +
-      '</div>'
-    );
-  }).join('');
 
   var defaultEquipped = !meta.equippedShield;
   var shieldsHtml =
@@ -1485,15 +1462,10 @@ function renderMiColeccion() {
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
         '<h2 class="panel-title mt">Mi Colección</h2>' +
-        '<p class="dim small">Lo que ya es tuyo: personajes desbloqueados y escudos ganados en la Máquina de Premios.</p>' +
+        '<p class="dim small">Tus personajes desbloqueados se ven (y se compran) en Colección de personajes. Aquí está el resto: Vestuario y tus escudos.</p>' +
         '<button class="btn btn-block" onclick="actionGoVestuario()">Vestuario</button>' +
         '<p class="dim small">Gasta tus Puntos de Espíritu para desbloquear un personaje concreto.</p>' +
       '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:8px">Mis personajes (' + myPlayers.length + ' de ' + ROSTER.length + ')</h3>' +
-        '<button class="btn btn-outline btn-block" onclick="actionToggleMiColeccionPlayers()">' + (playersCollapsed ? 'Mostrar personajes' : 'Ocultar personajes') + '</button>' +
-      '</div>' +
-      (playersCollapsed ? '' : playersHtml) +
       '<div class="panel"><h3 style="margin-bottom:8px">Mis escudos (' + myShields.length + ')</h3><p class="dim small">Elige el que se muestra como el tuyo en partidos y marcadores.</p></div>' +
       shieldsHtml +
     '</div>'
