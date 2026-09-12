@@ -726,6 +726,8 @@ a { color: var(--accent); }
   text-align: right;
 }
 .futdraft-timeline-shield { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }
+.futdraft-timeline-row .avatar { width: 22px; height: 22px; flex-shrink: 0; }
+.futdraft-timeline-row .avatar-pos-badge { display: none; }
 
 /* ===== Tabla de la Liga ===== */
 .liga-table {

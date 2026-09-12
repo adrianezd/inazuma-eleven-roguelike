@@ -3774,12 +3774,12 @@ function futDraftBuildTimeline(myGoals, oppGoals, myPlayers, oppPlayers, minMinu
 function futDraftRecordGoalEvents(stats, events, teamLabel) {
   events.forEach(function (ev) {
     if (!ev.scorer) return;
-    var sBucket = stats.scorers[ev.scorer.id] || { nombre: ev.scorer.nombre, team: teamLabel, count: 0 };
+    var sBucket = stats.scorers[ev.scorer.id] || { nombre: ev.scorer.nombre, team: teamLabel, count: 0, player: ev.scorer };
     sBucket.count++;
     sBucket.team = teamLabel;
     stats.scorers[ev.scorer.id] = sBucket;
     if (ev.assist) {
-      var aBucket = stats.assists[ev.assist.id] || { nombre: ev.assist.nombre, team: teamLabel, count: 0 };
+      var aBucket = stats.assists[ev.assist.id] || { nombre: ev.assist.nombre, team: teamLabel, count: 0, player: ev.assist };
       aBucket.count++;
       aBucket.team = teamLabel;
       stats.assists[ev.assist.id] = aBucket;
@@ -3951,7 +3951,7 @@ function futDraftTimelineRowHtml(ev, oppName) {
   var text = '<strong>' + escapeHtml(ev.scorer.nombre) + '</strong>' +
     (ev.assist ? ' <span class="dim">(asist. ' + escapeHtml(ev.assist.nombre) + ')</span>' : ' <span class="dim">(gol en solitario)</span>');
   if (ev.side !== 'me') text += ' <span class="dim">· ' + escapeHtml(oppName) + '</span>';
-  return '<div class="futdraft-timeline-row"><span class="futdraft-timeline-minute">' + ev.minute + '\'</span><img class="futdraft-timeline-shield" src="' + escapeHtml(shieldSrc) + '" alt=""><span>' + text + '</span></div>';
+  return '<div class="futdraft-timeline-row"><span class="futdraft-timeline-minute">' + ev.minute + '\'</span><img class="futdraft-timeline-shield" src="' + escapeHtml(shieldSrc) + '" alt="">' + avatarHtml(ev.scorer) + '<span>' + text + '</span></div>';
 }
 
 function renderFutDraftLive() {
@@ -4218,7 +4218,7 @@ function renderTopScorersAssistsPanel(stats) {
   var topScorer = scorers[0], topAssist = assists[0];
   function listHtml(list) {
     return list.map(function (s, i) {
-      return '<div class="futdraft-timeline-row"><span>' + (i + 1) + '.</span><span style="flex:1;text-align:left">' + escapeHtml(s.nombre) + ' <span class="dim">(' + escapeHtml(s.team) + ')</span></span><span class="dim">' + s.count + '</span></div>';
+      return '<div class="futdraft-timeline-row"><span>' + (i + 1) + '.</span>' + avatarHtml(s.player) + '<span style="flex:1;text-align:left">' + escapeHtml(s.nombre) + ' <span class="dim">(' + escapeHtml(s.team) + ')</span></span><span class="dim">' + s.count + '</span></div>';
     }).join('');
   }
   return (
