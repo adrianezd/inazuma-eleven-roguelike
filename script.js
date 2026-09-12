@@ -4719,8 +4719,8 @@ function renderFutDraftMatchResult() {
 // { scorers: {}, assists: {} } (ver futDraftRecordGoalEvents).
 function renderTopScorersAssistsPanel(stats) {
   stats = stats || { scorers: {}, assists: {} };
-  var scorers = sortedStatsList(stats.scorers).slice(0, 8);
-  var assists = sortedStatsList(stats.assists).slice(0, 8);
+  var scorers = sortedStatsList(stats.scorers).slice(0, 3);
+  var assists = sortedStatsList(stats.assists).slice(0, 3);
   if (!scorers.length && !assists.length) return '';
   var topScorer = scorers[0], topAssist = assists[0];
   function listHtml(list) {
