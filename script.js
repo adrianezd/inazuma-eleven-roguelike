@@ -1575,11 +1575,19 @@ function selectCaptain(instanceId) {
   render();
 }
 
-function playerCardHtml(p, onclickAttr, selected, disabled) {
+// showMedia: solo se pide en las tarjetas de un PICK de draft (FutDraft y
+// Liga, que reutiliza el mismo motor de draft -- ver generateFutDraftOptions/
+// pickFutDraftPlayer) para ayudar a decidir de un vistazo sin tener que leer
+// las 4 barras de stats una a una. Es la misma media ponderada por posición
+// que ya se usa para la puntuación de equipo (ver futDraftPlayerScore), así
+// que el número no es nuevo, solo se hace visible en la tarjeta. El resto de
+// tarjetas (plantel, capitán, ataque...) se quedan igual que siempre.
+function playerCardHtml(p, onclickAttr, selected, disabled, showMedia) {
   var cls = 'player-card' + (selected ? ' selected' : '') + (disabled ? ' disabled' : '') + (p.fatigado ? ' fatigued' : '');
   var attr = disabled ? '' : ' onclick="' + onclickAttr + '"';
   var hissatsuHtml = p.hissatsu ? '<div class="hissatsu-tag">' + p.hissatsu.map(escapeHtml).join(' · ') + '</div>' : '';
   var origHtml = p.original ? '<span class="player-original">(' + escapeHtml(p.original) + ')</span>' : '';
+  var mediaHtml = showMedia ? '<span class="pill" title="Media según su posición">Media ' + Math.round(futDraftPlayerScore(p)) + '</span>' : '';
   return (
     '<div class="' + cls + '"' + attr + '>' +
       '<div class="player-card-head">' +
@@ -1588,6 +1596,7 @@ function playerCardHtml(p, onclickAttr, selected, disabled) {
           '<span class="player-name">' + escapeHtml(p.nombre) + '</span>' + origHtml +
         '</div>' +
         typeBadge(p.tipo) +
+        mediaHtml +
       '</div>' +
       statBarsHtml(p) +
       hissatsuHtml +
@@ -3886,7 +3895,7 @@ function renderFutDraftPick() {
   }
   var benchPreview = futDraftComputeBench(squad);
   var optionsHtml = G.futdraftOptions.map(function (c) {
-    return playerCardHtml(c, 'pickFutDraftPlayer(\'' + c.instanceId + '\')', false, false);
+    return playerCardHtml(c, 'pickFutDraftPlayer(\'' + c.instanceId + '\')', false, false, true);
   }).join('');
   return (
     '<div class="screen">' +
