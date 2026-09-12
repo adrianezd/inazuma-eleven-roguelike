@@ -1218,6 +1218,8 @@ function render() {
   var html = '';
   switch (G.screen) {
     case 'menu': html = renderMenu(); break;
+    case 'jugarHub': html = renderJugarHub(); break;
+    case 'otrosModos': html = renderOtrosModos(); break;
     case 'modeSelect': html = renderModeSelect(); break;
     case 'captainSelect': html = renderCaptainSelect(); break;
     case 'map': html = renderMap(); break;
@@ -1274,28 +1276,7 @@ function renderMenu() {
           '<div class="stat-tile"><div class="num">' + (m.tournamentsWon || 0) + '</div><div class="label">Torneos ganados</div></div>' +
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-primary btn-block" onclick="actionStartRun()">Jugar</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionStartTournament()">Modo Torneo</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionStartDraftMode(\'supervivencia\')">Modo Supervivencia</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionStartDaily()">Modo Diario' + (G.meta.dailyLastDate === todayKey() ? ' ✓' : '') + '</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionStartPenaltyMode()">Modo Penaltis</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionGoFutDraftModeSelect()">FutDraft</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionGoLigaTierSelect()">Liga</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionGoVestuario()">Vestuario</button>' +
+          '<button class="btn btn-primary btn-block" onclick="actionGoJugarHub()">Jugar</button>' +
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-block" onclick="actionGoGacha()">Fichaje de Bolas</button>' +
@@ -1335,6 +1316,61 @@ function hardModeUnlocked() {
   var meta = G.meta;
   var totalUnlocked = ROSTER.filter(function (p) { return !p.locked || meta.unlocked.indexOf(p.id) !== -1; }).length;
   return (meta.normalWins || 0) >= 3 && totalUnlocked > 10;
+}
+
+// "Jugar" ya no lanza directamente el mapa ramificado: primero se elige
+// entre "Modos clásicos" (Normal/Difícil/Alternativo, el mapa de siempre)
+// y "Otros modos" (Torneo/Supervivencia/Diario/Penaltis/FutDraft/Liga, que
+// antes vivían sueltos en el menú principal) -- pedido explícito para
+// despejar el menú principal.
+function actionGoJugarHub() { G.screen = 'jugarHub'; render(); }
+function renderJugarHub() {
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
+        '<h2 class="panel-title mt">Jugar</h2>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-primary btn-block" onclick="actionStartRun()">Modos clásicos</button>' +
+        '</div>' +
+        '<p class="dim small">Normal, Difícil y Alternativo: el mapa ramificado de siempre.</p>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionGoOtrosModos()">Otros modos</button>' +
+        '</div>' +
+        '<p class="dim small">Torneo, Supervivencia, Diario, Penaltis, FutDraft y Liga.</p>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function actionGoOtrosModos() { G.screen = 'otrosModos'; render(); }
+function renderOtrosModos() {
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
+        '<h2 class="panel-title mt">Otros modos</h2>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionStartTournament()">Modo Torneo</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionStartDraftMode(\'supervivencia\')">Modo Supervivencia</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionStartDaily()">Modo Diario' + (G.meta.dailyLastDate === todayKey() ? ' ✓' : '') + '</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionStartPenaltyMode()">Modo Penaltis</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionGoFutDraftModeSelect()">FutDraft</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionGoLigaTierSelect()">Liga</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>'
+  );
 }
 
 function actionStartRun() { G.screen = 'modeSelect'; render(); }
@@ -1393,16 +1429,30 @@ function actionUnequipShield() {
   render();
 }
 
+// Los personajes desbloqueados pueden ser muchísimos (roster de 200+), así
+// que por defecto la lista sale COLAPSADA en Mi Colección -- así se llega
+// antes a los escudos sin tener que hacer scroll por todo el plantel.
+function miColeccionPlayersCollapsed() {
+  return G.miColeccionPlayersCollapsed === undefined ? true : G.miColeccionPlayersCollapsed;
+}
+function actionToggleMiColeccionPlayers() {
+  G.miColeccionPlayersCollapsed = !miColeccionPlayersCollapsed();
+  render();
+}
+
 // "Mi Colección": a diferencia de "Colección de personajes"/"de equipos"
 // (que muestran TODO el catálogo, desbloqueado o no, como referencia), esta
 // pantalla es un inventario -- solo lo que de verdad tienes: tus personajes
 // desbloqueados y los escudos que has ganado en la Máquina de Premios (ver
 // 15b-bis), con opción de equipar uno como tu escudo en partidos/marcadores.
+// También enlaza al Vestuario (donde SÍ eliges a quién desbloquear a
+// cambio de puntos), que antes vivía suelto en el menú principal.
 function renderMiColeccion() {
   var meta = G.meta;
   var isUnlocked = function (c) { return !c.locked || meta.unlocked.indexOf(c.id) !== -1; };
   var myPlayers = ROSTER.filter(isUnlocked);
   var myShields = meta.unlockedShields || [];
+  var playersCollapsed = miColeccionPlayersCollapsed();
 
   var playersHtml = myPlayers.map(function (c) {
     return (
@@ -1436,9 +1486,14 @@ function renderMiColeccion() {
         '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
         '<h2 class="panel-title mt">Mi Colección</h2>' +
         '<p class="dim small">Lo que ya es tuyo: personajes desbloqueados y escudos ganados en la Máquina de Premios.</p>' +
+        '<button class="btn btn-block" onclick="actionGoVestuario()">Vestuario</button>' +
+        '<p class="dim small">Gasta tus Puntos de Espíritu para desbloquear un personaje concreto.</p>' +
       '</div>' +
-      '<div class="panel"><h3 style="margin-bottom:8px">Mis personajes (' + myPlayers.length + ' de ' + ROSTER.length + ')</h3></div>' +
-      playersHtml +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:8px">Mis personajes (' + myPlayers.length + ' de ' + ROSTER.length + ')</h3>' +
+        '<button class="btn btn-outline btn-block" onclick="actionToggleMiColeccionPlayers()">' + (playersCollapsed ? 'Mostrar personajes' : 'Ocultar personajes') + '</button>' +
+      '</div>' +
+      (playersCollapsed ? '' : playersHtml) +
       '<div class="panel"><h3 style="margin-bottom:8px">Mis escudos (' + myShields.length + ')</h3><p class="dim small">Elige el que se muestra como el tuyo en partidos y marcadores.</p></div>' +
       shieldsHtml +
     '</div>'
