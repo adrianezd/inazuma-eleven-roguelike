@@ -2176,7 +2176,14 @@ function alternativoBaseChance(action, attackerRaw, defenderRaw) {
   var defender = effectiveStats(defenderRaw);
   var adv = typeAdvantage(attacker.tipo, defender.tipo);
   var atkStat, chance;
-  if (action === 'tiro') { atkStat = attacker.tiro; chance = 50 + (atkStat - defender.defensa) * 0.5; }
+  // El % de Tiro base (antes de encadenar ningún regate) lo da directamente
+  // el Tiro del jugador, no un "50 fijo para todos": con Tiro 100 y ventaja
+  // elemental ya se ronda un 88% de gol de partida (contra un portero
+  // fuerte), en vez de quedar siempre encajado cerca del 50% -- a petición
+  // explícita, para que la estadística de Tiro se note de verdad en Modo
+  // Alternativo. El Regate (para el riesgo de robo) mantiene su fórmula
+  // habitual, ya que esto solo afecta a la probabilidad de GOL.
+  if (action === 'tiro') { atkStat = attacker.tiro; chance = atkStat - defender.defensa * 0.25; }
   else { atkStat = attacker.pase; chance = 30 + (atkStat - defender.defensa) * 0.5; }
   chance += adv * 10;
   chance += weatherChanceDelta(G.match.weather, action, attacker.tipo);
