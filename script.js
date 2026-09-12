@@ -1229,7 +1229,6 @@ function render() {
     case 'descanso': html = renderRest(); break;
     case 'evento': html = renderEvento(); break;
     case 'summary': html = renderSummary(); break;
-    case 'vestuario': html = renderVestuario(); break;
     case 'gacha': html = renderGacha(); break;
     case 'penaltyMode': html = renderPenaltyMode(); break;
     case 'coleccion': html = renderColeccion(); break;
@@ -1279,9 +1278,9 @@ function renderMenu() {
           '<button class="btn btn-primary btn-block" onclick="actionGoJugarHub()">Jugar</button>' +
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionGoGacha()">Fichaje de Bolas</button>' +
+          '<button class="btn btn-block" onclick="actionGoGacha()">Fichajes</button>' +
         '</div>' +
-        '<p class="dim small center-text">' + GACHA_COST + ' pts. · desbloquea un jugador al azar</p>' +
+        '<p class="dim small center-text">Comprar personajes/escudos, o probar suerte con una tirada al azar.</p>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-outline btn-block" onclick="actionGoColeccion()">Colección de personajes</button>' +
         '</div>' +
@@ -1410,7 +1409,6 @@ function renderModeSelect() {
     '</div>'
   );
 }
-function actionGoVestuario() { G.screen = 'vestuario'; render(); }
 function actionGoColeccion() { G.screen = 'coleccion'; render(); }
 function actionGoColeccionEquipos() { G.screen = 'coleccionEquipos'; render(); }
 function actionGoMiColeccion() { G.screen = 'miColeccion'; render(); }
@@ -1462,9 +1460,8 @@ function renderMiColeccion() {
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
         '<h2 class="panel-title mt">Mi Colección</h2>' +
-        '<p class="dim small">Tus personajes desbloqueados se ven (y se compran) en Colección de personajes. Aquí está el resto: Vestuario y tus escudos.</p>' +
-        '<button class="btn btn-block" onclick="actionGoVestuario()">Vestuario</button>' +
-        '<p class="dim small">Gasta tus Puntos de Espíritu para desbloquear un personaje concreto.</p>' +
+        '<p class="dim small">Tus personajes desbloqueados se ven en Colección de personajes. Para conseguir más (comprar uno concreto o al azar), ve a Fichajes. Aquí está el resto: tus escudos.</p>' +
+        '<button class="btn btn-block" onclick="actionGoGacha()">Fichajes</button>' +
       '</div>' +
       '<div class="panel"><h3 style="margin-bottom:8px">Mis escudos (' + myShields.length + ')</h3><p class="dim small">Elige el que se muestra como el tuyo en partidos y marcadores.</p></div>' +
       shieldsHtml +
@@ -1505,32 +1502,25 @@ function renderColeccion() {
   var meta = G.meta;
   var filter = G.coleccionFilter || { tipo: null, posicion: null };
   var isUnlocked = function (c) { return !c.locked || meta.unlocked.indexOf(c.id) !== -1; };
-  var unlockedCount = ROSTER.filter(isUnlocked).length;
+  var myPlayers = ROSTER.filter(isUnlocked);
 
-  var filtered = ROSTER.filter(function (c) {
+  // Colección de personajes es solo TUYA -- lo que ya tienes desbloqueado.
+  // Comprar (concreto o al azar en Fichajes) vive aparte, en una única
+  // pantalla unificada (ver 15b), para no duplicar la misma lista en dos
+  // sitios a la vez.
+  var filtered = myPlayers.filter(function (c) {
     if (filter.tipo && c.tipo !== filter.tipo) return false;
     if (filter.posicion && c.posicion !== filter.posicion) return false;
     return true;
   });
 
   var items = filtered.map(function (c) {
-    var unlocked = isUnlocked(c);
-    // A diferencia de antes (solo "Bloqueado" como etiqueta), ahora se puede
-    // comprar directamente desde aquí igual que en Vestuario -- para no
-    // obligar a saltar a otra pantalla solo para desbloquear lo que ya
-    // estás viendo. Los "Secreto" (cost 99999) no se pueden comprar con
-    // puntos, se quedan igual que siempre.
-    var costHtml;
-    if (unlocked) costHtml = '<span class="pill">Desbloqueado</span>';
-    else if (c.cost === 99999) costHtml = '<span class="dim">Secreto</span>';
-    else costHtml = '<button class="btn btn-primary" ' + (meta.points >= c.cost ? '' : 'disabled') + ' onclick="buyCaptain(\'' + c.id + '\')">Comprar (' + c.cost + ' pts.)</button>';
     return (
-      '<div class="shop-item" style="' + (unlocked ? '' : 'opacity:.55;') + '">' +
+      '<div class="shop-item">' +
         '<div>' +
           avatarHtml(c) + ' <strong>' + escapeHtml(c.nombre) + '</strong> ' + typeBadge(c.tipo) + '<br>' +
           '<span class="dim small">' + escapeHtml(c.desc) + '</span>' +
         '</div>' +
-        '<div class="cost">' + costHtml + '</div>' +
       '</div>'
     );
   }).join('');
@@ -1546,8 +1536,8 @@ function renderColeccion() {
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
         '<h2 class="panel-title mt">Colección de personajes</h2>' +
-        '<p class="dim small">' + unlockedCount + ' de ' + ROSTER.length + ' desbloqueados. Mostrando ' + filtered.length + '.</p>' +
-        '<p class="currency-display">' + spiritIcon() + ' ' + meta.points + ' Puntos de Espíritu</p>' +
+        '<p class="dim small">' + myPlayers.length + ' de ' + ROSTER.length + ' desbloqueados. Mostrando ' + filtered.length + '.</p>' +
+        '<p class="dim small">¿Quieres desbloquear más? Ve a Fichajes.</p>' +
         filterBtns +
       '</div>' +
       items +
@@ -3046,8 +3036,23 @@ function renderSummary() {
    15. VESTUARIO (desbloqueos de meta-progreso)
    --------------------------------------------------------------------- */
 
-function renderVestuario() {
+// Comprar un personaje concreto (antes una pantalla propia, "Vestuario")
+// vive ahora como una sección plegable dentro de Fichajes, junto a las dos
+// tiradas al azar -- las 3 formas de conseguir personajes/escudos
+// unificadas en un único sitio, a petición explícita. Colapsada por
+// defecto (la lista de bloqueados puede ser larga) para no tapar las
+// máquinas de gachapon nada más entrar.
+function fichajesCompraCollapsed() {
+  return G.fichajesCompraCollapsed === undefined ? true : G.fichajesCompraCollapsed;
+}
+function actionToggleFichajesCompra() {
+  G.fichajesCompraCollapsed = !fichajesCompraCollapsed();
+  render();
+}
+
+function fichajesCompraHtml() {
   var meta = G.meta;
+  var collapsed = fichajesCompraCollapsed();
   var filter = G.vestuarioFilter || { tipo: null, posicion: null };
   var locked = ROSTER.filter(function (p) { return p.locked && p.cost !== 99999; });
 
@@ -3057,7 +3062,7 @@ function renderVestuario() {
     return true;
   });
 
-  var items = filtered.map(function (c) {
+  var items = collapsed ? '' : filtered.map(function (c) {
     var unlocked = meta.unlocked.indexOf(c.id) !== -1;
     var right = unlocked
       ? '<span class="dim">Desbloqueado</span>'
@@ -3073,23 +3078,22 @@ function renderVestuario() {
     );
   }).join('');
 
-  var filterBtns = '<div class="btn-row">' +
+  var filterBtns = collapsed ? '' : (
+    '<div class="btn-row">' +
     (filter.tipo ? '<button class="btn btn-outline" onclick="vestuarioFilterChange(\'tipo\', null)">Tipo: ' + filter.tipo + ' ✕</button>' : TYPES.map(function (t) { return '<button class="btn" onclick="vestuarioFilterChange(\'tipo\', \'' + t + '\')">' + t + '</button>'; }).join('')) +
     '</div><div class="btn-row">' +
     (filter.posicion ? '<button class="btn btn-outline" onclick="vestuarioFilterChange(\'posicion\', null)">Pos: ' + filter.posicion + ' ✕</button>' : POSITIONS.map(function (p) { return '<button class="btn" onclick="vestuarioFilterChange(\'posicion\', \'' + p + '\')">' + p + '</button>'; }).join('')) +
-    '</div>';
+    '</div>'
+  );
 
   return (
-    '<div class="screen">' +
-      '<div class="panel center-text">' +
-        '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
-        '<h2 class="panel-title mt">Vestuario</h2>' +
-        '<p class="currency-display">' + spiritIcon() + ' ' + meta.points + ' Puntos de Espíritu</p>' +
-        '<p class="dim small">Mostrando ' + filtered.length + ' de ' + locked.length + ' jugadores desbloqueables.</p>' +
-        filterBtns +
-      '</div>' +
-      items +
-    '</div>'
+    '<div class="panel">' +
+      '<h3 style="margin-bottom:8px">Comprar personaje concreto</h3>' +
+      '<p class="dim small">Elige tú a quién desbloquear (a precio fijo, distinto para cada uno) en vez de dejarlo al azar.</p>' +
+      '<button class="btn btn-outline btn-block" onclick="actionToggleFichajesCompra()">' + (collapsed ? 'Mostrar' : 'Ocultar') + ' (' + filtered.length + ' de ' + locked.length + ')</button>' +
+      filterBtns +
+    '</div>' +
+    items
   );
 }
 
@@ -3257,18 +3261,19 @@ function renderGacha() {
     '<div class="screen">' +
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
-        '<h2 class="panel-title mt mb0">Fichaje de Bolas</h2>' +
-        '<p class="dim small">Dos máquinas independientes: una te ficha a un jugador real al azar, la otra te da un escudo de equipo rival al azar. No se puede elegir qué te toca.</p>' +
+        '<h2 class="panel-title mt mb0">Fichajes</h2>' +
+        '<p class="dim small">Las 3 formas de conseguir personajes y escudos: comprar uno concreto a precio fijo, o probar suerte con una tirada al azar de jugador o de escudo.</p>' +
         '<p class="currency-display">' + spiritIcon() + ' ' + meta.points + ' Puntos de Espíritu</p>' +
       '</div>' +
+      fichajesCompraHtml() +
       '<div class="panel center-text">' +
-        '<h3 style="margin-bottom:8px">Jugadores</h3>' +
+        '<h3 style="margin-bottom:8px">Tirada de jugador al azar</h3>' +
         gachaMachineHtml(g.spinning) +
         '<button class="btn btn-primary btn-block mt" ' + (canSpin ? '' : 'disabled') + ' onclick="spinGacha()">' + spinLabel + '</button>' +
         resultHtml +
       '</div>' +
       '<div class="panel center-text">' +
-        '<h3 style="margin-bottom:8px">Escudos</h3>' +
+        '<h3 style="margin-bottom:8px">Tirada de escudo al azar</h3>' +
         gachaMachineHtml(sg.spinning) +
         '<button class="btn btn-primary btn-block mt" ' + (canSpinShield ? '' : 'disabled') + ' onclick="spinShieldGacha()">' + shieldSpinLabel + '</button>' +
         shieldResultHtml +
