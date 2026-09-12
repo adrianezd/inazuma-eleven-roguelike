@@ -1603,7 +1603,7 @@ var ROSTER = [
 {
   id:'r188', nombre:'Dolph Hensen', original:'Dolph Hensen', sprite:'assets/sprites/r188.webp',
   posicion:'Centrocampista', tipo:'Viento',
-  tiro:76,pase:82,defensa:55,especial:84,
+  tiro:81,pase:78,defensa:59,especial:84,
   hissatsu:['Megalodon'],
   desc:'Centrocampista y capitán de los Big Waves, especialista en jugadas ofensivas.',
   locked:true,cost:189
@@ -1619,7 +1619,7 @@ var ROSTER = [
 {
   id:'r190', nombre:'Julien Rousseau', original:'Julien Rousseau', sprite:'assets/sprites/r190.webp',
   posicion:'Centrocampista', tipo:'Viento',
-  tiro:79,pase:79,defensa:52,especial:78,
+  tiro:79,pase:79,defensa:62,especial:78,
   hissatsu:['Cómo ser popular'],
   desc:'Centrocampista francés de los Grifos de la Rosa.',
   locked:true,cost:168
@@ -1645,7 +1645,7 @@ var ROSTER = [
   id:'r193', nombre:'Desmodus Drakul', original:'Desmodus Drakul',
   sprite:'assets/sprites/r193.webp',
   posicion:'Centrocampista', tipo:'Montaña',
-  tiro:84,pase:82,defensa:55,especial:91,
+  tiro:84,pase:82,defensa:65,especial:91,
   hissatsu:['Mordisco de Vampiro'],
   desc:'Capitán de los Nosfanáticos y líder de las Criaturas de la Noche. Miximax: Gen V.',
   locked:true,cost:221
@@ -1681,7 +1681,7 @@ var ROSTER = [
   id:'r197', nombre:'Lotus', original:'Lotus',
   sprite:'assets/sprites/r197.webp',
   posicion:'Portero', tipo:'Montaña',
-  tiro:35,pase:58,defensa:85,especial:87,
+  tiro:35,pase:58,defensa:85,especial:85,
   hissatsu:['Agujero Blanco'],
   desc:'Guardameta de los Desesperdidos y uno de los duplicados de Aster.',
   locked:true,cost:221
@@ -1690,7 +1690,7 @@ var ROSTER = [
   id:'r198', nombre:'Holly Waters', original:'Holly Waters',
   sprite:'assets/sprites/r198.webp',
   posicion:'Defensa', tipo:'Fuego',
-  tiro:48,pase:63,defensa:81,especial:86,
+  tiro:48,pase:63,defensa:81,especial:81,
   hissatsu:['Luz Cegadora'],
   desc:'Defensa de los Nosfanáticos y de las Criaturas de la Noche.',
   locked:true,cost:200
@@ -2005,7 +2005,7 @@ var ROSTER = [
   id:'r233', nombre:'Infinity Beyond', original:'Infinity Beyond',
   sprite:'assets/sprites/r233.webp',
   posicion:'Delantero', tipo:'Fuego',
-  tiro:82,pase:70,defensa:40,especial:85,
+  tiro:82,pase:70,defensa:40,especial:80,
   hissatsu:['Remate de Gaia'],
   desc:'Delantero destacado del Colegio Poderosa Fe.',
   locked:true,cost:205
@@ -2014,7 +2014,7 @@ var ROSTER = [
   id:'r234', nombre:'Maxim Millennium', original:'Maxim Millennium',
   sprite:'assets/sprites/r234.webp',
   posicion:'Centrocampista', tipo:'Bosque',
-  tiro:80,pase:86,defensa:52,especial:88,
+  tiro:80,pase:74,defensa:52,especial:78,
   hissatsu:['Remate Misil'],
   desc:'Jugador destacado del Colegio Poderosa Fe.',
   locked:true,cost:200
