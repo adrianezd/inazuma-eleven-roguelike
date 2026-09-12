@@ -732,6 +732,13 @@ a { color: var(--accent); }
   border-bottom: 1px solid var(--border);
 }
 .futdraft-timeline-row:last-child { border-bottom: none; }
+/* Goles del rival en espejo: toda la fila (minuto, escudo, avatar, texto)
+   se pega a la derecha en vez de a la izquierda, para distinguirlos de un
+   vistazo de los tuyos sin tener que leer el nombre del equipo. */
+.futdraft-timeline-row-opp {
+  flex-direction: row-reverse;
+  text-align: right;
+}
 .futdraft-timeline-minute {
   font-family: var(--font-mono, monospace);
   color: var(--accent-2);

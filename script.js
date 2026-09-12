@@ -4522,11 +4522,16 @@ window.futDraftSkipLive = function () {
 // goles rivales se añade el nombre del equipo entre paréntesis, porque el
 // nombre del jugador fantasma no dice por sí solo para quién "juega".
 function futDraftTimelineRowHtml(ev, oppName) {
-  var shieldSrc = ev.side === 'me' ? getPlayerShieldPath() : teamShieldPath(oppName);
+  var isOpp = ev.side !== 'me';
+  var shieldSrc = isOpp ? teamShieldPath(oppName) : getPlayerShieldPath();
   var text = '<strong>' + escapeHtml(ev.scorer.nombre) + '</strong>' +
     (ev.assist ? ' <span class="dim">(asist. ' + escapeHtml(ev.assist.nombre) + ')</span>' : ' <span class="dim">(gol en solitario)</span>');
-  if (ev.side !== 'me') text += ' <span class="dim">· ' + escapeHtml(oppName) + '</span>';
-  return '<div class="futdraft-timeline-row"><span class="futdraft-timeline-minute">' + ev.minute + '\'</span><img class="futdraft-timeline-shield" src="' + escapeHtml(shieldSrc) + '" alt="">' + avatarHtml(ev.scorer) + '<span>' + text + '</span></div>';
+  if (isOpp) text += ' <span class="dim">· ' + escapeHtml(oppName) + '</span>';
+  // Los goles del rival se pintan en espejo (pegados a la derecha de la
+  // fila) para distinguirlos de un vistazo de los tuyos, que se quedan
+  // pegados a la izquierda como siempre -- a petición explícita.
+  var rowClass = 'futdraft-timeline-row' + (isOpp ? ' futdraft-timeline-row-opp' : '');
+  return '<div class="' + rowClass + '"><span class="futdraft-timeline-minute">' + ev.minute + '\'</span><img class="futdraft-timeline-shield" src="' + escapeHtml(shieldSrc) + '" alt="">' + avatarHtml(ev.scorer) + '<span>' + text + '</span></div>';
 }
 
 function renderFutDraftLive() {
