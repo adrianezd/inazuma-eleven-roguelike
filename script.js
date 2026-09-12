@@ -1184,9 +1184,15 @@ function newRun(modeOrHard) {
 // genera el disparo", así que aquí solo se cuenta goleador.
 function recordRunGoalScorer(attackerRaw, isPlayerAttacking) {
   if (!G.run || !G.run.goalStats) return;
-  var key = isPlayerAttacking ? ('p:' + attackerRaw.id) : ('r:' + attackerRaw.nombre);
+  // Solo se registran los goles del propio jugador: en un partido por turnos
+  // el rival "no tiene identidad real" (se regenera de cero cada partido, ver
+  // generateRivalPlayer) y no tiene sentido mostrar en el resumen quién te ha
+  // metido gol -- eso solo se sabe (y se muestra) en FutDraft/Liga, que sí
+  // simulan un partido real con jugadores reales.
+  if (!isPlayerAttacking) return;
+  var key = 'p:' + attackerRaw.id;
   var scorers = G.run.goalStats.scorers;
-  var bucket = scorers[key] || { nombre: attackerRaw.nombre + (isPlayerAttacking ? '' : ' (rival)'), count: 0 };
+  var bucket = scorers[key] || { nombre: attackerRaw.nombre, count: 0 };
   bucket.count++;
   scorers[key] = bucket;
 }
