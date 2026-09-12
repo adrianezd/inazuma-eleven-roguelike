@@ -2051,8 +2051,54 @@ var ROSTER = [
   sprite:'assets/sprites/r238.webp',
   posicion:'Delantero', tipo:'Montaña',
   tiro:80,pase:75,defensa:43,especial:84,
-  hissatsu:['Remate de Hielo'],
+  hissatsu:['Tiro Balista'],
   desc:'Hermano de Bay Laurel y Langford Ash.',
   locked:true,cost:194
 },
+{
+  id:'r239', nombre:'Jade Beor', original:'Yurika Beor',
+  sprite:'assets/sprites/r239.webp',
+  posicion:'Delantero', tipo:'Bosque',
+  tiro:88,pase:82,defensa:42,especial:85,
+  hissatsu:['Sombra de Orión'],
+  desc:'Capitana de La Sombra de Orión y una de las armas más poderosas de la Fundación Orión.',
+  locked:true,cost:225
+},
+{
+  id:'r240', nombre:'Betelgeuse', original:'Betelgeuse',
+  sprite:'assets/sprites/r240.webp',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:82,pase:75,defensa:40,especial:83,
+  hissatsu:['Sombra de Orión'],
+  desc:'Uno de los principales delanteros de Eclipse de Orión, considerado inferior únicamente a Jade.',
+  locked:true,cost:215
+},
+{
+  id:'r241', nombre:'Procyon', original:'Procyon',
+  sprite:'assets/sprites/r241.webp',
+  posicion:'Portero', tipo:'Bosque',
+  tiro:51,pase:78,defensa:84,especial:88,
+  hissatsu:['Escudo sombrío'],
+  desc:'Uno de los miembros principales de Eclipse de Orión y Discípulo de Orión.',
+  locked:true,cost:195
+},
+{
+  id:'r242', nombre:'Xavier Schiller', original:'Kira Hiroto',
+  sprite:'assets/sprites/r242.webp',
+  posicion:'Delantero', tipo:'Bosque',
+  tiro:85,pase:78,defensa:40,especial:85,
+  hissatsu:['Explosión'],
+  desc:'Delantero de Ares con un enorme talento goleador.',
+  locked:true,cost:225
+},
+{
+  id:'r243', nombre:'Perseo', original:'Percy Hurst',
+  sprite:'assets/sprites/r243.webp',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:82,pase:70,defensa:42,especial:81,
+  hissatsu:['Tijera Celestial'],
+  desc:'Delantero del Instituto Zeus en la línea temporal de Ares.',
+  locked:true,cost:175
+},
+
 ];
