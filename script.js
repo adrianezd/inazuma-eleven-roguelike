@@ -4218,7 +4218,10 @@ function renderTopScorersAssistsPanel(stats) {
   var topScorer = scorers[0], topAssist = assists[0];
   function listHtml(list) {
     return list.map(function (s, i) {
-      return '<div class="futdraft-timeline-row"><span>' + (i + 1) + '.</span>' + avatarHtml(s.player) + '<span style="flex:1;text-align:left">' + escapeHtml(s.nombre) + ' <span class="dim">(' + escapeHtml(s.team) + ')</span></span><span class="dim">' + s.count + '</span></div>';
+      var shieldSrc = s.team === 'Tu equipo' ? PLAYER_SHIELD : teamShieldPath(s.team);
+      return '<div class="futdraft-timeline-row"><span>' + (i + 1) + '.</span>' + avatarHtml(s.player) +
+        '<img class="futdraft-timeline-shield" src="' + escapeHtml(shieldSrc) + '" alt="" title="' + escapeHtml(s.team) + '">' +
+        '<span style="flex:1;text-align:left">' + escapeHtml(s.nombre) + '</span><span class="dim">' + s.count + '</span></div>';
     }).join('');
   }
   return (
