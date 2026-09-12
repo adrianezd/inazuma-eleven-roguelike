@@ -3947,10 +3947,11 @@ window.futDraftSkipLive = function () {
 // goles rivales se añade el nombre del equipo entre paréntesis, porque el
 // nombre del jugador fantasma no dice por sí solo para quién "juega".
 function futDraftTimelineRowHtml(ev, oppName) {
+  var shieldSrc = ev.side === 'me' ? PLAYER_SHIELD : teamShieldPath(oppName);
   var text = '<strong>' + escapeHtml(ev.scorer.nombre) + '</strong>' +
     (ev.assist ? ' <span class="dim">(asist. ' + escapeHtml(ev.assist.nombre) + ')</span>' : ' <span class="dim">(gol en solitario)</span>');
   if (ev.side !== 'me') text += ' <span class="dim">· ' + escapeHtml(oppName) + '</span>';
-  return '<div class="futdraft-timeline-row"><span class="futdraft-timeline-minute">' + ev.minute + '\'</span><span>⚽</span><span>' + text + '</span></div>';
+  return '<div class="futdraft-timeline-row"><span class="futdraft-timeline-minute">' + ev.minute + '\'</span><img class="futdraft-timeline-shield" src="' + escapeHtml(shieldSrc) + '" alt=""><span>' + text + '</span></div>';
 }
 
 function renderFutDraftLive() {
