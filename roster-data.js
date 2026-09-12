@@ -2005,7 +2005,7 @@ var ROSTER = [
   id:'r233', nombre:'Infinity Beyond', original:'Infinity Beyond',
   sprite:'assets/sprites/r233.webp',
   posicion:'Delantero', tipo:'Fuego',
-  tiro:90,pase:70,defensa:40,especial:87,
+  tiro:82,pase:70,defensa:40,especial:85,
   hissatsu:['Remate de Gaia'],
   desc:'Delantero destacado del Colegio Poderosa Fe.',
   locked:true,cost:205
@@ -2015,7 +2015,7 @@ var ROSTER = [
   sprite:'assets/sprites/r234.webp',
   posicion:'Centrocampista', tipo:'Bosque',
   tiro:80,pase:86,defensa:52,especial:88,
-  hissatsu:['Tornado de Fuego'],
+  hissatsu:['Remate Misil'],
   desc:'Jugador destacado del Colegio Poderosa Fe.',
   locked:true,cost:200
 },
@@ -2023,8 +2023,8 @@ var ROSTER = [
   id:'r235', nombre:'Octavus Kraken', original:'Octavus Kraken',
   sprite:'assets/sprites/r235.webp',
   posicion:'Defensa', tipo:'Fuego',
-  tiro:86,pase:67,defensa:45,especial:82,
-  hissatsu:['Remate del Tiburón'],
+  tiro:32,pase:67,defensa:81,especial:82,
+  hissatsu:['Bloqueo Ballena'],
   desc:'Defensa de la Academia Cala Pirata.',
   locked:true,cost:189
 },
@@ -2032,17 +2032,17 @@ var ROSTER = [
   id:'r236', nombre:'Bay Laurel', original:'Bay Laurel',
   sprite:'assets/sprites/r236.webp',
   posicion:'Centrocampista', tipo:'Montaña',
-  tiro:73,pase:82,defensa:58,especial:80,
-  hissatsu:['Remate de Hielo'],
+  tiro:73,pase:82,defensa:80,especial:80,
+  hissatsu:['Espejismo de balón'],
   desc:'Uno de los hermanos Ash, jugador destacado del Kirkwood.',
   locked:true,cost:184
 },
 {
   id:'r237', nombre:'Langford Ash', original:'Langford Ash',
   sprite:'assets/sprites/r237.webp',
-  posicion:'Defensa', tipo:'Montaña',
-  tiro:64,pase:70,defensa:84,especial:78,
-  hissatsu:['Bloqueo de Fuego'],
+  posicion:'Centrocampista', tipo:'Montaña',
+  tiro:74,pase:70,defensa:70,especial:78,
+  hissatsu:['Tiro Balista'],
   desc:'Hermano de Bay Laurel y jugador del Kirkwood.',
   locked:true,cost:173
 },
@@ -2050,7 +2050,7 @@ var ROSTER = [
   id:'r238', nombre:'Bradford Ash', original:'Bradford Ash',
   sprite:'assets/sprites/r238.webp',
   posicion:'Delantero', tipo:'Montaña',
-  tiro:85,pase:75,defensa:43,especial:84,
+  tiro:80,pase:75,defensa:43,especial:84,
   hissatsu:['Remate de Hielo'],
   desc:'Hermano de Bay Laurel y Langford Ash.',
   locked:true,cost:194
