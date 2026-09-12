@@ -2274,6 +2274,24 @@ function resolveAlternativoRegate(attackerRaw) {
   render();
 }
 
+// Vista previa del % de gol de un Tiro normal ANTES de tirar (no resuelve
+// nada, no consume turno): misma fórmula exacta que el Tiro real del
+// jugador en resolveAttack, para que el número mostrado sea siempre fiel al
+// resultado real. Solo para Tiro, a petición explícita -- Regate y Especial
+// se quedan sin previsualizar, igual que hasta ahora.
+function previewPlayerTiroChance(attackerRaw, defenderRaw) {
+  var attacker = effectiveStats(attackerRaw);
+  var defender = effectiveStats(defenderRaw);
+  var adv = typeAdvantage(attacker.tipo, defender.tipo);
+  var chance = 50 + (attacker.tiro - defender.defensa) * 0.5;
+  chance += adv * 10;
+  chance += weatherChanceDelta(G.match.weather, 'tiro', attacker.tipo);
+  if (G.run && G.run.hardMode) chance -= 5;
+  var isOwnGoalkeeperShot = attackerRaw.posicion === 'Portero';
+  var maxChance = isOwnGoalkeeperShot ? 8 : 95;
+  return clamp(Math.round(chance), 5, maxChance);
+}
+
 function renderPlayerTurn() {
   var m = G.match;
   var squad = G.run.squad;
@@ -2325,9 +2343,19 @@ function renderPlayerTurn() {
       '</div>'
     );
   } else {
+    // Partidos por turnos "normales" (Normal/Difícil/Torneo/Supervivencia/
+    // Diario, todos 4 contra 4): se muestra el % de gol del Tiro con el
+    // jugador ya seleccionado, calculado contra el portero rival real --
+    // a petición explícita, y SOLO para Tiro (Regate/Especial se quedan
+    // igual que siempre).
+    var tiroLabel = 'Directo a puerta';
+    if (selectedPlayer) {
+      var oppGkForTiro = m.oppSquad.find(function (p) { return p.posicion === 'Portero'; }) || m.oppSquad[0];
+      tiroLabel = 'Gol al ' + previewPlayerTiroChance(selectedPlayer, oppGkForTiro) + '%';
+    }
     actions = (
       '<div class="action-row">' +
-        '<button class="btn action-btn" ' + (selected ? '' : 'disabled') + ' onclick="playAction(\'tiro\')">Tiro<small>Directo a puerta</small></button>' +
+        '<button class="btn action-btn" ' + (selected ? '' : 'disabled') + ' onclick="playAction(\'tiro\')">Tiro<small>' + tiroLabel + '</small></button>' +
         '<button class="btn action-btn" ' + (selected ? '' : 'disabled') + ' onclick="playAction(\'regate\')">Regate<small>Seguro, prepara la especial</small></button>' +
         '<button class="btn action-btn btn-primary" ' + (canSpecial ? '' : 'disabled') + ' onclick="playAction(\'especial\')">' + escapeHtml(specialLabel) + '<small>' + specialHint + '</small></button>' +
       '</div>'
