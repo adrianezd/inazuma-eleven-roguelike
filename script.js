@@ -4858,7 +4858,10 @@ function renderFutDraftSummary() {
    --------------------------------------------------------------------- */
 
 var LIGA_TEAM_COUNT = 18; // tú + 17 rivales
-var LIGA_BASE_REWARD = 60;
+// Multiplicado x3 sobre el original (60 base, +5 por posición) a petición
+// explícita: la Liga es la inversión más larga del juego (17 jornadas) y
+// debía compensar bastante más en Puntos de Espíritu que hasta ahora.
+var LIGA_BASE_REWARD = 180;
 var LIGA_TIERS = ['normal', 'dificil', 'extremo'];
 var LIGA_TIER_NAMES = { normal: 'Normal', dificil: 'Difícil', extremo: 'Extremo' };
 function ligaTierName(tier) { return LIGA_TIER_NAMES[tier] || tier; }
@@ -5138,7 +5141,7 @@ function finishLigaRun() {
     if (liga.tier === 'normal') meta.ligaTierUnlocked.dificil = true;
     else if (liga.tier === 'dificil') meta.ligaTierUnlocked.extremo = true;
   }
-  var reward = LIGA_BASE_REWARD + Math.max(0, LIGA_TEAM_COUNT - myPosition) * 5;
+  var reward = LIGA_BASE_REWARD + Math.max(0, LIGA_TEAM_COUNT - myPosition) * 15;
   meta.points += reward;
   saveMeta(meta);
   liga.finished = true;
@@ -5164,9 +5167,9 @@ function renderLigaSummary() {
         '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
         '<h2 class="panel-title mt">' + title + '</h2>' +
         (liga.champion ? '<div class="bracket-trophy" style="margin:0 auto">🏆</div>' : '') +
+        '<div class="reward-highlight">' + spiritIcon() + ' +' + liga.reward + ' Puntos de Espíritu</div>' +
         '<p class="dim small">Terminaste ' + liga.finalPosition + 'º de ' + LIGA_TEAM_COUNT + '.</p>' +
         (unlockedNext ? '<p class="dim small">¡Nivel ' + ligaTierName(LIGA_TIERS[nextTierIdx]) + ' desbloqueado!</p>' : '') +
-        '<p class="currency-display">' + spiritIcon() + ' +' + liga.reward + ' Puntos de Espíritu</p>' +
       '</div>' +
       renderTopScorersAssistsPanel(liga.stats) +
       '<div class="panel center-text">' +

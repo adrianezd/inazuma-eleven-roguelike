@@ -818,6 +818,31 @@ a { color: var(--accent); }
   color: var(--accent-2);
 }
 
+/* Recompensa destacada al terminar (p.ej. Liga): mucho más grande y con un
+   pequeño "pop" al aparecer, para que no pase desapercibida como un simple
+   currency-display más -- a petición explícita tras subir la cantidad. */
+.reward-highlight {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 12px auto;
+  padding: 14px 20px;
+  max-width: fit-content;
+  background: linear-gradient(135deg, rgba(255,209,102,0.22), rgba(255,209,102,0.06));
+  border: 2px solid var(--accent-2);
+  border-radius: var(--radius, 14px);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--accent-2);
+  animation: rewardHighlightPop 0.5s ease;
+}
+@keyframes rewardHighlightPop {
+  0% { transform: scale(0.8); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
 .stats-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
 .stat-tile { background: var(--bg-alt); border-radius: var(--radius-sm); padding: 10px; text-align: center; }
 .stat-tile .num { font-size: 1.7rem; font-family: 'Oswald', sans-serif; color: var(--accent); }
