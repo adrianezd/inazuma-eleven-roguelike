@@ -89,26 +89,26 @@ var RIVAL_TEAM_BOSSES = [
 var TEAM_POWER = {
   // Solo en RIVAL_TEAM_NAMES (nivel normal)
   'Occult': 28,
-  'Alpino': 33, 'Unicorn': 40, 'Big Waves': 30,
-  'Brain': 30, 'Wild': 32, 'Shuriken': 34, 'Kirkwood': 39, 'Umbrella': 18,
-  'Tarjeteros': 16, 'Veteranos Inazuma': 38,
-  'Cala Pirata': 21, 'Sallys': 24, 'Leones del desierto': 33,
-  'Academia Universal': 29, 'Instituto Plenilunio': 34,
-  'Raimon Inakuni': 17, 'Mary Times': 36, 'Mar de Luna': 29, 'Farm': 38, 'Fauxshore': 31,
-  'Los arions': 27, 'Mar de Árboles': 37, 'Otaku': 23,
+  'Alpino': 33, 'Unicorn': 58, 'Big Waves': 50,
+  'Brain': 35, 'Wild': 38, 'Shuriken': 38, 'Kirkwood': 39, 'Umbrella': 28,
+  'Tarjeteros': 36, 'Veteranos Inazuma': 38,
+  'Cala Pirata': 42, 'Sallys': 34, 'Leones del desierto': 46,
+  'Academia Universal': 46, 'Instituto Plenilunio': 45,
+  'Raimon Inakuni': 37, 'Mary Times': 36, 'Mar de Luna': 43, 'Farm': 42, 'Fauxshore': 39,
+  'Los arions': 47, 'Mar de Árboles': 47, 'Otaku': 33,
   // En las dos listas a la vez (versátiles, gama media-alta)
-  'Royal Academy': 61, 'Zeus': 64, 'Instituto Alius': 65,
+  'Royal Academy': 70, 'Zeus': 75, 'Instituto Alius': 75,
   // Solo en RIVAL_TEAM_BOSSES (nivel jefe)
-  'Academia Ogre': 60, 'Emperadores Oscuros': 85, 'Genesis': 90,
+  'Academia Ogre': 75, 'Emperadores Oscuros': 93, 'Genesis': 91,
   'Prominence': 73, 'Polvo de Diamante': 73, 'Tormenta de Géminis': 70, 'Dragones de Fuego': 70,
-  'Pequeños Gigantes': 82, 'Épsilon': 74, 'Los Emperadores': 75, 'Os Reis': 75, 'Neo Japón': 74,
-  'Protocolo Omega': 66, 'Caos': 75, 'El Dorado 01': 57, 'Resistencia Japon': 70, 'Resistencia Japón GO': 70,
-  'Gir': 56, 'Gar': 56, 'Ragnah': 80, 'Alius Masters': 73, 'Inazuma Japon': 88, 'Inazuma Japon GO': 96,
-  'Chrono Storm': 77, 'Dragon Link': 74, 'Desesperdidos': 70, 'Dinastía Galáctica': 78,
-  'Earth Eleven': 88, 'Eclipse de Orión': 85, 'El Dorado 02': 75, 'El Dorado 03': 79,
-  'Protocolo Omega 2.0': 76, 'Protocolo Omega 3.0': 78, 'Zanark Domain': 78, 'Equipo Zero': 81,
+  'Pequeños Gigantes': 90, 'Épsilon': 74, 'Los Emperadores': 75, 'Os Reis': 75, 'Neo Japón': 74,
+  'Protocolo Omega': 66, 'Caos': 75, 'El Dorado 01': 57, 'Resistencia Japon': 80, 'Resistencia Japón GO': 70,
+  'Gir': 56, 'Gar': 56, 'Ragnah': 80, 'Alius Masters': 95, 'Inazuma Japon': 92, 'Inazuma Japon GO': 90,
+  'Chrono Storm': 95, 'Dragon Link': 80, 'Desesperdidos': 70, 'Dinastía Galáctica': 84,
+  'Earth Eleven': 94, 'Eclipse de Orión': 85, 'El Dorado 02': 75, 'El Dorado 03': 79,
+  'Protocolo Omega 2.0': 76, 'Protocolo Omega 3.0': 78, 'Zanark Domain': 78, 'Equipo Zero': 86,
   'Falam Medius': 82, 'Flota Ixar': 83, 'Guardianes de La Reina': 81, 'Orfeo': 80,
-  'Élite Omega': 88
+  'Élite Omega': 90
 };
 
 
@@ -123,28 +123,28 @@ var ROSTER = [
     tiro: 42, pase: 55, defensa: 88, especial: 88,
     hissatsu: ['Mano Mágica'],
     desc: 'Portero legendario y capitán de corazón indomable.',
-    locked: true, cost: 140
+    locked: true, cost: 190
   },
   {
     id: 'r02', nombre: 'Axel Blaze', original: 'Gouenji Shuuya',
     posicion: 'Delantero', tipo: 'Fuego',
-    tiro: 89, pase: 65, defensa: 32, especial: 87,
+    tiro: 89, pase: 75, defensa: 32, especial: 87,
     hissatsu: ['Tornado de Fuego'],
     desc: 'El delantero estrella, el mejor rematador del equipo.',
-    locked: true, cost: 190
+    locked: true, cost: 200
   },
   {
     id: 'r03', nombre: 'Nathan Swift', original: 'Kazemaru Ichirouta',
     posicion: 'Defensa', tipo: 'Viento',
-    tiro: 70, pase: 72, defensa: 69, especial: 65,
+    tiro: 75, pase: 76, defensa: 74, especial: 65,
     hissatsu: ['Defensa Huracán'],
     desc: 'El jugador más veloz del Raimon.',
-    locked: true, cost: 75
+    locked: true, cost: 120
   },
   {
     id: 'r04', nombre: 'Jude Sharp', original: 'Kidou Yuuto',
     posicion: 'Centrocampista', tipo: 'Viento',
-    tiro: 75, pase: 81, defensa: 60, especial: 80,
+    tiro: 80, pase: 85, defensa: 67, especial: 80,
     hissatsu: ['Pingüino Emperador III'],
     desc: 'Estratega frío y calculador, el cerebro del equipo.',
     locked: true, cost: 75
@@ -152,7 +152,7 @@ var ROSTER = [
   {
     id: 'r05', nombre: 'Kevin Dragonfly', original: 'Someoka Ryuugo',
     posicion: 'Delantero', tipo: 'Bosque',
-    tiro: 77, pase: 61, defensa: 40, especial: 70,
+    tiro: 78, pase: 61, defensa: 40, especial: 70,
     hissatsu: ['Remate Dragón'],
     desc: 'Delantero fogoso, uno de los fundadores del club.',
     locked: false
@@ -160,10 +160,10 @@ var ROSTER = [
   {
     id: 'r06', nombre: 'Jack Wallside', original: 'Kabeyama Heigorou',
     posicion: 'Defensa', tipo: 'Montaña',
-    tiro: 36, pase: 67, defensa: 79, especial: 70,
+    tiro: 36, pase: 67, defensa: 83, especial: 80,
     hissatsu: ['El Muro'],
     desc: 'Un muro humano casi imposible de traspasar.',
-    locked: true, cost: 99
+    locked: true, cost: 130
   },
   {
     id: 'r07', nombre: 'Caleb Stonewall', original: 'Fudou Akio',
@@ -176,7 +176,7 @@ var ROSTER = [
   {
     id: 'r08', nombre: 'Shawn Froste', original: 'Fubuki Shirou',
     posicion: 'Defensa', tipo: 'Viento',
-    tiro: 73, pase: 56, defensa: 76, especial: 77,
+    tiro: 76, pase: 58, defensa: 79, especial: 80,
     hissatsu: ['Paisaje Helado'],
     desc: 'Frío como el hielo, letal frente a la portería.',
     locked: true, cost: 144
@@ -200,7 +200,7 @@ var ROSTER = [
   {
     id: 'r11', nombre: 'Darren LaChance', original: 'Tachimukai Yuuki',
     posicion: 'Portero', tipo: 'Montaña',
-    tiro: 20, pase: 48, defensa: 81, especial: 72,
+    tiro: 20, pase: 48, defensa: 81, especial: 80,
     hissatsu: ['Mano Mágica'],
     desc: 'Guardameta suplente que se ganó su titularidad a pulso.',
     locked: true, cost: 83
@@ -208,7 +208,7 @@ var ROSTER = [
   {
     id: 'r12', nombre: 'Todd Ironside', original: 'Kurimatsu Teppei',
     posicion: 'Defensa', tipo: 'Montaña',
-    tiro: 34, pase: 64, defensa: 77, especial: 48,
+    tiro: 34, pase: 64, defensa: 77, especial: 67,
     hissatsu: ['Corte Giratorio'],
     desc: 'Defensa fornido con un don inesperado para el regate.',
     locked: false
@@ -217,7 +217,7 @@ var ROSTER = [
   {
     id: 'r13', nombre: 'Joseph King', original: 'Genda Koujirou',
     posicion: 'Portero', tipo: 'Fuego',
-    tiro: 24, pase: 56, defensa: 83, especial: 73,
+    tiro: 24, pase: 56, defensa: 83, especial: 81,
     hissatsu: ['Escudo de Fuerza'],
     desc: 'Guardameta de la Royal, orgulloso e inquebrantable.',
     locked: true, cost: 102
@@ -225,7 +225,7 @@ var ROSTER = [
   {
     id: 'r14', nombre: 'Xavier Foster', original: 'Kiyama Hiroto',
     posicion: 'Delantero', tipo: 'Fuego',
-    tiro: 82, pase: 54, defensa: 38, especial: 80,
+    tiro: 87, pase: 64, defensa: 38, especial: 80,
     hissatsu: ['Cañon de Meteoritos'],
     desc: 'Antiguo capitán de Genesis, ambicioso y brillante.',
     locked: true, cost: 135
@@ -233,7 +233,7 @@ var ROSTER = [
   {
     id: 'r15', nombre: 'Jordan Greenway', original: 'Midorikawa Ryuuji',
     posicion: 'Centrocampista', tipo: 'Bosque',
-    tiro: 75, pase: 76, defensa: 51, especial: 70,
+    tiro: 75, pase: 76, defensa: 51, especial: 73,
     hissatsu: ['Puerta Astral'],
     desc: 'Técnica exquisita y un gran corazón.',
     locked: true, cost: 147
@@ -241,7 +241,7 @@ var ROSTER = [
   {
     id: 'r16', nombre: 'Bobby Shearer', original: 'Domon Asuka',
     posicion: 'Defensa', tipo: 'Bosque',
-    tiro: 42, pase: 58, defensa: 78, especial: 54,
+    tiro: 42, pase: 58, defensa: 80, especial: 65,
     hissatsu: ['Corte Volcánico'],
     desc: 'Defensor disciplinado, siempre el primero en el barro.',
     locked: true, cost: 108
@@ -250,7 +250,7 @@ var ROSTER = [
   {
     id: 'r17', nombre: 'Bryce Withingale', original: 'Suzuno Fuusuke',
     posicion: 'Delantero', tipo: 'Viento',
-    tiro: 82, pase: 60, defensa: 38, especial: 73,
+    tiro: 84, pase: 60, defensa: 38, especial: 73,
     hissatsu: ['Balón Iceberg'],
     desc: 'Capitán de Diamond Dust, frío y calculador frente a la portería.',
     locked: true, cost: 131
@@ -258,7 +258,7 @@ var ROSTER = [
   {
     id: 'r18', nombre: 'Hurley Kane', original: 'Tsunami Jousuke',
     posicion: 'Defensa', tipo: 'Viento',
-    tiro: 66, pase: 54, defensa: 70, especial: 56,
+    tiro: 72, pase: 54, defensa: 79, especial: 73,
     hissatsu: ['Remate Tsunami'],
     desc: 'Surfista y defensa de Inazuma Japón, imparable con el viento a favor.',
     locked: true, cost: 138
@@ -266,7 +266,7 @@ var ROSTER = [
   {
     id: 'r19', nombre: 'Claude Beacons', original: 'Nagumo Haruya',
     posicion: 'Delantero', tipo: 'Fuego',
-    tiro: 83, pase: 60, defensa: 32, especial: 72,
+    tiro: 85, pase: 52, defensa: 32, especial: 81,
     hissatsu: ['Llamarada Atómica'],
     desc: 'Capitán de Prominence, ambicioso y ardiente ante el gol.',
     locked: true, cost: 105
@@ -274,7 +274,7 @@ var ROSTER = [
   {
     id: 'r20', nombre: 'Byron Love', original: 'Afuro Terumi',
     posicion: 'Centrocampista', tipo: 'Bosque',
-    tiro: 84, pase: 76, defensa: 42, especial: 80,
+    tiro: 84, pase: 81, defensa: 42, especial: 80,
     hissatsu: ['Sabiduría Divina'],
     desc: 'Capitán de Zeus, el centrocampista más elegante y letal.',
     locked: true, cost: 177
@@ -282,7 +282,7 @@ var ROSTER = [
   {
     id: 'r21', nombre: 'Scott Banyan', original: 'Kogure Yuuya',
     posicion: 'Defensa', tipo: 'Bosque',
-    tiro: 38, pase: 62, defensa: 77, especial: 70,
+    tiro: 38, pase: 62, defensa: 80, especial: 79,
     hissatsu: ['Campo Torbellino'],
     desc: 'Defensa travieso de Raimon, siempre lleno de recursos.',
     locked: true, cost: 87
@@ -306,7 +306,7 @@ var ROSTER = [
   {
     id: 'r22', nombre: 'David Samford', original: 'Sakuma Jirou',
     posicion: 'Delantero', tipo: 'Bosque',
-    tiro: 78, pase: 69, defensa: 40, especial: 67,
+    tiro: 78, pase: 79, defensa: 40, especial: 67,
     hissatsu: ['Pinguino Emperador II'],
     desc: 'Delantero de la royal, implacable y sin piedad en el choque.',
     locked: true, cost: 113
@@ -322,7 +322,7 @@ var ROSTER = [
   {
     id: 'r24', nombre: 'Aiden Froste', original: 'Fubuki Atsuya',
     posicion: 'Delantero', tipo: 'Fuego',
-    tiro: 80, pase: 44, defensa: 30, especial: 74,
+    tiro: 86, pase: 44, defensa: 30, especial: 74,
     hissatsu: ['Remate Cazaosos'],
     desc: 'El hermano de Shawn Froste, tan letal como frío en el área.',
     locked: true, cost: 105
@@ -330,7 +330,7 @@ var ROSTER = [
   {
     id: 'r30', nombre: 'Arion Sherwind', original: 'Matsukaze Tenma',
     posicion: 'Centrocampista', tipo: 'Viento',
-    tiro: 78, pase: 78, defensa: 46, especial: 81,
+    tiro: 84, pase: 82, defensa: 66, especial: 85,
     hissatsu: ['Brisa deslizante'],
     desc: 'Capitán de la nueva generación de Raimon, corazón indomable.',
     locked: true, cost: 159
@@ -338,7 +338,7 @@ var ROSTER = [
   {
     id: 'r31', nombre: 'Riccardo Di Rigo', original: 'Shindou Takuto',
     posicion: 'Centrocampista', tipo: 'Bosque',
-    tiro: 76, pase: 83, defensa: 44, especial: 78,
+    tiro: 79, pase: 87, defensa: 44, especial: 80,
     hissatsu: ['Pentagrama'],
     desc: 'Estratega de piano y balón, heredero del legado de Jude Sharp.',
     locked: false
@@ -346,7 +346,7 @@ var ROSTER = [
   {
     id: 'r32', nombre: 'Gabriel García', original: 'Kirino Ranmaru',
     posicion: 'Defensa', tipo: 'Bosque',
-    tiro: 40, pase: 62, defensa: 78, especial: 70,
+    tiro: 40, pase: 62, defensa: 81, especial: 80,
     hissatsu: ['Niebla Mística'],
     desc: 'Defensa técnico y mejor amigo de Riccardo.',
     locked: false
@@ -354,7 +354,7 @@ var ROSTER = [
   {
     id: 'r33', nombre: 'Aitor Cazador', original: 'Kariya Masaki',
     posicion: 'Defensa', tipo: 'Bosque',
-    tiro: 44, pase: 64, defensa: 78, especial: 67,
+    tiro: 44, pase: 64, defensa: 82, especial: 78,
     hissatsu: ['Red de caza'],
     desc: 'Defensa travieso capaz de desaparecer entre rivales.',
     locked: true, cost: 114
@@ -362,7 +362,7 @@ var ROSTER = [
   {
     id: 'r34', nombre: 'Víctor Blade', original: 'Tsurugi Kyousuke',
     posicion: 'Delantero', tipo: 'Fuego',
-    tiro: 82, pase: 56, defensa: 36, especial: 74,
+    tiro: 85, pase: 66, defensa: 36, especial: 79,
     hissatsu: ['Aguijón Letal'],
     desc: 'Delantero letal con una precisión de rapaz.',
     locked: true, cost: 132
@@ -370,7 +370,7 @@ var ROSTER = [
   {
     id: 'r36', nombre: 'Ryoma Nishiki', original: 'Nishiki Ryouma',
     posicion: 'Delantero', tipo: 'Montaña',
-    tiro: 76, pase: 74, defensa: 34, especial: 72,
+    tiro: 80, pase: 73, defensa: 34, especial: 75,
     hissatsu: ['Chut ancestal'],
     desc: 'Delantero desenfadado con un don natural para el gol.',
     locked: false
@@ -378,7 +378,7 @@ var ROSTER = [
   {
     id: 'r37', nombre: 'Subaru Honda', original: 'Kurumada Gouichi',
     posicion: 'Defensa', tipo: 'Montaña',
-    tiro: 36, pase: 53, defensa: 75, especial: 60,
+    tiro: 36, pase: 53, defensa: 75, especial: 70,
     hissatsu: ['A todo vapor'],
     desc: 'Defensa colosal, un muro que pocos logran superar.',
     locked: true, cost: 96
@@ -386,7 +386,7 @@ var ROSTER = [
   {
     id: 'r38', nombre: 'Samguk Han', original: "Sangoku Taichi",
     posicion: 'Portero', tipo: 'Fuego',
-    tiro: 22, pase: 50, defensa: 75, especial: 60,
+    tiro: 22, pase: 50, defensa: 75, especial: 70,
     hissatsu: ['Captura ardiente'],
     desc: 'Portero del raimon, con reflejos felinos y un corazón ardiente.',
     locked: false
@@ -410,7 +410,7 @@ var ROSTER = [
   {
     id: 'r41', nombre: 'Paul Peabody', original: "Goro Tamaro",
     posicion: 'Portero', tipo: 'Bosque',
-    tiro: 48, pase: 52, defensa: 76, especial: 72,
+    tiro: 48, pase: 52, defensa: 76, especial: 75,
     hissatsu: ['Mano Celestial'],
     desc: 'Portero experimentado con una visión única del juego.',
     locked: false
@@ -418,7 +418,7 @@ var ROSTER = [
   {
     id: 'r42', nombre: 'Thor Stoutberg', original: "Raiden Hijikata",
     posicion: 'Defensa', tipo: 'Viento',
-    tiro: 38, pase: 60, defensa: 80, especial: 70,
+    tiro: 38, pase: 60, defensa: 80, especial: 80,
     hissatsu: ['Pisotón de Sumo'],
     desc: 'Defensa robusto y disciplinado, con un estilo de juego imponente.',
     locked: false
@@ -426,7 +426,7 @@ var ROSTER = [
   {
     id: 'r43', nombre: 'Larry Pogue', original: "Saginuma Osamu",
     posicion: 'Centrocampista', tipo: 'Bosque',
-    tiro: 75, pase: 70, defensa: 55, especial: 82,
+    tiro: 75, pase: 75, defensa: 55, especial: 80,
     hissatsu: ['Chut draconiano'],
     desc: 'Centrocampista creativo, capaz de cambiar el rumbo del partido.',
     locked: false
@@ -434,7 +434,7 @@ var ROSTER = [
   {
     id: 'r44', nombre: 'Tom Skipper', original: "Yo Kabutenji",
     posicion: 'Delantero', tipo: 'Viento',
-    tiro: 80, pase: 60, defensa: 36, especial: 74,
+    tiro: 83, pase: 60, defensa: 36, especial: 76,
     hissatsu: ['La Tierra'],
     desc: 'Delantero ágil y veloz, con un instinto asesino frente a la portería.',
     locked: true, cost: 120
@@ -442,7 +442,7 @@ var ROSTER = [
   {
     id: 'r45', nombre: 'Bash Lancer', original: "Baddap Sleep",
     posicion: 'Delantero', tipo: 'Bosque',
-    tiro: 83, pase: 50, defensa: 34, especial: 76,
+    tiro: 86, pase: 70, defensa: 34, especial: 80,
     hissatsu: ['Lanza Letal'],
     desc: 'Delantero y capitán de la Academia Ogro, con un estilo de juego agresivo y directo.',
     locked: true, cost: 140
@@ -450,7 +450,7 @@ var ROSTER = [
     {
     id: 'r46', nombre: 'Steve Grim', original: 'Handa Shinichi',
     posicion: 'Centrocampista', tipo: 'Bosque',
-    tiro: 65, pase: 69, defensa: 61, especial: 52,
+    tiro: 67, pase: 64, defensa: 61, especial: 52,
     hissatsu: ['Disparo Rodante'],
     desc: 'Centrocampista equilibrado de Raimon, fiable y trabajador.',
     locked: false, cost: 65
@@ -458,7 +458,7 @@ var ROSTER = [
   {
     id: 'r47', nombre: 'Timmy Saunders', original: 'Shourinji Ayumu',
     posicion: 'Centrocampista', tipo: 'Montaña',
-    tiro: 63, pase: 65, defensa: 58, especial: 63,
+    tiro: 69, pase: 62, defensa: 58, especial: 63,
     hissatsu: ['Cabezazo Kung Fu'],
     desc: 'Pequeño pero valiente jugador de Raimon con gran espíritu de lucha.',
     locked: false, cost: 58
@@ -466,7 +466,7 @@ var ROSTER = [
   {
     id: 'r48', nombre: 'Maxwell Carson', original: 'Matsuno Kuusuke',
     posicion: 'Centrocampista', tipo: 'Viento',
-    tiro: 72, pase: 62, defensa: 44, especial: 64,
+    tiro: 72, pase: 65, defensa: 44, especial: 64,
     hissatsu: ['Remate en V'],
     desc: 'Centrocampista habilidoso de Raimon, siempre dispuesto a improvisar.',
     locked: false, cost: 70
@@ -474,7 +474,7 @@ var ROSTER = [
   {
     id: 'r49', nombre: 'Jim Wraith', original: 'Kageno Jin',
     posicion: 'Defensa', tipo: 'Bosque',
-    tiro: 34, pase: 48, defensa: 71, especial: 55,
+    tiro: 34, pase: 48, defensa: 71, especial: 72,
     hissatsu: ['Doppelganger'],
     desc: 'Defensa silencioso capaz de sorprender apareciendo de la nada.',
     locked: false, cost: 68
@@ -498,7 +498,7 @@ var ROSTER = [
   {
     id: 'r52', nombre: 'Tori Vanguard', original: 'Zaizen Touko',
     posicion: 'Centrocampista', tipo: 'Viento',
-    tiro: 58, pase: 62, defensa: 74, especial: 60,
+    tiro: 58, pase: 62, defensa: 74, especial: 72,
     hissatsu: ['Torre Inexpugnable'],
     desc: 'Centrocampista de Aire con una gran capacidad defensiva.',
     locked: true, cost: 115
@@ -506,7 +506,7 @@ var ROSTER = [
   {
     id: 'r53', nombre: 'Bellatrix', original: 'Reina Yagami',
     posicion: 'Centrocampista', tipo: 'Viento',
-    tiro: 77, pase: 74, defensa: 44, especial: 75,
+    tiro: 77, pase: 77, defensa: 44, especial: 75,
     hissatsu: ['Pinguino Espacial'],
     desc: 'Hermana de Xene, con un estilo de juego elegante y preciso.',
     locked: false, cost: 60
@@ -514,7 +514,7 @@ var ROSTER = [
   {
     id: 'r54', nombre: 'Dave Quagmire', original: 'Saginuma Osamu',
     posicion: 'Portero', tipo: 'Viento',
-    tiro: 54, pase: 65, defensa: 82, especial: 80,
+    tiro: 64, pase: 65, defensa: 82, especial: 80,
     hissatsu: ['Agujero de gusano'],
     desc: 'Portero de Epsilon con reflejos sorprendentes y gran intuición para anticipar los tiros.',
     locked: true, cost: 125
@@ -530,7 +530,7 @@ var ROSTER = [
   {
     id: 'r56', nombre: 'Suzette Hartland', original: 'Urabe Rika',
     posicion: 'Delantero', tipo: 'Bosque',
-    tiro: 70, pase: 54, defensa: 38, especial: 60,
+    tiro: 70, pase: 54, defensa: 38, especial: 70,
     hissatsu: ['Torre de Osaka'],
     desc: 'Delantera de Osaka con una personalidad tan intensa como su juego.',
     locked: false, cost: 78
@@ -586,7 +586,7 @@ var ROSTER = [
   {
     id: 'r63', nombre: 'Nakata Hidetoshi', original: 'Nakata Hidetoshi',
     posicion: 'Centrocampista', tipo: 'Montaña',
-    tiro: 80, pase: 84, defensa: 50, especial: 88,
+    tiro: 85, pase: 84, defensa: 50, especial: 88,
     hissatsu: ['Disparo Valiente'],
     desc: 'Veterano de gran talento que lidera el centro del campo con experiencia.',
     locked: true, cost: 265
@@ -650,7 +650,7 @@ var ROSTER = [
   {
     id: 'r71', nombre: 'Destra', original: 'Desuta',
     posicion: 'Delantero', tipo: 'Montaña',
-    tiro: 83, pase: 65, defensa: 30, especial: 80,
+    tiro: 85, pase: 65, defensa: 30, especial: 80,
     hissatsu: ['Carga Negativa'],
     desc: 'Delantero de fuerza bruta, capaz de romper cualquier defensa.',
     locked: true, cost: 180
@@ -658,7 +658,7 @@ var ROSTER = [
   {
     id: 'r72', nombre: 'Sael', original: 'Sael',
     posicion: 'Delantero', tipo: 'Bosque',
-    tiro: 82, pase: 62, defensa: 34, especial: 80,
+    tiro: 85, pase: 62, defensa: 34, especial: 80,
     hissatsu: ['Remate Celestial'],
     desc: 'Delantero de origen desconocido, con un estilo de juego místico y poderoso.',
     locked: true, cost: 160
@@ -682,7 +682,7 @@ var ROSTER = [
   {
     id: 'r75', nombre: 'Victor Garcia', original: 'Querardo Naval',
     posicion: 'Defensa', tipo: 'Montaña',
-    tiro: 50, pase: 55, defensa: 78, especial: 80,
+    tiro: 50, pase: 55, defensa: 81, especial: 80,
     hissatsu: ['Engaño Torero'],
     desc: 'Se crió en una finca con toros y sabe torear, pero no le gusta herir a los animales.',
     locked: true, cost: 145
@@ -1491,7 +1491,7 @@ var ROSTER = [
 {
   id:'r174', nombre:'Bay Froste', original:'Benkei Kumano', sprite:'assets/sprites/r175.webp',
   posicion:'Defensa', tipo:'Viento',
-  tiro:65,pase:71,defensa:82,especial:86,
+  tiro:65,pase:76,defensa:85,especial:86,
   hissatsu:['Hielo Futurista'],
   desc:'Defensa del futuro y descendiente de Shawn.',
   locked:true,cost:200
@@ -1499,7 +1499,7 @@ var ROSTER = [
 {
   id:'r175', nombre:'Mount Wallside', original:'Shiryu Shiratori', sprite:'assets/sprites/r174.webp',
   posicion:'Delantero', tipo:'Montaña',
-  tiro:82,pase:65,defensa:67,especial:83,
+  tiro:84,pase:65,defensa:67,especial:83,
   hissatsu:['Remate del muro'],
   desc:'Delantero del futuro y descendiente de Jack.',
   locked:true,cost:200
@@ -1636,7 +1636,7 @@ var ROSTER = [
   id:'r192', nombre:'Wolfram Vulpeen', original:'Wolfram Vulpeen',
   sprite:'assets/sprites/r192.webp',
   posicion:'Delantero', tipo:'Montaña',
-  tiro:91,pase:76,defensa:43,especial:90,
+  tiro:86,pase:76,defensa:43,especial:90,
   hissatsu:['Aullido de Licántropo'],
   desc:'Capitán de Aullido Lunar y segundo al mando de las Criaturas de la Noche. Miximax: Gen L.',
   locked:true,cost:210
@@ -1657,7 +1657,7 @@ var ROSTER = [
   tiro:90,pase:88,defensa:45,especial:94,
   hissatsu:['Cañonazo de Fragmentos V2'],
   desc:'Saru en su versión Miximax con Gen S.',
-  locked:true,cost:280
+  locked:true,cost:480
 },
 {
   id:'r195', nombre:'Aster', original:'Aster',
@@ -1729,7 +1729,7 @@ var ROSTER = [
   tiro:91,pase:79,defensa:42,especial:91,
   hissatsu:['Tiro Supermasivo V2'],
   desc:'Flora Miximax con Rosa Negra.',
-  locked:true,cost:280
+  locked:true,cost:480
 },
 {
   id:'r203', nombre:'Mehr', original:'Mehr',
