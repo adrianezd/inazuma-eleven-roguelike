@@ -1143,7 +1143,7 @@ var G = {
   pendingCaptainOffers: null,
   pendingRecruits: null,
   pendingTraining: null,
-  pendingHardMode: false,
+  pendingRunMode: 'normal',
   pendingDraftMode: null,
   pendingDraftSquad: [],
   pendingDraftOptions: [],
@@ -1156,7 +1156,7 @@ var G = {
 // modos nuevos, una cadena directa ('torneo', 'supervivencia', 'diario').
 function newRun(modeOrHard) {
   var mode = typeof modeOrHard === 'string' ? modeOrHard : (modeOrHard ? 'hard' : 'normal');
-  var needsBranchedMap = mode === 'normal' || mode === 'hard';
+  var needsBranchedMap = mode === 'normal' || mode === 'hard' || mode === 'alternativo';
   G.run = {
     squad: [],
     mode: mode,
@@ -1316,9 +1316,9 @@ function hardModeUnlocked() {
 }
 
 function actionStartRun() { G.screen = 'modeSelect'; render(); }
-function actionStartRunWithMode(hard) {
-  if (hard && !hardModeUnlocked()) return;
-  G.pendingHardMode = !!hard;
+function actionStartRunWithMode(mode) {
+  if (mode === 'hard' && !hardModeUnlocked()) return;
+  G.pendingRunMode = mode;
   G.pendingCaptainOffers = offerCaptains();
   G.screen = 'captainSelect';
   render();
@@ -1333,17 +1333,21 @@ function renderModeSelect() {
         '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
         '<h2 class="panel-title mt">Elige el modo de juego</h2>' +
         '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-primary btn-block" onclick="actionStartRunWithMode(false)">Modo Normal</button>' +
+          '<button class="btn btn-primary btn-block" onclick="actionStartRunWithMode(\'normal\')">Modo Normal</button>' +
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-block" style="' + (unlocked ? 'background:#7a1212;color:#fff;' : '') + '" ' +
-            (unlocked ? 'onclick="actionStartRunWithMode(true)"' : 'disabled') + '>' +
+            (unlocked ? 'onclick="actionStartRunWithMode(\'hard\')"' : 'disabled') + '>' +
             'Modo Difícil' + (unlocked ? '' : ' 🔒') +
           '</button>' +
         '</div>' +
         (unlocked
           ? '<p class="dim small">Los rivales meten algún gol más y paran algo más. El mapa tiene 4 jefes en vez de 3 (el último, muy difícil), y en los eventos especiales puede aparecer un jefe por sorpresa.</p>'
           : '<p class="dim small">Se desbloquea ganando el Modo Normal 3 veces y teniendo más de 10 personajes desbloqueados. Progreso: ' + (meta.normalWins || 0) + '/3 victorias, ' + totalUnlocked + '/11 personajes.</p>') +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionStartRunWithMode(\'alternativo\')">Modo Alternativo</button>' +
+        '</div>' +
+        '<p class="dim small">Mismo mapa que el Modo Normal, pero Tiro y Regate cambian: en vez de una tirada única, puedes encadenar regates en el mismo turno -- cada uno sube tu probabilidad de gol (cada vez menos) y la de perder el balón (cada vez más), hasta que decides tirar o te lo roban. Defensa y Especial funcionan exactamente igual que siempre.</p>' +
       '</div>' +
     '</div>'
   );
@@ -1449,7 +1453,7 @@ function renderCaptainSelect() {
 
 function selectCaptain(instanceId) {
   var captain = G.pendingCaptainOffers.find(function (c) { return c.instanceId === instanceId; });
-  newRun(G.pendingHardMode);
+  newRun(G.pendingRunMode);
   G.run.squad.push(captain);
   G.screen = 'map';
   render();
@@ -2144,6 +2148,119 @@ function renderMatch() {
   );
 }
 
+/* ---------------------------------------------------------------------
+   MODO ALTERNATIVO: Tiro y Regate dejan de resolverse en una sola tirada.
+   El jugador puede encadenar regates dentro del MISMO turno: cada uno
+   sube su probabilidad de gol (rendimientos decrecientes) y la de perder
+   el balón (crece cada vez más), hasta que decide tirar o se lo roban.
+   Defensa y Especial no cambian nada -- esto solo toca el par Tiro/Regate
+   del propio jugador; el rival sigue atacando con el modelo de una sola
+   tirada de siempre (ver prepareOpponentTurn), a petición explícita.
+   --------------------------------------------------------------------- */
+var ALT_CHAIN_BASE_GAIN = 20;
+var ALT_CHAIN_SHOOT_DECAY = 0.55;   // cada regate adicional suma bastante menos gol
+var ALT_CHAIN_STEAL_GROWTH = 1.35;  // cada regate adicional arriesga bastante más
+
+// Probabilidad BASE (sin encadenar nada todavía) de un tiro o un regate,
+// replicando la misma fórmula que resolveAttack usa cuando ataca el
+// jugador -- ventaja elemental, clima y Modo Difícil incluidos -- pero
+// sin tirar el dado ni resolver nada.
+function alternativoBaseChance(action, attackerRaw, defenderRaw) {
+  var attacker = effectiveStats(attackerRaw);
+  var defender = effectiveStats(defenderRaw);
+  var adv = typeAdvantage(attacker.tipo, defender.tipo);
+  var atkStat, chance;
+  if (action === 'tiro') { atkStat = attacker.tiro; chance = 50 + (atkStat - defender.defensa) * 0.5; }
+  else { atkStat = attacker.pase; chance = 30 + (atkStat - defender.defensa) * 0.5; }
+  chance += adv * 10;
+  chance += weatherChanceDelta(G.match.weather, action, attacker.tipo);
+  if (G.run && G.run.hardMode) chance -= 5;
+  var isOwnGoalkeeperShot = action === 'tiro' && attackerRaw.posicion === 'Portero';
+  var maxChance = isOwnGoalkeeperShot ? 8 : 95;
+  return clamp(Math.round(chance), 5, maxChance);
+}
+
+// Crea la cadena de regate si no existe todavía para el atacante elegido
+// (o si se ha cambiado de atacante): el portero rival decide el % de gol
+// (igual que en Tiro/Especial de siempre), un defensa real decide el % de
+// robo (igual que en Regate de siempre).
+function ensureAlternativoChain(selectedPlayer) {
+  var m = G.match;
+  if (m.regateChain && m.regateChain.attackerId === selectedPlayer.instanceId) return;
+  var keeperRaw = pickDefender(m.oppSquad, 'tiro');
+  var defenderRaw = pickDefender(m.oppSquad, 'regate');
+  m.regateChain = {
+    attackerId: selectedPlayer.instanceId,
+    keeperRaw: keeperRaw,
+    defenderRaw: defenderRaw,
+    step: 0,
+    shootChance: alternativoBaseChance('tiro', selectedPlayer, keeperRaw),
+    stealChance: clamp(100 - alternativoBaseChance('regate', selectedPlayer, defenderRaw), 5, 95)
+  };
+}
+
+// Al completar un regate con éxito: sube el % de gol (cada vez menos) y el
+// % de robo (cada vez más), tope 100 en ambos.
+function alternativoGrowChain(chain) {
+  chain.step++;
+  var n = chain.step;
+  var shootGain = ALT_CHAIN_BASE_GAIN * Math.pow(ALT_CHAIN_SHOOT_DECAY, n - 1);
+  var stealGain = ALT_CHAIN_BASE_GAIN * Math.pow(ALT_CHAIN_STEAL_GROWTH, n - 1);
+  chain.shootChance = clamp(Math.round(chain.shootChance + shootGain), 0, 100);
+  chain.stealChance = clamp(Math.round(chain.stealChance + stealGain), 0, 100);
+}
+
+// Resuelve el disparo final con el % acumulado de la cadena (no la
+// fórmula normal de Tiro): mismo tratamiento de gol/fallo que un Tiro
+// normal, y cuenta como el único "ataque" de todo este turno.
+function resolveAlternativoShot(attackerRaw) {
+  var m = G.match;
+  var chain = m.regateChain;
+  m.playerAtkCount++;
+  var success = rand(1, 100) <= chain.shootChance;
+  var actorLabel = escapeHtml(attackerRaw.nombre);
+  if (success) {
+    m.playerScore++;
+    recordRunGoalScorer(attackerRaw, true);
+    m.lastEvent = actorLabel + ': ¡GOL' + (chain.step > 0 ? (' tras ' + chain.step + ' regate' + (chain.step === 1 ? '' : 's')) : '') + '!';
+    m.lastEventClass = 'goal';
+  } else {
+    m.lastEvent = actorLabel + ': el tiro es bloqueado.';
+    m.lastEventClass = '';
+  }
+  m.log.push(m.lastEvent);
+  m.regateChain = null;
+  m.selectedAttackerId = null;
+  advanceTurn();
+}
+
+// Intenta otro regate dentro de la misma cadena: si te la roban, el turno
+// pasa igual que un fallo normal (sin penalización extra, a petición
+// explícita); si no, sube el riesgo/recompensa y sigue el mismo turno (no
+// se llama a advanceTurn -- se puede seguir eligiendo).
+function resolveAlternativoRegate(attackerRaw) {
+  var m = G.match;
+  var chain = m.regateChain;
+  var actorLabel = escapeHtml(attackerRaw.nombre);
+  var stolen = rand(1, 100) <= chain.stealChance;
+  if (stolen) {
+    m.playerAtkCount++;
+    m.lastEvent = actorLabel + ': ¡le quitan el balón al intentar otro regate!';
+    m.lastEventClass = '';
+    m.log.push(m.lastEvent);
+    m.regateChain = null;
+    m.selectedAttackerId = null;
+    advanceTurn();
+    return;
+  }
+  m.playerCooldownBoost++;
+  alternativoGrowChain(chain);
+  m.lastEvent = actorLabel + ': ¡regate limpio! Tiro al ' + chain.shootChance + '%, pero el próximo regate arriesga ' + chain.stealChance + '%.';
+  m.lastEventClass = '';
+  m.log.push(m.lastEvent);
+  render();
+}
+
 function renderPlayerTurn() {
   var m = G.match;
   var squad = G.run.squad;
@@ -2177,13 +2294,32 @@ function renderPlayerTurn() {
     matchupHtml = '<p class="dim small matchup-info">' + selectedPlayer.tipo + ' vs ' + oppGk.tipo + ' (portero rival): ' + advWord + '</p>';
   }
 
-  var actions = (
-    '<div class="action-row">' +
-      '<button class="btn action-btn" ' + (selected ? '' : 'disabled') + ' onclick="playAction(\'tiro\')">Tiro<small>Directo a puerta</small></button>' +
-      '<button class="btn action-btn" ' + (selected ? '' : 'disabled') + ' onclick="playAction(\'regate\')">Regate<small>Seguro, prepara la especial</small></button>' +
-      '<button class="btn action-btn btn-primary" ' + (canSpecial ? '' : 'disabled') + ' onclick="playAction(\'especial\')">' + escapeHtml(specialLabel) + '<small>' + specialHint + '</small></button>' +
-    '</div>'
-  );
+  var actions;
+  if (G.run.mode === 'alternativo' && selectedPlayer) {
+    // Modo Alternativo: Tiro y Regate no se resuelven en una sola tirada --
+    // se puede encadenar regate sobre regate en el mismo turno, subiendo el
+    // % de gol (cada vez menos) a cambio de un % de robo creciente, hasta
+    // decidir tirar o hasta que te la quiten. Especial funciona igual que
+    // siempre (ver canSpecial/specialHint arriba, sin tocar).
+    ensureAlternativoChain(selectedPlayer);
+    var chain = m.regateChain;
+    var regateLabel = chain.step === 0 ? 'Regatear' : 'Regatear otra vez';
+    actions = (
+      '<div class="action-row">' +
+        '<button class="btn action-btn" onclick="playAction(\'tiro\')">Tirar<small>Gol al ' + chain.shootChance + '%</small></button>' +
+        '<button class="btn action-btn" onclick="playAction(\'regate\')">' + regateLabel + '<small>Riesgo de robo: ' + chain.stealChance + '%</small></button>' +
+        '<button class="btn action-btn btn-primary" ' + (canSpecial ? '' : 'disabled') + ' onclick="playAction(\'especial\')">' + escapeHtml(specialLabel) + '<small>' + specialHint + '</small></button>' +
+      '</div>'
+    );
+  } else {
+    actions = (
+      '<div class="action-row">' +
+        '<button class="btn action-btn" ' + (selected ? '' : 'disabled') + ' onclick="playAction(\'tiro\')">Tiro<small>Directo a puerta</small></button>' +
+        '<button class="btn action-btn" ' + (selected ? '' : 'disabled') + ' onclick="playAction(\'regate\')">Regate<small>Seguro, prepara la especial</small></button>' +
+        '<button class="btn action-btn btn-primary" ' + (canSpecial ? '' : 'disabled') + ' onclick="playAction(\'especial\')">' + escapeHtml(specialLabel) + '<small>' + specialHint + '</small></button>' +
+      '</div>'
+    );
+  }
 
   return (
     '<div class="panel">' +
@@ -2214,6 +2350,11 @@ function playAction(action) {
   var m = G.match;
   var attackerRaw = G.run.squad.find(function (p) { return p.instanceId === m.selectedAttackerId; });
   if (!attackerRaw) return;
+  if (G.run.mode === 'alternativo' && m.regateChain && (action === 'tiro' || action === 'regate')) {
+    if (action === 'tiro') resolveAlternativoShot(attackerRaw);
+    else resolveAlternativoRegate(attackerRaw);
+    return;
+  }
   var defenderRaw = pickDefender(m.oppSquad, action);
   resolveAttack(attackerRaw, defenderRaw, action, true);
   advanceTurn();
