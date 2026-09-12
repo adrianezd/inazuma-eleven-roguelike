@@ -1776,4 +1776,112 @@ var ROSTER = [
   desc:'Delantero del Ragnah con el Espíritu Guerrero Adalid leonino, Jmet.',
   locked:true,cost:195
 },
+{
+  id:'r208', nombre:'Jean-Pierre Lapin', original:'Shinsuke Nishizono',
+  sprite:'assets/sprites/r208.png',
+  posicion:'Portero', tipo:'Montaña',
+  tiro:62,pase:72,defensa:92,especial:96,
+  hissatsu:['Romance de los Tres Reinos'],
+  desc:'JP en su forma Miximax con Liu Bei. Portero del Chrono Storm.',
+  locked:true,cost:660
+},
+{
+  id:'r209', nombre:'Gabriel Garcia', original:'Kariya Masaki',
+  sprite:'assets/sprites/r209.png',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:55,pase:78,defensa:94,especial:91,
+  hissatsu:['La Flamme'],
+  desc:'Gabi en su forma Miximax con Juana de Arco. Defensa del Chrono Storm.',
+  locked:true,cost:645
+},
+{
+  id:'r210', nombre:'Sor', original:'Sor',
+  sprite:'assets/sprites/r210.png',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:62,pase:73,defensa:91,especial:89,
+  hissatsu:['Defensa de Quetzal'],
+  desc:'Sor en su forma Miximax con Papá Quetzalcoatlus. Defensa del Chrono Storm.',
+  locked:true,cost:630
+},
+{
+  id:'r211', nombre:'Goldie Lemmon', original:'Nanobana Kinako',
+  sprite:'assets/sprites/r211.png',
+  posicion:'Defensa', tipo:'Fuego',
+  tiro:78,pase:75,defensa:94,especial:93,
+  hissatsu:['Ilusión deslumbrante'],
+  desc:'Goldie en su forma Miximax con la Reina de los Dragones. Defensa del Chrono Storm.',
+  locked:true,cost:660
+},
+{
+  id:'r212', nombre:'Riccardo Di Rigo', original:'Shindou Takuto',
+  sprite:'assets/sprites/r212.png',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:84,pase:96,defensa:69,especial:94,
+  hissatsu:['Remate Efímero'],
+  desc:'Riccardo en su forma Miximax con Nobunaga Oda. Director de juego del Chrono Storm.',
+  locked:true,cost:675
+},
+{
+  id:'r213', nombre:'Victor Blade', original:'Tsurugi Kyousuke',
+  sprite:'assets/sprites/r213.png',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:98,pase:72,defensa:42,especial:96,
+  hissatsu:['Gran Explosión'],
+  desc:'Victor en su forma Miximax con Soji Okita. Delantero del Chrono Storm.',
+  locked:true,cost:690
+},
+{
+  id:'r214', nombre:'Fei Rune', original:'Fei Rune',
+  sprite:'assets/sprites/r214.png',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:92,pase:86,defensa:55,especial:94,
+  hissatsu:['Remate del Dinosaurio'],
+  desc:'Fei en su forma Miximax con Big. Jugador del Chrono Storm.',
+  locked:true,cost:675
+},
+{
+  id:'r215', nombre:'Ryoma Nishiki', original:'Nishiki Ryoma',
+  sprite:'assets/sprites/r215.png',
+  posicion:'Centrocampista', tipo:'Montaña',
+  tiro:89,pase:91,defensa:65,especial:93,
+  hissatsu:['Corriente Negra'],
+  desc:'Roma en su forma Miximax con Ryoma Sakamoto. Centrocampista del Chrono Storm.',
+  locked:true,cost:660
+},
+{
+  id:'r216', nombre:'Arion Sherwind', original:'Matsukaze Tenma',
+  sprite:'assets/sprites/r216.png',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:91,pase:94,defensa:61,especial:97,
+  hissatsu:['Tornado Armonía'],
+  desc:'Arion en su forma Miximax con el Rey Arturo. Capitán del Chrono Storm.',
+  locked:true,cost:690
+},
+{
+  id:'r217', nombre:'Sol Daystar', original:'Kishibe Taiga',
+  sprite:'assets/sprites/r217.png',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:96,pase:88,defensa:48,especial:95,
+  hissatsu:['Tormenta Eléctrica'],
+  desc:'Sol en su forma Miximax con Zhuge Liang. Forma del anime y de la versión Fuego.',
+  locked:true,cost:675
+},
+{
+  id:'r218', nombre:'Bailong', original:'Hakuryuu',
+  sprite:'assets/sprites/r218.png',
+  posicion:'Delantero', tipo:'Viento',
+  tiro:99,pase:73,defensa:43,especial:97,
+  hissatsu:['Tormenta Eléctrica'],
+  desc:'Bailong en su forma Miximax con Zhuge Liang. Forma correspondiente a la versión Trueno.',
+  locked:true,cost:705
+},
+{
+  id:'r219', nombre:'Zanark Avalonic', original:'Zanark Avalonic',
+  sprite:'assets/sprites/r219.png',
+  posicion:'Delantero', tipo:'Montaña',
+  tiro:100,pase:76,defensa:47,especial:99,
+  hissatsu:['Huracán Zeta'],
+  desc:'Zanark en su forma Miximax con Huracán Zeta. Uno de los atacantes más poderosos del Chrono Storm.',
+  locked:true,cost:720
+},
 ];
