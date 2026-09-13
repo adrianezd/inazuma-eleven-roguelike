@@ -233,7 +233,7 @@ var ROSTER = [
   {
     id: 'r15', nombre: 'Jordan Greenway', original: 'Midorikawa Ryuuji',
     posicion: 'Centrocampista', tipo: 'Bosque',
-    tiro: 75, pase: 76, defensa: 51, especial: 73,
+    tiro: 75, pase: 76, defensa: 67, especial: 73,
     hissatsu: ['Puerta Astral'],
     desc: 'Técnica exquisita y un gran corazón.',
     locked: true, cost:154
@@ -258,7 +258,7 @@ var ROSTER = [
   {
     id: 'r18', nombre: 'Hurley Kane', original: 'Tsunami Jousuke',
     posicion: 'Defensa', tipo: 'Viento',
-    tiro: 72, pase: 54, defensa: 79, especial: 73,
+    tiro: 72, pase: 66, defensa: 78, especial: 80,
     hissatsu: ['Remate Tsunami'],
     desc: 'Surfista y defensa de Inazuma Japón, imparable con el viento a favor.',
     locked: true, cost:145
@@ -266,7 +266,7 @@ var ROSTER = [
   {
     id: 'r19', nombre: 'Claude Beacons', original: 'Nagumo Haruya',
     posicion: 'Delantero', tipo: 'Fuego',
-    tiro: 85, pase: 72, defensa: 32, especial: 81,
+    tiro: 85, pase: 75, defensa: 32, especial: 81,
     hissatsu: ['Llamarada Atómica'],
     desc: 'Capitán de Prominence, ambicioso y ardiente ante el gol.',
     locked: true, cost:110
@@ -314,7 +314,7 @@ var ROSTER = [
   {
     id: 'r23', nombre: 'Archer Hawkins', original: 'Tobitaka Seiya',
     posicion: 'Defensa', tipo: 'Viento',
-    tiro: 30, pase: 72, defensa: 80, especial: 82,
+    tiro: 30, pase: 76, defensa: 83, especial: 82,
     hissatsu: ['Corte de vacío'],
     desc: 'Guerrero solitario que rechazó el once titular por orgullo.',
     locked: true, cost:93
@@ -322,7 +322,7 @@ var ROSTER = [
   {
     id: 'r24', nombre: 'Aiden Froste', original: 'Fubuki Atsuya',
     posicion: 'Delantero', tipo: 'Fuego',
-    tiro: 86, pase: 72, defensa: 30, especial: 74,
+    tiro: 86, pase: 72, defensa: 30, especial: 82,
     hissatsu: ['Remate Cazaosos'],
     desc: 'El hermano de Shawn Froste, tan letal como frío en el área.',
     locked: true, cost:110
@@ -338,7 +338,7 @@ var ROSTER = [
   {
     id: 'r31', nombre: 'Riccardo Di Rigo', original: 'Shindou Takuto',
     posicion: 'Centrocampista', tipo: 'Bosque',
-    tiro: 79, pase: 87, defensa: 68, especial: 80,
+    tiro: 79, pase: 87, defensa: 78, especial: 84,
     hissatsu: ['Pentagrama'],
     desc: 'Estratega de piano y balón, heredero del legado de Jude Sharp.',
     locked: false
@@ -346,7 +346,7 @@ var ROSTER = [
   {
     id: 'r32', nombre: 'Gabriel García', original: 'Kirino Ranmaru',
     posicion: 'Defensa', tipo: 'Bosque',
-    tiro: 40, pase: 73, defensa: 81, especial: 80,
+    tiro: 40, pase: 76, defensa: 81, especial: 80,
     hissatsu: ['Niebla Mística'],
     desc: 'Defensa técnico y mejor amigo de Riccardo.',
     locked: false
@@ -354,7 +354,7 @@ var ROSTER = [
   {
     id: 'r33', nombre: 'Aitor Cazador', original: 'Kariya Masaki',
     posicion: 'Defensa', tipo: 'Bosque',
-    tiro: 44, pase: 64, defensa: 82, especial: 78,
+    tiro: 44, pase: 70, defensa: 82, especial: 78,
     hissatsu: ['Red de caza'],
     desc: 'Defensa travieso capaz de desaparecer entre rivales.',
     locked: true, cost:120
@@ -386,7 +386,7 @@ var ROSTER = [
   {
     id: 'r38', nombre: 'Samguk Han', original: "Sangoku Taichi",
     posicion: 'Portero', tipo: 'Fuego',
-    tiro: 22, pase: 50, defensa: 75, especial: 70,
+    tiro: 22, pase: 50, defensa: 75, especial: 75,
     hissatsu: ['Captura ardiente'],
     desc: 'Portero del raimon, con reflejos felinos y un corazón ardiente.',
     locked: false
@@ -394,7 +394,7 @@ var ROSTER = [
   {
     id: 'r39', nombre: 'Shadow Cimmerian', original: "Kageto Yamino",
     posicion: 'Delantero', tipo: 'Bosque',
-    tiro: 79, pase: 74, defensa: 32, especial: 70,
+    tiro: 79, pase: 76, defensa: 32, especial: 70,
     hissatsu: ['Tornado oscuro'],
     desc: 'Delantero misterioso, capaz de desaparecer entre las sombras.',
     locked: false
@@ -434,7 +434,7 @@ var ROSTER = [
   {
     id: 'r44', nombre: 'Tom Skipper', original: "Yo Kabutenji",
     posicion: 'Delantero', tipo: 'Viento',
-    tiro: 83, pase: 60, defensa: 36, especial: 76,
+    tiro: 83, pase: 73, defensa: 36, especial: 76,
     hissatsu: ['La Tierra'],
     desc: 'Delantero ágil y veloz, con un instinto asesino frente a la portería.',
     locked: true, cost:126
@@ -442,7 +442,7 @@ var ROSTER = [
   {
     id: 'r45', nombre: 'Bash Lancer', original: "Baddap Sleep",
     posicion: 'Delantero', tipo: 'Bosque',
-    tiro: 86, pase: 81, defensa: 34, especial: 80,
+    tiro: 86, pase: 81, defensa: 34, especial: 85,
     hissatsu: ['Lanza Letal'],
     desc: 'Delantero y capitán de la Academia Ogro, con un estilo de juego agresivo y directo.',
     locked: true, cost:147
@@ -1092,7 +1092,7 @@ var ROSTER = [
   {
     id: 'r124', nombre: 'Goldie Lemmon', original: 'Nanobana Kinako',
     posicion: 'Defensa', tipo: 'Fuego',
-    tiro: 68, pase: 58, defensa: 82, especial: 82,
+    tiro: 68, pase: 78, defensa: 84, especial: 82,
     hissatsu: ['Grumo Pegapasta'],
     desc: 'Defensa polivalente que ha jugado en varios de los grandes equipos de su generación.',
     locked: false, cost:131
@@ -1834,7 +1834,7 @@ var ROSTER = [
   id:'r214', nombre:'Fei Rune', original:'Fei Rune',
   sprite:'assets/sprites/r214.png',
   posicion:'Centrocampista', tipo:'Bosque',
-  tiro:92,pase:86,defensa:55,especial:94,
+  tiro:92,pase:86,defensa:75,especial:94,
   hissatsu:['Remate del Dinosaurio'],
   desc:'Fei en su forma Miximax con Big. Jugador del Chrono Storm.',
   locked:true,cost:709
@@ -1843,7 +1843,7 @@ var ROSTER = [
   id:'r215', nombre:'Ryoma Nishiki', original:'Nishiki Ryoma',
   sprite:'assets/sprites/r215.png',
   posicion:'Centrocampista', tipo:'Montaña',
-  tiro:89,pase:91,defensa:70,especial:93,
+  tiro:89,pase:91,defensa:74,especial:93,
   hissatsu:['Corriente Negra'],
   desc:'Roma en su forma Miximax con Ryoma Sakamoto. Centrocampista del Chrono Storm.',
   locked:true,cost:693
@@ -1897,7 +1897,7 @@ var ROSTER = [
   id:'r221', nombre:'Aimé Quintet', original:'Gomaki Tetsurou',
   sprite:'assets/sprites/r221.webp',
   posicion:'Defensa', tipo:'Viento',
-  tiro:48,pase:65,defensa:82,especial:82,
+  tiro:48,pase:73,defensa:82,especial:82,
   hissatsu:['Salto Dimensional'],
   desc:'Uno de los defensas principales de Dragon Link.',
   locked:true,cost:189
@@ -1915,7 +1915,7 @@ var ROSTER = [
   id:'r223', nombre:'Ringo Saturn', original:'Ringo Saturn',
   sprite:'assets/sprites/r223.webp',
   posicion:'Portero', tipo:'Montaña',
-  tiro:31,pase:60,defensa:84,especial:88,
+  tiro:31,pase:60,defensa:84,especial:84,
   hissatsu:['Estrella Reflectante'],
   desc:'Jugador destacado del Instituto Universal.',
   locked:true,cost:200
@@ -1924,7 +1924,7 @@ var ROSTER = [
   id:'r224', nombre:'Harrold Houdini', original:'Harrold Houdini',
   sprite:'assets/sprites/r224.webp',
   posicion:'Centrocampista', tipo:'Bosque',
-  tiro:74,pase:85,defensa:48,especial:83,
+  tiro:74,pase:85,defensa:70,especial:83,
   hissatsu:['Tiro Espectral'],
   desc:'Habilidoso jugador del Instituto Espejismo, famoso por sus técnicas de engaño.',
   locked:true,cost:200
@@ -1933,7 +1933,7 @@ var ROSTER = [
   id:'r225', nombre:'Hocus Sesame', original:'Hocus Sesame',
   sprite:'assets/sprites/r225.webp',
   posicion:'Centrocampista', tipo:'Fuego',
-  tiro:67,pase:76,defensa:52,especial:80,
+  tiro:67,pase:76,defensa:72,especial:80,
   hissatsu:['Espejismo'],
   desc:'Jugador del Instituto Espejismo.',
   locked:true,cost:158
@@ -1942,7 +1942,7 @@ var ROSTER = [
   id:'r226', nombre:'Pocus Sesame', original:'Pocus Sesame',
   sprite:'assets/sprites/r226.webp',
   posicion:'Centrocampista', tipo:'Bosque',
-  tiro:65,pase:74,defensa:55,especial:79,
+  tiro:77,pase:74,defensa:55,especial:79,
   hissatsu:['Espejismo'],
   desc:'Jugador del Instituto Espejismo.',
   locked:true,cost:158
@@ -1951,7 +1951,7 @@ var ROSTER = [
   id:'r227', nombre:'Doug McArthur', original:'Doug McArthur',
   sprite:'assets/sprites/r227.webp',
   posicion:'Delantero', tipo:'Viento',
-  tiro:79,pase:69,defensa:59,especial:80,
+  tiro:79,pase:79,defensa:59,especial:80,
   hissatsu:['Tiro Sónico'],
   desc:'Delantero destacado del equipo que lucha contra el Imperio.',
   locked:true,cost:184
@@ -1969,7 +1969,7 @@ var ROSTER = [
   id:'r229', nombre:'Cronus Fourseasons', original:'Cronus Fourseasons',
   sprite:'assets/sprites/r229.webp',
   posicion:'Centrocampista', tipo:'Fuego',
-  tiro:84,pase:81,defensa:55,especial:80,
+  tiro:84,pase:81,defensa:70,especial:80,
   hissatsu:['Tiro Balista'],
   desc:'Jugador estrella del Monte Olimpo y uno de los más importantes del Camino Imperial.',
   locked:true,cost:221
@@ -1978,7 +1978,7 @@ var ROSTER = [
   id:'r230', nombre:'Hyperion', original:'Hyperion',
   sprite:'assets/sprites/r230.webp',
   posicion:'Centrocampista', tipo:'Fuego',
-  tiro:83,pase:72,defensa:58,especial:80,
+  tiro:83,pase:72,defensa:68,especial:80,
   hissatsu:['Tiro Balista'],
   desc:'Poderoso delantero asociado al Monte Olimpo.',
   locked:true,cost:210
@@ -2068,7 +2068,7 @@ var ROSTER = [
   id:'r240', nombre:'Betelgeuse', original:'Betelgeuse',
   sprite:'assets/sprites/r240.webp',
   posicion:'Delantero', tipo:'Fuego',
-  tiro:82,pase:75,defensa:40,especial:83,
+  tiro:82,pase:70,defensa:40,especial:83,
   hissatsu:['Sombra de Orión'],
   desc:'Uno de los principales delanteros de Eclipse de Orión, considerado inferior únicamente a Jade.',
   locked:true,cost:215
@@ -2077,7 +2077,7 @@ var ROSTER = [
   id:'r241', nombre:'Procyon', original:'Procyon',
   sprite:'assets/sprites/r241.webp',
   posicion:'Portero', tipo:'Bosque',
-  tiro:51,pase:78,defensa:84,especial:88,
+  tiro:51,pase:78,defensa:84,especial:84,
   hissatsu:['Escudo sombrío'],
   desc:'Uno de los miembros principales de Eclipse de Orión y Discípulo de Orión.',
   locked:true,cost:195
@@ -2086,7 +2086,7 @@ var ROSTER = [
   id:'r242', nombre:'Xavier Schiller', original:'Kira Hiroto',
   sprite:'assets/sprites/r242.webp',
   posicion:'Delantero', tipo:'Bosque',
-  tiro:85,pase:78,defensa:40,especial:85,
+  tiro:86,pase:78,defensa:40,especial:85,
   hissatsu:['Explosión'],
   desc:'Delantero de Ares con un enorme talento goleador.',
   locked:true,cost:225
@@ -2095,10 +2095,137 @@ var ROSTER = [
   id:'r243', nombre:'Perseo', original:'Percy Hurst',
   sprite:'assets/sprites/r243.webp',
   posicion:'Delantero', tipo:'Fuego',
-  tiro:82,pase:70,defensa:42,especial:81,
+  tiro:82,pase:76,defensa:42,especial:81,
   hissatsu:['Tijera Celestial'],
   desc:'Delantero del Instituto Zeus en la línea temporal de Ares.',
   locked:true,cost:175
 },
+{
+  id:'r244', nombre:'Scotty Osc.', original:'Kogure Yuya',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:52,pase:78,defensa:86,especial:88,
+  hissatsu:['Campo Torbellino V2'],
+  desc:'Defensa del Raimon, famoso por su velocidad, agilidad y su peculiar sentido del humor.',
+  locked:true,cost:560,
+  sprite:'assets/sprites/r244.webp'
+},
+{
+  id:'r245', nombre:'Dvalin Osc.', original:'Dvalin',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:89,pase:80,defensa:53,especial:85,
+  hissatsu:['Lanza de Odín V2'],
+  desc:'Versión oscura de Dvalin, uno de los jugadores más poderosos del Épsilon.',
+  locked:true,cost:630,
+  sprite:'assets/sprites/r245.webp'
+},
+{
+  id:'r246', nombre:'Zell Osc.', original:'Zell',
+  posicion:'Portero', tipo:'Fuego',
+  tiro:55,pase:56,defensa:84,especial:86,
+  hissatsu:['Agujero de Gusano V2'],
+  desc:'Versión oscura de Zell, poderoso delantero del Épsilon.',
+  locked:true,cost:630,
+  sprite:'assets/sprites/r246.webp'
+},
+{
+  id:'r247', nombre:'Thomas Feldt Osc.', original:'Sugimori Takeshi',
+  posicion:'Portero', tipo:'Bosque',
+  tiro:32,pase:55,defensa:84,especial:88,
+  hissatsu:['Puño Cohete'],
+  desc:'Guardameta de los Emperadores Oscuros y antiguo jugador del Instituto Brain.',
+  locked:true,cost:380,
+  sprite:'assets/sprites/r247.png'
+},
+{
+  id:'r248', nombre:'Malcolm Night Osc.', original:'Nishigaki Mamoru',
+  posicion:'Defensa', tipo:'Fuego',
+  tiro:40,pase:78,defensa:85,especial:77,
+  hissatsu:['Corte Giratorio'],
+  desc:'Defensa de los Emperadores Oscuros y antiguo jugador de Kirkwood.',
+  locked:true,cost:350,
+  sprite:'assets/sprites/r248.png'
+},
+{
+  id:'r249', nombre:'Shadow Osc.', original:'Yamino Kageto',
+  posicion:'Delantero', tipo:'Bosque',
+  tiro:87,pase:80,defensa:40,especial:88,
+  hissatsu:['Tornado Oscuro'],
+  desc:'Poderoso delantero de los Emperadores Oscuros, nacido de la oscuridad.',
+  locked:true,cost:400,
+  sprite:'assets/sprites/r249.png'
+},
+{
+  id:'r250', nombre:'Jim Wraith Osc.', original:'Kageno Jin',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:42,pase:77,defensa:84,especial:76,
+  hissatsu:['Doppelgänger'],
+  desc:'Defensa de los Emperadores Oscuros y antiguo jugador del Raimon.',
+  locked:true,cost:330,
+  sprite:'assets/sprites/r250.png'
+},
+{
+  id:'r251', nombre:'Tod Ironside Osc.', original:'Kurimatsu Teppei',
+  posicion:'Defensa', tipo:'Fuego',
+  tiro:50,pase:78,defensa:84,especial:80,
+  hissatsu:['Cometa'],
+  desc:'Defensa del Raimon convertido en miembro de los Emperadores Oscuros.',
+  locked:true,cost:320,
+  sprite:'assets/sprites/r251.png'
+},
+{
+  id:'r252', nombre:'Steve Grim Osc.', original:'Handa Shinichi',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:80,pase:80,defensa:75,especial:71,
+  hissatsu:['Remate en V'],
+  desc:'Centrocampista equilibrado del Raimon que forma parte de los Emperadores Oscuros.',
+  locked:true,cost:300,
+  sprite:'assets/sprites/r252.png'
+},
+{
+  id:'r253', nombre:'Tim Saunders Osc.', original:'Shourinji Ayumu',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:70,pase:75,defensa:84,especial:85,
+  hissatsu:['Cometa'],
+  desc:'Centrocampista del Raimon convertido en miembro de los Emperadores Oscuros.',
+  locked:true,cost:290,
+  sprite:'assets/sprites/r253.png'
+},
+{
+  id:'r254', nombre:'Sam Kincaid Osc.', original:'Shishidou Sakichi',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:55,pase:73,defensa:87,especial:85,
+  hissatsu:['Estrella Fugaz'],
+  desc:'Jugador del Raimon que forma parte de los Emperadores Oscuros.',
+  locked:true,cost:290,
+  sprite:'assets/sprites/r254.png'
+},
+{
+  id:'r255', nombre:'Maxwell Carson Osc.', original:'Matsuno Kuusuke',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:78,pase:84,defensa:76,especial:85,
+  hissatsu:['Remate en V'],
+  desc:'Centrocampista ofensivo de los Emperadores Oscuros, famoso por su velocidad.',
+  locked:true,cost:310,
+  sprite:'assets/sprites/r255.png'
+},
+{
+  id:'r256', nombre:'Nathan Swift Osc.', original:'Kazemaru Ichirouta',
+  posicion:'Delantero', tipo:'Viento',
+  tiro:85,pase:86,defensa:51,especial:88,
+  hissatsu:['Fénix Oscuro'],
+  desc:'Capitán de los Emperadores Oscuros, dotado de una velocidad extraordinaria.',
+  locked:true,cost:410,
+  sprite:'assets/sprites/r256.png'
+},
+{
+  id:'r257', nombre:'Kevin Dragonfly Osc.', original:'Someoka Ryuugo',
+  posicion:'Delantero', tipo:'Bosque',
+  tiro:88,pase:80,defensa:45,especial:85,
+  hissatsu:['Remate Guiverno'],
+  desc:'Potente delantero de los Emperadores Oscuros y antiguo miembro del Raimon.',
+  locked:true,cost:410,
+  sprite:'assets/sprites/r257.png'
+},
+
 
 ];
