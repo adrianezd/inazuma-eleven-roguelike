@@ -136,7 +136,7 @@ var ROSTER = [
   {
     id: 'r03', nombre: 'Nathan Swift', original: 'Kazemaru Ichirouta',
     posicion: 'Defensa', tipo: 'Viento',
-    tiro: 75, pase: 76, defensa: 74, especial: 65,
+    tiro: 75, pase: 76, defensa: 75, especial: 65,
     hissatsu: ['Defensa Huracán'],
     desc: 'El jugador más veloz del Raimon.',
     locked: true, cost:126
@@ -168,7 +168,7 @@ var ROSTER = [
   {
     id: 'r07', nombre: 'Caleb Stonewall', original: 'Fudou Akio',
     posicion: 'Centrocampista', tipo: 'Fuego',
-    tiro: 71, pase: 80, defensa: 71, especial: 70,
+    tiro: 74, pase: 80, defensa: 76, especial: 70,
     hissatsu: ['Pinguino Emperador III'],
     desc: 'Provocador y letal, juega sin reglas.',
     locked: true, cost:158
@@ -176,7 +176,7 @@ var ROSTER = [
   {
     id: 'r08', nombre: 'Shawn Froste', original: 'Fubuki Shirou',
     posicion: 'Defensa', tipo: 'Viento',
-    tiro: 76, pase: 58, defensa: 79, especial: 80,
+    tiro: 76, pase: 70, defensa: 79, especial: 80,
     hissatsu: ['Paisaje Helado'],
     desc: 'Frío como el hielo, letal frente a la portería.',
     locked: true, cost:151
@@ -192,7 +192,7 @@ var ROSTER = [
   {
     id: 'r10', nombre: 'Erik Eagle', original: 'Ichinose Kazuya',
     posicion: 'Centrocampista', tipo: 'Viento',
-    tiro: 74, pase: 80, defensa: 50, especial: 75,
+    tiro: 74, pase: 80, defensa: 70, especial: 75,
     hissatsu: ['Fénix'],
     desc: 'Líder nato, siempre listo para resurgir.',
     locked: true, cost:166
@@ -208,7 +208,7 @@ var ROSTER = [
   {
     id: 'r12', nombre: 'Todd Ironside', original: 'Kurimatsu Teppei',
     posicion: 'Defensa', tipo: 'Montaña',
-    tiro: 34, pase: 64, defensa: 77, especial: 67,
+    tiro: 34, pase: 71, defensa: 77, especial: 70,
     hissatsu: ['Corte Giratorio'],
     desc: 'Defensa fornido con un don inesperado para el regate.',
     locked: false
@@ -233,7 +233,7 @@ var ROSTER = [
   {
     id: 'r15', nombre: 'Jordan Greenway', original: 'Midorikawa Ryuuji',
     posicion: 'Centrocampista', tipo: 'Bosque',
-    tiro: 75, pase: 76, defensa: 67, especial: 73,
+    tiro: 75, pase: 78, defensa: 74, especial: 77,
     hissatsu: ['Puerta Astral'],
     desc: 'Técnica exquisita y un gran corazón.',
     locked: true, cost:154
@@ -586,7 +586,7 @@ var ROSTER = [
   {
     id: 'r63', nombre: 'Nakata Hidetoshi', original: 'Nakata Hidetoshi',
     posicion: 'Centrocampista', tipo: 'Montaña',
-    tiro: 85, pase: 84, defensa: 50, especial: 88,
+    tiro: 85, pase: 84, defensa: 80, especial: 88,
     hissatsu: ['Disparo Valiente'],
     desc: 'Veterano de gran talento que lidera el centro del campo con experiencia.',
     locked: true, cost:278
@@ -1619,8 +1619,8 @@ var ROSTER = [
 {
   id:'r190', nombre:'Julien Rousseau', original:'Julien Rousseau', sprite:'assets/sprites/r190.webp',
   posicion:'Centrocampista', tipo:'Viento',
-  tiro:79,pase:79,defensa:62,especial:78,
-  hissatsu:['Cómo ser popular'],
+  tiro:79,pase:79,defensa:70,especial:78,
+  hissatsu:['Lecho de Rosas'],
   desc:'Centrocampista francés de los Grifos de la Rosa.',
   locked:true,cost:168
 },
@@ -1645,7 +1645,7 @@ var ROSTER = [
   id:'r193', nombre:'Desmodus Drakul', original:'Desmodus Drakul',
   sprite:'assets/sprites/r193.webp',
   posicion:'Centrocampista', tipo:'Montaña',
-  tiro:84,pase:82,defensa:65,especial:91,
+  tiro:84,pase:82,defensa:69,especial:91,
   hissatsu:['Mordisco de Vampiro'],
   desc:'Capitán de los Nosfanáticos y líder de las Criaturas de la Noche. Miximax: Gen V.',
   locked:true,cost:221
@@ -1798,7 +1798,7 @@ var ROSTER = [
   id:'r210', nombre:'Sor', original:'Sor',
   sprite:'assets/sprites/r210.png',
   posicion:'Defensa', tipo:'Bosque',
-  tiro:62,pase:73,defensa:91,especial:89,
+  tiro:62,pase:87,defensa:91,especial:89,
   hissatsu:['Defensa de Quetzal'],
   desc:'Sor en su forma Miximax con Papá Quetzalcoatlus. Defensa del Chrono Storm.',
   locked:true,cost:662
@@ -1826,7 +1826,7 @@ var ROSTER = [
   sprite:'assets/sprites/r213.png',
   posicion:'Delantero', tipo:'Fuego',
   tiro:98,pase:72,defensa:42,especial:96,
-  hissatsu:['Gran Explosión'],
+  hissatsu:['Katana Fulminante'],
   desc:'Victor en su forma Miximax con Soji Okita. Delantero del Chrono Storm.',
   locked:true,cost:725
 },
@@ -1835,7 +1835,7 @@ var ROSTER = [
   sprite:'assets/sprites/r214.png',
   posicion:'Centrocampista', tipo:'Bosque',
   tiro:92,pase:86,defensa:75,especial:94,
-  hissatsu:['Remate del Dinosaurio'],
+  hissatsu:['Chut Prehistórica'],
   desc:'Fei en su forma Miximax con Big. Jugador del Chrono Storm.',
   locked:true,cost:709
 },
@@ -1853,7 +1853,7 @@ var ROSTER = [
   sprite:'assets/sprites/r216.png',
   posicion:'Centrocampista', tipo:'Viento',
   tiro:91,pase:94,defensa:80,especial:97,
-  hissatsu:['Tornado Armonía'],
+  hissatsu:['Espada Real'],
   desc:'Arion en su forma Miximax con el Rey Arturo. Capitán del Chrono Storm.',
   locked:true,cost:725
 },
@@ -1880,7 +1880,7 @@ var ROSTER = [
   sprite:'assets/sprites/r219.png',
   posicion:'Delantero', tipo:'Montaña',
   tiro:100,pase:86,defensa:47,especial:99,
-  hissatsu:['Huracán Zeta'],
+  hissatsu:['Soy Todopoderoso'],
   desc:'Zanark en su forma Miximax con Huracán Zeta. Uno de los atacantes más poderosos del Chrono Storm.',
   locked:true,cost:756
 },
