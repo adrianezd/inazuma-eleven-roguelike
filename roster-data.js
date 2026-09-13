@@ -77,7 +77,8 @@ var RIVAL_TEAM_BOSSES = [
   'Chrono Storm', 'Dragon Link', 'Desesperdidos', 'Dinastía Galáctica',
   'Earth Eleven', 'Eclipse de Orión', 'El Dorado 02', 'El Dorado 03', 
   'Protocolo Omega 2.0', 'Protocolo Omega 3.0', 'Zanark Domain', 'Equipo Zero',
-  'Falam Medius', 'Flota Ixar', 'Guardianes de La Reina', 'Orfeo', 'Élite Omega'
+  'Falam Medius', 'Flota Ixar', 'Guardianes de La Reina', 'Orfeo', 'Élite Omega',
+  'Galanes Electrizantes', 'Los Cuatro Magníficos'
 ];
 
 // Puntuación de "fuerza" de cada equipo (1-100), usada para que la CPU
@@ -103,12 +104,12 @@ var TEAM_POWER = {
   'Prominence': 73, 'Polvo de Diamante': 73, 'Tormenta de Géminis': 70, 'Dragones de Fuego': 70,
   'Pequeños Gigantes': 90, 'Épsilon': 74, 'Los Emperadores': 75, 'Os Reis': 75, 'Neo Japón': 74,
   'Protocolo Omega': 66, 'Caos': 75, 'El Dorado 01': 57, 'Resistencia Japon': 80, 'Resistencia Japón GO': 70,
-  'Gir': 56, 'Gar': 56, 'Ragnah': 80, 'Alius Masters': 90, 'Inazuma Japon': 90, 'Inazuma Japon GO': 90,
-  'Chrono Storm': 95, 'Dragon Link': 80, 'Desesperdidos': 70, 'Dinastía Galáctica': 84,
+  'Gir': 56, 'Gar': 56, 'Ragnah': 80, 'Alius Masters': 92, 'Inazuma Japon': 92, 'Inazuma Japon GO': 90,
+  'Chrono Storm': 95, 'Dragon Link': 80, 'Desesperdidos': 75, 'Dinastía Galáctica': 84,
   'Earth Eleven': 94, 'Eclipse de Orión': 85, 'El Dorado 02': 75, 'El Dorado 03': 79,
   'Protocolo Omega 2.0': 76, 'Protocolo Omega 3.0': 78, 'Zanark Domain': 78, 'Equipo Zero': 86,
-  'Falam Medius': 82, 'Flota Ixar': 83, 'Guardianes de La Reina': 81, 'Orfeo': 80,
-  'Élite Omega': 90
+  'Falam Medius': 83, 'Flota Ixar': 83, 'Guardianes de La Reina': 81, 'Orfeo': 80,
+  'Élite Omega': 93, 'Galanes Electrizantes':70, 'Los Cuatro Magníficos': 65
 };
 
 
@@ -2226,6 +2227,54 @@ var ROSTER = [
   locked:true,cost:410,
   sprite:'assets/sprites/r257.png'
 },
+{
+  id:'r258', nombre:'George Winters', original:'Fuyuki Genbu',
+  posicion:'Delantero', tipo:'Bosque',
+  tiro:85,pase:72,defensa:42,especial:88,
+  hissatsu:['Fénix oscuro'],
+  desc:'Uno de los Cuatro Magníficos. Delantero de elemento Bosque conocido por su gran potencia ofensiva.',
+  locked:true,cost:420,
+  sprite:'assets/sprites/r258.webp'
+},
 
+{
+  id:'r259', nombre:'Alan Sumner', original:'Ryuu Suzuno',
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:52,pase:76,defensa:83,especial:86,
+  hissatsu:['Cinto astral'],
+  desc:'Uno de los Cuatro Magníficos. Defensa de enorme solidez que destaca por su capacidad para frenar los ataques rivales.',
+  locked:true,cost:410,
+  sprite:'assets/sprites/r259.webp'
+},
+
+{
+  id:'r260', nombre:'Verne Spring', original:'Shuu Seiryuu',
+  posicion:'Centrocampista', tipo:'Fuego',
+  tiro:82,pase:89,defensa:67,especial:88,
+  hissatsu:['Cañón dragón'],
+  desc:'Uno de los Cuatro Magníficos. Centrocampista de elemento Fuego con gran talento para organizar el juego y lanzar potentes tiros.',
+  locked:true,cost:420,
+  sprite:'assets/sprites/r260.jpg'
+},
+
+{
+  id:'r261', nombre:'Ted Autumn', original:'Akihito Byakko',
+  posicion:'Portero', tipo:'Viento',
+  tiro:38,pase:61,defensa:85,especial:83,
+  hissatsu:['Manos infinitas'],
+  desc:'Uno de los Cuatro Magníficos. Portero de gran nivel famoso por sus extraordinarias técnicas de parada.',
+  locked:true,cost:430,
+  sprite:'assets/sprites/r261.webp'
+},
+
+{
+  id:'r262', nombre:'Bernadette Stoker', original:'Karen Toga',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:86,pase:75,defensa:44,especial:89,
+  hissatsu:['Remate Pegaso'],
+  desc:'Capitana de Los Cuatro Magníficos y una de las delanteras más peligrosas del equipo.',
+  locked:true,cost:430,
+  sprite:'assets/sprites/r262.png'
+},
 
 ];

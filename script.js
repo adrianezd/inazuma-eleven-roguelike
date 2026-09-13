@@ -380,7 +380,9 @@ var TEAM_SHIELD_FILES = {
   'Unicorn': 'unicorn.webp',
   'Academia Universal': 'universal.webp',
   'Wild': 'wild.webp',
-  'Élite Omega': 'elite-omega.webp'
+  'Élite Omega': 'elite-omega.webp',
+  'Galanes Electrizantes': 'galanes-electrizantes.webp',
+  'Los Cuatro Magníficos': 'cuatro-magnificos.webp'
 };
 // team1.png es el escudo del propio jugador ("Tu equipo"), no un relleno
 // genérico para rivales sin escudo -- por eso vive fuera de TEAM_SHIELD_FILES.
