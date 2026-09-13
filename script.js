@@ -447,8 +447,26 @@ function generateRecruitOptions() {
     if (defensaCount >= 2 && p.posicion === 'Defensa') return false;
     return true;
   });
-  var shuffled = pool.slice().sort(function () { return Math.random() - 0.5; });
-  return shuffled.slice(0, 3).map(rosterInstance);
+
+  // Cada 2 nodos de Fichaje (el 2º, 4º, 6º...) se garantiza un Portero
+  // entre las 3 opciones si todavía no tienes uno -- antes dependía del
+  // azar puro y una partida entera podía pasar sin que saliera ninguno.
+  G.run.fichajeCount = (G.run.fichajeCount || 0) + 1;
+  var forcePortero = !alreadyHasPortero && G.run.fichajeCount % 2 === 0;
+  var porteroPool = pool.filter(function (p) { return p.posicion === 'Portero'; });
+  var picks = [];
+  var rest = pool;
+  if (forcePortero && porteroPool.length) {
+    var forcedPortero = choice(porteroPool);
+    picks.push(forcedPortero);
+    rest = pool.filter(function (p) { return p.id !== forcedPortero.id; });
+  }
+  var shuffledRest = rest.slice().sort(function () { return Math.random() - 0.5; });
+  while (picks.length < 3 && shuffledRest.length) picks.push(shuffledRest.shift());
+  // Se vuelve a barajar el orden final para que el portero forzado no
+  // aparezca siempre en la misma posición de la tarjeta.
+  picks = picks.sort(function () { return Math.random() - 0.5; });
+  return picks.map(rosterInstance);
 }
 
 /* ---------------------------------------------------------------------
