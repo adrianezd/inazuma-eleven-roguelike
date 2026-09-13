@@ -448,18 +448,24 @@ function generateRecruitOptions() {
     return true;
   });
 
-  // Cada 2 nodos de Fichaje (el 2º, 4º, 6º...) se garantiza un Portero
-  // entre las 3 opciones si todavía no tienes uno -- antes dependía del
-  // azar puro y una partida entera podía pasar sin que saliera ninguno.
-  G.run.fichajeCount = (G.run.fichajeCount || 0) + 1;
-  var forcePortero = !alreadyHasPortero && G.run.fichajeCount % 2 === 0;
+  // Si todavía no tienes portero, cada nodo de Fichaje tiene un 70% de
+  // posibilidades de incluir uno entre las 3 opciones -- antes dependía
+  // del azar puro del pool entero y una partida podía pasar entera sin que
+  // saliera ninguno. Si ya tienes uno, sin trato especial (de todas formas
+  // ya está excluido del pool más arriba).
   var porteroPool = pool.filter(function (p) { return p.posicion === 'Portero'; });
+  var forcePortero = !alreadyHasPortero && porteroPool.length > 0 && Math.random() < 0.7;
   var picks = [];
-  var rest = pool;
-  if (forcePortero && porteroPool.length) {
+  var rest;
+  if (forcePortero) {
     var forcedPortero = choice(porteroPool);
     picks.push(forcedPortero);
     rest = pool.filter(function (p) { return p.id !== forcedPortero.id; });
+  } else {
+    // Si no toca forzarlo, se excluyen los porteros del resto del pool --
+    // si no, podían colarse igualmente por puro azar y la tasa real de
+    // aparición acababa por encima del 70% pedido.
+    rest = pool.filter(function (p) { return p.posicion !== 'Portero'; });
   }
   var shuffledRest = rest.slice().sort(function () { return Math.random() - 0.5; });
   while (picks.length < 3 && shuffledRest.length) picks.push(shuffledRest.shift());
