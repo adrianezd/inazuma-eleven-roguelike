@@ -3957,7 +3957,7 @@ function renderFutDraftPick() {
       '</div>' +
       (benchPreview.length
         ? '<div class="panel"><h3 style="margin-bottom:8px">Suplentes</h3><div class="pitch-row" style="justify-content:center">' +
-          benchPreview.map(function (p) { return '<div class="pitch-player">' + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>'; }).join('') +
+          benchPreview.map(function (p) { return '<div class="pitch-player">' + pitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>'; }).join('') +
           '</div></div>'
         : '') +
       '<div class="panel"><h3 style="margin-bottom:8px">Elige uno</h3><div class="card-grid">' + optionsHtml + '</div></div>' +
@@ -4104,7 +4104,10 @@ function renderFutDraftPitch(squad, formationId, showEmptySlots) {
   var rows = assignFutDraftFormation(squad, formation);
   var rowsHtml = rows.map(function (row) {
     var itemsHtml = row.players.map(function (p) {
-      return '<div class="pitch-player">' + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
+      // Media y afinidad visibles desde el momento en que el jugador
+      // entra al campo (justo al elegirlo en el pick), no solo luego en
+      // la pantalla de "Tu once inicial" -- a petición explícita.
+      return '<div class="pitch-player">' + pitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
     }).join('');
     if (showEmptySlots) {
       for (var k = row.players.length; k < row.count; k++) {
