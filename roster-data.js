@@ -274,7 +274,7 @@ var ROSTER = [
   {
     id: 'r20', nombre: 'Byron Love', original: 'Afuro Terumi',
     posicion: 'Centrocampista', tipo: 'Bosque',
-    tiro: 84, pase: 81, defensa: 42, especial: 80,
+    tiro: 84, pase: 81, defensa: 69, especial: 80,
     hissatsu: ['Sabiduría Divina'],
     desc: 'Capitán de Zeus, el centrocampista más elegante y letal.',
     locked: true, cost:186
@@ -282,7 +282,7 @@ var ROSTER = [
   {
     id: 'r21', nombre: 'Scott Banyan', original: 'Kogure Yuuya',
     posicion: 'Defensa', tipo: 'Bosque',
-    tiro: 38, pase: 62, defensa: 80, especial: 79,
+    tiro: 38, pase: 69, defensa: 80, especial: 79,
     hissatsu: ['Campo Torbellino'],
     desc: 'Defensa travieso de Raimon, siempre lleno de recursos.',
     locked: true, cost:91
@@ -306,7 +306,7 @@ var ROSTER = [
   {
     id: 'r22', nombre: 'David Samford', original: 'Sakuma Jirou',
     posicion: 'Delantero', tipo: 'Bosque',
-    tiro: 78, pase: 79, defensa: 53, especial: 67,
+    tiro: 78, pase: 79, defensa: 59, especial: 67,
     hissatsu: ['Pinguino Emperador II'],
     desc: 'Delantero de la royal, implacable y sin piedad en el choque.',
     locked: true, cost:119
@@ -314,7 +314,7 @@ var ROSTER = [
   {
     id: 'r23', nombre: 'Archer Hawkins', original: 'Tobitaka Seiya',
     posicion: 'Defensa', tipo: 'Viento',
-    tiro: 30, pase: 65, defensa: 80, especial: 82,
+    tiro: 30, pase: 72, defensa: 80, especial: 82,
     hissatsu: ['Corte de vacío'],
     desc: 'Guerrero solitario que rechazó el once titular por orgullo.',
     locked: true, cost:93
@@ -626,7 +626,7 @@ var ROSTER = [
   {
     id: 'r68', nombre: 'Fei Rune', original: 'Fei Rune',
     posicion: 'Delantero', tipo: 'Bosque',
-    tiro: 85, pase: 70, defensa: 32, especial: 80,
+    tiro: 85, pase: 74, defensa: 32, especial: 80,
     hissatsu: ['Remate Rebotado'],
     desc: 'Viajero del tiempo que ayudó a Arion a salvar el fútbol.',
     locked: true, cost: 99999
