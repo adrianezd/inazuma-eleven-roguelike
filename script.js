@@ -3642,16 +3642,19 @@ function renderPenaltyModeEnd(p) {
    --------------------------------------------------------------------- */
 
 var FUTDRAFT_SQUAD_SIZE = 11;
-// Los 3 modos (Libre, Clásico, Afinidad) draftean siempre 4 suplentes
-// además del once (15 picks en total). En la pantalla de equipo se pueden
-// hacer cambios ILIMITADOS antes de empezar el torneo, tanto entre
-// titular y suplente como entre dos titulares (para reubicarlos de línea).
-var FUTDRAFT_LIBRE_TOTAL = 15;
+// Los 4 modos (Libre, Clásico, Afinidad y Liga, que reutiliza este mismo
+// draft) draftean siempre 5 suplentes además del once (16 picks en
+// total). En la pantalla de equipo se pueden hacer cambios ILIMITADOS
+// antes de empezar el torneo, tanto entre titular y suplente como entre
+// dos titulares (para reubicarlos de línea).
+var FUTDRAFT_LIBRE_TOTAL = 16;
 // Topes por posición durante el draft (banquillo, o todo el draft en modo
-// Libre): altos para no restringir de más, pero justos para que nunca sobren
-// jugadores fuera de sitio (el máximo que pide cualquiera de las formaciones
-// de abajo).
-var FUTDRAFT_POS_CAPS = { Portero: 1, Defensa: 5, Centrocampista: 5, Delantero: 4 };
+// Libre): la suma de los topes menos las 11 plazas del once da exactamente
+// el hueco disponible para banquillo en CUALQUIER formación (todas suman
+// 11 titulares), así que tiene que ser al menos FUTDRAFT_LIBRE_TOTAL -
+// FUTDRAFT_SQUAD_SIZE (5) para que siempre se puedan draftear los 5
+// suplentes sin quedarse corto -- Delantero sube de 4 a 5 para eso.
+var FUTDRAFT_POS_CAPS = { Portero: 1, Defensa: 5, Centrocampista: 5, Delantero: 5 };
 
 var FUTDRAFT_FORMATIONS = [
   { id: '442', name: '4-4-2', rows: [
@@ -3701,7 +3704,9 @@ function futDraftAvailableFormations() {
   return FUTDRAFT_FORMATIONS.filter(function (f) { return ids.indexOf(f.id) !== -1; });
 }
 
-function actionGoFutDraftModeSelect() { G.futdraftBracketSizeIdx = 0; G.futdraftModeChoiceIdx = 0; G.screen = 'futdraftModeSelect'; render(); }
+// Por defecto "Clásico" (índice 1 de FUTDRAFT_MODE_OPTIONS), no "Libre" --
+// a petición explícita.
+function actionGoFutDraftModeSelect() { G.futdraftBracketSizeIdx = 0; G.futdraftModeChoiceIdx = 1; G.screen = 'futdraftModeSelect'; render(); }
 
 // Tipo de FutDraft (antes 3 botones apilados) y tamaño del torneo (antes
 // un stepper dentro de la pantalla de equipo, ver renderFutDraftTeam) se
@@ -3712,7 +3717,7 @@ var FUTDRAFT_MODE_OPTIONS = [
   { id: 'clasico', name: 'Clásico', desc: 'El draft solo te ofrece jugadores para los huecos que falten en tu formación.' },
   { id: 'afinidad', name: 'Afinidad', desc: 'Eliges un tipo elemental antes de nada: todo tu draft sale de ese tipo.' }
 ];
-function futDraftModeChoiceIdx() { return G.futdraftModeChoiceIdx === undefined ? 0 : G.futdraftModeChoiceIdx; }
+function futDraftModeChoiceIdx() { return G.futdraftModeChoiceIdx === undefined ? 1 : G.futdraftModeChoiceIdx; }
 function actionFutDraftModeStep(delta) {
   var n = FUTDRAFT_MODE_OPTIONS.length;
   G.futdraftModeChoiceIdx = ((futDraftModeChoiceIdx() + delta) % n + n) % n;
