@@ -555,7 +555,7 @@ var ROSTER = [
   {
     id: 'r59', nombre: 'Mark Krueger', original: 'Mark Kruger',
     posicion: 'Centrocampista', tipo: 'Bosque',
-    tiro: 76, pase: 80, defensa: 52, especial: 77,
+    tiro: 76, pase: 80, defensa: 70, especial: 77,
     hissatsu: ['Gran Lobo'],
     desc: 'Capitán de Unicorn y uno de los grandes cerebros del fútbol americano.',
     locked: true, cost:179
@@ -707,7 +707,7 @@ var ROSTER = [
   {
     id: 'r78', nombre: 'Zanark Avalonic', original: 'Zanark Avalonic',
     posicion: 'Delantero', tipo: 'Montaña',
-    tiro: 88, pase: 76, defensa: 34, especial: 80,
+    tiro: 88, pase: 79, defensa: 34, especial: 88,
     hissatsu: ['Golpe Cataclismo'],
     desc: 'Delantero de origen desconocido, con un estilo de juego imponente y poderoso.',
     locked: true, cost:210
