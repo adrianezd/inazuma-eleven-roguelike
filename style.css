@@ -337,13 +337,15 @@ a { color: var(--accent); }
 .futdraft-swappable:hover .avatar,
 .futdraft-swappable:active .avatar { box-shadow: 0 0 0 2px var(--accent) inset; }
 .pitch-player.selected .avatar { box-shadow: 0 0 0 3px var(--accent-2); border-radius: 50%; }
+/* Subido un poco (antes top:-4px) para no pisar la afinidad, que ahora
+   ocupa esa misma esquina superior derecha en todas las tarjetas. */
 .futdraft-captain-badge {
-  position: absolute; top: -4px; right: 6px; font-size: 0.85rem; line-height: 1; z-index: 2;
+  position: absolute; top: -13px; right: 6px; font-size: 0.85rem; line-height: 1; z-index: 3;
   filter: drop-shadow(0 1px 1px rgba(0,0,0,0.6));
 }
-/* Media de cada jugador en el once/banquillo de FutDraft-Liga (mismo lado
-   que el capitán, en espejo) -- para no cambiar entre titulares y
-   suplentes a ciegas sin ningún dato de rendimiento. */
+/* Media de cada jugador en el once/banquillo de FutDraft-Liga (esquina
+   superior izquierda) -- para no cambiar entre titulares y suplentes a
+   ciegas sin ningún dato de rendimiento. */
 .pitch-media-badge {
   position: absolute; top: -4px; left: 2px; z-index: 2;
   width: 15px; height: 15px;
@@ -355,6 +357,17 @@ a { color: var(--accent); }
   text-shadow: 0 1px 1px rgba(0,0,0,0.5);
   box-shadow: 0 1px 2px rgba(0,0,0,0.45);
 }
+/* Afinidad elemental en espejo con la media, misma altura, lado derecho --
+   para saber de qué tipo es cada jugador sin abrir su tarjeta completa. */
+.pitch-affinity-badge {
+  position: absolute; top: -4px; right: 2px; z-index: 2;
+  width: 15px; height: 15px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.45);
+}
+.pitch-affinity-badge img { display: block; }
 .futdraft-out-of-position .avatar { box-shadow: 0 0 0 2px var(--danger) inset; }
 .pitch-center-line { position: absolute; left: 8%; right: 8%; top: 50%; height: 1px; background: rgba(255,255,255,0.18); }
 .pitch-center-circle {

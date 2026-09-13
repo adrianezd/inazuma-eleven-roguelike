@@ -3693,23 +3693,50 @@ function futDraftAvailableFormations() {
   return FUTDRAFT_FORMATIONS.filter(function (f) { return ids.indexOf(f.id) !== -1; });
 }
 
-function actionGoFutDraftModeSelect() { G.futdraftBracketSizeIdx = 0; G.screen = 'futdraftModeSelect'; render(); }
+function actionGoFutDraftModeSelect() { G.futdraftBracketSizeIdx = 0; G.futdraftModeChoiceIdx = 0; G.screen = 'futdraftModeSelect'; render(); }
+
+// Tipo de FutDraft (antes 3 botones apilados) y tamaño del torneo (antes
+// un stepper dentro de la pantalla de equipo, ver renderFutDraftTeam) se
+// eligen aquí, ANTES de empezar el draft -- ambos con flechas (solo se ve
+// la elección actual), a petición explícita.
+var FUTDRAFT_MODE_OPTIONS = [
+  { id: 'libre', name: 'Libre', desc: 'Eliges a quien quieras, sin restricción de posición.' },
+  { id: 'clasico', name: 'Clásico', desc: 'El draft solo te ofrece jugadores para los huecos que falten en tu formación.' },
+  { id: 'afinidad', name: 'Afinidad', desc: 'Eliges un tipo elemental antes de nada: todo tu draft sale de ese tipo.' }
+];
+function futDraftModeChoiceIdx() { return G.futdraftModeChoiceIdx === undefined ? 0 : G.futdraftModeChoiceIdx; }
+function actionFutDraftModeStep(delta) {
+  var n = FUTDRAFT_MODE_OPTIONS.length;
+  G.futdraftModeChoiceIdx = ((futDraftModeChoiceIdx() + delta) % n + n) % n;
+  render();
+}
+function actionContinueFutDraftModeSelect() {
+  var modeOpt = FUTDRAFT_MODE_OPTIONS[futDraftModeChoiceIdx()];
+  if (modeOpt.id === 'afinidad') actionGoFutDraftAffinitySelect();
+  else actionGoFutDraftFormationSelect(modeOpt.id);
+}
 
 function renderFutDraftModeSelect() {
+  var modeOpt = FUTDRAFT_MODE_OPTIONS[futDraftModeChoiceIdx()];
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
         '<h2 class="panel-title mt">FutDraft</h2>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-primary btn-block" onclick="actionGoFutDraftFormationSelect(\'libre\')">Libre<br><small class="dim">Eliges a quien quieras, sin restricción de posición.</small></button>' +
+        '<h3 style="margin-bottom:8px">Tipo de FutDraft</h3>' +
+        '<div class="btn-row" style="justify-content:center;align-items:center;gap:14px">' +
+          '<button class="btn btn-outline" onclick="actionFutDraftModeStep(-1)">◀</button>' +
+          '<span style="min-width:110px;font-weight:700;font-size:1.1rem">' + modeOpt.name + '</span>' +
+          '<button class="btn btn-outline" onclick="actionFutDraftModeStep(1)">▶</button>' +
         '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionGoFutDraftFormationSelect(\'clasico\')">Clásico<br><small class="dim">El draft solo te ofrece jugadores para los huecos que falten en tu formación.</small></button>' +
+        '<p class="dim small">' + modeOpt.desc + '</p>' +
+        '<h3 style="margin-bottom:8px;margin-top:14px">Tamaño del torneo</h3>' +
+        '<div class="btn-row" style="justify-content:center;align-items:center;gap:14px">' +
+          '<button class="btn btn-outline" onclick="actionFutDraftBracketSizeStep(-1)">◀</button>' +
+          '<span style="min-width:110px;font-weight:700;font-size:1.1rem">' + futDraftBracketSize() + ' equipos</span>' +
+          '<button class="btn btn-outline" onclick="actionFutDraftBracketSizeStep(1)">▶</button>' +
         '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionGoFutDraftAffinitySelect()">Afinidad<br><small class="dim">Eliges un tipo elemental antes de nada: todo tu draft sale de ese tipo.</small></button>' +
-        '</div>' +
+        '<button class="btn btn-primary btn-block mt" onclick="actionContinueFutDraftModeSelect()">Continuar</button>' +
       '</div>' +
     '</div>'
   );
@@ -4100,6 +4127,17 @@ function pitchMediaBadgeHtml(p) {
   return '<span class="pitch-media-badge" style="background:' + mediaBadgeColor(score) + '" title="Media según su posición">' + score + '</span>';
 }
 
+// Afinidad elemental en la esquina opuesta a la media (misma altura, lado
+// derecho) -- para saber de qué tipo es cada jugador de un vistazo, sin
+// tener que abrir su tarjeta completa. Reutiliza el icono/color de tipo
+// de siempre (ver getTypeSymbol/type-bg-*), solo que en tamaño reducido.
+function pitchAffinityBadgeHtml(p) {
+  var tipo = p.tipo;
+  var cls = 'type-bg-' + tipo.toLowerCase().replace('ñ', 'n');
+  var icon = getTypeSymbol(tipo).replace(/22px/g, '12px');
+  return '<span class="pitch-affinity-badge ' + cls + '" title="' + escapeHtml(tipo) + '">' + icon + '</span>';
+}
+
 function renderFutDraftLineupPitch(f) {
   var formation = FUTDRAFT_FORMATIONS.find(function (x) { return x.id === f.formation; });
   var rowsHtml = formation.rows.map(function (row) {
@@ -4111,7 +4149,7 @@ function renderFutDraftLineupPitch(f) {
         (outOfPosition ? ' futdraft-out-of-position' : '');
       var badge = f.captainId === p.id ? '<span class="futdraft-captain-badge" title="Capitán">👑</span>' : '';
       var nameSuffix = outOfPosition ? ' <span class="dim">(' + p.posicion + ')</span>' : '';
-      return '<div class="' + cls + '" onclick="selectFutDraftPlayer(\'' + p.id + '\')">' + badge + pitchMediaBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + nameSuffix + '</span></div>';
+      return '<div class="' + cls + '" onclick="selectFutDraftPlayer(\'' + p.id + '\')">' + badge + pitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + nameSuffix + '</span></div>';
     }).join('');
     return '<div class="pitch-row">' + itemsHtml + '</div>';
   }).join('');
@@ -4220,7 +4258,7 @@ function renderFutDraftTeam() {
   if (hasBench) {
     var benchItemsHtml = f.bench.map(function (p) {
       var cls = 'pitch-player futdraft-swappable' + (f.swapSelectedId === p.id ? ' selected' : '');
-      return '<div class="' + cls + '" onclick="selectFutDraftPlayer(\'' + p.id + '\')">' + pitchMediaBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
+      return '<div class="' + cls + '" onclick="selectFutDraftPlayer(\'' + p.id + '\')">' + pitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
     }).join('');
     benchHtml =
       '<div class="panel">' +
@@ -4251,17 +4289,7 @@ function renderFutDraftTeam() {
       benchHtml +
       (f.mode === 'liga'
         ? '<button class="btn btn-primary btn-block" onclick="startLigaRun()">Empezar Liga (18 equipos)</button>'
-        : (
-          '<div class="panel center-text">' +
-            '<h3 style="margin-bottom:8px">Tamaño del torneo</h3>' +
-            '<div class="btn-row" style="justify-content:center;align-items:center;gap:14px">' +
-              '<button class="btn btn-outline" onclick="actionFutDraftBracketSizeStep(-1)">◀</button>' +
-              '<span style="min-width:110px;font-weight:700;font-size:1.1rem">' + futDraftBracketSize() + ' equipos</span>' +
-              '<button class="btn btn-outline" onclick="actionFutDraftBracketSizeStep(1)">▶</button>' +
-            '</div>' +
-          '</div>' +
-          '<button class="btn btn-primary btn-block" onclick="startFutDraftMatches()">Jugar torneo</button>'
-        )) +
+        : '<button class="btn btn-primary btn-block" onclick="startFutDraftMatches()">Jugar torneo (' + futDraftBracketSize() + ' equipos)</button>') +
     '</div>'
   );
 }
