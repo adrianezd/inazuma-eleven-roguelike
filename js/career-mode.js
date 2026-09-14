@@ -39,6 +39,8 @@ function actionGoCareerMode() {
       formation: CAREER_MODE_DEFAULT_FORMATION,
       lineup: futDraftBuildLineup(starters, CAREER_MODE_DEFAULT_FORMATION),
       bench: careerModeRoster(CAREER_MODE_BENCH_IDS),
+      captainId: null,
+      pickingCaptain: false,
       swapSelectedId: null
     };
   }
@@ -57,10 +59,11 @@ window.setCareerFormation = function (id) {
 
 // Mismo mecanismo de cambios ilimitados que selectFutDraftPlayer (toca a
 // uno, luego al otro: dos titulares se reubican de línea, titular+
-// suplente intercambian sitio), sin la parte de elegir capitán -- este
-// equipo no la necesita.
+// suplente intercambian sitio). Si el modo "elegir capitán" está activo,
+// el toque se interpreta como elección de capitán en vez de cambio.
 window.selectCareerPlayer = function (id) {
   var c = G.career;
+  if (c.pickingCaptain) { pickCareerCaptainInternal(id); return; }
   if (c.swapSelectedId === id) { c.swapSelectedId = null; render(); return; }
   if (!c.swapSelectedId) { c.swapSelectedId = id; render(); return; }
   var otherId = c.swapSelectedId;
@@ -77,15 +80,36 @@ window.selectCareerPlayer = function (id) {
       var starterOut = c.lineup[lineupIdxA].player;
       c.lineup[lineupIdxA].player = c.bench[benchIdxB];
       c.bench[benchIdxB] = starterOut;
+      if (c.captainId === starterOut.id) c.captainId = null;
     } else if (lineupIdxB !== -1 && benchIdxA !== -1) {
       var starterOut2 = c.lineup[lineupIdxB].player;
       c.lineup[lineupIdxB].player = c.bench[benchIdxA];
       c.bench[benchIdxA] = starterOut2;
+      if (c.captainId === starterOut2.id) c.captainId = null;
     }
   }
   c.swapSelectedId = null;
   render();
 };
+
+// Capitán: cuenta x2 en la puntuación de equipo (ver futDraftScoreBreakdown,
+// reutilizada tal cual). Solo puede ser un titular -- tocar a un suplente
+// en modo "elegir capitán" no hace nada. Tocar al capitán actual otra vez
+// le quita el brazalete.
+window.toggleCareerCaptainMode = function () {
+  var c = G.career;
+  c.pickingCaptain = !c.pickingCaptain;
+  c.swapSelectedId = null;
+  render();
+};
+function pickCareerCaptainInternal(id) {
+  var c = G.career;
+  var isStarter = c.lineup.some(function (s) { return s.player.id === id; });
+  if (!isStarter) { render(); return; }
+  c.captainId = (c.captainId === id) ? null : id;
+  c.pickingCaptain = false;
+  render();
+}
 
 // Igual que renderFutDraftLineupPitch, pero leyendo de G.career en vez
 // de G.futdraft.
@@ -98,8 +122,9 @@ function renderCareerLineupPitch(c) {
       var cls = 'pitch-player futdraft-swappable' +
         (c.swapSelectedId === p.id ? ' selected' : '') +
         (outOfPosition ? ' futdraft-out-of-position' : '');
+      var badge = c.captainId === p.id ? '<span class="futdraft-captain-badge" title="Capitán">👑</span>' : '';
       var nameSuffix = outOfPosition ? ' <span class="dim">(' + p.posicion + ')</span>' : '';
-      return '<div class="' + cls + '" onclick="selectCareerPlayer(\'' + p.id + '\')">' + pitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + nameSuffix + '</span></div>';
+      return '<div class="' + cls + '" onclick="selectCareerPlayer(\'' + p.id + '\')">' + badge + pitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + nameSuffix + '</span></div>';
     }).join('');
     return '<div class="pitch-row">' + itemsHtml + '</div>';
   }).join('');
@@ -108,6 +133,18 @@ function renderCareerLineupPitch(c) {
 
 function renderCareerMode() {
   var c = G.career;
+  var breakdown = futDraftScoreBreakdown(c.lineup, c.captainId);
+  var captain = c.captainId ? c.lineup.find(function (s) { return s.player.id === c.captainId; }) : null;
+  var captainHint;
+  if (!captain) {
+    captainHint = 'Sin capitán elegido.';
+  } else if (breakdown.captainBonus > 0) {
+    captainHint = 'Capitán: <strong>' + escapeHtml(captain.player.nombre) + '</strong> (<span style="color:var(--accent-2)">+' + breakdown.captainBonus + '</span> a la puntuación, por encima de la media del equipo).';
+  } else if (breakdown.captainBonus < 0) {
+    captainHint = 'Capitán: <strong>' + escapeHtml(captain.player.nombre) + '</strong> (<span style="color:var(--danger)">' + breakdown.captainBonus + '</span> a la puntuación, por debajo de la media del equipo).';
+  } else {
+    captainHint = 'Capitán: <strong>' + escapeHtml(captain.player.nombre) + '</strong> (a la altura de la media del equipo, no suma ni resta).';
+  }
   var benchHtml = c.bench.map(function (p) {
     var cls = 'pitch-player futdraft-swappable' + (c.swapSelectedId === p.id ? ' selected' : '');
     return '<div class="' + cls + '" onclick="selectCareerPlayer(\'' + p.id + '\')">' + pitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
@@ -121,7 +158,10 @@ function renderCareerMode() {
         '<button class="btn btn-outline btn-block" onclick="actionGoOtrosModos()">Volver</button>' +
         '<h2 class="panel-title mt mb0">Modo Carrera</h2>' +
         '<p class="dim small">Liga, Champions y Copa con 16 equipos, fichajes, cesiones y ventas. Todavía en construcción -- este es el equipo base con el que arrancará.</p>' +
+        '<p class="dim small">Puntuación de equipo: <strong style="color:var(--accent-2)">' + breakdown.total + '</strong> / 100</p>' +
         '<p class="dim small">Cambios ilimitados: toca a dos jugadores (titulares o suplente) para cambiarlos.</p>' +
+        '<p class="dim small">' + captainHint + '</p>' +
+        '<button class="btn btn-tiny' + (c.pickingCaptain ? ' active' : '') + '" onclick="toggleCareerCaptainMode()">' + (c.pickingCaptain ? 'Toca a un titular para hacerlo capitán…' : 'Elegir capitán 👑') + '</button>' +
       '</div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:8px">Formación</h3>' +
