@@ -89,27 +89,27 @@ var RIVAL_TEAM_BOSSES = [
 // mano con el tiempo, no una medición objetiva de nada.
 var TEAM_POWER = {
   // Solo en RIVAL_TEAM_NAMES (nivel normal)
-  'Occult': 28,
-  'Alpino': 33, 'Unicorn': 58, 'Big Waves': 50,
-  'Brain': 35, 'Wild': 38, 'Shuriken': 38, 'Kirkwood': 39, 'Umbrella': 28,
-  'Tarjeteros': 36, 'Veteranos Inazuma': 38,
-  'Cala Pirata': 42, 'Sallys': 34, 'Leones del desierto': 46,
-  'Academia Universal': 46, 'Instituto Plenilunio': 45,
-  'Raimon Inakuni': 37, 'Mary Times': 36, 'Mar de Luna': 43, 'Farm': 42, 'Fauxshore': 39,
+  'Occult': 38,
+  'Alpino': 43, 'Unicorn': 68, 'Big Waves': 60,
+  'Brain': 45, 'Wild': 38, 'Shuriken': 47, 'Kirkwood': 49, 'Umbrella': 28,
+  'Tarjeteros': 56, 'Veteranos Inazuma': 38,
+  'Cala Pirata': 42, 'Sallys': 34, 'Leones del desierto': 59,
+  'Academia Universal': 56, 'Instituto Plenilunio': 55,
+  'Raimon Inakuni': 45, 'Mary Times': 36, 'Mar de Luna': 43, 'Farm': 42, 'Fauxshore': 39,
   'Los arions': 47, 'Mar de Árboles': 47, 'Otaku': 33,
   // En las dos listas a la vez (versátiles, gama media-alta)
   'Royal Academy': 70, 'Zeus': 75, 'Instituto Alius': 75,
   // Solo en RIVAL_TEAM_BOSSES (nivel jefe)
   'Academia Ogre': 75, 'Emperadores Oscuros': 93, 'Genesis': 91,
-  'Prominence': 73, 'Polvo de Diamante': 73, 'Tormenta de Géminis': 70, 'Dragones de Fuego': 70,
-  'Pequeños Gigantes': 90, 'Épsilon': 74, 'Los Emperadores': 75, 'Os Reis': 75, 'Neo Japón': 74,
-  'Protocolo Omega': 66, 'Caos': 75, 'El Dorado 01': 57, 'Resistencia Japon': 80, 'Resistencia Japón GO': 70,
-  'Gir': 56, 'Gar': 56, 'Ragnah': 80, 'Alius Masters': 92, 'Inazuma Japon': 92, 'Inazuma Japon GO': 90,
+  'Prominence': 73, 'Polvo de Diamante': 73, 'Tormenta de Géminis': 70, 'Dragones de Fuego': 75,
+  'Pequeños Gigantes': 90, 'Épsilon': 74, 'Los Emperadores': 75, 'Os Reis': 75, 'Neo Japón': 76,
+  'Protocolo Omega': 66, 'Caos': 75, 'El Dorado 01': 70, 'Resistencia Japon': 80, 'Resistencia Japón GO': 70,
+  'Gir': 66, 'Gar': 70, 'Ragnah': 80, 'Alius Masters': 92, 'Inazuma Japon': 92, 'Inazuma Japon GO': 90,
   'Chrono Storm': 95, 'Dragon Link': 80, 'Desesperdidos': 75, 'Dinastía Galáctica': 84,
   'Earth Eleven': 94, 'Eclipse de Orión': 85, 'El Dorado 02': 75, 'El Dorado 03': 79,
   'Protocolo Omega 2.0': 76, 'Protocolo Omega 3.0': 78, 'Zanark Domain': 78, 'Equipo Zero': 86,
   'Falam Medius': 83, 'Flota Ixar': 83, 'Guardianes de La Reina': 81, 'Orfeo': 80,
-  'Élite Omega': 93, 'Galanes Electrizantes':70, 'Los Cuatro Magníficos': 65
+  'Élite Omega': 93, 'Galanes Electrizantes':70, 'Los Cuatro Magníficos': 70
 };
 
 
