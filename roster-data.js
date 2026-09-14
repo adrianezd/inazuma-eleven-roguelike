@@ -563,7 +563,7 @@ var ROSTER = [
   {
     id: 'r60', nombre: 'Dylan Keats', original: 'Dylan Keith',
     posicion: 'Delantero', tipo: 'Fuego',
-    tiro: 82, pase: 69, defensa: 36, especial: 77,
+    tiro: 82, pase: 73, defensa: 36, especial: 77,
     hissatsu: ['Remate Unicornio'],
     desc: 'Delantero de Unicorn conocido por su velocidad y precisión.',
     locked: true, cost:163
@@ -579,7 +579,7 @@ var ROSTER = [
   {
     id: 'r62', nombre: 'Tiago Torres', original: 'Teres Tolue',
     posicion: 'Defensa', tipo: 'Fuego',
-    tiro: 42, pase: 72, defensa: 88, especial: 80,
+    tiro: 42, pase: 78, defensa: 88, especial: 84,
     hissatsu: ['Muro de Hierro'],
     desc: 'Capitán de Los Emperadores, especialista defensivo prácticamente impenetrable.',
     locked: true, cost:184
@@ -587,7 +587,7 @@ var ROSTER = [
   {
     id: 'r63', nombre: 'Nakata Hidetoshi', original: 'Nakata Hidetoshi',
     posicion: 'Centrocampista', tipo: 'Montaña',
-    tiro: 85, pase: 84, defensa: 80, especial: 88,
+    tiro: 88, pase: 84, defensa: 80, especial: 88,
     hissatsu: ['Disparo Valiente'],
     desc: 'Veterano de gran talento que lidera el centro del campo con experiencia.',
     locked: true, cost:278
@@ -627,7 +627,7 @@ var ROSTER = [
   {
     id: 'r68', nombre: 'Fei Rune', original: 'Fei Rune',
     posicion: 'Delantero', tipo: 'Bosque',
-    tiro: 85, pase: 74, defensa: 32, especial: 80,
+    tiro: 85, pase: 79, defensa: 32, especial: 80,
     hissatsu: ['Remate Rebotado'],
     desc: 'Viajero del tiempo que ayudó a Arion a salvar el fútbol.',
     locked: true, cost: 99999
@@ -659,7 +659,7 @@ var ROSTER = [
   {
     id: 'r72', nombre: 'Sael', original: 'Sael',
     posicion: 'Delantero', tipo: 'Bosque',
-    tiro: 85, pase: 62, defensa: 34, especial: 80,
+    tiro: 85, pase: 76, defensa: 34, especial: 80,
     hissatsu: ['Remate Celestial'],
     desc: 'Delantero de origen desconocido, con un estilo de juego místico y poderoso.',
     locked: true, cost:168
@@ -667,7 +667,7 @@ var ROSTER = [
   {
   id: 'r73', nombre: 'Escavan Malice', original: 'Eska Bannel',
     posicion: 'Delantero', tipo: 'Montaña',
-    tiro: 81, pase: 50, defensa: 30, especial: 80,
+    tiro: 81, pase: 70, defensa: 30, especial: 80,
     hissatsu: ['Lluvia Letal'],
     desc: 'Es tan temperamental que monta en cólera si pierde la ocasión de marcar',
     locked: true, cost:179
@@ -675,7 +675,7 @@ var ROSTER = [
   {
     id: 'r74', nombre: 'Mystral Callous', original: 'Mistrene Callous',
     posicion: 'Delantero', tipo: 'Montaña',
-    tiro: 80, pase: 50, defensa: 30, especial: 80,
+    tiro: 80, pase: 70, defensa: 30, especial: 80,
     hissatsu: ['Lluvia Letal'],
     desc: 'Puede parecer una chica, pero, a la hora de jugar, es todo un salvaje.',
     locked: true, cost:184
@@ -683,7 +683,7 @@ var ROSTER = [
   {
     id: 'r75', nombre: 'Victor Garcia', original: 'Querardo Naval',
     posicion: 'Defensa', tipo: 'Montaña',
-    tiro: 50, pase: 55, defensa: 81, especial: 80,
+    tiro: 50, pase: 75, defensa: 81, especial: 80,
     hissatsu: ['Engaño Torero'],
     desc: 'Se crió en una finca con toros y sabe torear, pero no le gusta herir a los animales.',
     locked: true, cost:152
@@ -715,7 +715,7 @@ var ROSTER = [
   {
     id: 'r79', nombre: 'Malcom Night', original: 'Malcom Night',
     posicion: 'Defensa', tipo: 'Bosque',
-    tiro: 50, pase: 55, defensa: 80, especial: 80,
+    tiro: 50, pase: 69, defensa: 80, especial: 80,
     hissatsu: ['Corte Giratorio'],
     desc: 'Defensa de gran experiencia, capaz de anticipar cualquier jugada.',
     locked: true, cost:126
@@ -739,7 +739,7 @@ var ROSTER = [
   {
     id: 'r82', nombre: 'Talisman', original: 'Johan Tassman',
     posicion: 'Delantero', tipo: 'Bosque',
-    tiro: 76, pase: 60, defensa: 50, especial: 70,
+    tiro: 76, pase: 70, defensa: 50, especial: 70,
     hissatsu: ['Tiro Fantasma'],
     desc: 'Mediocentro y capitán del Occult.',
     locked: false
@@ -2276,5 +2276,67 @@ var ROSTER = [
   locked:true,cost:430,
   sprite:'assets/sprites/r262.png'
 },
-
+{
+  id:'r263', nombre:'Clay Ellement', original:'Clay Ellement',
+  posicion:'Centrocampista', tipo:'Montaña',
+  tiro:58,pase:68,defensa:62,especial:66,
+  hissatsu:['Escáner Defensa'],
+  desc:'Centrocampista de Tarjeteros, tranquilo y con un estilo de juego inteligente.',
+  locked:false,
+  sprite:'assets/sprites/r263.webp'
+},
+{
+  id:'r264', nombre:'Gail Ellement', original:'Gail Ellement',
+  posicion:'Defensa', tipo:'Viento',
+  tiro:42,pase:61,defensa:70,especial:76,
+  hissatsu:['Escaner Defensa'],
+  desc:'Defensa de Tarjeteros muy rápido y difícil de alcanzar.',
+  locked:false,
+  sprite:'assets/sprites/r264.webp'
+},
+{
+  id:'r265', nombre:'Bernie Ellement', original:'Bernie Ellement',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:76,pase:72,defensa:40,especial:69,
+  hissatsu:['Cañón Dragón'],
+  desc:'Delantero de Tarjeteros apasionado y especializado en el juego ofensivo.',
+  locked:false,
+  sprite:'assets/sprites/r265.webp'
+},
+{
+  id:'r266', nombre:'Chucky Cardaway', original:'Chucky Cardaway',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:72,pase:70,defensa:43,especial:65,
+  hissatsu:['Carta-Ataque'],
+  desc:'Delantero de Tarjeteros de aspecto intimidante que busca a su hermano gemelo.',
+  locked:false,
+  sprite:'assets/sprites/r266.webp'
+},
+{
+  id:'r267', nombre:'Woody Ellement', original:'Woody Ellement',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:40,pase:59,defensa:73,especial:78,
+  hissatsu:['Descodificación'],
+  desc:'Defensa de Tarjeteros rodeado de un aura enigmática y experto en tácticas ilusorias.',
+  locked:false,
+  sprite:'assets/sprites/r267.webp'
+},
+{
+  id:'r268', nombre:'Lucien Rarey', original:'Lucien Rarey',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:61,pase:64,defensa:45,especial:70,
+  hissatsu:['Tiro Cegador'],
+  desc:'Centrocampista de Tarjeteros con una presencia llamativa y brillante.',
+  locked:false,
+  sprite:'assets/sprites/r268.webp'
+},
+{
+  id:'r269', nombre:'Stackem Skyhigh', original:'Stackem Skyhigh',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:78,pase:50,defensa:42,especial:68,
+  hissatsu:['Tornado de Fuego'],
+  desc:'Delantero de Tarjeteros de gran presencia y apasionado por el fútbol.',
+  locked:false,
+  sprite:'assets/sprites/r269.webp'
+},
 ];
