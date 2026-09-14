@@ -52,17 +52,24 @@ function careerModeRoster(ids) {
 // Valor de mercado: no hay dato real de mercado en el roster, así que se
 // deriva de la misma puntuación por posición que ya usa toda la UI
 // (futDraftPlayerScore), escalado para que parezca un fichaje real de
-// fútbol (en millones de €) en vez de un número entre 0 y 100 pelado. No
-// es lineal (un mercado real no lo es): la referencia dada es "75 de
-// media, un millón más o menos", así que el valor se DUPLICA cada 10
-// puntos de media por encima o por debajo de 75 -- 65 vale medio millón,
-// 85 vale dos, 95 vale cuatro... -- en vez de subir a ritmo plano.
+// fútbol (en millones de €) en vez de un número entre 0 y 100 pelado.
+// Tampoco es un único ritmo de subida -- un mercado real tampoco lo es,
+// a petición explícita ("esto tiene que ser incremental, como en la vida
+// real"): por DEBAJO del anclaje (75 → 1M€) el valor sube suave, se
+// duplica cada 10 puntos (65 → 0.5M€); por ENCIMA se dispara mucho más
+// rápido, se duplica cada ~2.6 puntos, para que un crack de verdad
+// (90-95 de media) valga un dineral de verdad y no cuatro perras más que
+// uno normal -- referencia dada: 65→0.5M€, 75→1M€, 80→~6M€, 95→~200M€
+// (con esto: 80→~3.8M€, 95→~207M€, mismo orden de magnitud).
 var CAREER_VALUE_ANCHOR_SCORE = 75;
 var CAREER_VALUE_ANCHOR_MILLIONS = 1;
-var CAREER_VALUE_DOUBLING_POINTS = 10;
+var CAREER_VALUE_DOUBLING_BELOW_ANCHOR = 10;
+var CAREER_VALUE_DOUBLING_ABOVE_ANCHOR = 2.6;
 function careerPlayerValue(p) {
   var score = futDraftPlayerScore(p);
-  var millions = CAREER_VALUE_ANCHOR_MILLIONS * Math.pow(2, (score - CAREER_VALUE_ANCHOR_SCORE) / CAREER_VALUE_DOUBLING_POINTS);
+  var excess = score - CAREER_VALUE_ANCHOR_SCORE;
+  var doubling = excess >= 0 ? CAREER_VALUE_DOUBLING_ABOVE_ANCHOR : CAREER_VALUE_DOUBLING_BELOW_ANCHOR;
+  var millions = CAREER_VALUE_ANCHOR_MILLIONS * Math.pow(2, excess / doubling);
   return Math.max(0.1, Math.round(millions * 10) / 10);
 }
 

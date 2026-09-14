@@ -251,16 +251,24 @@ function alternativoBaseChance(action, attackerRaw, defenderRaw) {
   return clamp(Math.round(chance), 5, maxChance);
 }
 
-// Crea la cadena de regate si no existe todavía para el atacante elegido
-// (o si se ha cambiado de atacante): el portero rival decide el % de gol
-// (igual que en Tiro/Especial de siempre), un defensa real decide el % de
-// robo (igual que en Regate de siempre).
+// Crea la cadena de regate del atacante elegido -- una por jugador,
+// guardadas todas en m.regateChains (se reinicia entero al terminar el
+// turno, ver resolveAlternativoShot/resolveAlternativoRegate), no una
+// sola "la del atacante actual": antes, con un solo slot compartido,
+// mirar a un jugador, cambiar a otro y volver al primero recalculaba su
+// cadena de cero -- y pickDefender elige al azar entre los defensas
+// reales del rival si hay más de uno, así que el % de robo mostrado
+// podía cambiar solo por mirar a otro jugador y volver, sin haber
+// regateado nada todavía. Ahora cada jugador conserva SU % exacto
+// mientras dure el turno, se mire lo que se mire mientras tanto.
 function ensureAlternativoChain(selectedPlayer) {
   var m = G.match;
-  if (m.regateChain && m.regateChain.attackerId === selectedPlayer.instanceId) return;
+  m.regateChains = m.regateChains || {};
+  var existing = m.regateChains[selectedPlayer.instanceId];
+  if (existing) { m.regateChain = existing; return; }
   var keeperRaw = pickDefender(m.oppSquad, 'tiro');
   var defenderRaw = pickDefender(m.oppSquad, 'regate');
-  m.regateChain = {
+  var chain = {
     attackerId: selectedPlayer.instanceId,
     keeperRaw: keeperRaw,
     defenderRaw: defenderRaw,
@@ -268,6 +276,8 @@ function ensureAlternativoChain(selectedPlayer) {
     shootChance: alternativoBaseChance('tiro', selectedPlayer, keeperRaw),
     stealChance: clamp(100 - alternativoBaseChance('regate', selectedPlayer, defenderRaw), 5, 95)
   };
+  m.regateChains[selectedPlayer.instanceId] = chain;
+  m.regateChain = chain;
 }
 
 // Al completar un regate con éxito: sube el % de gol (cada vez menos) y el
@@ -307,6 +317,7 @@ function resolveAlternativoShot(attackerRaw) {
   }
   m.log.push(m.lastEvent);
   m.regateChain = null;
+  m.regateChains = null;
   m.selectedAttackerId = null;
   advanceTurn();
 }
@@ -330,12 +341,16 @@ function resolveAlternativoRegate(attackerRaw) {
     m.lastEventClass = '';
     m.log.push(m.lastEvent);
     m.regateChain = null;
+    m.regateChains = null;
     m.selectedAttackerId = null;
     advanceTurn();
     return;
   }
   alternativoGrowChain(chain, attackerRaw);
-  m.lastEvent = actorLabel + ': ¡regate limpio! Tiro al ' + chain.shootChance + '%, pero el próximo regate arriesga ' + chain.stealChance + '%.';
+  // Los % ya se ven en los propios botones de Tirar/Regatear (ver
+  // renderPlayerTurn), así que aquí no hace falta repetirlos -- a
+  // petición explícita, solo el chispazo corto.
+  m.lastEvent = actorLabel + ': ¡Regatea!';
   m.lastEventClass = '';
   m.log.push(m.lastEvent);
   render();
