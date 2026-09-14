@@ -135,12 +135,58 @@ function careerModeRoster(ids) {
 // (90-95 de media) valga un dineral de verdad y no cuatro perras más que
 // uno normal -- referencia dada: 65→0.5M€, 75→1M€, 80→~6M€, 95→~200M€
 // (con esto: 80→~3.8M€, 95→~207M€, mismo orden de magnitud).
+// Progresión de jugadores entre temporadas (ver careerProgressAllPlayers,
+// llamada solo desde actionStartNewCareerSeason): cada jugador acumula un
+// delta de media que se guarda SOLO en esta partida (c.playerProgression,
+// {playerId: delta acumulado}) -- nunca se toca el ROSTER real, porque lo
+// usan también FutDraft/Torneo/Liga/Colección y el resto de partidas
+// guardadas, así que mutar sus stats se filtraría a todos los sitios.
+// careerPlayerScore(p) es la "media efectiva" (futDraftPlayerScore + el
+// delta acumulado, recortada a [30, 99]) y sustituye a futDraftPlayerScore
+// en TODO Modo Carrera (valor de mercado, filtros/orden de Mercado,
+// negociación, media de plantilla...) para que la progresión se note en
+// todos lados a la vez. Solo afecta a la media/valor -- las 4 stats en
+// crudo (tiro/pase/defensa/especial) que también se pueden ordenar en
+// Mercado se quedan como están en roster-data.js, no hay un desglose de
+// "qué stat subió" (fuera de alcance).
+function careerPlayerScore(p) {
+  var c = G.career;
+  var delta = (c && c.playerProgression && c.playerProgression[p.id]) || 0;
+  return clamp(futDraftPlayerScore(p) + delta, 30, 99);
+}
+
+// Progresión anual: cada jugador tira hacia un "techo natural"
+// (CAREER_PROGRESSION_ANCHOR) con algo de ruido -- uno con media baja
+// tiene mucho margen por debajo del ancla, así que sube bastante (un
+// canterano que despunta); uno ya por encima tiene margen negativo, así
+// que tiende a bajar (declive por edad de un veterano), y uno cerca del
+// ancla se mueve poco en cualquier dirección. CAREER_PROGRESSION_RATE es
+// cuánta distancia al ancla se cierra cada temporada y
+// CAREER_PROGRESSION_VARIANCE es el ruido -- juntos dan el "o muchos, o
+// que bajen" pedido explícitamente, no una subida fija para todos.
+// Se aplica a TODO ROSTER, no solo a tu plantilla (a petición explícita:
+// "para el resto de jugadores también"), así que el mercado entero se
+// mueve de una temporada a otra, no solo quien fichas tú.
+var CAREER_PROGRESSION_ANCHOR = 80;
+var CAREER_PROGRESSION_RATE = 0.25;
+var CAREER_PROGRESSION_VARIANCE = 2;
+function careerProgressAllPlayers(c) {
+  c.playerProgression = c.playerProgression || {};
+  ROSTER.forEach(function (p) {
+    var current = careerPlayerScore(p);
+    var pull = (CAREER_PROGRESSION_ANCHOR - current) * CAREER_PROGRESSION_RATE;
+    var noise = (Math.random() * 2 - 1) * CAREER_PROGRESSION_VARIANCE;
+    var delta = Math.round((pull + noise) * 2) / 2;
+    c.playerProgression[p.id] = (c.playerProgression[p.id] || 0) + delta;
+  });
+}
+
 var CAREER_VALUE_ANCHOR_SCORE = 75;
 var CAREER_VALUE_ANCHOR_MILLIONS = 1;
 var CAREER_VALUE_DOUBLING_BELOW_ANCHOR = 10;
 var CAREER_VALUE_DOUBLING_ABOVE_ANCHOR = 2.6;
 function careerPlayerValue(p) {
-  var score = futDraftPlayerScore(p);
+  var score = careerPlayerScore(p);
   var excess = score - CAREER_VALUE_ANCHOR_SCORE;
   var doubling = excess >= 0 ? CAREER_VALUE_DOUBLING_ABOVE_ANCHOR : CAREER_VALUE_DOUBLING_BELOW_ANCHOR;
   var millions = CAREER_VALUE_ANCHOR_MILLIONS * Math.pow(2, excess / doubling);
@@ -286,7 +332,11 @@ function careerFreshState() {
     // actionStartNewCareerSeason) -- ver careerUpdateBestPosition y la
     // pestaña Estadísticas.
     bestPosition: null,
-    careerStats: { scorers: {}, assists: {} }
+    careerStats: { scorers: {}, assists: {} },
+    // Delta de progresión acumulado por jugador ({playerId: número}), ver
+    // careerPlayerScore/careerProgressAllPlayers -- vacío en una partida
+    // nueva, se rellena a partir de la temporada 2 (actionStartNewCareerSeason).
+    playerProgression: {}
   };
   careerGenerateIncomingOffers(state);
   return state;
@@ -322,7 +372,8 @@ function careerSerialize(c) {
     careerStats: c.careerStats || { scorers: {}, assists: {} },
     marketWindow: c.marketWindow || null,
     boughtThisSeasonIds: c.boughtThisSeasonIds || [],
-    incomingOffers: c.incomingOffers || []
+    incomingOffers: c.incomingOffers || [],
+    playerProgression: c.playerProgression || {}
   };
 }
 function careerDeserialize(data) {
@@ -352,7 +403,8 @@ function careerDeserialize(data) {
     careerStats: data.careerStats || { scorers: {}, assists: {} },
     marketWindow: data.marketWindow || careerNewMarketWindow('preseason', CAREER_PRESEASON_DAYS),
     boughtThisSeasonIds: data.boughtThisSeasonIds || [],
-    incomingOffers: data.incomingOffers || []
+    incomingOffers: data.incomingOffers || [],
+    playerProgression: data.playerProgression || {}
   };
 }
 // Guarda el estado ACTUAL (G.career) en el hueco activo
@@ -498,6 +550,13 @@ window.selectCareerPlayer = function (id) {
       c.lineup[lineupIdxB].player = c.bench[benchIdxA];
       c.bench[benchIdxA] = starterOut2;
       if (c.captainId === starterOut2.id) c.captainId = null;
+    } else if (benchIdxA !== -1 && benchIdxB !== -1) {
+      // Dos suplentes: solo reordena el banquillo (nadie sale ni entra al
+      // once), para poder dejar el orden que se quiera -- a petición
+      // explícita, igual que ya se podía hacer con dos titulares.
+      var tmpBench = c.bench[benchIdxA];
+      c.bench[benchIdxA] = c.bench[benchIdxB];
+      c.bench[benchIdxB] = tmpBench;
     }
   }
   c.swapSelectedId = null;
@@ -587,7 +646,7 @@ function renderCareerEquipo(c) {
 // aquí sirve para ver de un vistazo quién rinde mejor sin tener que
 // entrar a cada jugador.
 function careerMediaBadgeHtml(p) {
-  var score = Math.round(futDraftPlayerScore(p));
+  var score = Math.round(careerPlayerScore(p));
   return '<span class="media-badge" style="background:' + mediaBadgeColor(score) + '" title="Media según su posición">' + score + '</span>';
 }
 
@@ -799,7 +858,7 @@ window.actionToggleCareerMarketInterested = function () {
 // stats) de mayor a menor o al revés -- a petición explícita ("filtros
 // para poner de mayor a menor... busca de un atributo en concreto").
 var CAREER_MARKET_SORT_FIELDS = [
-  { id: 'media', name: 'Media', get: function (p) { return futDraftPlayerScore(p); } },
+  { id: 'media', name: 'Media', get: function (p) { return careerPlayerScore(p); } },
   { id: 'valor', name: 'Valor de mercado', get: function (p) { return careerPlayerValue(p); } },
   { id: 'tiro', name: 'Tiro', get: function (p) { return p.tiro; } },
   { id: 'pase', name: 'Regate', get: function (p) { return p.pase; } },
@@ -834,7 +893,7 @@ window.actionCareerMarketPageStep = function (delta) {
 function careerTeamAvgScore(c) {
   var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
   if (!all.length) return 0;
-  var sum = all.reduce(function (s, p) { return s + futDraftPlayerScore(p); }, 0);
+  var sum = all.reduce(function (s, p) { return s + careerPlayerScore(p); }, 0);
   return sum / all.length;
 }
 // Un jugador se considera "puede que quiera unirse" si no está
@@ -1001,7 +1060,7 @@ window.actionSendCareerOffer = function () {
   if (neg.offer > c.budget) { neg.lastResult = 'sinPresupuesto'; render(); return; }
   var asking = careerNegotiationAskingValue(p, neg.mode);
   var teamAvg = careerTeamAvgScore(c);
-  var accepted = careerNegotiationAccepts(neg.offer, asking, futDraftPlayerScore(p), teamAvg);
+  var accepted = careerNegotiationAccepts(neg.offer, asking, careerPlayerScore(p), teamAvg);
   w.offersToday[neg.playerId] = offersSoFar + 1;
   if (accepted) {
     c.budget = Math.round((c.budget - neg.offer) * 10) / 10;
@@ -1024,9 +1083,9 @@ function renderCareerNegotiation(c) {
   var value = careerPlayerValue(p);
   var asking = careerNegotiationAskingValue(p, neg.mode);
   var teamAvg = careerTeamAvgScore(c);
-  var gap = Math.round(futDraftPlayerScore(p) - teamAvg);
+  var gap = Math.round(careerPlayerScore(p) - teamAvg);
   var prestigeHint = gap > CAREER_INTERESTED_GAP
-    ? '<p class="dim small">Tu plantilla tiene una media de ' + Math.round(teamAvg) + '; ' + escapeHtml(p.nombre) + ' tiene ' + Math.round(futDraftPlayerScore(p)) + '. Puede que no quiera bajar de nivel, aunque pagues bien.</p>'
+    ? '<p class="dim small">Tu plantilla tiene una media de ' + Math.round(teamAvg) + '; ' + escapeHtml(p.nombre) + ' tiene ' + Math.round(careerPlayerScore(p)) + '. Puede que no quiera bajar de nivel, aunque pagues bien.</p>'
     : '';
   var w = c.marketWindow;
   var offersUsed = (w && w.offersToday[neg.playerId]) || 0;
@@ -1216,7 +1275,7 @@ function renderCareerMercado(c) {
   var signableCap = careerMarketSignableCap(teamAvg);
   var available = ROSTER.filter(function (p) {
     if (owned.indexOf(p.id) !== -1) return false;
-    var score = futDraftPlayerScore(p);
+    var score = careerPlayerScore(p);
     if (score >= signableCap) return false;
     if (filter && p.posicion !== filter) return false;
     if (search && p.nombre.toLowerCase().indexOf(search) === -1) return false;
@@ -1619,16 +1678,18 @@ window.continueCareerMatchday = function () {
   render();
 };
 
-// Nueva temporada: sube el número, genera una liga nueva de cero
-// (rivales, calendario, tabla y goleadores/asistentes DE ESA TEMPORADA
-// reiniciados) y abre la ventana de pretemporada de siempre -- el
-// equipo, presupuesto, plantilla, mejor posición histórica y
-// careerStats NO se tocan, siguen siendo los mismos de antes, como una
+// Nueva temporada: sube el número, aplica la progresión anual a TODO
+// ROSTER (careerProgressAllPlayers, no solo tu plantilla), genera una
+// liga nueva de cero (rivales, calendario, tabla y goleadores/asistentes
+// DE ESA TEMPORADA reiniciados) y abre la ventana de pretemporada de
+// siempre -- el equipo, presupuesto, plantilla, mejor posición histórica
+// y careerStats NO se tocan, siguen siendo los mismos de antes, como una
 // temporada real de verdad.
 window.actionStartNewCareerSeason = function () {
   var c = G.career;
   if (c.league.matchdayIndex < c.league.schedule.length) return;
   c.season = (c.season || 1) + 1;
+  careerProgressAllPlayers(c);
   c.league = careerBuildLeague();
   c.marketWindow = careerNewMarketWindow('preseason', CAREER_PRESEASON_DAYS);
   c.incomingOffers = [];
