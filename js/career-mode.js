@@ -7,15 +7,22 @@
      de las 8 de FUTDRAFT_FORMATIONS), cambios ilimitados y capitán.
    - Gestionar plantilla: media y valor de mercado de cada jugador
      (fórmula sobre futDraftPlayerScore, no hay dato real de mercado en
-     el roster), venta rápida (85% del valor, al momento) y cesión (se va
-     gratis, sin poder recuperarlo esta temporada) -- entre 14 y 23
-     jugadores en plantilla (CAREER_MIN/MAX_SQUAD_SIZE).
-   - Mercado: fichar es NEGOCIAR (careerNegotiationAccepts) -- ofreces un
-     precio y el club puede aceptar o rechazar según cuánto ofrezcas
-     respecto a su valor Y cuánto mejor sea que la media de tu plantilla
-     (un crack no ficha por un equipo modesto aunque pagues bien). Solo
-     jugadores con media < 80. Filtro de posición, búsqueda por nombre y
-     un filtro de "podrían unirse" (media cercana a la tuya).
+     el roster), venta rápida (85% del valor, al momento), cesión de
+     salida (se va gratis, sin poder recuperarlo esta temporada) y
+     devolver a un cedido entrante -- entre 14 y 23 jugadores en
+     plantilla (CAREER_MIN/MAX_SQUAD_SIZE).
+   - Mercado: fichar (en propiedad o cedido) es NEGOCIAR
+     (careerNegotiationAccepts) -- ofreces un precio y el club puede
+     aceptar o rechazar según cuánto ofrezcas respecto a su valor (por
+     debajo del pedido, la probabilidad de rechazo sube) Y cuánto mejor
+     sea que la media de tu plantilla (un crack no ficha por un equipo
+     modesto aunque pagues bien). Una cesión ENTRANTE pide solo 1/3 del
+     valor y dura 1 temporada, máximo 3 cedidos a la vez
+     (CAREER_MAX_LOANS_IN) -- no confundir con la cesión de SALIDA de
+     Gestionar plantilla, que es la contraria. Solo jugadores con media <
+     80. Filtro de posición, búsqueda por nombre, orden por cualquier
+     atributo (careerNegotiationAskingValue/CAREER_MARKET_SORT_FIELDS) y
+     paginado de 30 en 30.
    - Calendario: liga de 20 equipos a una vuelta real (generateRoundRobin,
      igual que Liga), con 19 rivales de nombre real sacados de las mismas
      listas que usa FutDraft/Liga.
@@ -26,11 +33,13 @@
    - Jornada: "Simular partido" ve tu partido de verdad con el motor en
      vivo de FutDraft/Liga; "Saltar" lo resuelve de golpe sin verlo. El
      resto de la jornada siempre se resuelve de golpe. Ganar suelta
-     100k/200k/300k de presupuesto al azar (careerAwardWinBonus).
-   Presupuesto: arranca en 3M€ (G.career.budget), en la misma unidad que
-   careerPlayerValue. Todo esto vive en su propio estado (G.career),
-   independiente de G.futdraft/G.futdraft.liga, para no interferir con
-   una partida de FutDraft/Liga en curso.
+     50k/100k/150k de presupuesto al azar (careerAwardWinBonus).
+   Presupuesto: arranca en 2M€ (G.career.budget), en la misma unidad que
+   careerPlayerValue. Todo el estado (G.career) se guarda en localStorage
+   en cada render de esta pantalla (ver saveCareer/loadCareer) para
+   sobrevivir a refrescar el navegador, e independiente de
+   G.futdraft/G.futdraft.liga, para no interferir con una partida de
+   FutDraft/Liga en curso.
    --------------------------------------------------------------------- */
 
 var CAREER_TABS = [
@@ -125,32 +134,94 @@ function careerBuildLeague() {
   };
 }
 
+// Presupuesto en M€, misma unidad que careerPlayerValue -- 2M€ de
+// salida, +50k/100k/150k al azar por cada partido tuyo ganado (ver
+// careerAwardWinBonus), gastable en fichajes (Mercado) y repuesto al
+// vender/ceder (Gestionar plantilla).
+var CAREER_STARTING_BUDGET = 2;
+
+function careerFreshState() {
+  var starters = careerModeRoster(CAREER_MODE_STARTER_IDS);
+  return {
+    tab: 'equipo',
+    formation: CAREER_MODE_DEFAULT_FORMATION,
+    lineup: futDraftBuildLineup(starters, CAREER_MODE_DEFAULT_FORMATION),
+    bench: careerModeRoster(CAREER_MODE_BENCH_IDS),
+    captainId: null,
+    pickingCaptain: false,
+    swapSelectedId: null,
+    league: careerBuildLeague(),
+    lastMatchdayResult: null,
+    loanedIds: [],
+    budget: CAREER_STARTING_BUDGET
+  };
+}
+
 // El estado (G.career) se crea solo la primera vez que se entra en esta
-// partida/sesión -- si ya existe (has vuelto tras cambiar de pantalla),
-// se conserva tal cual, con los cambios de formación/titulares/jornadas
-// que ya hubieras hecho.
+// partida/sesión -- si ya existía una guardada (ver loadCareer/saveCareer,
+// en localStorage, para que sobreviva a refrescar el navegador), se
+// recupera tal cual; si no, se crea de cero.
 function actionGoCareerMode() {
   if (!G.career) {
-    var starters = careerModeRoster(CAREER_MODE_STARTER_IDS);
-    G.career = {
-      tab: 'equipo',
-      formation: CAREER_MODE_DEFAULT_FORMATION,
-      lineup: futDraftBuildLineup(starters, CAREER_MODE_DEFAULT_FORMATION),
-      bench: careerModeRoster(CAREER_MODE_BENCH_IDS),
-      captainId: null,
-      pickingCaptain: false,
-      swapSelectedId: null,
-      league: careerBuildLeague(),
-      lastMatchdayResult: null,
-      // Presupuesto en M€, misma unidad que careerPlayerValue -- 3M€ de
-      // salida, +100k/200k/300k al azar por cada partido tuyo ganado (ver
-      // careerAwardWinBonus), gastable en fichajes (Mercado) y repuesto
-      // al vender/ceder (Gestionar plantilla).
-      budget: 3
-    };
+    G.career = loadCareer() || careerFreshState();
   }
   G.screen = 'careerMode';
   render();
+}
+
+// Solo se guardan los IDs de lineup/bench (no los objetos de jugador
+// completos): al recuperarlos se buscan de nuevo en ROSTER, así que si
+// roster-data.js cambia de una sesión a otra (stats retocados, etc.) la
+// partida guardada sigue viendo los datos actuales, no una foto
+// congelada del momento en que se guardó.
+var CAREER_STORAGE_KEY = 'inazumaRoguelike_career_v1';
+function careerSerialize(c) {
+  return {
+    tab: c.tab, formation: c.formation, captainId: c.captainId, budget: c.budget,
+    lineup: c.lineup.map(function (s) { return { pos: s.pos, id: s.player.id }; }),
+    bench: c.bench.map(function (p) { return p.id; }),
+    loanedIds: c.loanedIds || [],
+    league: c.league,
+    lastMatchdayResult: c.lastMatchdayResult,
+    calendarView: c.calendarView,
+    marketFilter: c.marketFilter, marketSearch: c.marketSearch, marketOnlyInterested: c.marketOnlyInterested,
+    marketSort: c.marketSort, marketSortDir: c.marketSortDir, marketPage: c.marketPage,
+    plantillaFilter: c.plantillaFilter, showTopScorers: c.showTopScorers
+  };
+}
+function careerDeserialize(data) {
+  var lineup = (data.lineup || []).map(function (s) {
+    var p = ROSTER.find(function (x) { return x.id === s.id; });
+    return p ? { pos: s.pos, player: p } : null;
+  }).filter(Boolean);
+  var bench = (data.bench || []).map(function (id) { return ROSTER.find(function (x) { return x.id === id; }); }).filter(Boolean);
+  return {
+    tab: data.tab || 'equipo',
+    formation: data.formation || CAREER_MODE_DEFAULT_FORMATION,
+    lineup: lineup, bench: bench,
+    captainId: data.captainId || null,
+    pickingCaptain: false, swapSelectedId: null,
+    league: data.league,
+    lastMatchdayResult: data.lastMatchdayResult || null,
+    budget: typeof data.budget === 'number' ? data.budget : CAREER_STARTING_BUDGET,
+    loanedIds: data.loanedIds || [],
+    calendarView: data.calendarView,
+    marketFilter: data.marketFilter || null, marketSearch: data.marketSearch || '', marketOnlyInterested: !!data.marketOnlyInterested,
+    marketSort: data.marketSort, marketSortDir: data.marketSortDir, marketPage: data.marketPage || 0,
+    plantillaFilter: data.plantillaFilter || null, showTopScorers: !!data.showTopScorers
+  };
+}
+function saveCareer() {
+  if (!G.career || typeof localStorage === 'undefined') return;
+  try { localStorage.setItem(CAREER_STORAGE_KEY, JSON.stringify(careerSerialize(G.career))); } catch (e) { /* almacenamiento no disponible */ }
+}
+function loadCareer() {
+  if (typeof localStorage === 'undefined') return null;
+  try {
+    var raw = localStorage.getItem(CAREER_STORAGE_KEY);
+    if (!raw) return null;
+    return careerDeserialize(JSON.parse(raw));
+  } catch (e) { return null; }
 }
 
 window.actionSetCareerTab = function (tab) {
@@ -361,6 +432,7 @@ var CAREER_MAX_SQUAD_SIZE = 23;
 var CAREER_QUICK_SELL_FACTOR = 0.85;
 window.actionSellCareerPlayer = function (id) {
   var c = G.career;
+  if ((c.loanedIds || []).indexOf(id) !== -1) { c.plantillaMessage = 'No puedes vender a un jugador cedido -- no es tuyo. Puedes devolverlo cuando quieras.'; render(); return; }
   var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
   if (all.length <= CAREER_MIN_SQUAD_SIZE) { c.plantillaMessage = 'No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores en plantilla.'; render(); return; }
   var p = all.find(function (x) { return x.id === id; });
@@ -372,12 +444,15 @@ window.actionSellCareerPlayer = function (id) {
   render();
 };
 
-// Cesión: el jugador se va a un equipo rival cualquiera, sin cobrar nada
-// (a diferencia de vender) -- y de momento no hay forma de recuperarlo
-// esta temporada, no hay ficha de "cedido" que rastrear todavía (la
-// base). Se avisa de eso mismo en el mensaje para que no sorprenda.
+// Cesión (de salida): el jugador se va a un equipo rival cualquiera, sin
+// cobrar nada (a diferencia de vender) -- y de momento no hay forma de
+// recuperarlo esta temporada, no hay ficha de "cedido saliente" que
+// rastrear todavía (la base). Se avisa de eso mismo en el mensaje para
+// que no sorprenda. No confundir con fichar cedido (entrante, ver
+// actionStartCareerNegotiation con mode 'loan') -- esto es lo contrario.
 window.actionLoanCareerPlayer = function (id) {
   var c = G.career;
+  if ((c.loanedIds || []).indexOf(id) !== -1) { c.plantillaMessage = 'No puedes ceder a un jugador que ya tienes cedido -- no es tuyo. Puedes devolverlo cuando quieras.'; render(); return; }
   var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
   if (all.length <= CAREER_MIN_SQUAD_SIZE) { c.plantillaMessage = 'No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores en plantilla.'; render(); return; }
   var p = all.find(function (x) { return x.id === id; });
@@ -385,6 +460,20 @@ window.actionLoanCareerPlayer = function (id) {
   var destTeam = choice(Math.random() < 0.4 ? RIVAL_TEAM_BOSSES : RIVAL_TEAM_NAMES);
   careerRemoveFromSquad(c, id);
   c.plantillaMessage = 'Cedido ' + p.nombre + ' a ' + destTeam + ' (sin cobrar nada). No se puede recuperar esta temporada.';
+  render();
+};
+
+// Devolver a un jugador que TÚ tienes cedido (entrante): se va gratis, sin
+// venta ni cesión de salida -- solo libera su hueco de cesión (máximo
+// CAREER_MAX_LOANS_IN a la vez) y su sitio en la plantilla.
+window.actionReturnLoanedPlayer = function (id) {
+  var c = G.career;
+  if ((c.loanedIds || []).indexOf(id) === -1) return;
+  var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
+  var p = all.find(function (x) { return x.id === id; });
+  careerRemoveFromSquad(c, id);
+  c.loanedIds = c.loanedIds.filter(function (x) { return x !== id; });
+  c.plantillaMessage = p ? ('Devuelto ' + p.nombre + ' a su club.') : 'Jugador devuelto a su club.';
   render();
 };
 
@@ -396,18 +485,23 @@ function renderCareerPlantilla(c) {
   var filtered = filter ? all.filter(function (p) { return p.posicion === filter; }) : all;
   var filterBtnsHtml = careerPositionFilterBtnsHtml(filter, 'actionSetCareerPlantillaFilter');
   var canRemove = all.length > CAREER_MIN_SQUAD_SIZE;
+  var loanedIds = c.loanedIds || [];
   var rowsHtml = filtered.map(function (p) {
+    var isLoaned = loanedIds.indexOf(p.id) !== -1;
+    var actionsHtml = isLoaned
+      ? '<button class="btn btn-tiny" style="margin-left:6px" onclick="actionReturnLoanedPlayer(\'' + p.id + '\')">↩️ Devolver</button>'
+      : '<button class="btn btn-tiny" style="margin-left:6px" ' + (canRemove ? '' : 'disabled') + ' onclick="actionSellCareerPlayer(\'' + p.id + '\')">💰 Vender</button>' +
+        '<button class="btn btn-tiny" ' + (canRemove ? '' : 'disabled') + ' onclick="actionLoanCareerPlayer(\'' + p.id + '\')">🔄 Ceder</button>';
     return '<div class="futdraft-timeline-row">' + careerMediaBadgeHtml(p) + avatarHtml(p) +
-      '<span>' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + '</span>' +
+      '<span>' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + (isLoaned ? ' <span class="dim">(cedido)</span>' : '') + '</span>' +
       '<strong style="margin-left:auto;white-space:nowrap;color:var(--accent-2)">' + careerPlayerValue(p) + ' M€</strong>' +
-      '<button class="btn btn-tiny" style="margin-left:6px" ' + (canRemove ? '' : 'disabled') + ' onclick="actionSellCareerPlayer(\'' + p.id + '\')">💰 Vender</button>' +
-      '<button class="btn btn-tiny" ' + (canRemove ? '' : 'disabled') + ' onclick="actionLoanCareerPlayer(\'' + p.id + '\')">🔄 Ceder</button>' +
+      actionsHtml +
     '</div>';
   }).join('');
   return (
     '<div class="panel">' +
       '<h3 style="margin-bottom:4px">Gestionar plantilla</h3>' +
-      '<p class="dim small">Valor total de la plantilla: <strong style="color:var(--accent-2)">' + total + ' M€</strong>. Presupuesto disponible: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong>.</p>' +
+      '<p class="dim small">Valor total de la plantilla: <strong style="color:var(--accent-2)">' + total + ' M€</strong>. Presupuesto disponible: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong>. Cedidos: ' + loanedIds.length + ' / ' + CAREER_MAX_LOANS_IN + '.</p>' +
       (c.plantillaMessage ? '<p class="dim small">' + escapeHtml(c.plantillaMessage) + '</p>' : '') +
       '<div class="btn-row">' + filterBtnsHtml + '</div>' +
       '<div class="futdraft-timeline mt">' + (rowsHtml || '<p class="dim small center-text">Nadie en esa posición.</p>') + '</div>' +
@@ -497,12 +591,29 @@ function careerNegotiationAccepts(offer, value, playerScore, teamAvgScore) {
   return Math.random() < moneyFactor * prestigeFactor;
 }
 
-window.actionStartCareerNegotiation = function (id) {
+// Cuántas cesiones ENTRANTES tienes ahora mismo (jugadores que no son
+// tuyos, solo prestados) -- tope de CAREER_MAX_LOANS_IN a la vez, a
+// petición explícita.
+var CAREER_MAX_LOANS_IN = 3;
+function careerLoanCount(c) { return (c.loanedIds || []).length; }
+
+// El "valor a negociar" depende del modo: fichar en propiedad pide el
+// valor de mercado completo; fichar cedido (mode 'loan', una temporada)
+// pide solo 1/3 de ese valor -- en los dos casos es una negociación de
+// verdad (careerNegotiationAccepts), con la misma posibilidad de rechazo
+// por debajo de ese precio, a petición explícita.
+function careerNegotiationAskingValue(p, mode) {
+  var value = careerPlayerValue(p);
+  return mode === 'loan' ? Math.max(0.1, Math.round(value / 3 * 10) / 10) : value;
+}
+
+window.actionStartCareerNegotiation = function (id, mode) {
   var c = G.career;
   var p = ROSTER.find(function (x) { return x.id === id; });
   if (!p) return;
-  var value = careerPlayerValue(p);
-  c.negotiation = { playerId: id, offer: Math.max(0.1, Math.round(value * 0.8 * 10) / 10), lastResult: null };
+  mode = mode === 'loan' ? 'loan' : 'buy';
+  var asking = careerNegotiationAskingValue(p, mode);
+  c.negotiation = { playerId: id, mode: mode, offer: Math.max(0.1, Math.round(asking * 0.8 * 10) / 10), lastResult: null };
   render();
 };
 window.actionCancelCareerNegotiation = function () {
@@ -524,13 +635,15 @@ window.actionSendCareerOffer = function () {
   if (!p) return;
   var squadSize = c.lineup.length + c.bench.length;
   if (squadSize >= CAREER_MAX_SQUAD_SIZE) { neg.lastResult = 'plantillaLlena'; render(); return; }
+  if (neg.mode === 'loan' && careerLoanCount(c) >= CAREER_MAX_LOANS_IN) { neg.lastResult = 'cesionesLlenas'; render(); return; }
   if (neg.offer > c.budget) { neg.lastResult = 'sinPresupuesto'; render(); return; }
-  var value = careerPlayerValue(p);
+  var asking = careerNegotiationAskingValue(p, neg.mode);
   var teamAvg = careerTeamAvgScore(c);
-  var accepted = careerNegotiationAccepts(neg.offer, value, futDraftPlayerScore(p), teamAvg);
+  var accepted = careerNegotiationAccepts(neg.offer, asking, futDraftPlayerScore(p), teamAvg);
   if (accepted) {
     c.budget = Math.round((c.budget - neg.offer) * 10) / 10;
     c.bench.push(p);
+    if (neg.mode === 'loan') { c.loanedIds = (c.loanedIds || []).concat([p.id]); }
     neg.lastResult = 'accepted';
   } else {
     neg.lastResult = 'rejected';
@@ -542,7 +655,9 @@ function renderCareerNegotiation(c) {
   var neg = c.negotiation;
   var p = ROSTER.find(function (x) { return x.id === neg.playerId; });
   if (!p) { c.negotiation = null; return renderCareerMercado(c); }
+  var isLoan = neg.mode === 'loan';
   var value = careerPlayerValue(p);
+  var asking = careerNegotiationAskingValue(p, neg.mode);
   var teamAvg = careerTeamAvgScore(c);
   var gap = Math.round(futDraftPlayerScore(p) - teamAvg);
   var prestigeHint = gap > CAREER_INTERESTED_GAP
@@ -551,13 +666,14 @@ function renderCareerNegotiation(c) {
   var resultHtml;
   if (neg.lastResult === 'accepted') {
     resultHtml =
-      '<p class="dim small" style="color:var(--accent-2)">¡Trato cerrado! ' + escapeHtml(p.nombre) + ' se une a tu plantilla por ' + neg.offer + ' M€.</p>' +
+      '<p class="dim small" style="color:var(--accent-2)">¡Trato cerrado! ' + escapeHtml(p.nombre) + (isLoan ? ' llega cedido por una temporada por ' : ' se une a tu plantilla por ') + neg.offer + ' M€.</p>' +
       '<button class="btn btn-primary btn-block mt" onclick="actionCancelCareerNegotiation()">Volver al mercado</button>';
   } else {
     resultHtml =
       (neg.lastResult === 'rejected' ? '<p class="dim small" style="color:var(--danger)">' + escapeHtml(p.nombre) + ' rechaza tu oferta de ' + neg.offer + ' M€.</p>' : '') +
       (neg.lastResult === 'sinPresupuesto' ? '<p class="dim small" style="color:var(--danger)">No tienes presupuesto para ofrecer eso.</p>' : '') +
       (neg.lastResult === 'plantillaLlena' ? '<p class="dim small" style="color:var(--danger)">Tu plantilla ya está al máximo (' + CAREER_MAX_SQUAD_SIZE + '). Vende o cede a alguien antes de fichar.</p>' : '') +
+      (neg.lastResult === 'cesionesLlenas' ? '<p class="dim small" style="color:var(--danger)">Ya tienes ' + CAREER_MAX_LOANS_IN + ' jugadores cedidos, el máximo. Devuelve a alguno antes de fichar otra cesión.</p>' : '') +
       '<div class="stepper-row">' +
         '<button class="btn stepper-arrow" onclick="actionAdjustCareerOffer(-0.1)">◀</button>' +
         '<span class="stepper-value">' + neg.offer + ' M€</span>' +
@@ -570,9 +686,11 @@ function renderCareerNegotiation(c) {
   }
   return (
     '<div class="panel center-text">' +
-      '<h3 style="margin-bottom:8px">Negociar con ' + escapeHtml(p.nombre) + '</h3>' +
+      '<h3 style="margin-bottom:8px">' + (isLoan ? 'Negociar cesión de ' : 'Negociar con ') + escapeHtml(p.nombre) + '</h3>' +
       '<div style="display:flex;justify-content:center;margin-bottom:8px">' + careerMediaBadgeHtml(p) + avatarHtml(p) + '</div>' +
-      '<p class="dim small">Valor de mercado orientativo: <strong style="color:var(--accent-2)">' + value + ' M€</strong>. Presupuesto: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong>.</p>' +
+      (isLoan
+        ? '<p class="dim small">Cesión de 1 temporada. Precio orientativo (1/3 del valor de mercado, ' + value + ' M€): <strong style="color:var(--accent-2)">' + asking + ' M€</strong>. Presupuesto: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong>.</p>'
+        : '<p class="dim small">Valor de mercado orientativo: <strong style="color:var(--accent-2)">' + asking + ' M€</strong>. Presupuesto: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong>.</p>') +
       prestigeHint +
       resultHtml +
     '</div>'
@@ -609,12 +727,14 @@ function renderCareerMercado(c) {
     return '<option value="' + f.id + '"' + (f.id === sortField.id ? ' selected' : '') + '>' + f.name + '</option>';
   }).join('');
   var squadFull = (c.lineup.length + c.bench.length) >= CAREER_MAX_SQUAD_SIZE;
+  var loansFull = careerLoanCount(c) >= CAREER_MAX_LOANS_IN;
   var rowsHtml = pageItems.map(function (p) {
     var value = careerPlayerValue(p);
     return '<div class="futdraft-timeline-row">' + careerMediaBadgeHtml(p) + avatarHtml(p) +
       '<span>' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + '</span>' +
       '<strong style="margin-left:auto;white-space:nowrap;color:var(--accent-2)">' + value + ' M€</strong>' +
-      '<button class="btn btn-tiny" style="margin-left:6px" ' + (squadFull ? 'disabled' : '') + ' onclick="actionStartCareerNegotiation(\'' + p.id + '\')">Negociar</button>' +
+      '<button class="btn btn-tiny" style="margin-left:6px" ' + (squadFull ? 'disabled' : '') + ' onclick="actionStartCareerNegotiation(\'' + p.id + '\', \'buy\')">Negociar</button>' +
+      '<button class="btn btn-tiny" ' + (squadFull || loansFull ? 'disabled' : '') + ' onclick="actionStartCareerNegotiation(\'' + p.id + '\', \'loan\')" title="Cesión de 1 temporada por 1/3 del valor">📋 Cesión</button>' +
     '</div>';
   }).join('');
   var pagerHtml = totalPages > 1
@@ -627,9 +747,10 @@ function renderCareerMercado(c) {
   return (
     '<div class="panel">' +
       '<h3 style="margin-bottom:4px">Mercado</h3>' +
-      '<p class="dim small">Presupuesto disponible: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong>. Solo jugadores con media menor de 80 -- los mejores todavía no están a la venta. Fichar es negociar: ofreces dinero y el club puede aceptar o rechazar.</p>' +
+      '<p class="dim small">Presupuesto disponible: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong>. Solo jugadores con media menor de 80 -- los mejores todavía no están a la venta. Fichar (en propiedad o cedido) es negociar: ofreces dinero y el club puede aceptar o rechazar. Cedidos: ' + careerLoanCount(c) + ' / ' + CAREER_MAX_LOANS_IN + '.</p>' +
       '<p class="dim small">' + available.length + ' jugador' + (available.length === 1 ? '' : 'es') + ' con este filtro.</p>' +
       (squadFull ? '<p class="dim small" style="color:var(--danger)">Plantilla al máximo (' + CAREER_MAX_SQUAD_SIZE + '). Vende o cede a alguien antes de fichar.</p>' : '') +
+      (loansFull ? '<p class="dim small" style="color:var(--danger)">Ya tienes ' + CAREER_MAX_LOANS_IN + ' cesiones, el máximo -- devuelve a alguna antes de fichar cedido a otro.</p>' : '') +
       (c.marketMessage ? '<p class="dim small">' + escapeHtml(c.marketMessage) + '</p>' : '') +
       '<input class="select-field" type="text" placeholder="Buscar por nombre…" value="' + escapeHtml(c.marketSearch || '') + '" oninput="actionSetCareerMarketSearch(this.value)">' +
       '<div class="btn-row mt">' + filterBtnsHtml +
@@ -804,11 +925,11 @@ function careerResolveOtherFixtures(c, league, skipFixtureIdx) {
   });
 }
 
-// Bonus de presupuesto por ganar TU partido de la jornada (100k/200k/300k
+// Bonus de presupuesto por ganar TU partido de la jornada (50k/100k/150k
 // al azar, a petición explícita) -- nunca por empatar ni perder. Se llama
 // una sola vez por jornada, tanto desde "Saltar" como al terminar de ver
 // tu partido con "Simular" (ver finishCareerMatchdayMatch).
-var CAREER_WIN_BONUSES = [0.1, 0.2, 0.3];
+var CAREER_WIN_BONUSES = [0.05, 0.1, 0.15];
 function careerAwardWinBonus(c, myGoals, oppGoals) {
   if (myGoals <= oppGoals) return 0;
   var bonus = choice(CAREER_WIN_BONUSES);
@@ -970,6 +1091,13 @@ function renderCareerMode() {
   else if (c.tab === 'liga') bodyHtml = renderCareerLiga(c);
   else if (c.tab === 'jornada') bodyHtml = renderCareerJornada(c);
   else bodyHtml = renderCareerEquipo(c);
+  // Se guarda en cada render de esta pantalla (también durante el puente
+  // a G.futdraft de "Simular partido", ver actionSimulateCareerMatchday:
+  // ese tramo no pasa por aquí, pero el estado ya queda actualizado en
+  // cuanto se vuelve, con el siguiente render de esta misma función) --
+  // así sobrevive a refrescar el navegador sin tener que acordarse de
+  // guardar a mano en cada acción.
+  saveCareer();
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
