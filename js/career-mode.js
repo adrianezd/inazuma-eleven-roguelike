@@ -101,6 +101,7 @@ var CAREER_TABS = [
   { id: 'calendario', name: 'Calendario' },
   { id: 'liga', name: 'Liga' },
   { id: 'jornada', name: 'Jornada' },
+  { id: 'copa', name: 'Copa del Rey' },
   { id: 'estadisticas', name: 'Estadísticas' }
 ];
 
@@ -336,7 +337,14 @@ function careerFreshState() {
     // Delta de progresión acumulado por jugador ({playerId: número}), ver
     // careerPlayerScore/careerProgressAllPlayers -- vacío en una partida
     // nueva, se rellena a partir de la temporada 2 (actionStartNewCareerSeason).
-    playerProgression: {}
+    playerProgression: {},
+    // Copa del Rey: cuadro nuevo cada temporada (careerNewCup), no
+    // bloqueado por la ventana de fichajes ni por el calendario de Liga
+    // -- se puede jugar cuando se quiera. cupsWon es ACUMULADO de toda la
+    // carrera, como bestPosition/careerStats, nunca se resetea.
+    cup: careerNewCup(),
+    cupsWon: 0,
+    lastCupResult: null
   };
   careerGenerateIncomingOffers(state);
   return state;
@@ -373,7 +381,8 @@ function careerSerialize(c) {
     marketWindow: c.marketWindow || null,
     boughtThisSeasonIds: c.boughtThisSeasonIds || [],
     incomingOffers: c.incomingOffers || [],
-    playerProgression: c.playerProgression || {}
+    playerProgression: c.playerProgression || {},
+    cup: c.cup, cupsWon: c.cupsWon || 0, lastCupResult: c.lastCupResult || null
   };
 }
 function careerDeserialize(data) {
@@ -404,7 +413,10 @@ function careerDeserialize(data) {
     marketWindow: data.marketWindow || careerNewMarketWindow('preseason', CAREER_PRESEASON_DAYS),
     boughtThisSeasonIds: data.boughtThisSeasonIds || [],
     incomingOffers: data.incomingOffers || [],
-    playerProgression: data.playerProgression || {}
+    playerProgression: data.playerProgression || {},
+    cup: careerCupRelinkWinners(data.cup) || careerNewCup(),
+    cupsWon: data.cupsWon || 0,
+    lastCupResult: data.lastCupResult || null
   };
 }
 // Guarda el estado ACTUAL (G.career) en el hueco activo
@@ -1677,6 +1689,14 @@ window.continueCareerMatchday = function () {
   c.tab = 'jornada';
   render();
 };
+window.continueCareerCupMatch = function () {
+  var c = G.career;
+  G.futdraft = c.savedFutdraft;
+  c.savedFutdraft = null;
+  G.screen = 'careerMode';
+  c.tab = 'copa';
+  render();
+};
 
 // Nueva temporada: sube el número, aplica la progresión anual a TODO
 // ROSTER (careerProgressAllPlayers, no solo tu plantilla), genera una
@@ -1697,8 +1717,250 @@ window.actionStartNewCareerSeason = function () {
   careerGenerateIncomingOffers(c);
   c.lastMatchdayResult = null;
   c.calendarView = null;
+  c.cup = careerNewCup();
+  c.lastCupResult = null;
   render();
 };
+
+// ===== Copa del Rey =====
+// Cuadro de eliminación directa independiente de la Liga (no bloquea ni
+// depende de la ventana de fichajes ni del calendario, se juega cuando se
+// quiera) -- uno nuevo cada temporada (careerNewCup, arriba y en
+// actionStartNewCareerSeason). Reutiliza CASI TODO el motor genérico de
+// Modo Torneo tal cual, porque no depende de G.run/G.match/G.tournament:
+// generateTournamentBracket (reparto de rivales sin repetir, jefe/normal),
+// simulateCpuMatch (quién gana un CPU-vs-CPU, dado alrededor de
+// TEAM_POWER) y todo el HTML del árbol (roundNameForIndex/bracketShieldHtml/
+// bracketTeamHtml/bracketMatchHtml, de tournament.js) para tener un
+// cuadro visual igual de currado sin duplicar ese CSS/markup.
+// TU partido sigue el mismo patrón de puente con FutDraft que ya usa
+// Jornada (ver actionSimulateCareerMatchday/finishCareerMatchdayMatch):
+// "Simular partido" lo ve en vivo con el motor de FutDraft, "Saltar" lo
+// resuelve al momento con careerSimulateMatchGoals. A propósito NO se usa
+// la prórroga/tanda de penaltis del bracket de FutDraft (ligada a su
+// propio flujo fijo de G.futdraft.pendingMatch/pendingOppSide, pensado
+// solo para Modo Torneo) -- si acaba empatado, se decide con una tanda
+// de penaltis resumida (careerCupPenaltyShootout, mismas fórmulas que la
+// de FutDraft -- futDraftPenaltyShotChance/PENALTY_MODE_ROUNDS -- pero
+// solo el marcador final, sin lanzamiento a lanzamiento) en vez de la
+// pantalla de tanda completa, simplificación deliberada para no complicar
+// el puente.
+var CAREER_CUP_SIZE = 16;
+var CAREER_CUP_WIN_BONUS = 0.5;
+function careerNewCup() {
+  var bracket = generateTournamentBracket(CAREER_CUP_SIZE);
+  var round1 = [];
+  for (var i = 0; i < bracket.slots.length; i += 2) round1.push({ a: bracket.slots[i], b: bracket.slots[i + 1], winner: null });
+  return { rounds: [round1], size: bracket.size, eliminated: false, eliminatedRound: null, rewardClaimed: false };
+}
+// Tras un guardar/cargar (JSON de por medio), match.winner deja de ser el
+// MISMO objeto que match.a o match.b (dos copias distintas, iguales mano
+// a mano), lo que rompe el resaltado de "quién ganó" en bracketTeamHtml
+// (usa === ). Se re-enlaza comparando isPlayer+name, que sí sobrevive
+// intactos al JSON.
+function careerCupRelinkWinners(cup) {
+  if (!cup) return cup;
+  cup.rounds.forEach(function (round) {
+    round.forEach(function (m) {
+      if (!m.winner) return;
+      m.winner = (m.winner.isPlayer === m.a.isPlayer && m.winner.name === m.a.name) ? m.a : m.b;
+    });
+  });
+  return cup;
+}
+function careerCupMyMatch(cup) {
+  var round = cup.rounds[cup.rounds.length - 1];
+  return round.find(function (m) { return (m.a.isPlayer || m.b.isPlayer) && m.winner === null; }) || null;
+}
+function careerCupOpponent(match) { return match.a.isPlayer ? match.b : match.a; }
+function careerCupChampion(cup) {
+  var round = cup.rounds[cup.rounds.length - 1];
+  return (round.length === 1 && round[0].winner) ? round[0].winner : null;
+}
+// Resuelve cualquier partido pendiente de la ronda actual que no sea el
+// tuyo (CPU vs CPU, igual que careerResolveOtherFixtures en Liga) y, si
+// ya está completa, arma la siguiente ronda con los ganadores -- si la
+// ronda actual era la Final, no hay ronda siguiente, el campeón sale de
+// careerCupChampion.
+function careerCupAdvanceRound(cup) {
+  var round = cup.rounds[cup.rounds.length - 1];
+  round.forEach(function (m) {
+    if (m.winner === null) m.winner = simulateCpuMatch(m.a, m.b);
+  });
+  if (round.length === 1) return;
+  var winners = round.map(function (m) { return m.winner; });
+  var nextRound = [];
+  for (var i = 0; i < winners.length; i += 2) nextRound.push({ a: winners[i], b: winners[i + 1], winner: null });
+  cup.rounds.push(nextRound);
+}
+// Una vez eliminado ya no hay más partidos TUYOS que jugar (careerCupMyMatch
+// no volverá a encontrar nada), así que se resuelve solo el resto del
+// cuadro de golpe para tener un campeón que enseñar en vez de dejar el
+// árbol a medias para siempre.
+function careerCupSettleRemaining(cup) {
+  while (!careerCupChampion(cup)) careerCupAdvanceRound(cup);
+}
+function careerCupPenaltyShootout(c, oppName) {
+  var myScore = futDraftTeamScore(c.lineup, c.captainId);
+  var diff = myScore - careerRivalPower(oppName);
+  var myChance = futDraftPenaltyShotChance(diff);
+  var rivalChance = futDraftPenaltyShotChance(-diff);
+  var myGoals = 0, rivalGoals = 0, round = 1;
+  while (true) {
+    if (Math.random() < myChance) myGoals++;
+    if (Math.random() < rivalChance) rivalGoals++;
+    if (round >= PENALTY_MODE_ROUNDS && myGoals !== rivalGoals) break;
+    round++;
+  }
+  return { myGoals: myGoals, oppGoals: rivalGoals };
+}
+// Premio de la Copa: presupuesto + contador de copas ganadas ACUMULADO de
+// toda la carrera (c.cupsWon, como bestPosition/careerStats, nunca se
+// resetea) -- rewardClaimed evita darlo dos veces si se vuelve a mirar la
+// pestaña tras ya haber quedado campeón.
+function careerCupMaybeAwardChampion(c) {
+  var cup = c.cup;
+  if (cup.rewardClaimed) return;
+  var champion = careerCupChampion(cup);
+  if (!champion) return;
+  cup.rewardClaimed = true;
+  if (champion.isPlayer) {
+    c.budget = Math.round((c.budget + CAREER_CUP_WIN_BONUS) * 10) / 10;
+    c.cupsWon = (c.cupsWon || 0) + 1;
+  }
+}
+window.actionSimulateCareerCupMatch = function () {
+  var c = G.career;
+  var cup = c.cup;
+  var match = careerCupMyMatch(cup);
+  if (!match) return;
+  var opp = careerCupOpponent(match);
+  c.savedFutdraft = G.futdraft;
+  G.futdraft = { lineup: c.lineup, captainId: c.captainId, formation: c.formation, condition: 'ninguna' };
+  var sim = futDraftSimulateMatchCore(careerRivalPower(opp.name));
+  G.futdraft.live = {
+    oppSide: { name: opp.name }, modifier: sim.modifier,
+    minute: 0, pending: sim.timeline.slice(), revealed: [],
+    myGoals: 0, oppGoals: 0, finalMyGoals: sim.myGoals, finalOppGoals: sim.oppGoals,
+    myAtk: sim.myAtk, myDef: sim.myDef, effectiveOppPower: sim.effectiveOppPower,
+    // allowDraw:true aunque sea eliminatoria: así el tick genérico no
+    // mete su propia prórroga (pensada para el flujo fijo de Torneo). Si
+    // sigue empatado, finishCareerCupMatch tira una tanda de penaltis
+    // resumida (careerCupPenaltyShootout).
+    inExtraTime: false, allowDraw: true, onFinish: finishCareerCupMatch,
+    careerCupMatch: match,
+    done: false
+  };
+  G.screen = 'futdraftLive';
+  render();
+  futDraftLiveTick();
+};
+function finishCareerCupMatch() {
+  var c = G.career;
+  var cup = c.cup;
+  var live = G.futdraft.live;
+  var match = live.careerCupMatch;
+  var opp = careerCupOpponent(match);
+  var myGoals = live.finalMyGoals, oppGoals = live.finalOppGoals;
+  var penalty = myGoals === oppGoals ? careerCupPenaltyShootout(c, opp.name) : null;
+  var playerWon = penalty ? penalty.myGoals > penalty.oppGoals : myGoals > oppGoals;
+  match.winner = playerWon ? (match.a.isPlayer ? match.a : match.b) : (match.a.isPlayer ? match.b : match.a);
+
+  var myEvents = live.revealed.filter(function (e) { return e.side === 'me'; });
+  futDraftRecordGoalEvents(c.careerStats, myEvents, 'Tu equipo');
+
+  var roundIdxAtElimination = cup.rounds.length - 1;
+  careerCupAdvanceRound(cup);
+  if (!playerWon) { cup.eliminated = true; cup.eliminatedRound = roundIdxAtElimination; careerCupSettleRemaining(cup); }
+  careerCupMaybeAwardChampion(c);
+  c.lastCupResult = { oppName: opp.name, myGoals: myGoals, oppGoals: oppGoals, playerWon: playerWon, penalty: penalty };
+
+  G.futdraft.lastMatchResult = {
+    oppName: opp.name, oppShield: teamShieldPath(opp.name), oppPower: careerRivalPower(opp.name),
+    myGoals: myGoals, oppGoals: oppGoals, playerWon: playerWon,
+    timeline: live.revealed, modifier: live.modifier, isCareer: true, isCup: true, penalty: penalty
+  };
+  G.futdraft.live = null;
+  G.screen = 'futdraftMatchResult';
+  render();
+}
+window.actionSkipCareerCupMatch = function () {
+  var c = G.career;
+  var cup = c.cup;
+  var match = careerCupMyMatch(cup);
+  if (!match) return;
+  var opp = careerCupOpponent(match);
+  var myPower = futDraftScoreBreakdown(c.lineup, c.captainId).total;
+  var oppPower = careerRivalPower(opp.name);
+  var goles = careerSimulateMatchGoals(myPower, oppPower);
+  var myGoals = goles[0], oppGoals = goles[1];
+  var penalty = myGoals === oppGoals ? careerCupPenaltyShootout(c, opp.name) : null;
+  var playerWon = penalty ? penalty.myGoals > penalty.oppGoals : myGoals > oppGoals;
+  match.winner = playerWon ? (match.a.isPlayer ? match.a : match.b) : (match.a.isPlayer ? match.b : match.a);
+
+  var myPlayers = c.lineup.map(function (s) { return s.player; });
+  var events = [];
+  for (var i = 0; i < myGoals; i++) events.push(futDraftGoalEvent(myPlayers));
+  futDraftRecordGoalEvents(c.careerStats, events, 'Tu equipo');
+
+  var roundIdxAtElimination = cup.rounds.length - 1;
+  careerCupAdvanceRound(cup);
+  if (!playerWon) { cup.eliminated = true; cup.eliminatedRound = roundIdxAtElimination; careerCupSettleRemaining(cup); }
+  careerCupMaybeAwardChampion(c);
+  c.lastCupResult = { oppName: opp.name, myGoals: myGoals, oppGoals: oppGoals, playerWon: playerWon, penalty: penalty };
+  render();
+};
+function renderCareerCopa(c) {
+  var cup = c.cup;
+  var totalRounds = Math.log2(cup.size);
+  var champion = careerCupChampion(cup);
+  var myMatch = careerCupMyMatch(cup);
+  var headerHtml =
+    '<div class="panel center-text">' +
+      '<h3 style="margin-bottom:4px">Copa del Rey</h3>' +
+      '<p class="dim small">Tú y ' + (cup.size - 1) + ' rivales, eliminación directa. Copas ganadas en la carrera: <strong style="color:var(--accent-2)">' + (c.cupsWon || 0) + '</strong>.</p>' +
+      (c.lastCupResult
+        ? '<p class="dim small">Último resultado: Tú ' + c.lastCupResult.myGoals + ' - ' + c.lastCupResult.oppGoals + ' ' + escapeHtml(c.lastCupResult.oppName) + (c.lastCupResult.penalty ? ' (penaltis ' + c.lastCupResult.penalty.myGoals + '-' + c.lastCupResult.penalty.oppGoals + ')' : '') + ' -- ' + (c.lastCupResult.playerWon ? 'ganaste' : 'perdiste') + '.</p>'
+        : '') +
+    '</div>';
+  var actionHtml;
+  if (champion) {
+    actionHtml = '<div class="panel center-text"><p class="dim small">' + (champion.isPlayer ? '¡Campeón de la Copa!' : 'Campeón: ' + escapeHtml(champion.name)) + '</p></div>';
+  } else if (cup.eliminated) {
+    actionHtml = '<div class="panel center-text"><p class="dim small">Eliminado en ' + roundNameForIndex(cup.eliminatedRound, totalRounds) + '.</p></div>';
+  } else if (myMatch) {
+    var opp = careerCupOpponent(myMatch);
+    actionHtml =
+      '<div class="panel center-text">' +
+        '<p class="dim small">Tu rival: <strong>' + escapeHtml(opp.name) + '</strong> (' + roundNameForIndex(cup.rounds.length - 1, totalRounds) + ')</p>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-primary" onclick="actionSimulateCareerCupMatch()">▶ Simular partido</button>' +
+          '<button class="btn btn-outline" onclick="actionSkipCareerCupMatch()">Saltar</button>' +
+        '</div>' +
+      '</div>';
+  } else {
+    actionHtml = '';
+  }
+  var bracketHtml =
+    '<div class="panel bracket-panel"><div class="bracket-tree">' +
+      cup.rounds.map(function (round, ri) {
+        var isFinal = round.length === 1;
+        var body;
+        if (isFinal) {
+          body = '<div class="bracket-final-wrap">' + bracketMatchHtml(round[0]) + '</div>';
+        } else {
+          body = '<div class="bracket-pairs">';
+          for (var i = 0; i < round.length; i += 2) body += '<div class="bracket-pair">' + bracketMatchHtml(round[i]) + bracketMatchHtml(round[i + 1]) + '</div>';
+          body += '</div>';
+        }
+        return '<div class="bracket-round-col"><div class="bracket-round-title">' + roundNameForIndex(ri, totalRounds) + '</div>' + body + '</div>';
+      }).join('') +
+      '<div class="bracket-round-col bracket-trophy-col"><div class="bracket-round-title">Campeón</div>' +
+        '<div class="bracket-trophy-wrap"><div class="bracket-trophy' + (champion ? '' : ' is-pending') + '">🏆</div>' +
+        '<div class="bracket-champion-name">' + (champion ? (champion.isPlayer ? 'Tú' : escapeHtml(champion.name)) : '?') + '</div></div></div>' +
+    '</div></div>';
+  return headerHtml + actionHtml + bracketHtml;
+}
 
 function renderCareerJornada(c) {
   var league = c.league;
@@ -1762,6 +2024,7 @@ function renderCareerMode() {
   else if (c.tab === 'calendario') bodyHtml = renderCareerCalendario(c);
   else if (c.tab === 'liga') bodyHtml = renderCareerLiga(c);
   else if (c.tab === 'jornada') bodyHtml = renderCareerJornada(c);
+  else if (c.tab === 'copa') bodyHtml = renderCareerCopa(c);
   else if (c.tab === 'estadisticas') bodyHtml = renderCareerEstadisticas(c);
   else bodyHtml = renderCareerEquipo(c);
   return (
