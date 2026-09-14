@@ -104,23 +104,23 @@ function renderFutDraftModeSelect() {
         '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
         '<h2 class="panel-title mt">FutDraft</h2>' +
         '<h3 style="margin-bottom:8px">Tipo de FutDraft</h3>' +
-        '<div class="btn-row" style="justify-content:center;align-items:center;gap:14px">' +
-          '<button class="btn btn-outline" onclick="actionFutDraftModeStep(-1)">◀</button>' +
-          '<span style="min-width:110px;font-weight:700;font-size:1.1rem">' + modeOpt.name + '</span>' +
-          '<button class="btn btn-outline" onclick="actionFutDraftModeStep(1)">▶</button>' +
+        '<div class="stepper-row">' +
+          '<button class="btn stepper-arrow" onclick="actionFutDraftModeStep(-1)" aria-label="Anterior">◀</button>' +
+          '<span class="stepper-value">' + modeOpt.name + '</span>' +
+          '<button class="btn stepper-arrow" onclick="actionFutDraftModeStep(1)" aria-label="Siguiente">▶</button>' +
         '</div>' +
         '<p class="dim small">' + modeOpt.desc + '</p>' +
         '<h3 style="margin-bottom:8px;margin-top:14px">Tamaño del torneo</h3>' +
-        '<div class="btn-row" style="justify-content:center;align-items:center;gap:14px">' +
-          '<button class="btn btn-outline" onclick="actionFutDraftBracketSizeStep(-1)">◀</button>' +
-          '<span style="min-width:110px;font-weight:700;font-size:1.1rem">' + futDraftBracketSize() + ' equipos</span>' +
-          '<button class="btn btn-outline" onclick="actionFutDraftBracketSizeStep(1)">▶</button>' +
+        '<div class="stepper-row">' +
+          '<button class="btn stepper-arrow" onclick="actionFutDraftBracketSizeStep(-1)" aria-label="Anterior">◀</button>' +
+          '<span class="stepper-value">' + futDraftBracketSize() + ' equipos</span>' +
+          '<button class="btn stepper-arrow" onclick="actionFutDraftBracketSizeStep(1)" aria-label="Siguiente">▶</button>' +
         '</div>' +
         '<h3 style="margin-bottom:8px;margin-top:14px">Condiciones del partido</h3>' +
-        '<div class="btn-row" style="justify-content:center;align-items:center;gap:14px">' +
-          '<button class="btn btn-outline" onclick="actionFutDraftConditionStep(-1)">◀</button>' +
-          '<span style="min-width:170px;font-weight:700;font-size:1.1rem">' + FUTDRAFT_CONDITION_OPTIONS[futDraftConditionChoiceIdx()].name + '</span>' +
-          '<button class="btn btn-outline" onclick="actionFutDraftConditionStep(1)">▶</button>' +
+        '<div class="stepper-row">' +
+          '<button class="btn stepper-arrow" onclick="actionFutDraftConditionStep(-1)" aria-label="Anterior">◀</button>' +
+          '<span class="stepper-value">' + FUTDRAFT_CONDITION_OPTIONS[futDraftConditionChoiceIdx()].name + '</span>' +
+          '<button class="btn stepper-arrow" onclick="actionFutDraftConditionStep(1)" aria-label="Siguiente">▶</button>' +
         '</div>' +
         '<p class="dim small">' + FUTDRAFT_CONDITION_OPTIONS[futDraftConditionChoiceIdx()].desc + '</p>' +
         '<button class="btn btn-primary btn-block mt" onclick="actionContinueFutDraftModeSelect()">Continuar</button>' +

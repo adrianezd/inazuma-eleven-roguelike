@@ -200,6 +200,20 @@ var ALT_CHAIN_BASE_GAIN = 20;
 var ALT_CHAIN_SHOOT_DECAY = 0.55;   // cada regate adicional suma bastante menos gol
 var ALT_CHAIN_STEAL_GROWTH = 1.35;  // cada regate adicional arriesga bastante más
 
+// Cuánto ayuda (o estorba) a robar el balón la posición REAL de quien
+// defiende el regate, por encima de su stat de Defensa -- antes el % de
+// robo solo miraba el número plano, así que un Delantero puesto a
+// defender por no haber otro sitio (ver pickDefender: si el equipo
+// rival no tiene ningún Defensa en sus 3 huecos no-portero, cae en
+// cualquiera) paraba regates exactamente igual que un Defensa de verdad
+// con la misma Defensa. Un Defensa de posición suma un extra por
+// oficio; un Portero también se defiende algo mejor de lo normal (no es
+// su sitio, pero tiene reflejos); un Delantero puesto a defender es el
+// que más sufre. Centrocampista se queda neutro. Resta directamente del
+// % de ÉXITO del regateador (ver más abajo), así que un valor positivo
+// aquí sube el % de robo y uno negativo lo baja.
+var REGATE_DEFENDER_POS_BONUS = { Defensa: 8, Portero: 4, Centrocampista: 0, Delantero: -6 };
+
 // Probabilidad BASE (sin encadenar nada todavía) de un tiro o un regate,
 // replicando la misma fórmula que resolveAttack usa cuando ataca el
 // jugador -- ventaja elemental, clima y Modo Difícil incluidos -- pero
@@ -214,10 +228,16 @@ function alternativoBaseChance(action, attackerRaw, defenderRaw) {
   // elemental ya se ronda un 88% de gol de partida (contra un portero
   // fuerte), en vez de quedar siempre encajado cerca del 50% -- a petición
   // explícita, para que la estadística de Tiro se note de verdad. El
-  // Regate (para el riesgo de robo) mantiene su fórmula habitual, ya que
-  // esto solo afecta a la probabilidad de GOL.
+  // Regate (para el riesgo de robo) mantiene su fórmula habitual, salvo
+  // por el ajuste de posición de arriba, que se resta del % de ÉXITO del
+  // regateador (defenderRaw.posicion, no defender.posicion: la posición
+  // no cambia con la fatiga, y effectiveStats() no la conserva).
   if (action === 'tiro') { atkStat = attacker.tiro; chance = atkStat - defender.defensa * 0.25; }
-  else { atkStat = attacker.pase; chance = 30 + (atkStat - defender.defensa) * 0.5; }
+  else {
+    atkStat = attacker.pase;
+    chance = 30 + (atkStat - defender.defensa) * 0.5;
+    chance -= REGATE_DEFENDER_POS_BONUS[defenderRaw.posicion] || 0;
+  }
   chance += adv * 10;
   chance += weatherChanceDelta(G.match.weather, action, attacker.tipo);
   if (G.run && G.run.hardMode) chance -= 5;
