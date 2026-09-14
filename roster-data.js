@@ -411,7 +411,7 @@ var ROSTER = [
   {
     id: 'r41', nombre: 'Paul Peabody', original: "Goro Tamaro",
     posicion: 'Portero', tipo: 'Bosque',
-    tiro: 48, pase: 52, defensa: 73, especial: 75,
+    tiro: 48, pase: 52, defensa: 72, especial: 71,
     hissatsu: ['Mano Celestial'],
     desc: 'Portero experimentado con una visión única del juego.',
     locked: false
@@ -1459,7 +1459,7 @@ var ROSTER = [
 {
   id:'r170', nombre:'Miles Ryan', original:'Miles Ryan', sprite:'assets/sprites/r170.webp',
   posicion:'Defensa', tipo:'Viento',
-  tiro:64,pase:70,defensa:73,especial:74,
+  tiro:64,pase:70,defensa:70,especial:71,
   hissatsu:['Ciclon'],
   desc:'Amigo de Nathan, veloz como el viento',
   locked:true,cost:152

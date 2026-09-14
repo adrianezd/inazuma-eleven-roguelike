@@ -154,9 +154,11 @@ function renderFutDraftMatchResult() {
         weatherHtml + penaltyHtml +
       '</div>' +
       timelineHtml +
-      (r.isLiga
-        ? '<button class="btn btn-primary btn-block mt" onclick="continueLigaMatchday()">Ver jornada</button>'
-        : '<button class="btn btn-primary btn-block mt" onclick="continueFutDraftMatch()">' + (r.playerWon ? 'Continuar' : 'Ver resultado') + '</button>') +
+      (r.isCareer
+        ? '<button class="btn btn-primary btn-block mt" onclick="continueCareerMatchday()">Volver a Jornada</button>'
+        : r.isLiga
+          ? '<button class="btn btn-primary btn-block mt" onclick="continueLigaMatchday()">Ver jornada</button>'
+          : '<button class="btn btn-primary btn-block mt" onclick="continueFutDraftMatch()">' + (r.playerWon ? 'Continuar' : 'Ver resultado') + '</button>') +
     '</div>'
   );
 }

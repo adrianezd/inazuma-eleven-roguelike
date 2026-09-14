@@ -43,7 +43,7 @@ var CAREER_MODE_STARTER_IDS = ['r41', 'r170', 'r67', 'r264', 'r267', 'r263', 'r2
 // Mach (r66) es el único suplente original que se queda.
 var CAREER_MODE_BENCH_IDS = ['r270', 'r271', 'r272', 'r66', 'r43'];
 var CAREER_MODE_DEFAULT_FORMATION = '424';
-var CAREER_LEAGUE_TEAM_COUNT = 16; // tú + 15 rivales
+var CAREER_LEAGUE_TEAM_COUNT = 20; // tú + 19 rivales, a petición explícita
 
 function careerModeRoster(ids) {
   return ids.map(function (id) { return ROSTER.find(function (p) { return p.id === id; }); }).filter(Boolean);
@@ -397,36 +397,125 @@ function careerSimulateMatchGoals(powerA, powerB) {
   return [golA, golB];
 }
 
-// Juega TODA la jornada actual de golpe (simulada, sin verla, como el
-// resto de la jornada en Liga -- ver continueLigaMatchday): cada partido,
-// el tuyo incluido, sale de comparar dos potencias 0-100. No hay
-// prórroga ni penaltis (empates cuentan como empates, igual que Liga).
-window.actionPlayCareerMatchday = function () {
+// Resuelve todos los partidos de la jornada actual que NO sean el tuyo
+// (o todos, si fromIdx se omite): comparando potencias 0-100, igual que
+// el resto de la jornada en Liga (continueLigaMatchday). Se usa tanto
+// desde "Saltar" (todos, tu partido incluido) como al terminar de VER tu
+// partido con "Simular" (todos menos el tuyo, que ya se resolvió aparte).
+function careerResolveOtherFixtures(league, skipFixtureIdx) {
+  var fixtures = league.schedule[league.matchdayIndex];
+  fixtures.forEach(function (fx, fi) {
+    if (fi === skipFixtureIdx) return;
+    var powerHome = teamPower({ name: league.teamNames[fx[0]] });
+    var powerAway = teamPower({ name: league.teamNames[fx[1]] });
+    var goles = careerSimulateMatchGoals(powerHome, powerAway);
+    ligaApplyResult(league.table, fx[0], fx[1], goles[0], goles[1]);
+    league.results[league.matchdayIndex][fi] = goles;
+  });
+}
+
+// "Saltar": la jornada entera se resuelve de golpe sin ver nada, tu
+// partido incluido -- lo que ya había.
+window.actionSkipCareerMatchday = function () {
   var c = G.career;
   var league = c.league;
   if (league.matchdayIndex >= league.schedule.length) return;
   var myPower = futDraftScoreBreakdown(c.lineup, c.captainId).total;
-  var fixtures = league.schedule[league.matchdayIndex];
-  var myResult = null;
-  fixtures.forEach(function (fx, fi) {
-    var homeIdx = fx[0], awayIdx = fx[1];
-    var powerHome = homeIdx === 0 ? myPower : teamPower({ name: league.teamNames[homeIdx] });
-    var powerAway = awayIdx === 0 ? myPower : teamPower({ name: league.teamNames[awayIdx] });
-    var goles = careerSimulateMatchGoals(powerHome, powerAway);
-    ligaApplyResult(league.table, homeIdx, awayIdx, goles[0], goles[1]);
-    league.results[league.matchdayIndex][fi] = goles;
-    if (homeIdx === 0 || awayIdx === 0) {
-      var youAreHome = homeIdx === 0;
-      myResult = {
-        matchday: league.matchdayIndex + 1,
-        oppName: league.teamNames[youAreHome ? awayIdx : homeIdx],
-        myGoals: youAreHome ? goles[0] : goles[1],
-        oppGoals: youAreHome ? goles[1] : goles[0]
-      };
-    }
-  });
+  var myFixtureIdx = league.schedule[league.matchdayIndex].findIndex(function (fx) { return fx[0] === 0 || fx[1] === 0; });
+  var myFixture = league.schedule[league.matchdayIndex][myFixtureIdx];
+  var youAreHome = myFixture[0] === 0;
+  var oppIdx = youAreHome ? myFixture[1] : myFixture[0];
+  var powerHome = youAreHome ? myPower : teamPower({ name: league.teamNames[myFixture[0]] });
+  var powerAway = youAreHome ? teamPower({ name: league.teamNames[myFixture[1]] }) : myPower;
+  var goles = careerSimulateMatchGoals(powerHome, powerAway);
+  ligaApplyResult(league.table, myFixture[0], myFixture[1], goles[0], goles[1]);
+  league.results[league.matchdayIndex][myFixtureIdx] = goles;
+  careerResolveOtherFixtures(league, myFixtureIdx);
+  c.lastMatchdayResult = {
+    matchday: league.matchdayIndex + 1,
+    oppName: league.teamNames[oppIdx],
+    myGoals: youAreHome ? goles[0] : goles[1],
+    oppGoals: youAreHome ? goles[1] : goles[0]
+  };
   league.matchdayIndex++;
-  c.lastMatchdayResult = myResult;
+  render();
+};
+
+// "Simular partido": TU partido se ve de verdad, minuto a minuto, con el
+// mismo motor en vivo que ya usan FutDraft y Liga (renderFutDraftLive/
+// futDraftLiveTick) -- no se duplica esa pantalla, se reutiliza tal
+// cual, puenteando brevemente G.futdraft con los datos del Modo Carrera
+// (lineup/formación/capitán) y restaurando lo que hubiera antes al
+// terminar (ver finishCareerMatchdayMatch), para no pisar una partida de
+// FutDraft/Liga que pudiera seguir en curso en la misma sesión. El resto
+// de la jornada se resuelve de golpe al terminar, igual que "Saltar".
+window.actionSimulateCareerMatchday = function () {
+  var c = G.career;
+  var league = c.league;
+  if (league.matchdayIndex >= league.schedule.length) return;
+  var fixtures = league.schedule[league.matchdayIndex];
+  var myFixtureIdx = fixtures.findIndex(function (fx) { return fx[0] === 0 || fx[1] === 0; });
+  var myFixture = fixtures[myFixtureIdx];
+  var youAreHome = myFixture[0] === 0;
+  var oppIdx = youAreHome ? myFixture[1] : myFixture[0];
+  var oppName = league.teamNames[oppIdx];
+
+  c.savedFutdraft = G.futdraft;
+  G.futdraft = { lineup: c.lineup, captainId: c.captainId, formation: c.formation, condition: 'ninguna' };
+  var sim = futDraftSimulateMatchCore(teamPower({ name: oppName }));
+  G.futdraft.live = {
+    oppSide: { name: oppName }, modifier: sim.modifier,
+    minute: 0, pending: sim.timeline.slice(), revealed: [],
+    myGoals: 0, oppGoals: 0, finalMyGoals: sim.myGoals, finalOppGoals: sim.oppGoals,
+    myAtk: sim.myAtk, myDef: sim.myDef, effectiveOppPower: sim.effectiveOppPower,
+    inExtraTime: false, allowDraw: true, onFinish: finishCareerMatchdayMatch,
+    careerFixture: { idx: myFixtureIdx, youAreHome: youAreHome, oppIdx: oppIdx },
+    done: false
+  };
+  G.screen = 'futdraftLive';
+  render();
+  futDraftLiveTick();
+};
+
+// Se llama cuando termina de revelarse tu partido (live.onFinish): aplica
+// el resultado, resuelve el resto de la jornada de golpe, y enseña la
+// misma pantalla de resultado que FutDraft/Liga (renderFutDraftMatchResult,
+// reutilizada tal cual -- ver el branch r.isCareer que se le añadió) antes
+// de volver a la pestaña Jornada. G.futdraft NO se restaura todavía aquí
+// -- esa pantalla lee G.futdraft.lastMatchResult, así que se restaura al
+// pulsar "Volver a Jornada" (ver continueCareerMatchday).
+function finishCareerMatchdayMatch() {
+  var c = G.career;
+  var league = c.league;
+  var live = G.futdraft.live;
+  var myGoals = live.finalMyGoals, oppGoals = live.finalOppGoals;
+  var fi = live.careerFixture.idx, youAreHome = live.careerFixture.youAreHome, oppIdx = live.careerFixture.oppIdx;
+  var oppName = league.teamNames[oppIdx];
+  var homeGoals = youAreHome ? myGoals : oppGoals;
+  var awayGoals = youAreHome ? oppGoals : myGoals;
+  var myFixture = league.schedule[league.matchdayIndex][fi];
+  ligaApplyResult(league.table, myFixture[0], myFixture[1], homeGoals, awayGoals);
+  league.results[league.matchdayIndex][fi] = [homeGoals, awayGoals];
+  careerResolveOtherFixtures(league, fi);
+  c.lastMatchdayResult = { matchday: league.matchdayIndex + 1, oppName: oppName, myGoals: myGoals, oppGoals: oppGoals };
+  league.matchdayIndex++;
+
+  G.futdraft.lastMatchResult = {
+    oppName: oppName, oppShield: teamShieldPath(oppName), oppPower: teamPower({ name: oppName }),
+    myGoals: myGoals, oppGoals: oppGoals, playerWon: myGoals > oppGoals,
+    timeline: live.revealed, modifier: live.modifier, isCareer: true
+  };
+  G.futdraft.live = null;
+  G.screen = 'futdraftMatchResult';
+  render();
+}
+
+window.continueCareerMatchday = function () {
+  var c = G.career;
+  G.futdraft = c.savedFutdraft;
+  c.savedFutdraft = null;
+  G.screen = 'careerMode';
+  c.tab = 'jornada';
   render();
 };
 
@@ -446,7 +535,10 @@ function renderCareerJornada(c) {
       '<h3 style="margin-bottom:4px">' + (seasonOver ? 'Temporada terminada' : ('Jornada ' + (league.matchdayIndex + 1) + ' de ' + league.schedule.length)) + '</h3>' +
       (seasonOver
         ? '<p class="dim small">Ya se han jugado las ' + league.schedule.length + ' jornadas.</p>'
-        : '<button class="btn btn-primary btn-block mt" onclick="actionPlayCareerMatchday()">Jugar jornada</button>') +
+        : '<div class="btn-row" style="justify-content:center">' +
+            '<button class="btn btn-primary" onclick="actionSimulateCareerMatchday()">▶ Simular partido</button>' +
+            '<button class="btn btn-outline" onclick="actionSkipCareerMatchday()">⏭ Saltar</button>' +
+          '</div>') +
     '</div>' +
     resultHtml
   );
