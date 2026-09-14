@@ -227,15 +227,20 @@ function alternativoBaseChance(action, attackerRaw, defenderRaw) {
   // el Tiro del jugador, no un "50 fijo para todos": con Tiro 100 y ventaja
   // elemental ya se ronda un 88% de gol de partida (contra un portero
   // fuerte), en vez de quedar siempre encajado cerca del 50% -- a petición
-  // explícita, para que la estadística de Tiro se note de verdad. El
-  // Regate (para el riesgo de robo) mantiene su fórmula habitual, salvo
-  // por el ajuste de posición de arriba, que se resta del % de ÉXITO del
-  // regateador (defenderRaw.posicion, no defender.posicion: la posición
-  // no cambia con la fatiga, y effectiveStats() no la conserva).
+  // explícita, para que la estadística de Tiro se note de verdad.
+  // El Regate (para el riesgo de robo) parte de una base más generosa
+  // (58, no 30): con un 30 de base, en cuanto se sumaba el ajuste de
+  // posición de arriba el riesgo de robo del PRIMER regate (antes de
+  // encadenar nada) ya rondaba el 80% -- más que el propio % de gol de un
+  // Tiro normal, lo que rompía la sensación de "riesgo progresivo" que
+  // debía dar la cadena (ver alternativoGrowChain, que sigue subiendo el
+  // riesgo con cada regate adicional): con equipos parejos y un defensa
+  // neutro (Centrocampista) el riesgo de robo del primer regate ronda
+  // ahora el 40-50%, y solo se dispara según se van encadenando más.
   if (action === 'tiro') { atkStat = attacker.tiro; chance = atkStat - defender.defensa * 0.25; }
   else {
     atkStat = attacker.pase;
-    chance = 30 + (atkStat - defender.defensa) * 0.5;
+    chance = 58 + (atkStat - defender.defensa) * 0.5;
     chance -= REGATE_DEFENDER_POS_BONUS[defenderRaw.posicion] || 0;
   }
   chance += adv * 10;
