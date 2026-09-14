@@ -70,11 +70,16 @@
      toda la carrera, no solo de la temporada actual (c.careerStats, solo
      cuenta tus propios goles/asistencias -- renderTopScorersAssistsPanel).
    Dificultad: los rivales de Modo Carrera son más duros que en el resto de
-   modos -- cualquier equipo con TEAM_POWER < 70 recibe +20 solo dentro de
-   Modo Carrera (careerRivalPower, usado en vez de teamPower() directo para
+   modos -- TODOS se nivelan hacia arriba, la media entre su TEAM_POWER
+   real y 100 (careerRivalPower, usado en vez de teamPower() directo para
    cualquier cosa que involucre a un rival: jornada, Simular partido,
-   resultado). TEAM_POWER en sí no se toca, así que FutDraft/Torneo/Liga
-   estándar quedan exactamente igual que antes.
+   resultado), así que un equipo flojo juega bastante mejor de lo que su
+   potencia de base diría y uno fuerte también sube un poco. TEAM_POWER en
+   sí no se toca, así que FutDraft/Torneo/Liga estándar quedan exactamente
+   igual que antes. Además, el techo de media fichable en Mercado
+   (careerMarketSignableCap) ya no es fijo: sube y baja con tu propia
+   media de plantilla (careerTeamAvgScore), así que un equipo mejor
+   también puede aspirar a fichajes mejores.
    Presupuesto: arranca en 2M€ (G.career.budget), en la misma unidad que
    careerPlayerValue.
    Guardado: manual, en 3 huecos independientes (CAREER_SLOT_COUNT,
@@ -838,6 +843,19 @@ function careerTeamAvgScore(c) {
 // que usa careerNegotiationAccepts).
 var CAREER_INTERESTED_GAP = 6;
 
+// El techo de media fichable en Mercado ya no es un 80 fijo -- sube y
+// baja con tu propia media de plantilla (careerTeamAvgScore), a
+// petición explícita: si tu equipo tiene 82 de media, se puede fichar
+// hasta ~87; con 77, hasta ~82. Con un equipo recién empezado (media
+// ~69) el techo baja de los 80 de antes, así que también es parte del
+// endurecimiento general de Modo Carrera. CAREER_MARKET_SIGNABLE_MIN_CAP
+// evita que un bajón puntual de media deje el mercado casi vacío.
+var CAREER_MARKET_SIGNABLE_GAP = 5;
+var CAREER_MARKET_SIGNABLE_MIN_CAP = 70;
+function careerMarketSignableCap(teamAvg) {
+  return clamp(Math.round(teamAvg) + CAREER_MARKET_SIGNABLE_GAP, CAREER_MARKET_SIGNABLE_MIN_CAP, 99);
+}
+
 // Decide si el club rival acepta tu oferta: dos factores independientes.
 // 1) Dinero: si ofreces igual o más que su valor de mercado, seguro;
 //    por debajo, la probabilidad cae con el cubo de la proporción (una
@@ -1195,10 +1213,11 @@ function renderCareerMercado(c) {
   var search = (c.marketSearch || '').trim().toLowerCase();
   var onlyInterested = !!c.marketOnlyInterested;
   var teamAvg = careerTeamAvgScore(c);
+  var signableCap = careerMarketSignableCap(teamAvg);
   var available = ROSTER.filter(function (p) {
     if (owned.indexOf(p.id) !== -1) return false;
     var score = futDraftPlayerScore(p);
-    if (score >= 80) return false;
+    if (score >= signableCap) return false;
     if (filter && p.posicion !== filter) return false;
     if (search && p.nombre.toLowerCase().indexOf(search) === -1) return false;
     if (onlyInterested && (score - teamAvg) > CAREER_INTERESTED_GAP) return false;
@@ -1240,7 +1259,7 @@ function renderCareerMercado(c) {
     incomingOffersHtml +
     '<div class="panel">' +
       '<h3 style="margin-bottom:4px">Mercado</h3>' +
-      '<p class="dim small">Presupuesto disponible: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong>. Solo jugadores con media menor de 80 -- los mejores todavía no están a la venta. Fichar (en propiedad o cedido) es negociar: ofreces dinero y el club puede aceptar o rechazar. Cedidos: ' + careerLoanCount(c) + ' / ' + CAREER_MAX_LOANS_IN + '.</p>' +
+      '<p class="dim small">Presupuesto disponible: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong>. Con tu media de plantilla (' + Math.round(teamAvg) + ') puedes fichar hasta <strong style="color:var(--accent-2)">' + (signableCap - 1) + '</strong> de media -- los mejores todavía no están a la venta, pero el techo sube según mejora tu equipo. Fichar (en propiedad o cedido) es negociar: ofreces dinero y el club puede aceptar o rechazar. Cedidos: ' + careerLoanCount(c) + ' / ' + CAREER_MAX_LOANS_IN + '.</p>' +
       '<p class="dim small">' + available.length + ' jugador' + (available.length === 1 ? '' : 'es') + ' con este filtro.</p>' +
       (squadFull ? '<p class="dim small" style="color:var(--danger)">Plantilla al máximo (' + CAREER_MAX_SQUAD_SIZE + '). Vende o cede a alguien antes de fichar.</p>' : '') +
       (loansFull ? '<p class="dim small" style="color:var(--danger)">Ya tienes ' + CAREER_MAX_LOANS_IN + ' cesiones, el máximo -- devuelve a alguna antes de fichar cedido a otro.</p>' : '') +
@@ -1372,16 +1391,18 @@ function careerSimulateMatchGoals(powerA, powerB) {
   return [golA, golB];
 }
 
-// Modo Carrera es más exigente que el resto de modos: los rivales
-// "de relleno" (potencia por debajo de 70 en TEAM_POWER) reciben un
-// empujón de +20 solo aquí, para que ninguna jornada sea un trámite --
-// no se toca TEAM_POWER global porque eso afectaría también a
-// FutDraft/Torneo/Liga estándar.
-var CAREER_WEAK_RIVAL_THRESHOLD = 70;
-var CAREER_WEAK_RIVAL_BOOST = 20;
+// Modo Carrera es más exigente que el resto de modos: TODOS los rivales
+// se nivelan hacia arriba (a petición explícita: "aunque un equipo sea
+// 70 que juegue como uno de 85, uno de 60 como uno de 80"), no solo los
+// flojos -- la fórmula es la media entre su potencia real y el máximo
+// (100), que encaja exacto con los dos ejemplos dados (70 -> 85, 60 ->
+// 80) y de paso también sube un poco a los equipos ya fuertes, en vez de
+// solo aplanar por abajo. No se toca TEAM_POWER global porque eso
+// afectaría también a FutDraft/Torneo/Liga estándar.
+var CAREER_RIVAL_LEVEL_TARGET = 100;
 function careerRivalPower(name) {
   var p = teamPower({ name: name });
-  return p < CAREER_WEAK_RIVAL_THRESHOLD ? p + CAREER_WEAK_RIVAL_BOOST : p;
+  return Math.round((p + CAREER_RIVAL_LEVEL_TARGET) / 2);
 }
 
 // Plantel "fantasma" para goleadores/asistentes de cualquier gol que no
