@@ -367,6 +367,35 @@ a { color: var(--accent); }
 }
 .btn-tiny.active { background: var(--accent); color: #06202f; }
 
+/* Variantes de color para botones pequeños de acción (aceptar/rechazar
+   una oferta, vender...) -- texto + color en vez de un emoji suelto
+   delante, a petición explícita ("cuídate más la estética"). */
+.btn-tiny-accept { border: 1px solid var(--success); color: var(--success); }
+.btn-tiny-accept:hover, .btn-tiny-accept:active { background: var(--success); color: #06202f; }
+.btn-tiny-danger { border: 1px solid var(--danger); color: var(--danger); }
+.btn-tiny-danger:hover, .btn-tiny-danger:active { background: var(--danger); color: #2b0000; }
+.btn-tiny-accept:disabled, .btn-tiny-danger:disabled { opacity: 0.4; cursor: not-allowed; background: transparent; }
+
+/* Etiquetas de estado de un jugador (cedido a ti / fichado esta
+   temporada / oferta entrante pendiente) en Gestionar plantilla y
+   Mercado -- misma idea, una píldora de texto en vez de un emoji. */
+.player-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+.player-tag-loan { color: var(--accent); }
+.player-tag-new { color: var(--accent-2); }
+.player-tag-offer { color: var(--success); }
+
 .pitch {
   position: relative;
   background: repeating-linear-gradient(0deg, #12241a, #12241a 26px, #16301f 26px, #16301f 52px);

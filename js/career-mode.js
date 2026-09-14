@@ -12,11 +12,11 @@
      devolver a un cedido entrante -- entre 14 y 23 jugadores en
      plantilla (CAREER_MIN/MAX_SQUAD_SIZE). Mismos filtros que Mercado
      (búsqueda por nombre + posición + orden por atributo, con dirección).
-     Símbolos por fila: 🔄 cedido a ti (no es tuyo, ni se vende ni se
-     puede volver a ceder), 🆕 fichado o cedido ESTA temporada (tampoco se
-     puede mover hasta la que viene -- boughtThisSeasonIds, se limpia en
-     actionStartNewCareerSeason) y 📨 tienes una oferta entrante por él
-     (ver Mercado).
+     Etiquetas por fila (.player-tag): "Cedido" a ti (no es tuyo, ni se
+     vende ni se puede volver a ceder), "Nuevo" fichado o cedido ESTA
+     temporada (tampoco se puede mover hasta la que viene --
+     boughtThisSeasonIds, se limpia en actionStartNewCareerSeason) y
+     "Oferta" si tienes una oferta entrante por él (ver Mercado).
    - Mercado: fichar (en propiedad o cedido) es NEGOCIAR
      (careerNegotiationAccepts) -- ofreces un precio y el club puede
      aceptar o rechazar según cuánto ofrezcas respecto a su valor (por
@@ -80,7 +80,7 @@
    Guardado: manual, en 3 huecos independientes (CAREER_SLOT_COUNT,
    careerSlotKey/saveCareerToSlot/loadCareerFromSlot/actionDeleteCareerSlot)
    elegidos desde la pantalla 'careerSlots' (renderCareerSlots) -- NO hay
-   auto-guardado en cada render, solo al pulsar "💾 Guardar"
+   auto-guardado en cada render, solo al pulsar "Guardar"
    (actionSaveCareerNow). careerSerialize/careerDeserialize convierten el
    estado en memoria (con referencias reales a ROSTER) a JSON con solo IDs
    de jugador, así que sobrevive a cambios de stats en roster-data.js entre
@@ -351,7 +351,7 @@ function careerDeserialize(data) {
   };
 }
 // Guarda el estado ACTUAL (G.career) en el hueco activo
-// (G.careerActiveSlot) -- llamado solo a mano, con el botón "💾 Guardar"
+// (G.careerActiveSlot) -- llamado solo a mano, con el botón "Guardar"
 // de la cabecera de Modo Carrera (ver actionSaveCareerNow), nunca solo.
 function saveCareerToSlot(slot) {
   if (!G.career || typeof localStorage === 'undefined') return false;
@@ -430,7 +430,7 @@ function renderCareerSlots() {
         ? '<p class="dim small">Temporada ' + summary.season + ' · Jornada ' + summary.matchday + ' / ' + summary.totalMatchdays + ' · Presupuesto ' + summary.budget + ' M€</p>' +
           '<div class="btn-row">' +
             '<button class="btn btn-primary" onclick="actionLoadCareerFromSlot(' + i + ')">Cargar</button>' +
-            '<button class="btn btn-outline" onclick="actionDeleteCareerSlot(' + i + ')">🗑️ Borrar</button>' +
+            '<button class="btn btn-outline" style="color:var(--danger);border-color:var(--danger)" onclick="actionDeleteCareerSlot(' + i + ')">Borrar</button>' +
           '</div>'
         : '<p class="dim small">Vacío.</p>' +
           '<button class="btn btn-primary btn-block" onclick="actionNewCareerInSlot(' + i + ')">Nueva partida</button>') +
@@ -441,7 +441,7 @@ function renderCareerSlots() {
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionGoOtrosModos()">Volver</button>' +
         '<h2 class="panel-title mt">Modo Carrera</h2>' +
-        '<p class="dim small">Elige un hueco de partida guardada, o empieza una nueva en uno vacío. El guardado es a mano (botón 💾 dentro de la partida).</p>' +
+        '<p class="dim small">Elige un hueco de partida guardada, o empieza una nueva en uno vacío. El guardado es a mano (botón Guardar dentro de la partida).</p>' +
       '</div>' +
       rowsHtml +
     '</div>'
@@ -745,13 +745,13 @@ function renderCareerPlantilla(c) {
     var hasOffer = offeredIds.indexOf(p.id) !== -1;
     var locked = isLoaned || isBought;
     var actionsHtml = isLoaned
-      ? '<button class="btn btn-tiny" style="margin-left:6px" onclick="actionReturnLoanedPlayer(\'' + p.id + '\')">↩️ Devolver</button>'
-      : '<button class="btn btn-tiny" style="margin-left:6px" ' + (canRemove && !locked ? '' : 'disabled') + ' onclick="actionSellCareerPlayer(\'' + p.id + '\')">💰 Vender</button>' +
-        '<button class="btn btn-tiny" ' + (canRemove && !locked ? '' : 'disabled') + ' onclick="actionLoanCareerPlayer(\'' + p.id + '\')">🔄 Ceder</button>';
+      ? '<button class="btn btn-tiny" style="margin-left:6px" onclick="actionReturnLoanedPlayer(\'' + p.id + '\')">Devolver</button>'
+      : '<button class="btn btn-tiny" style="margin-left:6px" ' + (canRemove && !locked ? '' : 'disabled') + ' onclick="actionSellCareerPlayer(\'' + p.id + '\')">Vender</button>' +
+        '<button class="btn btn-tiny" ' + (canRemove && !locked ? '' : 'disabled') + ' onclick="actionLoanCareerPlayer(\'' + p.id + '\')">Ceder</button>';
     var tagsHtml =
-      (isLoaned ? ' <span class="dim" title="Cedido a ti: no es tuyo">🔄</span>' : '') +
-      (isBought ? ' <span class="dim" title="Fichado esta temporada: no se puede mover hasta la que viene">🆕</span>' : '') +
-      (hasOffer ? ' <span title="Tienes una oferta por él, mira Mercado">📨</span>' : '');
+      (isLoaned ? ' <span class="player-tag player-tag-loan" title="Cedido a ti: no es tuyo">Cedido</span>' : '') +
+      (isBought ? ' <span class="player-tag player-tag-new" title="Fichado esta temporada: no se puede mover hasta la que viene">Nuevo</span>' : '') +
+      (hasOffer ? ' <span class="player-tag player-tag-offer" title="Tienes una oferta por él, mira Mercado">Oferta</span>' : '');
     return '<div class="futdraft-timeline-row">' + careerMediaBadgeHtml(p) + avatarHtml(p) +
       '<span>' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + tagsHtml + '</span>' +
       '<strong style="margin-left:auto;white-space:nowrap;color:var(--accent-2)">' + careerPlayerValue(p) + ' M€</strong>' +
@@ -1124,7 +1124,7 @@ function renderCareerCounterNegotiation(c) {
   );
 }
 
-// "📨 Ofertas recibidas": una tarjeta por oferta entrante pendiente (ver
+// "Ofertas recibidas": una tarjeta por oferta entrante pendiente (ver
 // careerGenerateIncomingOffers), con la media del jugador (careerMediaBadgeHtml,
 // misma insignia que Gestionar plantilla/Mercado) y el precio de mercado
 // al lado de lo que ofrecen (para poder comparar de un vistazo -- antes
@@ -1158,14 +1158,14 @@ function renderCareerIncomingOffers(c) {
         '<span class="dim">Te ofrecen: <strong style="color:var(--accent-2)">' + o.amount + ' M€</strong></span>' +
       '</div>' +
       '<div class="btn-row">' +
-        '<button class="btn btn-tiny" ' + (atMinSquad ? 'disabled title="' + escapeHtml(blockedTitle) + '"' : '') + ' onclick="actionAcceptIncomingOffer(\'' + o.id + '\')">✅ Aceptar</button>' +
-        '<button class="btn btn-tiny" ' + (atMinSquad ? 'disabled title="' + escapeHtml(blockedTitle) + '"' : '') + ' onclick="actionStartCounterNegotiation(\'' + o.id + '\')">💬 Negociar</button>' +
-        '<button class="btn btn-tiny" onclick="actionRejectIncomingOffer(\'' + o.id + '\')">❌ Rechazar</button>' +
+        '<button class="btn btn-tiny btn-tiny-accept" ' + (atMinSquad ? 'disabled title="' + escapeHtml(blockedTitle) + '"' : '') + ' onclick="actionAcceptIncomingOffer(\'' + o.id + '\')">Aceptar</button>' +
+        '<button class="btn btn-tiny" ' + (atMinSquad ? 'disabled title="' + escapeHtml(blockedTitle) + '"' : '') + ' onclick="actionStartCounterNegotiation(\'' + o.id + '\')">Negociar</button>' +
+        '<button class="btn btn-tiny btn-tiny-danger" onclick="actionRejectIncomingOffer(\'' + o.id + '\')">Rechazar</button>' +
       '</div>' +
     '</div>';
   }).join('');
   return '<div class="panel">' +
-    '<h3 style="margin-bottom:4px">📨 Ofertas recibidas</h3>' +
+    '<h3 style="margin-bottom:4px">Ofertas recibidas</h3>' +
     (atMinSquad ? '<p class="dim small" style="color:var(--danger)">' + escapeHtml(blockedTitle) + '</p>' : '') +
     rowsHtml +
   '</div>';
@@ -1225,7 +1225,7 @@ function renderCareerMercado(c) {
       '<span>' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + '</span>' +
       '<strong style="margin-left:auto;white-space:nowrap;color:var(--accent-2)">' + value + ' M€</strong>' +
       '<button class="btn btn-tiny" style="margin-left:6px" ' + (squadFull ? 'disabled' : '') + ' onclick="actionStartCareerNegotiation(\'' + p.id + '\', \'buy\')">Negociar</button>' +
-      '<button class="btn btn-tiny" ' + (squadFull || loansFull ? 'disabled' : '') + ' onclick="actionStartCareerNegotiation(\'' + p.id + '\', \'loan\')" title="Cesión de 1 temporada por 1/3 del valor">📋 Cesión</button>' +
+      '<button class="btn btn-tiny" ' + (squadFull || loansFull ? 'disabled' : '') + ' onclick="actionStartCareerNegotiation(\'' + p.id + '\', \'loan\')" title="Cesión de 1 temporada por 1/3 del valor">Cesión</button>' +
     '</div>';
   }).join('');
   var pagerHtml = totalPages > 1
@@ -1247,7 +1247,7 @@ function renderCareerMercado(c) {
       (c.marketMessage ? '<p class="dim small">' + escapeHtml(c.marketMessage) + '</p>' : '') +
       '<input class="select-field" type="text" placeholder="Buscar por nombre…" value="' + escapeHtml(c.marketSearch || '') + '" oninput="actionSetCareerMarketSearch(this.value)">' +
       '<div class="btn-row mt">' + filterBtnsHtml +
-        '<button class="btn btn-tiny' + (onlyInterested ? ' active' : '') + '" onclick="actionToggleCareerMarketInterested()">🤝 Podrían unirse</button>' +
+        '<button class="btn btn-tiny' + (onlyInterested ? ' active' : '') + '" onclick="actionToggleCareerMarketInterested()">Podrían unirse</button>' +
       '</div>' +
       '<div class="btn-row mt" style="align-items:center">' +
         '<select class="select-field" style="width:auto;min-height:36px;padding:6px 10px" onchange="actionSetCareerMarketSort(this.value)">' + sortOptionsHtml + '</select>' +
@@ -1346,7 +1346,7 @@ function renderCareerLiga(c) {
   return (
     '<div class="panel center-text">' +
       '<p class="dim small">Jornada ' + Math.min(league.matchdayIndex + 1, league.schedule.length) + ' de ' + league.schedule.length + '</p>' +
-      '<button class="btn btn-tiny' + (c.showTopScorers ? ' active' : '') + '" onclick="actionToggleCareerTopScorers()">⚽ Máximos goleadores y asistentes</button>' +
+      '<button class="btn btn-tiny' + (c.showTopScorers ? ' active' : '') + '" onclick="actionToggleCareerTopScorers()">Máximos goleadores y asistentes</button>' +
     '</div>' +
     (topScorersHtml || '') +
     '<div class="panel" style="overflow-x:auto">' +
@@ -1633,7 +1633,7 @@ function renderCareerJornada(c) {
     ? '<div class="panel center-text">' +
         '<h3 style="margin-bottom:4px">Resultado de la jornada ' + r.matchday + '</h3>' +
         '<p class="dim small">Tú <strong>' + r.myGoals + ' - ' + r.oppGoals + '</strong> ' + escapeHtml(r.oppName) + '</p>' +
-        (r.winBonus ? '<p class="dim small">💰 +' + r.winBonus + ' M€ de presupuesto por ganar.</p>' : '') +
+        (r.winBonus ? '<p class="dim small">Presupuesto: <strong style="color:var(--accent-2)">+' + r.winBonus + ' M€</strong> por ganar.</p>' : '') +
         '<p class="dim small">El resto de partidos de la jornada también se han resuelto -- mira la pestaña Liga.</p>' +
       '</div>'
     : '';
@@ -1645,7 +1645,7 @@ function renderCareerJornada(c) {
           '<button class="btn btn-primary btn-block mt" onclick="actionStartNewCareerSeason()">Empezar temporada ' + (c.season + 1) + '</button>'
         : '<div class="btn-row" style="justify-content:center">' +
             '<button class="btn btn-primary" onclick="actionSimulateCareerMatchday()">▶ Simular partido</button>' +
-            '<button class="btn btn-outline" onclick="actionSkipCareerMatchday()">⏭ Saltar</button>' +
+            '<button class="btn btn-outline" onclick="actionSkipCareerMatchday()">Saltar</button>' +
           '</div>') +
     '</div>' +
     resultHtml
@@ -1691,8 +1691,8 @@ function renderCareerMode() {
         '<p class="dim small">Temporada <strong>' + (c.season || 1) + '</strong> · Presupuesto: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong> · Hueco ' + G.careerActiveSlot + '</p>' +
         (c.saveMessage ? '<p class="dim small">' + escapeHtml(c.saveMessage) + '</p>' : '') +
         '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-tiny" onclick="actionSaveCareerNow()">💾 Guardar</button>' +
-          '<button class="btn btn-tiny" onclick="actionGoCareerMode()">🔀 Cambiar partida</button>' +
+          '<button class="btn btn-tiny" onclick="actionSaveCareerNow()">Guardar</button>' +
+          '<button class="btn btn-tiny" onclick="actionGoCareerMode()">Cambiar partida</button>' +
         '</div>' +
       '</div>' +
       '<div class="btn-row" style="justify-content:center">' + tabsHtml + '</div>' +
