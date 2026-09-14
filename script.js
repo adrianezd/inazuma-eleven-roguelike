@@ -3708,7 +3708,7 @@ function futDraftAvailableFormations() {
 
 // Por defecto "Clásico" (índice 1 de FUTDRAFT_MODE_OPTIONS), no "Libre" --
 // a petición explícita.
-function actionGoFutDraftModeSelect() { G.futdraftBracketSizeIdx = 0; G.futdraftModeChoiceIdx = 1; G.futdraftModifierChoiceIdx = 0; G.screen = 'futdraftModeSelect'; render(); }
+function actionGoFutDraftModeSelect() { G.futdraftBracketSizeIdx = 0; G.futdraftModeChoiceIdx = 1; G.futdraftConditionChoiceIdx = 0; G.screen = 'futdraftModeSelect'; render(); }
 
 // Tipo de FutDraft (antes 3 botones apilados) y tamaño del torneo (antes
 // un stepper dentro de la pantalla de equipo, ver renderFutDraftTeam) se
@@ -3753,11 +3753,11 @@ function renderFutDraftModeSelect() {
         '</div>' +
         '<h3 style="margin-bottom:8px;margin-top:14px">Condiciones del partido</h3>' +
         '<div class="btn-row" style="justify-content:center;align-items:center;gap:14px">' +
-          '<button class="btn btn-outline" onclick="actionFutDraftModifierStep(-1)">◀</button>' +
-          '<span style="min-width:170px;font-weight:700;font-size:1.1rem">' + FUTDRAFT_MODIFIERS[futDraftModifierChoiceIdx()].name + '</span>' +
-          '<button class="btn btn-outline" onclick="actionFutDraftModifierStep(1)">▶</button>' +
+          '<button class="btn btn-outline" onclick="actionFutDraftConditionStep(-1)">◀</button>' +
+          '<span style="min-width:170px;font-weight:700;font-size:1.1rem">' + FUTDRAFT_CONDITION_OPTIONS[futDraftConditionChoiceIdx()].name + '</span>' +
+          '<button class="btn btn-outline" onclick="actionFutDraftConditionStep(1)">▶</button>' +
         '</div>' +
-        '<p class="dim small">' + FUTDRAFT_MODIFIERS[futDraftModifierChoiceIdx()].desc + '</p>' +
+        '<p class="dim small">' + FUTDRAFT_CONDITION_OPTIONS[futDraftConditionChoiceIdx()].desc + '</p>' +
         '<button class="btn btn-primary btn-block mt" onclick="actionContinueFutDraftModeSelect()">Continuar</button>' +
       '</div>' +
     '</div>'
@@ -3840,16 +3840,14 @@ function renderFutDraftFormationSelect() {
   );
 }
 
-// Condiciones del partido para todo el FutDraft que empieza: se eligen
-// con flechas en la propia pantalla de Tipo de FutDraft/Tamaño del
-// torneo (renderFutDraftModeSelect), antes de draftear. Por defecto "Sin
-// modificador" (índice 0), a petición explícita. Lluvia y Partido cerrado
-// afectan a los dos equipos por igual (bothMult); Aire/Calor/Niebla/Barro
-// favorecen solo a tu equipo, escalados por cuántos jugadores de ese tipo
-// elemental tengas en el once (ver futDraftModifierMultipliers) -- el
-// rival en FutDraft es solo un número (teamPower), no tiene un once real
-// con el que comparar tipos. Liga no pasa por esta pantalla, así que
-// siempre juega "Sin modificador" (ver actionGoLigaTierSelect).
+// Catálogo de modificadores que puede salir en un partido de FutDraft
+// (ver FUTDRAFT_CONDITION_OPTIONS más abajo -- ya no se elige uno a mano,
+// solo si pueden salir o no). Lluvia y Partido cerrado afectan a los dos
+// equipos por igual (bothMult); Aire/Calor/Niebla/Barro favorecen solo a
+// tu equipo, escalados por cuántos jugadores de ese tipo elemental tengas
+// en el once (ver futDraftModifierMultipliers) -- el rival en FutDraft es
+// solo un número (teamPower), no tiene un once real con el que comparar
+// tipos.
 var FUTDRAFT_MODIFIERS = [
   { id: 'ninguno', name: 'Sin modificador', desc: 'Partido en condiciones normales, sin ningún efecto añadido.' },
   { id: 'lluvia', name: 'Lluvia', desc: 'El balón resbala: baja el rendimiento ofensivo y defensivo de los dos equipos por igual.', bothMult: 0.9 },
@@ -3862,12 +3860,39 @@ var FUTDRAFT_MODIFIERS = [
 ];
 var FUTDRAFT_MODIFIERS_BY_ID = {};
 FUTDRAFT_MODIFIERS.forEach(function (m) { FUTDRAFT_MODIFIERS_BY_ID[m.id] = m; });
+// Solo el catálogo sin la entrada "ninguno", para sortear uno de verdad
+// cuando toca (ver futDraftRollMatchModifier).
+var FUTDRAFT_RANDOM_MODIFIER_POOL = FUTDRAFT_MODIFIERS.filter(function (m) { return m.id !== 'ninguno'; });
+var FUTDRAFT_RANDOM_MODIFIER_CHANCE = 0.05;
 
-function futDraftModifierChoiceIdx() { return G.futdraftModifierChoiceIdx || 0; }
-function actionFutDraftModifierStep(delta) {
-  var n = FUTDRAFT_MODIFIERS.length;
-  G.futdraftModifierChoiceIdx = ((futDraftModifierChoiceIdx() + delta) % n + n) % n;
+// Condiciones del partido para todo el FutDraft que empieza: se eligen
+// con flechas en la propia pantalla de Tipo de FutDraft/Tamaño del
+// torneo (renderFutDraftModeSelect), antes de draftear. Solo dos
+// opciones, por defecto "Sin condiciones" (índice 0), a petición
+// explícita -- no se elige un modificador concreto a mano: con
+// "Aleatorio", cada partido tira por su cuenta un 5% de posibilidades de
+// que salga alguno del catálogo de arriba (ver futDraftRollMatchModifier).
+// Liga no pasa por esta pantalla, así que siempre juega "Sin condiciones"
+// (ver actionGoLigaTierSelect).
+var FUTDRAFT_CONDITION_OPTIONS = [
+  { id: 'ninguna', name: 'Sin condiciones', desc: 'Todos los partidos se juegan en condiciones normales, sin ningún modificador.' },
+  { id: 'aleatorio', name: 'Aleatorio', desc: 'Cada partido tiene un 5% de posibilidades de que salga algún modificador (lluvia, aire, calor, niebla, barro, delanteros en racha o partido cerrado).' }
+];
+
+function futDraftConditionChoiceIdx() { return G.futdraftConditionChoiceIdx || 0; }
+function actionFutDraftConditionStep(delta) {
+  var n = FUTDRAFT_CONDITION_OPTIONS.length;
+  G.futdraftConditionChoiceIdx = ((futDraftConditionChoiceIdx() + delta) % n + n) % n;
   render();
+}
+// Se llama una vez por partido (ver futDraftSimulateMatchCore), no una
+// vez por FutDraft: con condición "aleatorio" cada partido tira su propio
+// 5%, así que un mismo torneo puede tener partidos normales y partidos
+// con modificador mezclados.
+function futDraftRollMatchModifier(condition) {
+  if (condition !== 'aleatorio') return 'ninguno';
+  if (Math.random() >= FUTDRAFT_RANDOM_MODIFIER_CHANCE) return 'ninguno';
+  return choice(FUTDRAFT_RANDOM_MODIFIER_POOL).id;
 }
 function actionChooseFutDraftFormation(id) {
   var mode = G.futdraftPendingMode || 'clasico';
@@ -3876,7 +3901,7 @@ function actionChooseFutDraftFormation(id) {
     affinity: mode === 'afinidad' ? G.futdraftAffinity : null,
     ligaPool: mode === 'liga' ? G.ligaPendingPool : null,
     ligaTier: mode === 'liga' ? G.ligaPendingTier : null,
-    modifier: FUTDRAFT_MODIFIERS[futDraftModifierChoiceIdx()].id,
+    condition: FUTDRAFT_CONDITION_OPTIONS[futDraftConditionChoiceIdx()].id,
     captainId: null,
     matches: [], matchIndex: 0
   };
@@ -4498,13 +4523,13 @@ function futDraftModifierTypeFraction(lineup, tipo) {
   return n / lineup.length;
 }
 
-// Multiplicadores del modificador elegido para ESTE FutDraft/Liga
-// (f.modifier, fijado en actionChooseFutDraftFormation a partir de lo
-// elegido en renderFutDraftModeSelect; en Liga siempre "ninguno").
-// bothMult toca ataque y defensa propios Y la fuerza del rival por igual
-// (lluvia, cerrojo); los que favorecen un tipo elemental solo tocan a tu
-// equipo, escalados por la fracción de tu once que sea de ese tipo (un
-// once 100% de ese tipo llega a +50%, ninguno no da nada).
+// Multiplicadores del modificador que le haya tocado a ESTE partido
+// (sorteado en futDraftRollMatchModifier a partir de f.condition -- ver
+// FUTDRAFT_CONDITION_OPTIONS). bothMult toca ataque y defensa propios Y
+// la fuerza del rival por igual (lluvia, cerrojo); los que favorecen un
+// tipo elemental solo tocan a tu equipo, escalados por la fracción de tu
+// once que sea de ese tipo (un once 100% de ese tipo llega a +50%,
+// ninguno no da nada).
 function futDraftModifierMultipliers(modifierId, lineup) {
   var mod = FUTDRAFT_MODIFIERS_BY_ID[modifierId] || FUTDRAFT_MODIFIERS_BY_ID.ninguno;
   var bothMult = mod.bothMult || 1;
@@ -4522,7 +4547,8 @@ function futDraftSimulateMatchCore(oppPower) {
   var f = G.futdraft;
   var formation = FUTDRAFT_FORMATIONS.find(function (ft) { return ft.id === f.formation; });
   var score = futDraftTeamScore(f.lineup, f.captainId);
-  var mods = futDraftModifierMultipliers(f.modifier, f.lineup);
+  var modifier = futDraftRollMatchModifier(f.condition);
+  var mods = futDraftModifierMultipliers(modifier, f.lineup);
   var myAtk = score * formation.atk * mods.bothMult * mods.myAtkMult;
   var myDef = score * formation.def * mods.bothMult * mods.myDefMult;
   var effectiveOppPower = oppPower * mods.bothMult;
@@ -4531,7 +4557,7 @@ function futDraftSimulateMatchCore(oppPower) {
   var myPlayers = f.lineup.map(function (s) { return s.player; });
   var oppPlayers = futDraftUndraftedPool();
   var timeline = futDraftBuildTimeline(myGoals, oppGoals, myPlayers, oppPlayers);
-  return { myGoals: myGoals, oppGoals: oppGoals, modifier: f.modifier, timeline: timeline, myAtk: myAtk, myDef: myDef, effectiveOppPower: effectiveOppPower };
+  return { myGoals: myGoals, oppGoals: oppGoals, modifier: modifier, timeline: timeline, myAtk: myAtk, myDef: myDef, effectiveOppPower: effectiveOppPower };
 }
 
 window.playFutDraftMatch = function () {
@@ -5081,9 +5107,9 @@ function ligaSimulateCpuVsCpu(nameA, nameB) {
 
 // Liga no tiene pantalla propia de "Condiciones del partido" (no pasa por
 // renderFutDraftModeSelect): se resetea aquí para que siempre juegue "Sin
-// modificador", en vez de arrastrar por accidente el modificador elegido
-// en un FutDraft anterior de la misma sesión.
-function actionGoLigaTierSelect() { G.futdraftModifierChoiceIdx = 0; G.screen = 'ligaTierSelect'; render(); }
+// condiciones", en vez de arrastrar por accidente lo elegido en un
+// FutDraft anterior de la misma sesión.
+function actionGoLigaTierSelect() { G.futdraftConditionChoiceIdx = 0; G.screen = 'ligaTierSelect'; render(); }
 
 function renderLigaTierSelect() {
   var meta = G.meta;
