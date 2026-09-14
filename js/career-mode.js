@@ -284,23 +284,63 @@ function renderCareerMercado() {
   );
 }
 
+// Escudo real si el nombre coincide con alguno conocido (mismo criterio
+// que toda la app, ver teamShieldPath), tu propio escudo si el hueco es
+// "Tú" -- igual que las filas de la tabla de Liga.
+function calendarTeamShield(league, idx) { return idx === 0 ? getPlayerShieldPath() : teamShieldPath(league.teamNames[idx]); }
+function calendarTeamLabel(league, idx) { return idx === 0 ? 'Tú' : league.teamNames[idx]; }
+
+function calendarFixtureRowHtml(league, fx) {
+  var isYours = fx[0] === 0 || fx[1] === 0;
+  return '<div class="calendar-fixture' + (isYours ? ' calendar-fixture-you' : '') + '">' +
+    '<span class="calendar-fixture-team">' +
+      '<img class="liga-row-shield" src="' + escapeHtml(calendarTeamShield(league, fx[0])) + '" alt="">' +
+      '<span>' + escapeHtml(calendarTeamLabel(league, fx[0])) + '</span>' +
+    '</span>' +
+    '<span class="calendar-fixture-vs">vs</span>' +
+    '<span class="calendar-fixture-team calendar-fixture-team-away">' +
+      '<img class="liga-row-shield" src="' + escapeHtml(calendarTeamShield(league, fx[1])) + '" alt="">' +
+      '<span>' + escapeHtml(calendarTeamLabel(league, fx[1])) + '</span>' +
+    '</span>' +
+  '</div>';
+}
+
+// Se navega jornada a jornada con el mismo widget de flechas que el
+// resto de la app (ver .stepper-row), en vez de volcar las 15 jornadas
+// (120 partidos) en una lista larguísima -- a petición explícita, "tiene
+// que quedar más bonito". c.calendarView es solo para MIRAR el
+// calendario, independiente de league.matchdayIndex (el progreso real):
+// arranca en la jornada actual, pero se puede pasear libremente por
+// todo el calendario sin que eso juegue nada.
+window.actionCareerCalendarStep = function (delta) {
+  var c = G.career;
+  var cur = (c.calendarView === undefined || c.calendarView === null) ? c.league.matchdayIndex : c.calendarView;
+  c.calendarView = clamp(cur + delta, 0, c.league.schedule.length - 1);
+  render();
+};
+
 function renderCareerCalendario(c) {
   var league = c.league;
-  var panelsHtml = league.schedule.map(function (fixtures, idx) {
-    var isCurrent = idx === league.matchdayIndex;
-    var isPast = idx < league.matchdayIndex;
-    var matchesHtml = fixtures.map(function (fx) {
-      var isYours = fx[0] === 0 || fx[1] === 0;
-      var homeLabel = fx[0] === 0 ? 'Tú' : league.teamNames[fx[0]];
-      var awayLabel = fx[1] === 0 ? 'Tú' : league.teamNames[fx[1]];
-      return '<p class="' + (isYours ? '' : 'dim') + ' small" style="' + (isYours ? 'font-weight:700' : '') + '">' + escapeHtml(homeLabel) + ' vs ' + escapeHtml(awayLabel) + '</p>';
-    }).join('');
-    return '<div class="panel">' +
-      '<h3 style="margin-bottom:6px">Jornada ' + (idx + 1) + (isCurrent ? ' · actual' : (isPast ? ' · jugada' : '')) + '</h3>' +
-      matchesHtml +
-    '</div>';
-  }).join('');
-  return panelsHtml;
+  var lastIdx = league.schedule.length - 1;
+  var view = clamp((c.calendarView === undefined || c.calendarView === null) ? league.matchdayIndex : c.calendarView, 0, lastIdx);
+  c.calendarView = view;
+  var isCurrent = view === league.matchdayIndex;
+  var isPast = view < league.matchdayIndex;
+  var statusHtml = isCurrent
+    ? '<p class="dim small mt">Jornada actual.</p>'
+    : (isPast ? '<p class="dim small mt">Ya jugada -- mira el resultado en la pestaña Liga.</p>' : '<p class="dim small mt">Todavía no se ha jugado.</p>');
+  var fixturesHtml = league.schedule[view].map(function (fx) { return calendarFixtureRowHtml(league, fx); }).join('');
+  return (
+    '<div class="panel center-text">' +
+      '<div class="stepper-row">' +
+        '<button class="btn stepper-arrow" onclick="actionCareerCalendarStep(-1)" aria-label="Jornada anterior"' + (view === 0 ? ' disabled' : '') + '>◀</button>' +
+        '<span class="stepper-value">Jornada ' + (view + 1) + ' / ' + league.schedule.length + '</span>' +
+        '<button class="btn stepper-arrow" onclick="actionCareerCalendarStep(1)" aria-label="Jornada siguiente"' + (view === lastIdx ? ' disabled' : '') + '>▶</button>' +
+      '</div>' +
+      statusHtml +
+    '</div>' +
+    '<div class="panel">' + fixturesHtml + '</div>'
+  );
 }
 
 function renderCareerLiga(c) {
