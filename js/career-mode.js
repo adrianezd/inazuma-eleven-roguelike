@@ -1125,9 +1125,11 @@ function renderCareerCounterNegotiation(c) {
 }
 
 // "📨 Ofertas recibidas": una tarjeta por oferta entrante pendiente (ver
-// careerGenerateIncomingOffers), con el precio de mercado del jugador al
-// lado de lo que ofrecen (para poder comparar de un vistazo -- antes solo
-// salía la oferta), cuántos días le quedan antes de caducar y los 3
+// careerGenerateIncomingOffers), con la media del jugador (careerMediaBadgeHtml,
+// misma insignia que Gestionar plantilla/Mercado) y el precio de mercado
+// al lado de lo que ofrecen (para poder comparar de un vistazo -- antes
+// no salía ninguno de los dos, solo la oferta), cuántos días le quedan
+// antes de caducar y los 3
 // botones -- Aceptar, Rechazar, Negociar (al momento, ver
 // renderCareerCounterNegotiation). Si aceptar te dejaría por debajo de
 // CAREER_MIN_SQUAD_SIZE, Aceptar/Negociar salen deshabilitados con un
@@ -1147,7 +1149,7 @@ function renderCareerIncomingOffers(c) {
     var daysLeft = o.expiresOnDay - (w ? w.dayIndex : o.expiresOnDay);
     var value = careerPlayerValue(p);
     return '<div class="career-offer-card">' +
-      '<div class="career-offer-head">' + avatarHtml(p) +
+      '<div class="career-offer-head">' + careerMediaBadgeHtml(p) + avatarHtml(p) +
         '<span class="career-offer-name">' + escapeHtml(p.nombre) + '</span>' +
         '<span class="dim small">' + (o.mode === 'loan' ? 'cesión' : 'compra') + ' · caduca en ' + daysLeft + ' día' + (daysLeft === 1 ? '' : 's') + '</span>' +
       '</div>' +
