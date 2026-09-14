@@ -1,26 +1,36 @@
 /* ---------------------------------------------------------------------
-   MODO CARRERA: todavía en construcción (liga + Champions + copa,
-   fichajes, cesiones y ventas con 16 equipos -- ver ideas sueltas). Esta
-   es solo la BASE, a petición explícita: 6 pestañas dentro de la misma
-   pantalla (G.career.tab), reutilizando al máximo el motor ya existente
-   de FutDraft/Liga en vez de duplicar lógica:
-   - Mi equipo: lo que ya había -- alineación, formación libre (cualquiera
+   MODO CARRERA: todavía en construcción (Champions + copa -- ver ideas
+   sueltas). 6 pestañas dentro de la misma pantalla (G.career.tab),
+   reutilizando al máximo el motor ya existente de FutDraft/Liga en vez
+   de duplicar lógica:
+   - Mi equipo: alineación (arranca en 4-3-3), formación libre (cualquiera
      de las 8 de FUTDRAFT_FORMATIONS), cambios ilimitados y capitán.
-   - Gestionar plantilla: valor de mercado de cada jugador (fórmula sobre
-     futDraftPlayerScore, no hay datos reales de mercado en el roster).
-   - Mercado: todavía sin fichajes/ventas de verdad -- placeholder.
-   - Calendario: liga de 16 equipos a una vuelta real (generateRoundRobin,
-     igual que Liga), con 15 rivales de nombre real sacados de las mismas
+   - Gestionar plantilla: media y valor de mercado de cada jugador
+     (fórmula sobre futDraftPlayerScore, no hay dato real de mercado en
+     el roster), venta rápida (85% del valor, al momento) y cesión (se va
+     gratis, sin poder recuperarlo esta temporada) -- entre 14 y 23
+     jugadores en plantilla (CAREER_MIN/MAX_SQUAD_SIZE).
+   - Mercado: fichar es NEGOCIAR (careerNegotiationAccepts) -- ofreces un
+     precio y el club puede aceptar o rechazar según cuánto ofrezcas
+     respecto a su valor Y cuánto mejor sea que la media de tu plantilla
+     (un crack no ficha por un equipo modesto aunque pagues bien). Solo
+     jugadores con media < 80. Filtro de posición, búsqueda por nombre y
+     un filtro de "podrían unirse" (media cercana a la tuya).
+   - Calendario: liga de 20 equipos a una vuelta real (generateRoundRobin,
+     igual que Liga), con 19 rivales de nombre real sacados de las mismas
      listas que usa FutDraft/Liga.
    - Liga: la clasificación de esa misma liga (mismas funciones genéricas
      que renderLigaTable: ligaEmptyStanding/ligaApplyResult/ligaSortedTable/
-     ligaFormHtml).
-   - Jornada: botón para jugar la jornada actual -- simula TODOS los
-     partidos (el tuyo incluido, con tu puntuación de equipo como
-     potencia) de golpe, sin ver el partido, y avanza la tabla.
-   Todo esto vive en su propio estado (G.career), independiente de
-   G.futdraft/G.futdraft.liga, para no interferir con una partida de
-   FutDraft/Liga en curso.
+     ligaFormHtml, con las mismas zonas de color por puesto) + botón de
+     máximos goleadores y asistentes (renderTopScorersAssistsPanel).
+   - Jornada: "Simular partido" ve tu partido de verdad con el motor en
+     vivo de FutDraft/Liga; "Saltar" lo resuelve de golpe sin verlo. El
+     resto de la jornada siempre se resuelve de golpe. Ganar suelta
+     100k/200k/300k de presupuesto al azar (careerAwardWinBonus).
+   Presupuesto: arranca en 3M€ (G.career.budget), en la misma unidad que
+   careerPlayerValue. Todo esto vive en su propio estado (G.career),
+   independiente de G.futdraft/G.futdraft.liga, para no interferir con
+   una partida de FutDraft/Liga en curso.
    --------------------------------------------------------------------- */
 
 var CAREER_TABS = [
@@ -34,15 +44,16 @@ var CAREER_TABS = [
 
 // 11 titulares + 5 suplentes elegidos por el usuario. La distribución de
 // posiciones de los 11 titulares (4 Delantero, 2 Centrocampista, 4
-// Defensa, 1 Portero) coincide exactamente con la formación '424' de
-// FUTDRAFT_FORMATIONS, así que arranca con ella -- luego se puede
-// cambiar a cualquier otra desde el desplegable.
+// Defensa, 1 Portero) no es exactamente un 4-3-3 (necesita 3-3-4-1) --
+// arranca en 4-3-3 igualmente, a petición explícita, así que un
+// Delantero sale marcado "fuera de posición" en el centro del campo
+// hasta que cambies la formación o los titulares a mano.
 var CAREER_MODE_STARTER_IDS = ['r41', 'r170', 'r67', 'r264', 'r267', 'r263', 'r268', 'r269', 'r265', 'r266', 'r57'];
 // Deck/Cardson/Binder (r270-r272) son Tarjeteros nuevos, añadidos junto
 // con Larry Pogue (r43) en vez de Boar/Franky/Chameleon/Wolf -- Jimmy
 // Mach (r66) es el único suplente original que se queda.
 var CAREER_MODE_BENCH_IDS = ['r270', 'r271', 'r272', 'r66', 'r43'];
-var CAREER_MODE_DEFAULT_FORMATION = '424';
+var CAREER_MODE_DEFAULT_FORMATION = '433';
 var CAREER_LEAGUE_TEAM_COUNT = 20; // tú + 19 rivales, a petición explícita
 
 function careerModeRoster(ids) {
@@ -129,7 +140,12 @@ function actionGoCareerMode() {
       pickingCaptain: false,
       swapSelectedId: null,
       league: careerBuildLeague(),
-      lastMatchdayResult: null
+      lastMatchdayResult: null,
+      // Presupuesto en M€, misma unidad que careerPlayerValue -- 3M€ de
+      // salida, +100k/200k/300k al azar por cada partido tuyo ganado (ver
+      // careerAwardWinBonus), gastable en fichajes (Mercado) y repuesto
+      // al vender/ceder (Gestionar plantilla).
+      budget: 3
     };
   }
   G.screen = 'careerMode';
@@ -274,8 +290,79 @@ function careerMediaBadgeHtml(p) {
   return '<span class="media-badge" style="background:' + mediaBadgeColor(score) + '" title="Media según su posición">' + score + '</span>';
 }
 
+// Icono de posición (los mismos PR/DF/MD/DL de siempre, ver
+// positionIconPath) en vez del nombre en texto -- se usa tanto en los
+// filtros como junto al nombre de cada jugador, para no repetir la
+// palabra "Delantero"/"Defensa"/etc en ningún sitio de esta pestaña.
+function positionIconHtml(pos, size) {
+  return '<img src="' + positionIconPath(pos) + '" alt="' + pos + '" title="' + pos + '" style="width:' + size + 'px;height:' + size + 'px;vertical-align:middle;">';
+}
+
+function careerPositionFilterBtnsHtml(filter, actionName) {
+  return [null].concat(POSITIONS).map(function (pos) {
+    var active = filter === pos;
+    var arg = pos ? "'" + pos + "'" : 'null';
+    var label = pos ? positionIconHtml(pos, 20) : 'Todos';
+    return '<button class="btn btn-tiny' + (active ? ' active' : '') + '" onclick="' + actionName + '(' + arg + ')" title="' + (pos || 'Todos') + '">' + label + '</button>';
+  }).join('');
+}
+
 window.actionSetCareerPlantillaFilter = function (pos) {
   G.career.plantillaFilter = pos;
+  render();
+};
+
+// Quita a un jugador del once o del banquillo (lo que toque) y le quita
+// el brazalete/selección si lo tenía -- compartido por vender y ceder,
+// que solo se diferencian en si sueltan dinero o no.
+function careerRemoveFromSquad(c, id) {
+  var lineupIdx = c.lineup.findIndex(function (s) { return s.player.id === id; });
+  if (lineupIdx !== -1) c.lineup.splice(lineupIdx, 1);
+  else c.bench = c.bench.filter(function (p) { return p.id !== id; });
+  if (c.captainId === id) c.captainId = null;
+  if (c.swapSelectedId === id) c.swapSelectedId = null;
+}
+
+// Límites de plantilla, a petición explícita: no se puede vender/ceder
+// por debajo de 14 (para no dejar la pantalla de equipo con huecos
+// imposibles de rellenar sin ir antes al Mercado), ni fichar por encima
+// de 23 (tope realista de convocatoria de temporada).
+var CAREER_MIN_SQUAD_SIZE = 14;
+var CAREER_MAX_SQUAD_SIZE = 23;
+
+// Venta rápida: se cobra al momento, pero por debajo del valor de
+// mercado (85% -- "un poco menos", a petición explícita), ya que es una
+// venta inmediata y no una negociación de verdad como al fichar (ver
+// careerNegotiationAccepts). No hay forma de vender AL valor completo en
+// esta pantalla -- para eso habría que negociar con alguien, y de
+// momento (la base) solo se negocia para fichar, no para vender.
+var CAREER_QUICK_SELL_FACTOR = 0.85;
+window.actionSellCareerPlayer = function (id) {
+  var c = G.career;
+  var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
+  if (all.length <= CAREER_MIN_SQUAD_SIZE) { c.plantillaMessage = 'No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores en plantilla.'; render(); return; }
+  var p = all.find(function (x) { return x.id === id; });
+  if (!p) return;
+  var payout = Math.round(careerPlayerValue(p) * CAREER_QUICK_SELL_FACTOR * 10) / 10;
+  careerRemoveFromSquad(c, id);
+  c.budget = Math.round((c.budget + payout) * 10) / 10;
+  c.plantillaMessage = 'Venta rápida: ' + p.nombre + ' por ' + payout + ' M€ (algo por debajo de su valor de mercado).';
+  render();
+};
+
+// Cesión: el jugador se va a un equipo rival cualquiera, sin cobrar nada
+// (a diferencia de vender) -- y de momento no hay forma de recuperarlo
+// esta temporada, no hay ficha de "cedido" que rastrear todavía (la
+// base). Se avisa de eso mismo en el mensaje para que no sorprenda.
+window.actionLoanCareerPlayer = function (id) {
+  var c = G.career;
+  var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
+  if (all.length <= CAREER_MIN_SQUAD_SIZE) { c.plantillaMessage = 'No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores en plantilla.'; render(); return; }
+  var p = all.find(function (x) { return x.id === id; });
+  if (!p) return;
+  var destTeam = choice(Math.random() < 0.4 ? RIVAL_TEAM_BOSSES : RIVAL_TEAM_NAMES);
+  careerRemoveFromSquad(c, id);
+  c.plantillaMessage = 'Cedido ' + p.nombre + ' a ' + destTeam + ' (sin cobrar nada). No se puede recuperar esta temporada.';
   render();
 };
 
@@ -285,38 +372,195 @@ function renderCareerPlantilla(c) {
   var total = Math.round(rawTotal * 10) / 10;
   var filter = c.plantillaFilter || null;
   var filtered = filter ? all.filter(function (p) { return p.posicion === filter; }) : all;
-  // Iconos de posición (los mismos PR/DF/MD/DL de siempre, ver
-  // positionIconPath) en vez del nombre en texto -- "Todos" se queda en
-  // texto porque no hay icono de "todas las posiciones a la vez".
-  var filterBtnsHtml = [null].concat(POSITIONS).map(function (pos) {
-    var active = filter === pos;
-    var arg = pos ? "'" + pos + "'" : 'null';
-    var label = pos
-      ? '<img src="' + positionIconPath(pos) + '" alt="' + pos + '" title="' + pos + '" style="width:20px;height:20px;vertical-align:middle;">'
-      : 'Todos';
-    return '<button class="btn btn-tiny' + (active ? ' active' : '') + '" onclick="actionSetCareerPlantillaFilter(' + arg + ')" title="' + (pos || 'Todos') + '">' + label + '</button>';
-  }).join('');
+  var filterBtnsHtml = careerPositionFilterBtnsHtml(filter, 'actionSetCareerPlantillaFilter');
+  var canRemove = all.length > CAREER_MIN_SQUAD_SIZE;
   var rowsHtml = filtered.map(function (p) {
     return '<div class="futdraft-timeline-row">' + careerMediaBadgeHtml(p) + avatarHtml(p) +
-      '<span>' + escapeHtml(p.nombre) + ' <span class="dim">· ' + p.posicion + '</span></span>' +
+      '<span>' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + '</span>' +
       '<strong style="margin-left:auto;white-space:nowrap;color:var(--accent-2)">' + careerPlayerValue(p) + ' M€</strong>' +
+      '<button class="btn btn-tiny" style="margin-left:6px" ' + (canRemove ? '' : 'disabled') + ' onclick="actionSellCareerPlayer(\'' + p.id + '\')">💰 Vender</button>' +
+      '<button class="btn btn-tiny" ' + (canRemove ? '' : 'disabled') + ' onclick="actionLoanCareerPlayer(\'' + p.id + '\')">🔄 Ceder</button>' +
     '</div>';
   }).join('');
   return (
     '<div class="panel">' +
       '<h3 style="margin-bottom:4px">Gestionar plantilla</h3>' +
-      '<p class="dim small">Valor total de la plantilla: <strong style="color:var(--accent-2)">' + total + ' M€</strong>. Valor de mercado orientativo, calculado a partir del rendimiento de cada jugador -- todavía no se puede fichar ni vender (ver pestaña Mercado).</p>' +
+      '<p class="dim small">Valor total de la plantilla: <strong style="color:var(--accent-2)">' + total + ' M€</strong>. Presupuesto disponible: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong>.</p>' +
+      (c.plantillaMessage ? '<p class="dim small">' + escapeHtml(c.plantillaMessage) + '</p>' : '') +
       '<div class="btn-row">' + filterBtnsHtml + '</div>' +
       '<div class="futdraft-timeline mt">' + (rowsHtml || '<p class="dim small center-text">Nadie en esa posición.</p>') + '</div>' +
     '</div>'
   );
 }
 
-function renderCareerMercado() {
+window.actionSetCareerMarketFilter = function (pos) {
+  G.career.marketFilter = pos;
+  render();
+};
+window.actionSetCareerMarketSearch = function (value) {
+  G.career.marketSearch = value;
+  render();
+};
+window.actionToggleCareerMarketInterested = function () {
+  G.career.marketOnlyInterested = !G.career.marketOnlyInterested;
+  render();
+};
+
+// Media de TODA la plantilla (titulares + banquillo, sin bonus de
+// capitán ni de formación -- eso es la puntuación TÁCTICA de
+// futDraftScoreBreakdown, esto es "qué nivel de club eres" en general),
+// usada para decidir qué tan dispuesto está un jugador a ficharte (ver
+// careerNegotiationAccepts): cuanto más por encima de tu media esté el
+// suyo, menos ganas tiene de bajar de nivel.
+function careerTeamAvgScore(c) {
+  var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
+  if (!all.length) return 0;
+  var sum = all.reduce(function (s, p) { return s + futDraftPlayerScore(p); }, 0);
+  return sum / all.length;
+}
+// Un jugador se considera "puede que quiera unirse" si no está
+// demasiado por encima de tu nivel de club (gap corto -> más probable
+// que acepte cualquier oferta razonable, ver el mismo coeficiente 0.08
+// que usa careerNegotiationAccepts).
+var CAREER_INTERESTED_GAP = 6;
+
+// Decide si el club rival acepta tu oferta: dos factores independientes.
+// 1) Dinero: si ofreces igual o más que su valor de mercado, seguro;
+//    por debajo, la probabilidad cae con el cubo de la proporción (una
+//    oferta muy baja casi nunca cuela, una oferta cercana al valor casi
+//    siempre sí).
+// 2) Prestigio: un jugador bastante mejor que la media de tu plantilla
+//    no quiere bajar de nivel aunque pagues su precio -- a petición
+//    explícita ("si la media del equipo es 70 e intentas fichar a uno
+//    de 81/82, igual no quiere"). Cada punto por encima de tu media
+//    resta un 8% de ganas, con un suelo del 5% (nunca es del todo
+//    imposible, pero muy raro).
+function careerNegotiationAccepts(offer, value, playerScore, teamAvgScore) {
+  var moneyFactor = offer >= value ? 1 : Math.pow(offer / value, 3);
+  var gap = Math.max(0, playerScore - teamAvgScore);
+  var prestigeFactor = clamp(1 - gap * 0.08, 0.05, 1);
+  return Math.random() < moneyFactor * prestigeFactor;
+}
+
+window.actionStartCareerNegotiation = function (id) {
+  var c = G.career;
+  var p = ROSTER.find(function (x) { return x.id === id; });
+  if (!p) return;
+  var value = careerPlayerValue(p);
+  c.negotiation = { playerId: id, offer: Math.max(0.1, Math.round(value * 0.8 * 10) / 10), lastResult: null };
+  render();
+};
+window.actionCancelCareerNegotiation = function () {
+  G.career.negotiation = null;
+  render();
+};
+window.actionAdjustCareerOffer = function (delta) {
+  var neg = G.career.negotiation;
+  if (!neg) return;
+  neg.offer = Math.max(0.1, Math.round((neg.offer + delta) * 10) / 10);
+  neg.lastResult = null;
+  render();
+};
+window.actionSendCareerOffer = function () {
+  var c = G.career;
+  var neg = c.negotiation;
+  if (!neg) return;
+  var p = ROSTER.find(function (x) { return x.id === neg.playerId; });
+  if (!p) return;
+  var squadSize = c.lineup.length + c.bench.length;
+  if (squadSize >= CAREER_MAX_SQUAD_SIZE) { neg.lastResult = 'plantillaLlena'; render(); return; }
+  if (neg.offer > c.budget) { neg.lastResult = 'sinPresupuesto'; render(); return; }
+  var value = careerPlayerValue(p);
+  var teamAvg = careerTeamAvgScore(c);
+  var accepted = careerNegotiationAccepts(neg.offer, value, futDraftPlayerScore(p), teamAvg);
+  if (accepted) {
+    c.budget = Math.round((c.budget - neg.offer) * 10) / 10;
+    c.bench.push(p);
+    neg.lastResult = 'accepted';
+  } else {
+    neg.lastResult = 'rejected';
+  }
+  render();
+};
+
+function renderCareerNegotiation(c) {
+  var neg = c.negotiation;
+  var p = ROSTER.find(function (x) { return x.id === neg.playerId; });
+  if (!p) { c.negotiation = null; return renderCareerMercado(c); }
+  var value = careerPlayerValue(p);
+  var teamAvg = careerTeamAvgScore(c);
+  var gap = Math.round(futDraftPlayerScore(p) - teamAvg);
+  var prestigeHint = gap > CAREER_INTERESTED_GAP
+    ? '<p class="dim small">Tu plantilla tiene una media de ' + Math.round(teamAvg) + '; ' + escapeHtml(p.nombre) + ' tiene ' + Math.round(futDraftPlayerScore(p)) + '. Puede que no quiera bajar de nivel, aunque pagues bien.</p>'
+    : '';
+  var resultHtml;
+  if (neg.lastResult === 'accepted') {
+    resultHtml =
+      '<p class="dim small" style="color:var(--accent-2)">¡Trato cerrado! ' + escapeHtml(p.nombre) + ' se une a tu plantilla por ' + neg.offer + ' M€.</p>' +
+      '<button class="btn btn-primary btn-block mt" onclick="actionCancelCareerNegotiation()">Volver al mercado</button>';
+  } else {
+    resultHtml =
+      (neg.lastResult === 'rejected' ? '<p class="dim small" style="color:var(--danger)">' + escapeHtml(p.nombre) + ' rechaza tu oferta de ' + neg.offer + ' M€.</p>' : '') +
+      (neg.lastResult === 'sinPresupuesto' ? '<p class="dim small" style="color:var(--danger)">No tienes presupuesto para ofrecer eso.</p>' : '') +
+      (neg.lastResult === 'plantillaLlena' ? '<p class="dim small" style="color:var(--danger)">Tu plantilla ya está al máximo (' + CAREER_MAX_SQUAD_SIZE + '). Vende o cede a alguien antes de fichar.</p>' : '') +
+      '<div class="stepper-row">' +
+        '<button class="btn stepper-arrow" onclick="actionAdjustCareerOffer(-0.2)">◀</button>' +
+        '<span class="stepper-value">' + neg.offer + ' M€</span>' +
+        '<button class="btn stepper-arrow" onclick="actionAdjustCareerOffer(0.2)">▶</button>' +
+      '</div>' +
+      '<div class="btn-row" style="justify-content:center">' +
+        '<button class="btn btn-primary" onclick="actionSendCareerOffer()">Enviar oferta</button>' +
+        '<button class="btn btn-outline" onclick="actionCancelCareerNegotiation()">Cancelar</button>' +
+      '</div>';
+  }
   return (
     '<div class="panel center-text">' +
+      '<h3 style="margin-bottom:8px">Negociar con ' + escapeHtml(p.nombre) + '</h3>' +
+      '<div style="display:flex;justify-content:center;margin-bottom:8px">' + careerMediaBadgeHtml(p) + avatarHtml(p) + '</div>' +
+      '<p class="dim small">Valor de mercado orientativo: <strong style="color:var(--accent-2)">' + value + ' M€</strong>. Presupuesto: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong>.</p>' +
+      prestigeHint +
+      resultHtml +
+    '</div>'
+  );
+}
+
+function renderCareerMercado(c) {
+  if (c.negotiation) return renderCareerNegotiation(c);
+  var owned = c.lineup.map(function (s) { return s.player.id; }).concat(c.bench.map(function (p) { return p.id; }));
+  var filter = c.marketFilter || null;
+  var search = (c.marketSearch || '').trim().toLowerCase();
+  var onlyInterested = !!c.marketOnlyInterested;
+  var teamAvg = careerTeamAvgScore(c);
+  var available = ROSTER.filter(function (p) {
+    if (owned.indexOf(p.id) !== -1) return false;
+    var score = futDraftPlayerScore(p);
+    if (score >= 80) return false;
+    if (filter && p.posicion !== filter) return false;
+    if (search && p.nombre.toLowerCase().indexOf(search) === -1) return false;
+    if (onlyInterested && (score - teamAvg) > CAREER_INTERESTED_GAP) return false;
+    return true;
+  });
+  var filterBtnsHtml = careerPositionFilterBtnsHtml(filter, 'actionSetCareerMarketFilter');
+  var squadFull = (c.lineup.length + c.bench.length) >= CAREER_MAX_SQUAD_SIZE;
+  var rowsHtml = available.map(function (p) {
+    var value = careerPlayerValue(p);
+    return '<div class="futdraft-timeline-row">' + careerMediaBadgeHtml(p) + avatarHtml(p) +
+      '<span>' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + '</span>' +
+      '<strong style="margin-left:auto;white-space:nowrap;color:var(--accent-2)">' + value + ' M€</strong>' +
+      '<button class="btn btn-tiny" style="margin-left:6px" ' + (squadFull ? 'disabled' : '') + ' onclick="actionStartCareerNegotiation(\'' + p.id + '\')">Negociar</button>' +
+    '</div>';
+  }).join('');
+  return (
+    '<div class="panel">' +
       '<h3 style="margin-bottom:4px">Mercado</h3>' +
-      '<p class="dim small">Próximamente: fichar y vender jugadores de otros equipos, con el valor de mercado de la pestaña Gestionar plantilla.</p>' +
+      '<p class="dim small">Presupuesto disponible: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong>. Solo jugadores con media menor de 80 -- los mejores todavía no están a la venta. Fichar es negociar: ofreces dinero y el club puede aceptar o rechazar.</p>' +
+      (squadFull ? '<p class="dim small" style="color:var(--danger)">Plantilla al máximo (' + CAREER_MAX_SQUAD_SIZE + '). Vende o cede a alguien antes de fichar.</p>' : '') +
+      (c.marketMessage ? '<p class="dim small">' + escapeHtml(c.marketMessage) + '</p>' : '') +
+      '<input class="select-field" type="text" placeholder="Buscar por nombre…" value="' + escapeHtml(c.marketSearch || '') + '" oninput="actionSetCareerMarketSearch(this.value)">' +
+      '<div class="btn-row mt">' + filterBtnsHtml +
+        '<button class="btn btn-tiny' + (onlyInterested ? ' active' : '') + '" onclick="actionToggleCareerMarketInterested()">🤝 Podrían unirse</button>' +
+      '</div>' +
+      '<div class="futdraft-timeline mt">' + (rowsHtml || '<p class="dim small center-text">No queda nadie disponible con ese filtro.</p>') + '</div>' +
     '</div>'
   );
 }
@@ -480,6 +724,18 @@ function careerResolveOtherFixtures(c, league, skipFixtureIdx) {
   });
 }
 
+// Bonus de presupuesto por ganar TU partido de la jornada (100k/200k/300k
+// al azar, a petición explícita) -- nunca por empatar ni perder. Se llama
+// una sola vez por jornada, tanto desde "Saltar" como al terminar de ver
+// tu partido con "Simular" (ver finishCareerMatchdayMatch).
+var CAREER_WIN_BONUSES = [0.1, 0.2, 0.3];
+function careerAwardWinBonus(c, myGoals, oppGoals) {
+  if (myGoals <= oppGoals) return 0;
+  var bonus = choice(CAREER_WIN_BONUSES);
+  c.budget = Math.round((c.budget + bonus) * 10) / 10;
+  return bonus;
+}
+
 // "Saltar": la jornada entera se resuelve de golpe sin ver nada, tu
 // partido incluido -- lo que ya había.
 window.actionSkipCareerMatchday = function () {
@@ -498,11 +754,15 @@ window.actionSkipCareerMatchday = function () {
   league.results[league.matchdayIndex][myFixtureIdx] = goles;
   careerRecordMatchGoals(c, league, myFixture[0], myFixture[1], goles[0], goles[1]);
   careerResolveOtherFixtures(c, league, myFixtureIdx);
+  var myGoals = youAreHome ? goles[0] : goles[1];
+  var oppGoals = youAreHome ? goles[1] : goles[0];
+  var winBonus = careerAwardWinBonus(c, myGoals, oppGoals);
   c.lastMatchdayResult = {
     matchday: league.matchdayIndex + 1,
     oppName: league.teamNames[oppIdx],
-    myGoals: youAreHome ? goles[0] : goles[1],
-    oppGoals: youAreHome ? goles[1] : goles[0]
+    myGoals: myGoals,
+    oppGoals: oppGoals,
+    winBonus: winBonus
   };
   league.matchdayIndex++;
   render();
@@ -569,7 +829,8 @@ function finishCareerMatchdayMatch() {
   futDraftRecordGoalEvents(league.stats, live.revealed.filter(function (e) { return e.side === 'me'; }), 'Tu equipo');
   futDraftRecordGoalEvents(league.stats, live.revealed.filter(function (e) { return e.side === 'opp'; }), oppName);
   careerResolveOtherFixtures(c, league, fi);
-  c.lastMatchdayResult = { matchday: league.matchdayIndex + 1, oppName: oppName, myGoals: myGoals, oppGoals: oppGoals };
+  var winBonus = careerAwardWinBonus(c, myGoals, oppGoals);
+  c.lastMatchdayResult = { matchday: league.matchdayIndex + 1, oppName: oppName, myGoals: myGoals, oppGoals: oppGoals, winBonus: winBonus };
   league.matchdayIndex++;
 
   G.futdraft.lastMatchResult = {
@@ -599,6 +860,7 @@ function renderCareerJornada(c) {
     ? '<div class="panel center-text">' +
         '<h3 style="margin-bottom:4px">Resultado de la jornada ' + r.matchday + '</h3>' +
         '<p class="dim small">Tú <strong>' + r.myGoals + ' - ' + r.oppGoals + '</strong> ' + escapeHtml(r.oppName) + '</p>' +
+        (r.winBonus ? '<p class="dim small">💰 +' + r.winBonus + ' M€ de presupuesto por ganar.</p>' : '') +
         '<p class="dim small">El resto de partidos de la jornada también se han resuelto -- mira la pestaña Liga.</p>' +
       '</div>'
     : '';
@@ -623,7 +885,7 @@ function renderCareerMode() {
   }).join('');
   var bodyHtml;
   if (c.tab === 'plantilla') bodyHtml = renderCareerPlantilla(c);
-  else if (c.tab === 'mercado') bodyHtml = renderCareerMercado();
+  else if (c.tab === 'mercado') bodyHtml = renderCareerMercado(c);
   else if (c.tab === 'calendario') bodyHtml = renderCareerCalendario(c);
   else if (c.tab === 'liga') bodyHtml = renderCareerLiga(c);
   else if (c.tab === 'jornada') bodyHtml = renderCareerJornada(c);
@@ -634,6 +896,7 @@ function renderCareerMode() {
         '<button class="btn btn-outline btn-block" onclick="actionGoOtrosModos()">Volver</button>' +
         '<h2 class="panel-title mt mb0">Modo Carrera</h2>' +
         '<p class="dim small">Todavía en construcción -- esta es la base: equipo, plantilla, mercado, calendario, liga y jornada de una liga de ' + CAREER_LEAGUE_TEAM_COUNT + ' equipos.</p>' +
+        '<p class="dim small">Presupuesto: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong></p>' +
       '</div>' +
       '<div class="btn-row" style="justify-content:center">' + tabsHtml + '</div>' +
       bodyHtml +
