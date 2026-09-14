@@ -72,6 +72,24 @@
 </footer>
 
 <script src="roster-data.js"></script>
-<script src="script.js"></script>
+<!-- script.js modularizado en js/ (mismo scope global, sin bundler: cada
+     archivo es una tanda de secciones consecutivas del script.js
+     original, cargadas en el mismo orden en que aparecían allí, así que
+     se comportan exactamente igual que un único archivo concatenado. -->
+<script src="js/core.js"></script>
+<script src="js/rivals.js"></script>
+<script src="js/captain-draft-modes.js"></script>
+<script src="js/tournament.js"></script>
+<script src="js/persistence-map.js"></script>
+<script src="js/state-nav.js"></script>
+<script src="js/map-node-actions.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/progression.js"></script>
+<script src="js/penalty-mode.js"></script>
+<script src="js/futdraft-draft.js"></script>
+<script src="js/futdraft-match.js"></script>
+<script src="js/futdraft-bracket.js"></script>
+<script src="js/liga.js"></script>
+<script src="js/init.js"></script>
 </body>
 </html>
