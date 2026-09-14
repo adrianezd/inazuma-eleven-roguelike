@@ -73,6 +73,17 @@ function ligaApplyResult(table, homeIdx, awayIdx, homeGoals, awayGoals) {
 }
 // Escudo del equipo de una fila de la tabla (el tuyo, o el real del rival).
 function ligaTeamShield(liga, idx) { return idx === 0 ? getPlayerShieldPath() : teamShieldPath(liga.teamNames[idx]); }
+// Colorea el número de posición según la zona -- 4 primeros en verde
+// oscuro, los 2 siguientes en naranja, los 2 últimos en rojo -- a
+// petición explícita, con una foto de referencia de una clasificación
+// real. totalTeams hace falta para saber cuáles son "los 2 últimos" en
+// ligas de tamaño distinto (18 en Liga, 16 en Modo Carrera). Compartida
+// por renderLigaTable y renderCareerLiga para que las dos tablas se vean
+// igual.
+function ligaPosBadgeHtml(rank, totalTeams) {
+  var zoneCls = rank <= 4 ? 'liga-pos-top' : (rank <= 6 ? 'liga-pos-mid' : (rank > totalTeams - 2 ? 'liga-pos-bottom' : ''));
+  return '<span class="liga-pos-badge' + (zoneCls ? ' ' + zoneCls : '') + '">' + rank + '</span>';
+}
 // Últimos 5 resultados como en una tabla de liga real: un círculo por
 // partido (V verde, E gris, D rojo), rellenando por la izquierda con
 // círculos vacíos mientras el equipo no lleve 5 partidos jugados todavía.
@@ -184,7 +195,7 @@ function renderLigaTable() {
   var rows = sorted.map(function (t, pos) {
     var isYou = t.idx === 0;
     return '<tr class="' + (isYou ? 'liga-you' : '') + '">' +
-      '<td>' + (pos + 1) + '</td>' +
+      '<td>' + ligaPosBadgeHtml(pos + 1, sorted.length) + '</td>' +
       '<td><img class="liga-row-shield" src="' + escapeHtml(ligaTeamShield(liga, t.idx)) + '" alt=""></td>' +
       '<td>' + escapeHtml(ligaTeamLabel(liga, t.idx)) + '</td>' +
       '<td>' + t.pj + '</td><td>' + t.pg + '</td><td>' + t.pe + '</td><td>' + t.pp + '</td>' +

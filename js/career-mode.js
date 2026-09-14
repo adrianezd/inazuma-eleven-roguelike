@@ -96,10 +96,18 @@ function careerPickRivalNames(count) {
 function careerBuildLeague() {
   var rivalNames = careerPickRivalNames(CAREER_LEAGUE_TEAM_COUNT - 1);
   var teamNames = [null].concat(rivalNames); // índice 0 = tú
+  var schedule = generateRoundRobin(CAREER_LEAGUE_TEAM_COUNT);
   return {
     teamNames: teamNames,
     table: teamNames.map(function () { return ligaEmptyStanding(); }),
-    schedule: generateRoundRobin(CAREER_LEAGUE_TEAM_COUNT),
+    schedule: schedule,
+    // Un array de resultados en paralelo a schedule (misma forma: una
+    // entrada por jornada, una por partido dentro de esa jornada), null
+    // hasta que se juega -- así el Calendario puede ir mostrando el
+    // marcador real de cada partido, no solo "jugada sí/no" (ver
+    // actionPlayCareerMatchday, que rellena esto mismo partido a
+    // partido según se resuelve cada jornada).
+    results: schedule.map(function (fixtures) { return fixtures.map(function () { return null; }); }),
     matchdayIndex: 0
   };
 }
@@ -290,14 +298,21 @@ function renderCareerMercado() {
 function calendarTeamShield(league, idx) { return idx === 0 ? getPlayerShieldPath() : teamShieldPath(league.teamNames[idx]); }
 function calendarTeamLabel(league, idx) { return idx === 0 ? 'Tú' : league.teamNames[idx]; }
 
-function calendarFixtureRowHtml(league, fx) {
+// result: [golesLocal, golesVisitante] si ya se jugó (ver
+// actionPlayCareerMatchday, que rellena league.results partido a
+// partido), o null si todavía no -- en ese caso se muestra "vs" en vez
+// del marcador.
+function calendarFixtureRowHtml(league, fx, result) {
   var isYours = fx[0] === 0 || fx[1] === 0;
+  var middleHtml = result
+    ? '<span class="calendar-fixture-score">' + result[0] + ' - ' + result[1] + '</span>'
+    : '<span class="calendar-fixture-vs">vs</span>';
   return '<div class="calendar-fixture' + (isYours ? ' calendar-fixture-you' : '') + '">' +
     '<span class="calendar-fixture-team">' +
       '<img class="liga-row-shield" src="' + escapeHtml(calendarTeamShield(league, fx[0])) + '" alt="">' +
       '<span>' + escapeHtml(calendarTeamLabel(league, fx[0])) + '</span>' +
     '</span>' +
-    '<span class="calendar-fixture-vs">vs</span>' +
+    middleHtml +
     '<span class="calendar-fixture-team calendar-fixture-team-away">' +
       '<img class="liga-row-shield" src="' + escapeHtml(calendarTeamShield(league, fx[1])) + '" alt="">' +
       '<span>' + escapeHtml(calendarTeamLabel(league, fx[1])) + '</span>' +
@@ -328,8 +343,8 @@ function renderCareerCalendario(c) {
   var isPast = view < league.matchdayIndex;
   var statusHtml = isCurrent
     ? '<p class="dim small mt">Jornada actual.</p>'
-    : (isPast ? '<p class="dim small mt">Ya jugada -- mira el resultado en la pestaña Liga.</p>' : '<p class="dim small mt">Todavía no se ha jugado.</p>');
-  var fixturesHtml = league.schedule[view].map(function (fx) { return calendarFixtureRowHtml(league, fx); }).join('');
+    : (isPast ? '<p class="dim small mt">Jugada.</p>' : '<p class="dim small mt">Todavía no se ha jugado.</p>');
+  var fixturesHtml = league.schedule[view].map(function (fx, fi) { return calendarFixtureRowHtml(league, fx, league.results[view][fi]); }).join('');
   return (
     '<div class="panel center-text">' +
       '<div class="stepper-row">' +
@@ -351,7 +366,7 @@ function renderCareerLiga(c) {
     var label = isYou ? 'Tú' : league.teamNames[t.idx];
     var shield = isYou ? getPlayerShieldPath() : teamShieldPath(league.teamNames[t.idx]);
     return '<tr class="' + (isYou ? 'liga-you' : '') + '">' +
-      '<td>' + (pos + 1) + '</td>' +
+      '<td>' + ligaPosBadgeHtml(pos + 1, sorted.length) + '</td>' +
       '<td><img class="liga-row-shield" src="' + escapeHtml(shield) + '" alt=""></td>' +
       '<td>' + escapeHtml(label) + '</td>' +
       '<td>' + t.pj + '</td><td>' + t.pg + '</td><td>' + t.pe + '</td><td>' + t.pp + '</td>' +
@@ -393,12 +408,13 @@ window.actionPlayCareerMatchday = function () {
   var myPower = futDraftScoreBreakdown(c.lineup, c.captainId).total;
   var fixtures = league.schedule[league.matchdayIndex];
   var myResult = null;
-  fixtures.forEach(function (fx) {
+  fixtures.forEach(function (fx, fi) {
     var homeIdx = fx[0], awayIdx = fx[1];
     var powerHome = homeIdx === 0 ? myPower : teamPower({ name: league.teamNames[homeIdx] });
     var powerAway = awayIdx === 0 ? myPower : teamPower({ name: league.teamNames[awayIdx] });
     var goles = careerSimulateMatchGoals(powerHome, powerAway);
     ligaApplyResult(league.table, homeIdx, awayIdx, goles[0], goles[1]);
+    league.results[league.matchdayIndex][fi] = goles;
     if (homeIdx === 0 || awayIdx === 0) {
       var youAreHome = homeIdx === 0;
       myResult = {

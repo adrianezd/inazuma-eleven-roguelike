@@ -267,6 +267,17 @@ a { color: var(--accent); }
 .calendar-fixture-team-away { flex-direction: row-reverse; text-align: right; }
 .calendar-fixture-vs { flex: 0 0 auto; color: var(--text-dim); font-size: 0.66rem; font-weight: 700; text-transform: uppercase; }
 .calendar-fixture-you .calendar-fixture-vs { color: #06202f; opacity: 0.65; }
+.calendar-fixture-score {
+  flex: 0 0 auto;
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+.calendar-fixture-you .calendar-fixture-score { background: #06202f; color: var(--accent-2); border-color: #06202f; }
 
 .select-field {
   display: block;
@@ -861,6 +872,26 @@ a { color: var(--accent); }
 .liga-table tr.liga-you { background: var(--accent-2); color: #06202f; font-weight: 700; }
 .liga-table tr.liga-you td { border-bottom-color: var(--accent-2); }
 .liga-row-shield { width: 22px; height: 22px; object-fit: contain; display: block; }
+/* Zonas de la clasificación (Champions/Europa/descenso), a petición
+   explícita con una foto de referencia de una liga real: 4 primeros en
+   verde oscuro, 2 siguientes en naranja, 2 últimos en rojo. Colores fijos
+   (no var(--accent-2) etc.) porque el significado es siempre el mismo
+   independientemente del tema día/noche -- verde de competición europea,
+   rojo de descenso, en cualquier clasificación real. */
+.liga-pos-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  font-weight: 700;
+  color: var(--text);
+}
+.liga-pos-top { background: #1b5e20; color: #fff; }
+.liga-pos-mid { background: #e08a1e; color: #fff; }
+.liga-pos-bottom { background: #c0392b; color: #fff; }
+.liga-table tr.liga-you .liga-pos-badge:not(.liga-pos-top):not(.liga-pos-mid):not(.liga-pos-bottom) { color: #06202f; }
 .liga-form { display: inline-flex; gap: 3px; }
 .liga-form-dot {
   width: 18px; height: 18px; border-radius: 50%;
