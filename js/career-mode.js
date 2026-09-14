@@ -48,7 +48,8 @@ var CAREER_TABS = [
   { id: 'mercado', name: 'Mercado' },
   { id: 'calendario', name: 'Calendario' },
   { id: 'liga', name: 'Liga' },
-  { id: 'jornada', name: 'Jornada' }
+  { id: 'jornada', name: 'Jornada' },
+  { id: 'estadisticas', name: 'Estadísticas' }
 ];
 
 // 11 titulares + 5 suplentes elegidos por el usuario. Larry Pogue (r43,
@@ -140,10 +141,28 @@ function careerBuildLeague() {
 // vender/ceder (Gestionar plantilla).
 var CAREER_STARTING_BUDGET = 2;
 
+// Ventana de fichajes, a petición explícita, igual en TODAS las
+// temporadas: 5 días de negociación antes de que arranque la liga
+// (pretemporada), y 2 días más a mitad de liga (justo después de la
+// jornada 10) -- fuera de esos días el Mercado está cerrado del todo y
+// no se puede jugar ninguna jornada mientras la ventana esté abierta.
+// Dentro de una ventana, tope de 2 ofertas por jugador y día
+// (offersToday, se resetea cada día) y 2 fichajes CONFIRMADOS por día
+// (signingsToday, cuentan tanto compra como cesión entrante).
+var CAREER_PRESEASON_DAYS = 5;
+var CAREER_MIDSEASON_DAYS = 2;
+var CAREER_MIDSEASON_AT_MATCHDAY = 10;
+var CAREER_MAX_OFFERS_PER_PLAYER_PER_DAY = 2;
+var CAREER_MAX_SIGNINGS_PER_DAY = 2;
+function careerNewMarketWindow(phase, totalDays) {
+  return { open: true, phase: phase, dayIndex: 1, totalDays: totalDays, offersToday: {}, signingsToday: 0 };
+}
+
 function careerFreshState() {
   var starters = careerModeRoster(CAREER_MODE_STARTER_IDS);
   return {
     tab: 'equipo',
+    season: 1,
     formation: CAREER_MODE_DEFAULT_FORMATION,
     lineup: futDraftBuildLineup(starters, CAREER_MODE_DEFAULT_FORMATION),
     bench: careerModeRoster(CAREER_MODE_BENCH_IDS),
@@ -153,31 +172,32 @@ function careerFreshState() {
     league: careerBuildLeague(),
     lastMatchdayResult: null,
     loanedIds: [],
-    budget: CAREER_STARTING_BUDGET
+    budget: CAREER_STARTING_BUDGET,
+    marketWindow: careerNewMarketWindow('preseason', CAREER_PRESEASON_DAYS),
+    // Mejor posición en liga y goleadores/asistentes ACUMULADOS de toda
+    // la carrera (todas las temporadas, no se resetean con
+    // actionStartNewCareerSeason) -- ver careerUpdateBestPosition y la
+    // pestaña Estadísticas.
+    bestPosition: null,
+    careerStats: { scorers: {}, assists: {} }
   };
 }
 
-// El estado (G.career) se crea solo la primera vez que se entra en esta
-// partida/sesión -- si ya existía una guardada (ver loadCareer/saveCareer,
-// en localStorage, para que sobreviva a refrescar el navegador), se
-// recupera tal cual; si no, se crea de cero.
-function actionGoCareerMode() {
-  if (!G.career) {
-    G.career = loadCareer() || careerFreshState();
-  }
-  G.screen = 'careerMode';
-  render();
-}
-
-// Solo se guardan los IDs de lineup/bench (no los objetos de jugador
+// A petición explícita: guardado a MANO en huecos de partida (no
+// automático) -- 3 huecos fijos, cada uno se puede guardar, cargar o
+// borrar independientemente desde la pantalla de selección
+// (renderCareerSlots, la que se ve al entrar en Modo Carrera). Solo se
+// guardan los IDs de lineup/bench/loanedIds (no los objetos de jugador
 // completos): al recuperarlos se buscan de nuevo en ROSTER, así que si
 // roster-data.js cambia de una sesión a otra (stats retocados, etc.) la
 // partida guardada sigue viendo los datos actuales, no una foto
 // congelada del momento en que se guardó.
-var CAREER_STORAGE_KEY = 'inazumaRoguelike_career_v1';
+var CAREER_SLOT_COUNT = 3;
+function careerSlotKey(slot) { return 'inazumaRoguelike_career_slot_' + slot; }
+
 function careerSerialize(c) {
   return {
-    tab: c.tab, formation: c.formation, captainId: c.captainId, budget: c.budget,
+    tab: c.tab, season: c.season || 1, formation: c.formation, captainId: c.captainId, budget: c.budget,
     lineup: c.lineup.map(function (s) { return { pos: s.pos, id: s.player.id }; }),
     bench: c.bench.map(function (p) { return p.id; }),
     loanedIds: c.loanedIds || [],
@@ -186,7 +206,10 @@ function careerSerialize(c) {
     calendarView: c.calendarView,
     marketFilter: c.marketFilter, marketSearch: c.marketSearch, marketOnlyInterested: c.marketOnlyInterested,
     marketSort: c.marketSort, marketSortDir: c.marketSortDir, marketPage: c.marketPage,
-    plantillaFilter: c.plantillaFilter, showTopScorers: c.showTopScorers
+    plantillaFilter: c.plantillaFilter, showTopScorers: c.showTopScorers,
+    bestPosition: c.bestPosition || null,
+    careerStats: c.careerStats || { scorers: {}, assists: {} },
+    marketWindow: c.marketWindow || null
   };
 }
 function careerDeserialize(data) {
@@ -197,6 +220,7 @@ function careerDeserialize(data) {
   var bench = (data.bench || []).map(function (id) { return ROSTER.find(function (x) { return x.id === id; }); }).filter(Boolean);
   return {
     tab: data.tab || 'equipo',
+    season: data.season || 1,
     formation: data.formation || CAREER_MODE_DEFAULT_FORMATION,
     lineup: lineup, bench: bench,
     captainId: data.captainId || null,
@@ -208,20 +232,108 @@ function careerDeserialize(data) {
     calendarView: data.calendarView,
     marketFilter: data.marketFilter || null, marketSearch: data.marketSearch || '', marketOnlyInterested: !!data.marketOnlyInterested,
     marketSort: data.marketSort, marketSortDir: data.marketSortDir, marketPage: data.marketPage || 0,
-    plantillaFilter: data.plantillaFilter || null, showTopScorers: !!data.showTopScorers
+    plantillaFilter: data.plantillaFilter || null, showTopScorers: !!data.showTopScorers,
+    bestPosition: data.bestPosition || null,
+    careerStats: data.careerStats || { scorers: {}, assists: {} },
+    marketWindow: data.marketWindow || careerNewMarketWindow('preseason', CAREER_PRESEASON_DAYS)
   };
 }
-function saveCareer() {
-  if (!G.career || typeof localStorage === 'undefined') return;
-  try { localStorage.setItem(CAREER_STORAGE_KEY, JSON.stringify(careerSerialize(G.career))); } catch (e) { /* almacenamiento no disponible */ }
+// Guarda el estado ACTUAL (G.career) en el hueco activo
+// (G.careerActiveSlot) -- llamado solo a mano, con el botón "💾 Guardar"
+// de la cabecera de Modo Carrera (ver actionSaveCareerNow), nunca solo.
+function saveCareerToSlot(slot) {
+  if (!G.career || typeof localStorage === 'undefined') return false;
+  try { localStorage.setItem(careerSlotKey(slot), JSON.stringify(careerSerialize(G.career))); return true; } catch (e) { return false; }
 }
-function loadCareer() {
+function loadCareerFromSlot(slot) {
   if (typeof localStorage === 'undefined') return null;
   try {
-    var raw = localStorage.getItem(CAREER_STORAGE_KEY);
+    var raw = localStorage.getItem(careerSlotKey(slot));
     if (!raw) return null;
     return careerDeserialize(JSON.parse(raw));
   } catch (e) { return null; }
+}
+// Resumen ligero para la pantalla de huecos (renderCareerSlots): no hace
+// falta reconstruir jugadores completos solo para enseñar un par de
+// líneas, así que lee el JSON crudo directamente.
+function careerSlotSummary(slot) {
+  if (typeof localStorage === 'undefined') return null;
+  try {
+    var raw = localStorage.getItem(careerSlotKey(slot));
+    if (!raw) return null;
+    var data = JSON.parse(raw);
+    return {
+      season: data.season || 1,
+      matchday: data.league ? Math.min(data.league.matchdayIndex + 1, data.league.schedule.length) : 1,
+      totalMatchdays: data.league ? data.league.schedule.length : CAREER_LEAGUE_TEAM_COUNT - 1,
+      budget: typeof data.budget === 'number' ? data.budget : CAREER_STARTING_BUDGET
+    };
+  } catch (e) { return null; }
+}
+
+// Se entra siempre por la pantalla de huecos (renderCareerSlots) -- ya no
+// hay guardado automático ni "seguir donde lo dejé" implícito, a
+// petición explícita ("quiero guardar a mano").
+function actionGoCareerMode() {
+  G.screen = 'careerSlots';
+  render();
+}
+window.actionNewCareerInSlot = function (slot) {
+  G.career = careerFreshState();
+  G.careerActiveSlot = slot;
+  saveCareerToSlot(slot);
+  G.screen = 'careerMode';
+  render();
+};
+window.actionLoadCareerFromSlot = function (slot) {
+  var data = loadCareerFromSlot(slot);
+  if (!data) return;
+  G.career = data;
+  G.careerActiveSlot = slot;
+  G.screen = 'careerMode';
+  render();
+};
+window.actionDeleteCareerSlot = function (slot) {
+  if (typeof window.confirm === 'function' && !window.confirm('¿Borrar la partida del hueco ' + slot + '? No se puede deshacer.')) return;
+  try { localStorage.removeItem(careerSlotKey(slot)); } catch (e) { /* almacenamiento no disponible */ }
+  if (G.careerActiveSlot === slot) { G.career = null; G.careerActiveSlot = null; }
+  render();
+};
+window.actionSaveCareerNow = function () {
+  var c = G.career;
+  if (!c || !G.careerActiveSlot) return;
+  var ok = saveCareerToSlot(G.careerActiveSlot);
+  c.saveMessage = ok ? 'Partida guardada en el hueco ' + G.careerActiveSlot + '.' : 'No se pudo guardar (almacenamiento no disponible).';
+  render();
+};
+
+function renderCareerSlots() {
+  var rowsHtml = '';
+  for (var i = 1; i <= CAREER_SLOT_COUNT; i++) {
+    var summary = careerSlotSummary(i);
+    var isActive = G.careerActiveSlot === i && G.career;
+    rowsHtml += '<div class="panel">' +
+      '<h3 style="margin-bottom:4px">Hueco ' + i + (isActive ? ' · en curso' : '') + '</h3>' +
+      (summary
+        ? '<p class="dim small">Temporada ' + summary.season + ' · Jornada ' + summary.matchday + ' / ' + summary.totalMatchdays + ' · Presupuesto ' + summary.budget + ' M€</p>' +
+          '<div class="btn-row">' +
+            '<button class="btn btn-primary" onclick="actionLoadCareerFromSlot(' + i + ')">Cargar</button>' +
+            '<button class="btn btn-outline" onclick="actionDeleteCareerSlot(' + i + ')">🗑️ Borrar</button>' +
+          '</div>'
+        : '<p class="dim small">Vacío.</p>' +
+          '<button class="btn btn-primary btn-block" onclick="actionNewCareerInSlot(' + i + ')">Nueva partida</button>') +
+    '</div>';
+  }
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<button class="btn btn-outline btn-block" onclick="actionGoOtrosModos()">Volver</button>' +
+        '<h2 class="panel-title mt">Modo Carrera</h2>' +
+        '<p class="dim small">Elige un hueco de partida guardada, o empieza una nueva en uno vacío. El guardado es a mano (botón 💾 dentro de la partida).</p>' +
+      '</div>' +
+      rowsHtml +
+    '</div>'
+  );
 }
 
 window.actionSetCareerTab = function (tab) {
@@ -609,6 +721,7 @@ function careerNegotiationAskingValue(p, mode) {
 
 window.actionStartCareerNegotiation = function (id, mode) {
   var c = G.career;
+  if (!c.marketWindow || !c.marketWindow.open) return;
   var p = ROSTER.find(function (x) { return x.id === id; });
   if (!p) return;
   mode = mode === 'loan' ? 'loan' : 'buy';
@@ -631,19 +744,26 @@ window.actionSendCareerOffer = function () {
   var c = G.career;
   var neg = c.negotiation;
   if (!neg) return;
+  var w = c.marketWindow;
+  if (!w || !w.open) { neg.lastResult = 'mercadoCerrado'; render(); return; }
   var p = ROSTER.find(function (x) { return x.id === neg.playerId; });
   if (!p) return;
   var squadSize = c.lineup.length + c.bench.length;
   if (squadSize >= CAREER_MAX_SQUAD_SIZE) { neg.lastResult = 'plantillaLlena'; render(); return; }
   if (neg.mode === 'loan' && careerLoanCount(c) >= CAREER_MAX_LOANS_IN) { neg.lastResult = 'cesionesLlenas'; render(); return; }
+  var offersSoFar = w.offersToday[neg.playerId] || 0;
+  if (offersSoFar >= CAREER_MAX_OFFERS_PER_PLAYER_PER_DAY) { neg.lastResult = 'limiteOfertas'; render(); return; }
+  if (w.signingsToday >= CAREER_MAX_SIGNINGS_PER_DAY) { neg.lastResult = 'limiteFichajes'; render(); return; }
   if (neg.offer > c.budget) { neg.lastResult = 'sinPresupuesto'; render(); return; }
   var asking = careerNegotiationAskingValue(p, neg.mode);
   var teamAvg = careerTeamAvgScore(c);
   var accepted = careerNegotiationAccepts(neg.offer, asking, futDraftPlayerScore(p), teamAvg);
+  w.offersToday[neg.playerId] = offersSoFar + 1;
   if (accepted) {
     c.budget = Math.round((c.budget - neg.offer) * 10) / 10;
     c.bench.push(p);
     if (neg.mode === 'loan') { c.loanedIds = (c.loanedIds || []).concat([p.id]); }
+    w.signingsToday++;
     neg.lastResult = 'accepted';
   } else {
     neg.lastResult = 'rejected';
@@ -663,6 +783,11 @@ function renderCareerNegotiation(c) {
   var prestigeHint = gap > CAREER_INTERESTED_GAP
     ? '<p class="dim small">Tu plantilla tiene una media de ' + Math.round(teamAvg) + '; ' + escapeHtml(p.nombre) + ' tiene ' + Math.round(futDraftPlayerScore(p)) + '. Puede que no quiera bajar de nivel, aunque pagues bien.</p>'
     : '';
+  var w = c.marketWindow;
+  var offersUsed = (w && w.offersToday[neg.playerId]) || 0;
+  var offersLeft = CAREER_MAX_OFFERS_PER_PLAYER_PER_DAY - offersUsed;
+  var signingsLeft = w ? CAREER_MAX_SIGNINGS_PER_DAY - w.signingsToday : 0;
+  var canOffer = w && w.open && offersLeft > 0 && signingsLeft > 0;
   var resultHtml;
   if (neg.lastResult === 'accepted') {
     resultHtml =
@@ -674,13 +799,17 @@ function renderCareerNegotiation(c) {
       (neg.lastResult === 'sinPresupuesto' ? '<p class="dim small" style="color:var(--danger)">No tienes presupuesto para ofrecer eso.</p>' : '') +
       (neg.lastResult === 'plantillaLlena' ? '<p class="dim small" style="color:var(--danger)">Tu plantilla ya está al máximo (' + CAREER_MAX_SQUAD_SIZE + '). Vende o cede a alguien antes de fichar.</p>' : '') +
       (neg.lastResult === 'cesionesLlenas' ? '<p class="dim small" style="color:var(--danger)">Ya tienes ' + CAREER_MAX_LOANS_IN + ' jugadores cedidos, el máximo. Devuelve a alguno antes de fichar otra cesión.</p>' : '') +
+      (neg.lastResult === 'limiteOfertas' ? '<p class="dim small" style="color:var(--danger)">Ya le has hecho ' + CAREER_MAX_OFFERS_PER_PLAYER_PER_DAY + ' ofertas hoy a ' + escapeHtml(p.nombre) + '. Prueba mañana.</p>' : '') +
+      (neg.lastResult === 'limiteFichajes' ? '<p class="dim small" style="color:var(--danger)">Ya has fichado ' + CAREER_MAX_SIGNINGS_PER_DAY + ' jugadores hoy, el máximo. Avanza el día para seguir.</p>' : '') +
+      (neg.lastResult === 'mercadoCerrado' ? '<p class="dim small" style="color:var(--danger)">La ventana de fichajes se ha cerrado.</p>' : '') +
+      '<p class="dim small">Ofertas a este jugador hoy: ' + offersUsed + ' / ' + CAREER_MAX_OFFERS_PER_PLAYER_PER_DAY + '. Fichajes hoy: ' + (w ? w.signingsToday : 0) + ' / ' + CAREER_MAX_SIGNINGS_PER_DAY + '.</p>' +
       '<div class="stepper-row">' +
         '<button class="btn stepper-arrow" onclick="actionAdjustCareerOffer(-0.1)">◀</button>' +
         '<span class="stepper-value">' + neg.offer + ' M€</span>' +
         '<button class="btn stepper-arrow" onclick="actionAdjustCareerOffer(0.1)">▶</button>' +
       '</div>' +
       '<div class="btn-row" style="justify-content:center">' +
-        '<button class="btn btn-primary" onclick="actionSendCareerOffer()">Enviar oferta</button>' +
+        '<button class="btn btn-primary" ' + (canOffer ? '' : 'disabled') + ' onclick="actionSendCareerOffer()">Enviar oferta</button>' +
         '<button class="btn btn-outline" onclick="actionCancelCareerNegotiation()">Cancelar</button>' +
       '</div>';
   }
@@ -697,8 +826,36 @@ function renderCareerNegotiation(c) {
   );
 }
 
+// Botón para pasar al día siguiente de la ventana de fichajes -- resetea
+// los topes diarios (ofertas por jugador y fichajes) y, si ya se pasó
+// del último día, cierra la ventana del todo (se puede volver a jugar).
+window.actionAdvanceCareerMarketDay = function () {
+  var w = G.career.marketWindow;
+  if (!w || !w.open) return;
+  w.dayIndex++;
+  w.offersToday = {};
+  w.signingsToday = 0;
+  if (w.dayIndex > w.totalDays) w.open = false;
+  render();
+};
+
 function renderCareerMercado(c) {
   if (c.negotiation) return renderCareerNegotiation(c);
+  var w = c.marketWindow;
+  if (!w || !w.open) {
+    var closedMsg = c.league.matchdayIndex < CAREER_MIDSEASON_AT_MATCHDAY
+      ? ('El mercado reabrirá tras la jornada ' + CAREER_MIDSEASON_AT_MATCHDAY + ' (llevas ' + c.league.matchdayIndex + ').')
+      : 'El mercado reabrirá al empezar la próxima temporada.';
+    return '<div class="panel center-text">' +
+      '<h3 style="margin-bottom:4px">Mercado cerrado</h3>' +
+      '<p class="dim small">' + closedMsg + '</p>' +
+    '</div>';
+  }
+  var windowBannerHtml = '<div class="panel center-text">' +
+    '<h3 style="margin-bottom:4px">Ventana de fichajes: día ' + w.dayIndex + ' de ' + w.totalDays + ' (' + (w.phase === 'preseason' ? 'pretemporada' : 'mercado de invierno') + ')</h3>' +
+    '<p class="dim small">Máximo ' + CAREER_MAX_OFFERS_PER_PLAYER_PER_DAY + ' ofertas por jugador y día, y ' + CAREER_MAX_SIGNINGS_PER_DAY + ' fichajes confirmados al día. Fichajes hoy: ' + w.signingsToday + ' / ' + CAREER_MAX_SIGNINGS_PER_DAY + '.</p>' +
+    '<button class="btn btn-outline btn-block" onclick="actionAdvanceCareerMarketDay()">Avanzar día ▶</button>' +
+  '</div>';
   var owned = c.lineup.map(function (s) { return s.player.id; }).concat(c.bench.map(function (p) { return p.id; }));
   var filter = c.marketFilter || null;
   var search = (c.marketSearch || '').trim().toLowerCase();
@@ -745,6 +902,7 @@ function renderCareerMercado(c) {
       '</div>'
     : '';
   return (
+    windowBannerHtml +
     '<div class="panel">' +
       '<h3 style="margin-bottom:4px">Mercado</h3>' +
       '<p class="dim small">Presupuesto disponible: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong>. Solo jugadores con media menor de 80 -- los mejores todavía no están a la venta. Fichar (en propiedad o cedido) es negociar: ofreces dinero y el club puede aceptar o rechazar. Cedidos: ' + careerLoanCount(c) + ' / ' + CAREER_MAX_LOANS_IN + '.</p>' +
@@ -889,10 +1047,14 @@ function careerGhostPool(c) {
 }
 
 // Genera goleador (y asistente, si toca) para cada gol de un marcador ya
-// decidido y los suma a league.stats -- mismo mecanismo que
-// futDraftRecordGoalEvents/futDraftGoalEvent de FutDraft/Liga, reutilizado
-// tal cual. 'Tu equipo' es la etiqueta que ya reconoce
-// renderTopScorersAssistsPanel para mostrar tu propio escudo.
+// decidido y los suma a league.stats (de ESTA temporada) -- mismo
+// mecanismo que futDraftRecordGoalEvents/futDraftGoalEvent de
+// FutDraft/Liga, reutilizado tal cual. 'Tu equipo' es la etiqueta que ya
+// reconoce renderTopScorersAssistsPanel para mostrar tu propio escudo.
+// Los goles TUYOS (no los del rival, que son solo nombres fantasma sin
+// identidad real de una temporada a otra) también se suman a
+// c.careerStats, que no se resetea nunca entre temporadas -- ver la
+// pestaña Estadísticas.
 function careerRecordMatchGoals(c, league, homeIdx, awayIdx, homeGoals, awayGoals) {
   var homeLabel = homeIdx === 0 ? 'Tu equipo' : league.teamNames[homeIdx];
   var awayLabel = awayIdx === 0 ? 'Tu equipo' : league.teamNames[awayIdx];
@@ -905,6 +1067,21 @@ function careerRecordMatchGoals(c, league, homeIdx, awayIdx, homeGoals, awayGoal
   for (var j = 0; j < awayGoals; j++) awayEvents.push(futDraftGoalEvent(awayPool));
   futDraftRecordGoalEvents(league.stats, homeEvents, homeLabel);
   futDraftRecordGoalEvents(league.stats, awayEvents, awayLabel);
+  if (homeIdx === 0) futDraftRecordGoalEvents(c.careerStats, homeEvents, homeLabel);
+  if (awayIdx === 0) futDraftRecordGoalEvents(c.careerStats, awayEvents, awayLabel);
+}
+
+// Se llama tras aplicar CUALQUIER resultado a la tabla (tuyo o ajeno):
+// mira dónde quedas ahora mismo y, si es mejor que tu mejor marca
+// histórica, la actualiza -- así "mejor posición" cuenta cualquier
+// momento en que hayas estado ahí, no solo el resultado final de una
+// temporada completa.
+function careerUpdateBestPosition(c) {
+  var sorted = ligaSortedTable(c.league.table);
+  var idx = sorted.findIndex(function (t) { return t.idx === 0; });
+  if (idx === -1) return;
+  var position = idx + 1;
+  if (!c.bestPosition || position < c.bestPosition) c.bestPosition = position;
 }
 
 // Resuelve todos los partidos de la jornada actual que NO sean el tuyo
@@ -937,10 +1114,22 @@ function careerAwardWinBonus(c, myGoals, oppGoals) {
   return bonus;
 }
 
+// Si tocaba abrir la ventana de mitad de temporada (justo tras jugar la
+// jornada CAREER_MIDSEASON_AT_MATCHDAY), la abre -- se llama después de
+// cada jornada jugada, en los dos caminos (Saltar y Simular).
+function careerMaybeOpenMidseasonWindow(c) {
+  if (c.league.matchdayIndex === CAREER_MIDSEASON_AT_MATCHDAY && (!c.marketWindow || !c.marketWindow.open)) {
+    c.marketWindow = careerNewMarketWindow('midseason', CAREER_MIDSEASON_DAYS);
+  }
+}
+
 // "Saltar": la jornada entera se resuelve de golpe sin ver nada, tu
-// partido incluido -- lo que ya había.
+// partido incluido -- lo que ya había. Bloqueada mientras haya una
+// ventana de fichajes abierta (ver renderCareerJornada, que ni siquiera
+// enseña el botón en ese caso -- esto es el cinturón y tirantes).
 window.actionSkipCareerMatchday = function () {
   var c = G.career;
+  if (c.marketWindow && c.marketWindow.open) return;
   var league = c.league;
   if (league.matchdayIndex >= league.schedule.length) return;
   var myPower = futDraftScoreBreakdown(c.lineup, c.captainId).total;
@@ -966,6 +1155,8 @@ window.actionSkipCareerMatchday = function () {
     winBonus: winBonus
   };
   league.matchdayIndex++;
+  careerUpdateBestPosition(c);
+  careerMaybeOpenMidseasonWindow(c);
   render();
 };
 
@@ -979,6 +1170,7 @@ window.actionSkipCareerMatchday = function () {
 // de la jornada se resuelve de golpe al terminar, igual que "Saltar".
 window.actionSimulateCareerMatchday = function () {
   var c = G.career;
+  if (c.marketWindow && c.marketWindow.open) return;
   var league = c.league;
   if (league.matchdayIndex >= league.schedule.length) return;
   var fixtures = league.schedule[league.matchdayIndex];
@@ -1027,12 +1219,16 @@ function finishCareerMatchdayMatch() {
   // Tu partido ya trae sus propios goleadores/asistentes de verdad (los
   // generó futDraftBuildTimeline al simular la cadena, ver live.revealed),
   // así que aquí se registran esos en vez de generar unos nuevos.
-  futDraftRecordGoalEvents(league.stats, live.revealed.filter(function (e) { return e.side === 'me'; }), 'Tu equipo');
+  var myEvents = live.revealed.filter(function (e) { return e.side === 'me'; });
+  futDraftRecordGoalEvents(league.stats, myEvents, 'Tu equipo');
   futDraftRecordGoalEvents(league.stats, live.revealed.filter(function (e) { return e.side === 'opp'; }), oppName);
+  futDraftRecordGoalEvents(c.careerStats, myEvents, 'Tu equipo');
   careerResolveOtherFixtures(c, league, fi);
   var winBonus = careerAwardWinBonus(c, myGoals, oppGoals);
   c.lastMatchdayResult = { matchday: league.matchdayIndex + 1, oppName: oppName, myGoals: myGoals, oppGoals: oppGoals, winBonus: winBonus };
   league.matchdayIndex++;
+  careerUpdateBestPosition(c);
+  careerMaybeOpenMidseasonWindow(c);
 
   G.futdraft.lastMatchResult = {
     oppName: oppName, oppShield: teamShieldPath(oppName), oppPower: teamPower({ name: oppName }),
@@ -1053,8 +1249,32 @@ window.continueCareerMatchday = function () {
   render();
 };
 
+// Nueva temporada: sube el número, genera una liga nueva de cero
+// (rivales, calendario, tabla y goleadores/asistentes DE ESA TEMPORADA
+// reiniciados) y abre la ventana de pretemporada de siempre -- el
+// equipo, presupuesto, plantilla, mejor posición histórica y
+// careerStats NO se tocan, siguen siendo los mismos de antes, como una
+// temporada real de verdad.
+window.actionStartNewCareerSeason = function () {
+  var c = G.career;
+  if (c.league.matchdayIndex < c.league.schedule.length) return;
+  c.season = (c.season || 1) + 1;
+  c.league = careerBuildLeague();
+  c.marketWindow = careerNewMarketWindow('preseason', CAREER_PRESEASON_DAYS);
+  c.lastMatchdayResult = null;
+  c.calendarView = null;
+  render();
+};
+
 function renderCareerJornada(c) {
   var league = c.league;
+  var w = c.marketWindow;
+  if (w && w.open) {
+    return '<div class="panel center-text">' +
+      '<h3 style="margin-bottom:4px">Ventana de fichajes abierta</h3>' +
+      '<p class="dim small">Día ' + w.dayIndex + ' de ' + w.totalDays + ' (' + (w.phase === 'preseason' ? 'pretemporada' : 'mercado de invierno') + '). No se puede jugar hasta que cierre -- ve a la pestaña Mercado para negociar o avanzar el día.</p>' +
+    '</div>';
+  }
   var seasonOver = league.matchdayIndex >= league.schedule.length;
   var r = c.lastMatchdayResult;
   var resultHtml = r
@@ -1067,15 +1287,33 @@ function renderCareerJornada(c) {
     : '';
   return (
     '<div class="panel center-text">' +
-      '<h3 style="margin-bottom:4px">' + (seasonOver ? 'Temporada terminada' : ('Jornada ' + (league.matchdayIndex + 1) + ' de ' + league.schedule.length)) + '</h3>' +
+      '<h3 style="margin-bottom:4px">' + (seasonOver ? 'Temporada ' + c.season + ' terminada' : ('Jornada ' + (league.matchdayIndex + 1) + ' de ' + league.schedule.length)) + '</h3>' +
       (seasonOver
-        ? '<p class="dim small">Ya se han jugado las ' + league.schedule.length + ' jornadas.</p>'
+        ? '<p class="dim small">Ya se han jugado las ' + league.schedule.length + ' jornadas.</p>' +
+          '<button class="btn btn-primary btn-block mt" onclick="actionStartNewCareerSeason()">Empezar temporada ' + (c.season + 1) + '</button>'
         : '<div class="btn-row" style="justify-content:center">' +
             '<button class="btn btn-primary" onclick="actionSimulateCareerMatchday()">▶ Simular partido</button>' +
             '<button class="btn btn-outline" onclick="actionSkipCareerMatchday()">⏭ Saltar</button>' +
           '</div>') +
     '</div>' +
     resultHtml
+  );
+}
+
+// Estadísticas de toda la carrera (todas las temporadas, no solo la
+// actual) -- mejor posición en liga alcanzada nunca (careerUpdateBestPosition)
+// y máximos goleadores/asistentes acumulados (c.careerStats, solo de TUS
+// jugadores, ver careerRecordMatchGoals), a petición explícita.
+function renderCareerEstadisticas(c) {
+  var bestPosText = c.bestPosition ? (c.bestPosition + 'º de ' + CAREER_LEAGUE_TEAM_COUNT) : 'Todavía sin datos.';
+  var statsPanel = renderTopScorersAssistsPanel(c.careerStats);
+  return (
+    '<div class="panel center-text">' +
+      '<h3 style="margin-bottom:4px">Estadísticas de la carrera</h3>' +
+      '<p class="dim small">Temporada actual: <strong>' + (c.season || 1) + '</strong></p>' +
+      '<p class="dim small">Mejor posición en liga: <strong style="color:var(--accent-2)">' + bestPosText + '</strong></p>' +
+    '</div>' +
+    (statsPanel || '<div class="panel center-text"><p class="dim small">Todavía no hay goles registrados.</p></div>')
   );
 }
 
@@ -1090,21 +1328,20 @@ function renderCareerMode() {
   else if (c.tab === 'calendario') bodyHtml = renderCareerCalendario(c);
   else if (c.tab === 'liga') bodyHtml = renderCareerLiga(c);
   else if (c.tab === 'jornada') bodyHtml = renderCareerJornada(c);
+  else if (c.tab === 'estadisticas') bodyHtml = renderCareerEstadisticas(c);
   else bodyHtml = renderCareerEquipo(c);
-  // Se guarda en cada render de esta pantalla (también durante el puente
-  // a G.futdraft de "Simular partido", ver actionSimulateCareerMatchday:
-  // ese tramo no pasa por aquí, pero el estado ya queda actualizado en
-  // cuanto se vuelve, con el siguiente render de esta misma función) --
-  // así sobrevive a refrescar el navegador sin tener que acordarse de
-  // guardar a mano en cada acción.
-  saveCareer();
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionGoOtrosModos()">Volver</button>' +
         '<h2 class="panel-title mt mb0">Modo Carrera</h2>' +
-        '<p class="dim small">Todavía en construcción -- esta es la base: equipo, plantilla, mercado, calendario, liga y jornada de una liga de ' + CAREER_LEAGUE_TEAM_COUNT + ' equipos.</p>' +
-        '<p class="dim small">Presupuesto: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong></p>' +
+        '<p class="dim small">Todavía en construcción -- esta es la base: equipo, plantilla, mercado, calendario, liga, jornada y estadísticas de una liga de ' + CAREER_LEAGUE_TEAM_COUNT + ' equipos.</p>' +
+        '<p class="dim small">Temporada <strong>' + (c.season || 1) + '</strong> · Presupuesto: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong> · Hueco ' + G.careerActiveSlot + '</p>' +
+        (c.saveMessage ? '<p class="dim small">' + escapeHtml(c.saveMessage) + '</p>' : '') +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-tiny" onclick="actionSaveCareerNow()">💾 Guardar</button>' +
+          '<button class="btn btn-tiny" onclick="actionGoCareerMode()">🔀 Cambiar partida</button>' +
+        '</div>' +
       '</div>' +
       '<div class="btn-row" style="justify-content:center">' + tabsHtml + '</div>' +
       bodyHtml +
