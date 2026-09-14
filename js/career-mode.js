@@ -42,17 +42,18 @@ var CAREER_TABS = [
   { id: 'jornada', name: 'Jornada' }
 ];
 
-// 11 titulares + 5 suplentes elegidos por el usuario. La distribución de
-// posiciones de los 11 titulares (4 Delantero, 2 Centrocampista, 4
-// Defensa, 1 Portero) no es exactamente un 4-3-3 (necesita 3-3-4-1) --
-// arranca en 4-3-3 igualmente, a petición explícita, así que un
-// Delantero sale marcado "fuera de posición" en el centro del campo
-// hasta que cambies la formación o los titulares a mano.
-var CAREER_MODE_STARTER_IDS = ['r41', 'r170', 'r67', 'r264', 'r267', 'r263', 'r268', 'r269', 'r265', 'r266', 'r57'];
+// 11 titulares + 5 suplentes elegidos por el usuario. Larry Pogue (r43,
+// Centrocampista) sale de titular en vez de Eugene Conwell (r57,
+// Delantero) -- a petición explícita, y de paso la distribución de
+// posiciones de los titulares (3 Delantero, 3 Centrocampista, 4 Defensa,
+// 1 Portero) encaja EXACTA con la formación 4-3-3 por defecto, así que ya
+// no hace falta que nadie salga "fuera de posición" al arrancar.
+var CAREER_MODE_STARTER_IDS = ['r41', 'r170', 'r67', 'r264', 'r267', 'r263', 'r268', 'r269', 'r265', 'r266', 'r43'];
 // Deck/Cardson/Binder (r270-r272) son Tarjeteros nuevos, añadidos junto
-// con Larry Pogue (r43) en vez de Boar/Franky/Chameleon/Wolf -- Jimmy
-// Mach (r66) es el único suplente original que se queda.
-var CAREER_MODE_BENCH_IDS = ['r270', 'r271', 'r272', 'r66', 'r43'];
+// con Eugene Conwell (r57, que baja de titular) en vez de
+// Boar/Franky/Chameleon/Wolf -- Jimmy Mach (r66) es el único suplente
+// original que se queda.
+var CAREER_MODE_BENCH_IDS = ['r270', 'r271', 'r272', 'r66', 'r57'];
 var CAREER_MODE_DEFAULT_FORMATION = '433';
 var CAREER_LEAGUE_TEAM_COUNT = 20; // tú + 19 rivales, a petición explícita
 
@@ -312,13 +313,34 @@ window.actionSetCareerPlantillaFilter = function (pos) {
   render();
 };
 
+// Mismo criterio de "mejor disponible para esta línea" que
+// assignFutDraftFormation (stat según posición), usado para elegir a
+// quién subir del banquillo cuando se vende/cede a un titular.
+var CAREER_LINE_STAT = { Portero: 'defensa', Defensa: 'defensa', Centrocampista: 'pase', Delantero: 'tiro' };
+
 // Quita a un jugador del once o del banquillo (lo que toque) y le quita
 // el brazalete/selección si lo tenía -- compartido por vender y ceder,
-// que solo se diferencian en si sueltan dinero o no.
+// que solo se diferencian en si sueltan dinero o no. Si era titular, sube
+// automáticamente al mejor disponible del banquillo para esa misma línea
+// (o el mejor de cualquier posición si no hay ninguno de esa línea) --
+// a petición explícita, para no dejar un hueco vacío en el campo.
 function careerRemoveFromSquad(c, id) {
   var lineupIdx = c.lineup.findIndex(function (s) { return s.player.id === id; });
-  if (lineupIdx !== -1) c.lineup.splice(lineupIdx, 1);
-  else c.bench = c.bench.filter(function (p) { return p.id !== id; });
+  if (lineupIdx !== -1) {
+    var vacatedPos = c.lineup[lineupIdx].pos;
+    c.lineup.splice(lineupIdx, 1);
+    if (c.bench.length) {
+      var stat = CAREER_LINE_STAT[vacatedPos];
+      var candidates = c.bench.filter(function (p) { return p.posicion === vacatedPos; });
+      if (!candidates.length) candidates = c.bench.slice();
+      candidates.sort(function (a, b) { return b[stat] - a[stat]; });
+      var promoted = candidates[0];
+      c.bench = c.bench.filter(function (p) { return p.id !== promoted.id; });
+      c.lineup.push({ pos: vacatedPos, player: promoted });
+    }
+  } else {
+    c.bench = c.bench.filter(function (p) { return p.id !== id; });
+  }
   if (c.captainId === id) c.captainId = null;
   if (c.swapSelectedId === id) c.swapSelectedId = null;
 }
@@ -395,14 +417,47 @@ function renderCareerPlantilla(c) {
 
 window.actionSetCareerMarketFilter = function (pos) {
   G.career.marketFilter = pos;
+  G.career.marketPage = 0;
   render();
 };
 window.actionSetCareerMarketSearch = function (value) {
   G.career.marketSearch = value;
+  G.career.marketPage = 0;
   render();
 };
 window.actionToggleCareerMarketInterested = function () {
   G.career.marketOnlyInterested = !G.career.marketOnlyInterested;
+  G.career.marketPage = 0;
+  render();
+};
+
+// Ordenar por un atributo concreto (media, valor, o cualquiera de las 4
+// stats) de mayor a menor o al revés -- a petición explícita ("filtros
+// para poner de mayor a menor... busca de un atributo en concreto").
+var CAREER_MARKET_SORT_FIELDS = [
+  { id: 'media', name: 'Media', get: function (p) { return futDraftPlayerScore(p); } },
+  { id: 'valor', name: 'Valor de mercado', get: function (p) { return careerPlayerValue(p); } },
+  { id: 'tiro', name: 'Tiro', get: function (p) { return p.tiro; } },
+  { id: 'pase', name: 'Regate', get: function (p) { return p.pase; } },
+  { id: 'defensa', name: 'Defensa', get: function (p) { return p.defensa; } },
+  { id: 'especial', name: 'Especial', get: function (p) { return p.especial; } }
+];
+window.actionSetCareerMarketSort = function (fieldId) {
+  G.career.marketSort = fieldId;
+  G.career.marketPage = 0;
+  render();
+};
+window.actionToggleCareerMarketSortDir = function () {
+  G.career.marketSortDir = G.career.marketSortDir === 'asc' ? 'desc' : 'asc';
+  G.career.marketPage = 0;
+  render();
+};
+
+// Páginas de 30 en 30 (CAREER_MARKET_PAGE_SIZE) en vez de volcar los 200+
+// jugadores disponibles de golpe -- a petición explícita.
+var CAREER_MARKET_PAGE_SIZE = 30;
+window.actionCareerMarketPageStep = function (delta) {
+  G.career.marketPage = Math.max(0, (G.career.marketPage || 0) + delta);
   render();
 };
 
@@ -504,9 +559,9 @@ function renderCareerNegotiation(c) {
       (neg.lastResult === 'sinPresupuesto' ? '<p class="dim small" style="color:var(--danger)">No tienes presupuesto para ofrecer eso.</p>' : '') +
       (neg.lastResult === 'plantillaLlena' ? '<p class="dim small" style="color:var(--danger)">Tu plantilla ya está al máximo (' + CAREER_MAX_SQUAD_SIZE + '). Vende o cede a alguien antes de fichar.</p>' : '') +
       '<div class="stepper-row">' +
-        '<button class="btn stepper-arrow" onclick="actionAdjustCareerOffer(-0.2)">◀</button>' +
+        '<button class="btn stepper-arrow" onclick="actionAdjustCareerOffer(-0.1)">◀</button>' +
         '<span class="stepper-value">' + neg.offer + ' M€</span>' +
-        '<button class="btn stepper-arrow" onclick="actionAdjustCareerOffer(0.2)">▶</button>' +
+        '<button class="btn stepper-arrow" onclick="actionAdjustCareerOffer(0.1)">▶</button>' +
       '</div>' +
       '<div class="btn-row" style="justify-content:center">' +
         '<button class="btn btn-primary" onclick="actionSendCareerOffer()">Enviar oferta</button>' +
@@ -540,9 +595,21 @@ function renderCareerMercado(c) {
     if (onlyInterested && (score - teamAvg) > CAREER_INTERESTED_GAP) return false;
     return true;
   });
+  var sortField = CAREER_MARKET_SORT_FIELDS.find(function (f) { return f.id === c.marketSort; }) || CAREER_MARKET_SORT_FIELDS[0];
+  var sortDir = c.marketSortDir === 'asc' ? 1 : -1;
+  available = available.slice().sort(function (a, b) { return (sortField.get(a) - sortField.get(b)) * sortDir; });
+
+  var totalPages = Math.max(1, Math.ceil(available.length / CAREER_MARKET_PAGE_SIZE));
+  var page = clamp(c.marketPage || 0, 0, totalPages - 1);
+  c.marketPage = page;
+  var pageItems = available.slice(page * CAREER_MARKET_PAGE_SIZE, (page + 1) * CAREER_MARKET_PAGE_SIZE);
+
   var filterBtnsHtml = careerPositionFilterBtnsHtml(filter, 'actionSetCareerMarketFilter');
+  var sortOptionsHtml = CAREER_MARKET_SORT_FIELDS.map(function (f) {
+    return '<option value="' + f.id + '"' + (f.id === sortField.id ? ' selected' : '') + '>' + f.name + '</option>';
+  }).join('');
   var squadFull = (c.lineup.length + c.bench.length) >= CAREER_MAX_SQUAD_SIZE;
-  var rowsHtml = available.map(function (p) {
+  var rowsHtml = pageItems.map(function (p) {
     var value = careerPlayerValue(p);
     return '<div class="futdraft-timeline-row">' + careerMediaBadgeHtml(p) + avatarHtml(p) +
       '<span>' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + '</span>' +
@@ -550,17 +617,30 @@ function renderCareerMercado(c) {
       '<button class="btn btn-tiny" style="margin-left:6px" ' + (squadFull ? 'disabled' : '') + ' onclick="actionStartCareerNegotiation(\'' + p.id + '\')">Negociar</button>' +
     '</div>';
   }).join('');
+  var pagerHtml = totalPages > 1
+    ? '<div class="stepper-row">' +
+        '<button class="btn stepper-arrow" onclick="actionCareerMarketPageStep(-1)" aria-label="Página anterior"' + (page === 0 ? ' disabled' : '') + '>◀</button>' +
+        '<span class="stepper-value">Página ' + (page + 1) + ' / ' + totalPages + '</span>' +
+        '<button class="btn stepper-arrow" onclick="actionCareerMarketPageStep(1)" aria-label="Página siguiente"' + (page === totalPages - 1 ? ' disabled' : '') + '>▶</button>' +
+      '</div>'
+    : '';
   return (
     '<div class="panel">' +
       '<h3 style="margin-bottom:4px">Mercado</h3>' +
       '<p class="dim small">Presupuesto disponible: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong>. Solo jugadores con media menor de 80 -- los mejores todavía no están a la venta. Fichar es negociar: ofreces dinero y el club puede aceptar o rechazar.</p>' +
+      '<p class="dim small">' + available.length + ' jugador' + (available.length === 1 ? '' : 'es') + ' con este filtro.</p>' +
       (squadFull ? '<p class="dim small" style="color:var(--danger)">Plantilla al máximo (' + CAREER_MAX_SQUAD_SIZE + '). Vende o cede a alguien antes de fichar.</p>' : '') +
       (c.marketMessage ? '<p class="dim small">' + escapeHtml(c.marketMessage) + '</p>' : '') +
       '<input class="select-field" type="text" placeholder="Buscar por nombre…" value="' + escapeHtml(c.marketSearch || '') + '" oninput="actionSetCareerMarketSearch(this.value)">' +
       '<div class="btn-row mt">' + filterBtnsHtml +
         '<button class="btn btn-tiny' + (onlyInterested ? ' active' : '') + '" onclick="actionToggleCareerMarketInterested()">🤝 Podrían unirse</button>' +
       '</div>' +
+      '<div class="btn-row mt" style="align-items:center">' +
+        '<select class="select-field" style="width:auto;min-height:36px;padding:6px 10px" onchange="actionSetCareerMarketSort(this.value)">' + sortOptionsHtml + '</select>' +
+        '<button class="btn btn-tiny" onclick="actionToggleCareerMarketSortDir()">' + (sortDir === -1 ? '⬇ Mayor a menor' : '⬆ Menor a mayor') + '</button>' +
+      '</div>' +
       '<div class="futdraft-timeline mt">' + (rowsHtml || '<p class="dim small center-text">No queda nadie disponible con ese filtro.</p>') + '</div>' +
+      pagerHtml +
     '</div>'
   );
 }
