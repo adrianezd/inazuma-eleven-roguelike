@@ -52,9 +52,18 @@ function careerModeRoster(ids) {
 // Valor de mercado: no hay dato real de mercado en el roster, así que se
 // deriva de la misma puntuación por posición que ya usa toda la UI
 // (futDraftPlayerScore), escalado para que parezca un fichaje real de
-// fútbol (en millones de €) en vez de un número entre 0 y 100 pelado.
+// fútbol (en millones de €) en vez de un número entre 0 y 100 pelado. No
+// es lineal (un mercado real no lo es): la referencia dada es "75 de
+// media, un millón más o menos", así que el valor se DUPLICA cada 10
+// puntos de media por encima o por debajo de 75 -- 65 vale medio millón,
+// 85 vale dos, 95 vale cuatro... -- en vez de subir a ritmo plano.
+var CAREER_VALUE_ANCHOR_SCORE = 75;
+var CAREER_VALUE_ANCHOR_MILLIONS = 1;
+var CAREER_VALUE_DOUBLING_POINTS = 10;
 function careerPlayerValue(p) {
-  return Math.max(1, Math.round(futDraftPlayerScore(p) * 0.4));
+  var score = futDraftPlayerScore(p);
+  var millions = CAREER_VALUE_ANCHOR_MILLIONS * Math.pow(2, (score - CAREER_VALUE_ANCHOR_SCORE) / CAREER_VALUE_DOUBLING_POINTS);
+  return Math.max(0.1, Math.round(millions * 10) / 10);
 }
 
 // Mismo criterio que ligaPickRivalNames (más equipos "jefe" cuanto más
@@ -242,7 +251,8 @@ function renderCareerEquipo(c) {
 
 function renderCareerPlantilla(c) {
   var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
-  var total = all.reduce(function (sum, p) { return sum + careerPlayerValue(p); }, 0);
+  var rawTotal = all.reduce(function (sum, p) { return sum + careerPlayerValue(p); }, 0);
+  var total = Math.round(rawTotal * 10) / 10;
   var rowsHtml = all.map(function (p) {
     return '<div class="futdraft-timeline-row">' + avatarHtml(p) +
       '<span>' + escapeHtml(p.nombre) + ' <span class="dim">· ' + p.posicion + '</span></span>' +
