@@ -264,12 +264,33 @@ function renderCareerEquipo(c) {
   );
 }
 
+// Misma insignia redonda de media que las tarjetas de Colección/Draft
+// (ver playerCardHtml), con el mismo color por rango (mediaBadgeColor) --
+// aquí sirve para ver de un vistazo quién rinde mejor sin tener que
+// entrar a cada jugador.
+function careerMediaBadgeHtml(p) {
+  var score = Math.round(futDraftPlayerScore(p));
+  return '<span class="media-badge" style="background:' + mediaBadgeColor(score) + '" title="Media según su posición">' + score + '</span>';
+}
+
+window.actionSetCareerPlantillaFilter = function (pos) {
+  G.career.plantillaFilter = pos;
+  render();
+};
+
 function renderCareerPlantilla(c) {
   var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
   var rawTotal = all.reduce(function (sum, p) { return sum + careerPlayerValue(p); }, 0);
   var total = Math.round(rawTotal * 10) / 10;
-  var rowsHtml = all.map(function (p) {
-    return '<div class="futdraft-timeline-row">' + avatarHtml(p) +
+  var filter = c.plantillaFilter || null;
+  var filtered = filter ? all.filter(function (p) { return p.posicion === filter; }) : all;
+  var filterBtnsHtml = [null].concat(POSITIONS).map(function (pos) {
+    var active = filter === pos;
+    var arg = pos ? "'" + pos + "'" : 'null';
+    return '<button class="btn btn-tiny' + (active ? ' active' : '') + '" onclick="actionSetCareerPlantillaFilter(' + arg + ')">' + (pos || 'Todos') + '</button>';
+  }).join('');
+  var rowsHtml = filtered.map(function (p) {
+    return '<div class="futdraft-timeline-row">' + careerMediaBadgeHtml(p) + avatarHtml(p) +
       '<span>' + escapeHtml(p.nombre) + ' <span class="dim">· ' + p.posicion + '</span></span>' +
       '<strong style="margin-left:auto;white-space:nowrap;color:var(--accent-2)">' + careerPlayerValue(p) + ' M€</strong>' +
     '</div>';
@@ -278,7 +299,8 @@ function renderCareerPlantilla(c) {
     '<div class="panel">' +
       '<h3 style="margin-bottom:4px">Gestionar plantilla</h3>' +
       '<p class="dim small">Valor total de la plantilla: <strong style="color:var(--accent-2)">' + total + ' M€</strong>. Valor de mercado orientativo, calculado a partir del rendimiento de cada jugador -- todavía no se puede fichar ni vender (ver pestaña Mercado).</p>' +
-      '<div class="futdraft-timeline">' + rowsHtml + '</div>' +
+      '<div class="btn-row">' + filterBtnsHtml + '</div>' +
+      '<div class="futdraft-timeline mt">' + (rowsHtml || '<p class="dim small center-text">Nadie en esa posición.</p>') + '</div>' +
     '</div>'
   );
 }
