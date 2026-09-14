@@ -184,14 +184,6 @@ function weatherChanceDelta(weather, action, attackerTipo) {
   }
   return 0;
 }
-// Multiplicador simétrico (mismo % para los dos bandos) para FutDraft, que
-// no tiene ataques individuales, solo una puntuación de equipo agregada.
-function weatherFutDraftMultiplier(weather) {
-  if (weather === 'lluvia') return 0.9;
-  if (weather === 'viento') return 1.1;
-  return 1;
-}
-
 function typeAdvantage(a, b) {
   if (a === b) return 0;
   var ia = CYCLE.indexOf(a), ib = CYCLE.indexOf(b);
@@ -1269,6 +1261,7 @@ function render() {
     case 'futdraftModeSelect': html = renderFutDraftModeSelect(); break;
     case 'futdraftAffinitySelect': html = renderFutDraftAffinitySelect(); break;
     case 'futdraftFormationSelect': html = renderFutDraftFormationSelect(); break;
+    case 'futdraftModifierSelect': html = renderFutDraftModifierSelect(); break;
     case 'futdraftPick': html = renderFutDraftPick(); break;
     case 'futdraftTeam': html = renderFutDraftTeam(); break;
     case 'futdraftBracket': html = renderFutDraftBracket(); break;
@@ -3831,13 +3824,70 @@ function renderFutDraftFormationSelect() {
   );
 }
 
+// Condiciones del partido para todo el FutDraft/Liga que empieza: se
+// eligen con flechas (mismo patrón que Tipo de FutDraft/Tamaño del
+// torneo) justo después de la formación, antes de draftear. Por defecto
+// "Sin modificador" (índice 0), a petición explícita. Lluvia y Partido
+// cerrado afectan a los dos equipos por igual (bothMult); Aire/Calor/
+// Niebla/Barro favorecen solo a tu equipo, escalados por cuántos
+// jugadores de ese tipo elemental tengas en el once (ver
+// futDraftModifierMultipliers) -- el rival en FutDraft es solo un número
+// (teamPower), no tiene un once real con el que comparar tipos.
+var FUTDRAFT_MODIFIERS = [
+  { id: 'ninguno', name: 'Sin modificador', desc: 'Partido en condiciones normales, sin ningún efecto añadido.' },
+  { id: 'lluvia', name: 'Lluvia', desc: 'El balón resbala: baja el rendimiento ofensivo y defensivo de los dos equipos por igual.', bothMult: 0.9 },
+  { id: 'aire', name: 'Aire', desc: 'Viento fuerte en el campo: cuantos más jugadores de tipo Viento tengas en el once, más rinde tu equipo.', favorType: 'Viento' },
+  { id: 'calor', name: 'Calor', desc: 'Ola de calor: cuantos más jugadores de tipo Fuego tengas en el once, más rinde tu equipo.', favorType: 'Fuego' },
+  { id: 'niebla', name: 'Niebla', desc: 'Poca visibilidad: cuantos más jugadores de tipo Bosque tengas en el once, más rinde tu equipo.', favorType: 'Bosque' },
+  { id: 'barro', name: 'Barro', desc: 'Terreno embarrado: cuantos más jugadores de tipo Montaña tengas en el once, más rinde tu equipo.', favorType: 'Montaña' },
+  { id: 'ataque', name: 'Delanteros en racha', desc: 'Tus delanteros están inspirados: sube tu ataque, más goles a tu favor.', myAtkMult: 1.18 },
+  { id: 'cerrojo', name: 'Partido cerrado', desc: 'Los dos equipos juegan más atrás: baja el ataque de ambos, partido con menos goles.', bothMult: 0.82 }
+];
+var FUTDRAFT_MODIFIERS_BY_ID = {};
+FUTDRAFT_MODIFIERS.forEach(function (m) { FUTDRAFT_MODIFIERS_BY_ID[m.id] = m; });
+
+function futDraftModifierChoiceIdx() { return G.futdraftModifierChoiceIdx || 0; }
+function actionFutDraftModifierStep(delta) {
+  var n = FUTDRAFT_MODIFIERS.length;
+  G.futdraftModifierChoiceIdx = ((futDraftModifierChoiceIdx() + delta) % n + n) % n;
+  render();
+}
+function actionBackToFutDraftFormationSelect() { G.screen = 'futdraftFormationSelect'; render(); }
+
+function renderFutDraftModifierSelect() {
+  var mod = FUTDRAFT_MODIFIERS[futDraftModifierChoiceIdx()];
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<button class="btn btn-outline btn-block" onclick="actionBackToFutDraftFormationSelect()">Volver</button>' +
+        '<h2 class="panel-title mt">Condiciones del partido</h2>' +
+        '<div class="btn-row" style="justify-content:center;align-items:center;gap:14px">' +
+          '<button class="btn btn-outline" onclick="actionFutDraftModifierStep(-1)">◀</button>' +
+          '<span style="min-width:170px;font-weight:700;font-size:1.1rem">' + mod.name + '</span>' +
+          '<button class="btn btn-outline" onclick="actionFutDraftModifierStep(1)">▶</button>' +
+        '</div>' +
+        '<p class="dim small">' + mod.desc + '</p>' +
+        '<button class="btn btn-primary btn-block mt" onclick="actionContinueFutDraftModifierSelect()">Continuar</button>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
 function actionChooseFutDraftFormation(id) {
+  G.futdraftPendingFormation = id;
+  G.futdraftModifierChoiceIdx = 0;
+  G.screen = 'futdraftModifierSelect';
+  render();
+}
+
+function actionContinueFutDraftModifierSelect() {
   var mode = G.futdraftPendingMode || 'clasico';
   G.futdraft = {
-    squad: [], formation: id, mode: mode,
+    squad: [], formation: G.futdraftPendingFormation, mode: mode,
     affinity: mode === 'afinidad' ? G.futdraftAffinity : null,
     ligaPool: mode === 'liga' ? G.ligaPendingPool : null,
     ligaTier: mode === 'liga' ? G.ligaPendingTier : null,
+    modifier: FUTDRAFT_MODIFIERS[futDraftModifierChoiceIdx()].id,
     captainId: null,
     matches: [], matchIndex: 0
   };
@@ -4452,21 +4502,46 @@ function futDraftRecordGoalEvents(stats, events, teamLabel) {
 // reglamentarios, con su línea temporal. No decide nada sobre el destino
 // del partido (bracket vs liga, empate permitido o no) -- eso lo hace
 // quien lo llama.
+function futDraftModifierTypeFraction(lineup, tipo) {
+  if (!lineup || !lineup.length) return 0;
+  var n = 0;
+  lineup.forEach(function (s) { if (s.player && s.player.tipo === tipo) n++; });
+  return n / lineup.length;
+}
+
+// Multiplicadores del modificador elegido para ESTE FutDraft/Liga
+// (f.modifier, fijado al final del draft, ver actionContinueFutDraftModifierSelect).
+// bothMult toca ataque y defensa propios Y la fuerza del rival por igual
+// (lluvia, cerrojo); los que favorecen un tipo elemental solo tocan a tu
+// equipo, escalados por la fracción de tu once que sea de ese tipo (un
+// once 100% de ese tipo llega a +50%, ninguno no da nada).
+function futDraftModifierMultipliers(modifierId, lineup) {
+  var mod = FUTDRAFT_MODIFIERS_BY_ID[modifierId] || FUTDRAFT_MODIFIERS_BY_ID.ninguno;
+  var bothMult = mod.bothMult || 1;
+  var myAtkMult = mod.myAtkMult || 1;
+  var myDefMult = mod.myDefMult || 1;
+  if (mod.favorType) {
+    var bonus = 1 + futDraftModifierTypeFraction(lineup, mod.favorType) * 0.5;
+    myAtkMult *= bonus;
+    myDefMult *= bonus;
+  }
+  return { bothMult: bothMult, myAtkMult: myAtkMult, myDefMult: myDefMult };
+}
+
 function futDraftSimulateMatchCore(oppPower) {
   var f = G.futdraft;
   var formation = FUTDRAFT_FORMATIONS.find(function (ft) { return ft.id === f.formation; });
   var score = futDraftTeamScore(f.lineup, f.captainId);
-  var weather = rollWeather();
-  var weatherMult = weatherFutDraftMultiplier(weather);
-  var myAtk = score * formation.atk * weatherMult;
-  var myDef = score * formation.def * weatherMult;
-  var effectiveOppPower = oppPower * weatherMult;
+  var mods = futDraftModifierMultipliers(f.modifier, f.lineup);
+  var myAtk = score * formation.atk * mods.bothMult * mods.myAtkMult;
+  var myDef = score * formation.def * mods.bothMult * mods.myDefMult;
+  var effectiveOppPower = oppPower * mods.bothMult;
   var myGoals = futDraftRandomGoals(futDraftExpectedGoals(myAtk, effectiveOppPower));
   var oppGoals = futDraftRandomGoals(futDraftExpectedGoals(effectiveOppPower, myDef));
   var myPlayers = f.lineup.map(function (s) { return s.player; });
   var oppPlayers = futDraftUndraftedPool();
   var timeline = futDraftBuildTimeline(myGoals, oppGoals, myPlayers, oppPlayers);
-  return { myGoals: myGoals, oppGoals: oppGoals, weather: weather, timeline: timeline, myAtk: myAtk, myDef: myDef, effectiveOppPower: effectiveOppPower };
+  return { myGoals: myGoals, oppGoals: oppGoals, modifier: f.modifier, timeline: timeline, myAtk: myAtk, myDef: myDef, effectiveOppPower: effectiveOppPower };
 }
 
 window.playFutDraftMatch = function () {
@@ -4477,7 +4552,7 @@ window.playFutDraftMatch = function () {
   var sim = futDraftSimulateMatchCore(teamPower(oppSide));
 
   f.live = {
-    match: match, oppSide: oppSide, weather: sim.weather,
+    match: match, oppSide: oppSide, modifier: sim.modifier,
     minute: 0, pending: sim.timeline.slice(), revealed: [],
     myGoals: 0, oppGoals: 0, finalMyGoals: sim.myGoals, finalOppGoals: sim.oppGoals,
     // Se guardan para poder generar la prórroga más tarde sin recalcular
@@ -4516,21 +4591,21 @@ function finishFutDraftRegularTime() {
   var myGoals = live.finalMyGoals, oppGoals = live.finalOppGoals;
   var oppPower = teamPower(oppSide);
   var timeline = live.revealed;
-  var weather = live.weather;
+  var modifier = live.modifier;
   f.live = null;
   futDraftRecordGoalEvents(f.stats, timeline.filter(function (e) { return e.side === 'me'; }), 'Tu equipo');
   futDraftRecordGoalEvents(f.stats, timeline.filter(function (e) { return e.side === 'opp'; }), oppSide.name);
   if (myGoals === oppGoals) {
     f.pendingMatch = match;
     f.pendingOppSide = oppSide;
-    f.pendingRegularResult = { myGoals: myGoals, oppGoals: oppGoals, oppPower: oppPower, timeline: timeline, weather: weather };
+    f.pendingRegularResult = { myGoals: myGoals, oppGoals: oppGoals, oppPower: oppPower, timeline: timeline, modifier: modifier };
     startFutDraftPenaltyShootout(oppSide);
     return;
   }
   var playerWon = myGoals > oppGoals;
   match.winner = playerWon ? (match.a.isPlayer ? match.a : match.b) : (match.a.isPlayer ? match.b : match.a);
   if (playerWon) f.winsCount++;
-  f.lastMatchResult = { oppName: oppSide.name, oppShield: teamShieldPath(oppSide.name), oppPower: oppPower, myGoals: myGoals, oppGoals: oppGoals, playerWon: playerWon, timeline: timeline, weather: weather };
+  f.lastMatchResult = { oppName: oppSide.name, oppShield: teamShieldPath(oppSide.name), oppPower: oppPower, myGoals: myGoals, oppGoals: oppGoals, playerWon: playerWon, timeline: timeline, modifier: modifier };
   G.screen = 'futdraftMatchResult';
   render();
 }
@@ -4628,7 +4703,7 @@ function renderFutDraftLive() {
       '</div>' +
       '<div class="turn-indicator">' + (live.inExtraTime ? 'Prórroga — minuto ' + live.minute + '\' de 120\'' : 'Minuto ' + live.minute + '\' de 90\'') + '</div>' +
       (live.inExtraTime && live.minute <= 91 ? '<p class="dim small center-text">Empate al término del tiempo reglamentario: se juega la prórroga.</p>' : '') +
-      (live.weather ? '<p class="dim small center-text">🌦️ ' + WEATHER_CONDITIONS[live.weather].label + ': ' + WEATHER_CONDITIONS[live.weather].desc + '</p>' : '') +
+      (live.modifier && live.modifier !== 'ninguno' ? '<p class="dim small center-text">🌦️ ' + FUTDRAFT_MODIFIERS_BY_ID[live.modifier].name + ': ' + FUTDRAFT_MODIFIERS_BY_ID[live.modifier].desc + '</p>' : '') +
       '<div class="panel">' +
         '<div class="futdraft-timeline">' + (logHtml || '<p class="dim small center-text">Aún no ha pasado nada…</p>') + '</div>' +
       '</div>' +
@@ -4637,51 +4712,53 @@ function renderFutDraftLive() {
   );
 }
 
-// Tanda de penaltis de FutDraft: mismo motor (zonas 0-2, portero al azar,
-// 5 lanzamientos + muerte súbita) que el Modo Penaltis independiente, pero
-// con su propio estado (G.futdraft.penalty) para no interferir con él, y
-// que al acabar retoma el bracket de FutDraft en vez de terminar la tanda.
+// Tanda de penaltis de FutDraft: a diferencia del Modo Penaltis
+// independiente (que se sigue jugando a mano, zona a zona), aquí se
+// SIMULA entera de golpe -- a petición explícita, para no interrumpir el
+// ritmo de un torneo/temporada con una tanda manual cada vez que hay
+// empate. La probabilidad de acierto de cada lanzamiento sale de comparar
+// la puntuación de tu equipo (futDraftTeamScore) con la fuerza del rival
+// (teamPower): con equipos parejos ronda el 72% típico de un penalti real,
+// y se desplaza unos puntos a tu favor o en tu contra según quién sea mejor.
+function futDraftPenaltyShotChance(favor) {
+  return clamp(0.72 + favor / 250, 0.45, 0.92);
+}
+
+function simulateFutDraftPenaltyShootout(oppSide) {
+  var f = G.futdraft;
+  var myScore = futDraftTeamScore(f.lineup, f.captainId);
+  var oppPower = teamPower(oppSide);
+  var diff = myScore - oppPower;
+  var myChance = futDraftPenaltyShotChance(diff);
+  var rivalChance = futDraftPenaltyShotChance(-diff);
+  var log = [];
+  var playerGoals = 0, rivalGoals = 0;
+  var round = 1;
+  while (true) {
+    var myScored = Math.random() < myChance;
+    if (myScored) playerGoals++;
+    log.push((myScored ? '⚽ ' : '🧤 ') + 'Ronda ' + round + ': ' + (myScored ? 'marcas tu penalti.' : 'el portero rival ataja tu disparo.'));
+    var rivalScored = Math.random() < rivalChance;
+    if (rivalScored) rivalGoals++;
+    log.push((rivalScored ? '⚽ ' : '🧤 ') + 'Ronda ' + round + ': ' + (rivalScored ? (escapeHtml(oppSide.name) + ' anota el penalti.') : ('¡detienes el penalti de ' + escapeHtml(oppSide.name) + '!')));
+    if (round >= PENALTY_MODE_ROUNDS && playerGoals !== rivalGoals) break;
+    round++;
+  }
+  return { playerGoals: playerGoals, rivalGoals: rivalGoals, log: log };
+}
+
+// Con su propio estado (G.futdraft.penalty) para no interferir con el
+// Modo Penaltis independiente, y que al acabar retoma el bracket de
+// FutDraft en vez de terminar la tanda.
 function startFutDraftPenaltyShootout(oppSide) {
+  var sim = simulateFutDraftPenaltyShootout(oppSide);
   G.futdraft.penalty = {
-    playerGoals: 0, rivalGoals: 0, round: 1, stage: 'shoot', suddenDeath: false, result: null,
+    playerGoals: sim.playerGoals, rivalGoals: sim.rivalGoals, log: sim.log,
     oppName: oppSide.name, oppShield: teamShieldPath(oppSide.name)
   };
   G.screen = 'futdraftPenalty';
   render();
 }
-
-window.resolveFutDraftPenaltyShot = function (zone) {
-  var p = G.futdraft.penalty;
-  if (!p || p.result) return;
-  var otherZone = rand(0, 2);
-  var saved = zone === otherZone;
-  if (p.stage === 'shoot') {
-    if (!saved) { p.playerGoals++; p.result = { type: 'goal', text: '¡Marcas el penalti!' }; }
-    else { p.result = { type: 'save', text: 'El portero rival ataja tu disparo.' }; }
-  } else {
-    if (!saved) { p.rivalGoals++; p.result = { type: 'goal', text: escapeHtml(p.oppName) + ' anota el penalti.' }; }
-    else { p.result = { type: 'save', text: '¡Detienes el penalti rival!' }; }
-  }
-  render();
-};
-
-window.continueFutDraftPenaltyShot = function () {
-  var p = G.futdraft.penalty;
-  if (!p || !p.result) return;
-  p.result = null;
-  if (p.stage === 'shoot') { p.stage = 'defend'; render(); return; }
-  p.stage = 'shoot';
-  if (p.suddenDeath) {
-    if (p.playerGoals !== p.rivalGoals) { finishFutDraftPenaltyShootout(); return; }
-  } else {
-    p.round++;
-    if (p.round > PENALTY_MODE_ROUNDS) {
-      if (p.playerGoals === p.rivalGoals) { p.suddenDeath = true; }
-      else { finishFutDraftPenaltyShootout(); return; }
-    }
-  }
-  render();
-};
 
 function finishFutDraftPenaltyShootout() {
   var f = G.futdraft;
@@ -4695,7 +4772,7 @@ function finishFutDraftPenaltyShootout() {
   f.lastMatchResult = {
     oppName: oppSide.name, oppShield: teamShieldPath(oppSide.name), oppPower: regular.oppPower,
     myGoals: regular.myGoals, oppGoals: regular.oppGoals, playerWon: playerWon,
-    timeline: regular.timeline, weather: regular.weather,
+    timeline: regular.timeline, modifier: regular.modifier,
     penalty: { myGoals: p.playerGoals, oppGoals: p.rivalGoals }
   };
   f.penalty = null; f.pendingMatch = null; f.pendingOppSide = null; f.pendingRegularResult = null;
@@ -4706,40 +4783,24 @@ function finishFutDraftPenaltyShootout() {
 function renderFutDraftPenalty() {
   var p = G.futdraft.penalty;
   if (!p) return '';
-  var isShoot = p.stage === 'shoot';
-  var title = isShoot ? '⚽ Tu turno de chutar' : '🧤 Para el penalti rival';
-  var subtitle = isShoot ? 'Elige dónde tirar.' : 'Elige dónde tirarte a parar.';
-  var actionHtml;
-  if (p.result) {
-    actionHtml =
-      '<h3 style="margin-bottom:4px">' + (p.result.type === 'goal' ? '⚽ ¡Gol!' : '🧤 ¡Parada!') + '</h3>' +
-      '<p class="dim small">' + p.result.text + '</p>' +
-      '<button class="btn btn-primary btn-block mt" onclick="continueFutDraftPenaltyShot()">Continuar</button>';
-  } else {
-    actionHtml =
-      '<h3 style="margin-bottom:4px">' + title + '</h3>' +
-      '<p class="dim small">' + subtitle + '</p>' +
-      '<div class="penalty-goal">' +
-        '<img class="penalty-goal-img" src="assets/otros/penaltis.png" alt="">' +
-        '<div class="penalty-zones">' +
-          '<button class="penalty-zone" onclick="resolveFutDraftPenaltyShot(0)" aria-label="Izquierda"></button>' +
-          '<button class="penalty-zone" onclick="resolveFutDraftPenaltyShot(1)" aria-label="Centro"></button>' +
-          '<button class="penalty-zone" onclick="resolveFutDraftPenaltyShot(2)" aria-label="Derecha"></button>' +
-        '</div>' +
-      '</div>';
-  }
+  var playerWon = p.playerGoals > p.rivalGoals;
+  var logHtml = p.log.map(function (l) { return '<p>' + l + '</p>'; }).join('');
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
         '<h2 class="panel-title mt mb0">Penaltis</h2>' +
-        '<p class="dim small">Empate en el tiempo reglamentario contra ' + escapeHtml(p.oppName) + '. Tanda a ' + PENALTY_MODE_ROUNDS + ', con muerte súbita si hay empate.</p>' +
+        '<p class="dim small">Empate en el tiempo reglamentario contra ' + escapeHtml(p.oppName) + '. Tanda simulada a ' + PENALTY_MODE_ROUNDS + ', con muerte súbita si hay empate.</p>' +
       '</div>' +
       '<div class="match-scoreboard">' +
         '<div class="score-side"><img class="team-shield" src="' + getPlayerShieldPath() + '" alt=""><div class="score-name">Tú</div><div class="score-num">' + p.playerGoals + '</div></div>' +
         '<div class="score-vs">VS</div>' +
         '<div class="score-side"><img class="team-shield" src="' + escapeHtml(p.oppShield) + '" alt=""><div class="score-name">' + escapeHtml(p.oppName) + '</div><div class="score-num">' + p.rivalGoals + '</div></div>' +
       '</div>' +
-      '<div class="panel center-text">' + actionHtml + '</div>' +
+      '<div class="panel"><div class="log-panel">' + logHtml + '</div></div>' +
+      '<div class="panel center-text">' +
+        '<h3 style="margin-bottom:4px">' + (playerWon ? '🏆 ¡Ganas la tanda!' : '💔 Pierdes la tanda.') + '</h3>' +
+        '<button class="btn btn-primary btn-block mt" onclick="finishFutDraftPenaltyShootout()">Continuar</button>' +
+      '</div>' +
     '</div>'
   );
 }
@@ -4839,8 +4900,8 @@ function renderFutDraftBracket() {
 function renderFutDraftMatchResult() {
   var r = G.futdraft.lastMatchResult;
   var resultLabel = r.myGoals === r.oppGoals && !r.penalty ? 'Empate' : (r.playerWon ? '🏆 ¡Victoria!' : 'Derrota');
-  var weatherHtml = r.weather
-    ? '<p class="dim small">🌦️ ' + WEATHER_CONDITIONS[r.weather].label + ': ' + WEATHER_CONDITIONS[r.weather].desc + '</p>'
+  var weatherHtml = (r.modifier && r.modifier !== 'ninguno')
+    ? '<p class="dim small">🌦️ ' + FUTDRAFT_MODIFIERS_BY_ID[r.modifier].name + ': ' + FUTDRAFT_MODIFIERS_BY_ID[r.modifier].desc + '</p>'
     : '';
   var penaltyHtml = r.penalty
     ? '<p class="dim small">Empate a ' + r.myGoals + ' en el tiempo reglamentario. Penaltis: <strong>' + r.penalty.myGoals + ' - ' + r.penalty.oppGoals + '</strong></p>'
@@ -5145,7 +5206,7 @@ window.playLigaMatch = function () {
   var sim = futDraftSimulateMatchCore(teamPower({ name: oppName }));
 
   f.live = {
-    oppSide: { name: oppName }, weather: sim.weather,
+    oppSide: { name: oppName }, modifier: sim.modifier,
     minute: 0, pending: sim.timeline.slice(), revealed: [],
     myGoals: 0, oppGoals: 0, finalMyGoals: sim.myGoals, finalOppGoals: sim.oppGoals,
     myAtk: sim.myAtk, myDef: sim.myDef, effectiveOppPower: sim.effectiveOppPower,
@@ -5175,7 +5236,7 @@ function finishLigaMatch() {
   f.lastMatchResult = {
     oppName: oppName, oppShield: teamShieldPath(oppName), oppPower: teamPower({ name: oppName }),
     myGoals: myGoals, oppGoals: oppGoals, playerWon: myGoals > oppGoals,
-    timeline: live.revealed, weather: live.weather, isLiga: true
+    timeline: live.revealed, modifier: live.modifier, isLiga: true
   };
   f.live = null;
   G.screen = 'futdraftMatchResult';
