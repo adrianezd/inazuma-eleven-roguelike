@@ -108,7 +108,8 @@ function careerBuildLeague() {
     // actionPlayCareerMatchday, que rellena esto mismo partido a
     // partido según se resuelve cada jornada).
     results: schedule.map(function (fixtures) { return fixtures.map(function () { return null; }); }),
-    matchdayIndex: 0
+    matchdayIndex: 0,
+    stats: { scorers: {}, assists: {} }
   };
 }
 
@@ -284,10 +285,16 @@ function renderCareerPlantilla(c) {
   var total = Math.round(rawTotal * 10) / 10;
   var filter = c.plantillaFilter || null;
   var filtered = filter ? all.filter(function (p) { return p.posicion === filter; }) : all;
+  // Iconos de posición (los mismos PR/DF/MD/DL de siempre, ver
+  // positionIconPath) en vez del nombre en texto -- "Todos" se queda en
+  // texto porque no hay icono de "todas las posiciones a la vez".
   var filterBtnsHtml = [null].concat(POSITIONS).map(function (pos) {
     var active = filter === pos;
     var arg = pos ? "'" + pos + "'" : 'null';
-    return '<button class="btn btn-tiny' + (active ? ' active' : '') + '" onclick="actionSetCareerPlantillaFilter(' + arg + ')">' + (pos || 'Todos') + '</button>';
+    var label = pos
+      ? '<img src="' + positionIconPath(pos) + '" alt="' + pos + '" title="' + pos + '" style="width:20px;height:20px;vertical-align:middle;">'
+      : 'Todos';
+    return '<button class="btn btn-tiny' + (active ? ' active' : '') + '" onclick="actionSetCareerPlantillaFilter(' + arg + ')" title="' + (pos || 'Todos') + '">' + label + '</button>';
   }).join('');
   var rowsHtml = filtered.map(function (p) {
     return '<div class="futdraft-timeline-row">' + careerMediaBadgeHtml(p) + avatarHtml(p) +
@@ -397,16 +404,24 @@ function renderCareerLiga(c) {
       '<td>' + ligaFormHtml(t.form) + '</td>' +
     '</tr>';
   }).join('');
+  var topScorersHtml = c.showTopScorers ? renderTopScorersAssistsPanel(league.stats) : '';
   return (
     '<div class="panel center-text">' +
       '<p class="dim small">Jornada ' + Math.min(league.matchdayIndex + 1, league.schedule.length) + ' de ' + league.schedule.length + '</p>' +
+      '<button class="btn btn-tiny' + (c.showTopScorers ? ' active' : '') + '" onclick="actionToggleCareerTopScorers()">⚽ Máximos goleadores y asistentes</button>' +
     '</div>' +
+    (topScorersHtml || '') +
     '<div class="panel" style="overflow-x:auto">' +
       '<table class="liga-table"><thead><tr><th>#</th><th></th><th>Equipo</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>Pts</th><th>Últimos</th></tr></thead>' +
       '<tbody>' + rows + '</tbody></table>' +
     '</div>'
   );
 }
+
+window.actionToggleCareerTopScorers = function () {
+  G.career.showTopScorers = !G.career.showTopScorers;
+  render();
+};
 
 // Marcador entre dos potencias ya calculadas (0-100): a diferencia de
 // simulateCpuMatchGoals (que saca la potencia buscando el NOMBRE del
@@ -419,12 +434,40 @@ function careerSimulateMatchGoals(powerA, powerB) {
   return [golA, golB];
 }
 
+// Plantel "fantasma" para goleadores/asistentes de cualquier gol que no
+// sea tuyo (mismo truco que futDraftUndraftedPool, pero excluyendo tus
+// 16 del Modo Carrera en vez del draft de un FutDraft) -- así un rival
+// nunca "marca" con el nombre de uno de tus propios jugadores.
+function careerGhostPool(c) {
+  var myIds = c.lineup.map(function (s) { return s.player.id; }).concat(c.bench.map(function (p) { return p.id; }));
+  return ROSTER.filter(function (p) { return myIds.indexOf(p.id) === -1; });
+}
+
+// Genera goleador (y asistente, si toca) para cada gol de un marcador ya
+// decidido y los suma a league.stats -- mismo mecanismo que
+// futDraftRecordGoalEvents/futDraftGoalEvent de FutDraft/Liga, reutilizado
+// tal cual. 'Tu equipo' es la etiqueta que ya reconoce
+// renderTopScorersAssistsPanel para mostrar tu propio escudo.
+function careerRecordMatchGoals(c, league, homeIdx, awayIdx, homeGoals, awayGoals) {
+  var homeLabel = homeIdx === 0 ? 'Tu equipo' : league.teamNames[homeIdx];
+  var awayLabel = awayIdx === 0 ? 'Tu equipo' : league.teamNames[awayIdx];
+  var myPlayers = c.lineup.map(function (s) { return s.player; });
+  var ghostPool = careerGhostPool(c);
+  var homePool = homeIdx === 0 ? myPlayers : ghostPool;
+  var awayPool = awayIdx === 0 ? myPlayers : ghostPool;
+  var homeEvents = [], awayEvents = [];
+  for (var i = 0; i < homeGoals; i++) homeEvents.push(futDraftGoalEvent(homePool));
+  for (var j = 0; j < awayGoals; j++) awayEvents.push(futDraftGoalEvent(awayPool));
+  futDraftRecordGoalEvents(league.stats, homeEvents, homeLabel);
+  futDraftRecordGoalEvents(league.stats, awayEvents, awayLabel);
+}
+
 // Resuelve todos los partidos de la jornada actual que NO sean el tuyo
 // (o todos, si fromIdx se omite): comparando potencias 0-100, igual que
 // el resto de la jornada en Liga (continueLigaMatchday). Se usa tanto
 // desde "Saltar" (todos, tu partido incluido) como al terminar de VER tu
 // partido con "Simular" (todos menos el tuyo, que ya se resolvió aparte).
-function careerResolveOtherFixtures(league, skipFixtureIdx) {
+function careerResolveOtherFixtures(c, league, skipFixtureIdx) {
   var fixtures = league.schedule[league.matchdayIndex];
   fixtures.forEach(function (fx, fi) {
     if (fi === skipFixtureIdx) return;
@@ -433,6 +476,7 @@ function careerResolveOtherFixtures(league, skipFixtureIdx) {
     var goles = careerSimulateMatchGoals(powerHome, powerAway);
     ligaApplyResult(league.table, fx[0], fx[1], goles[0], goles[1]);
     league.results[league.matchdayIndex][fi] = goles;
+    careerRecordMatchGoals(c, league, fx[0], fx[1], goles[0], goles[1]);
   });
 }
 
@@ -452,7 +496,8 @@ window.actionSkipCareerMatchday = function () {
   var goles = careerSimulateMatchGoals(powerHome, powerAway);
   ligaApplyResult(league.table, myFixture[0], myFixture[1], goles[0], goles[1]);
   league.results[league.matchdayIndex][myFixtureIdx] = goles;
-  careerResolveOtherFixtures(league, myFixtureIdx);
+  careerRecordMatchGoals(c, league, myFixture[0], myFixture[1], goles[0], goles[1]);
+  careerResolveOtherFixtures(c, league, myFixtureIdx);
   c.lastMatchdayResult = {
     matchday: league.matchdayIndex + 1,
     oppName: league.teamNames[oppIdx],
@@ -518,7 +563,12 @@ function finishCareerMatchdayMatch() {
   var myFixture = league.schedule[league.matchdayIndex][fi];
   ligaApplyResult(league.table, myFixture[0], myFixture[1], homeGoals, awayGoals);
   league.results[league.matchdayIndex][fi] = [homeGoals, awayGoals];
-  careerResolveOtherFixtures(league, fi);
+  // Tu partido ya trae sus propios goleadores/asistentes de verdad (los
+  // generó futDraftBuildTimeline al simular la cadena, ver live.revealed),
+  // así que aquí se registran esos en vez de generar unos nuevos.
+  futDraftRecordGoalEvents(league.stats, live.revealed.filter(function (e) { return e.side === 'me'; }), 'Tu equipo');
+  futDraftRecordGoalEvents(league.stats, live.revealed.filter(function (e) { return e.side === 'opp'; }), oppName);
+  careerResolveOtherFixtures(c, league, fi);
   c.lastMatchdayResult = { matchday: league.matchdayIndex + 1, oppName: oppName, myGoals: myGoals, oppGoals: oppGoals };
   league.matchdayIndex++;
 
