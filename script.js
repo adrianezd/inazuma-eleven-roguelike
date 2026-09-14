@@ -4878,33 +4878,67 @@ window.continueFutDraftMatch = function () {
   render();
 };
 
+// Cuerpo de una columna de ronda: una única casilla centrada si ya se ha
+// llegado a un cruce de 1 solo partido (semifinal de un lado, o la
+// final), o parejas conectadas con una línea (mirror=true la dibuja
+// apuntando hacia el centro, para el lado derecho) si todavía hay más de
+// un partido en esa mitad.
+function bracketColumnBodyHtml(matches, mirror) {
+  if (matches.length === 1) return '<div class="bracket-final-wrap">' + bracketMatchHtml(matches[0]) + '</div>';
+  var pairClass = 'bracket-pair' + (mirror ? ' bracket-pair-mirror' : '');
+  var html = '<div class="bracket-pairs">';
+  for (var i = 0; i < matches.length; i += 2) {
+    html += '<div class="' + pairClass + '">' + bracketMatchHtml(matches[i]) + bracketMatchHtml(matches[i + 1]) + '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+// Cuadro a doble cara, a petición explícita: en vez de una fila de
+// columnas (ronda 1, ronda 2... final) de izquierda a derecha, cada ronda
+// (salvo la final) se reparte en dos mitades iguales -- la primera mitad
+// del array a la izquierda, la segunda a la derecha -- y se van apilando
+// hacia fuera desde el centro (ronda más temprana = columna más externa a
+// cada lado), con la Final y el Campeón en la columna central. Funciona
+// para cualquier tamaño de cuadro (8/16/32/64): en un cuadro de 32 la
+// ronda inicial tiene 16 partidos (32 equipos), así que quedan 8 partidos
+// (16 equipos) a cada lado; en uno de 64, 16 partidos (32 equipos) a cada
+// lado. La partición es correcta en cualquier ronda posterior porque el
+// emparejamiento de siguiente ronda siempre combina partidos consecutivos
+// (ver continueFutDraftMatch/nextRound), así que "primera mitad del
+// array" y "mitad izquierda del árbol" coinciden en todas las rondas.
 function renderFutDraftBracket() {
   var t = G.futdraft.tournament;
   var totalRounds = Math.log2(t.size);
   var html = '<div class="screen"><div class="panel center-text"><h2 class="panel-title mb0">🏆 Torneo FutDraft</h2><p class="dim small">Tu once y ' + (t.size - 1) + ' rivales, eliminación directa.</p></div>';
   html += '<div class="panel bracket-panel"><div class="bracket-tree">';
+
+  var leftCols = '', rightCols = '', finalMatch = null;
   t.rounds.forEach(function (round, ri) {
-    var isFinal = round.length === 1;
-    html += '<div class="bracket-round-col"><div class="bracket-round-title">' + roundNameForIndex(ri, totalRounds) + '</div>';
-    if (isFinal) {
-      html += '<div class="bracket-final-wrap">' + bracketMatchHtml(round[0]) + '</div>';
-    } else {
-      html += '<div class="bracket-pairs">';
-      for (var i = 0; i < round.length; i += 2) {
-        html += '<div class="bracket-pair">' + bracketMatchHtml(round[i]) + bracketMatchHtml(round[i + 1]) + '</div>';
-      }
-      html += '</div>';
-    }
-    html += '</div>';
+    var title = roundNameForIndex(ri, totalRounds);
+    if (round.length === 1) { finalMatch = round[0]; return; }
+    var half = round.length / 2;
+    leftCols += '<div class="bracket-round-col"><div class="bracket-round-title">' + title + '</div>' +
+      bracketColumnBodyHtml(round.slice(0, half), false) + '</div>';
+    // El lado derecho se antepone (en vez de concatenar) para que, al
+    // final, quede en orden inverso: la ronda más cercana al centro
+    // primero, la más externa (ronda 1) en el borde derecho del todo.
+    rightCols = '<div class="bracket-round-col"><div class="bracket-round-title">' + title + '</div>' +
+      bracketColumnBodyHtml(round.slice(half), true) + '</div>' + rightCols;
   });
-  var lastRound = t.rounds[t.rounds.length - 1];
-  var champion = lastRound.length === 1 ? lastRound[0].winner : null;
-  html += '<div class="bracket-round-col bracket-trophy-col"><div class="bracket-round-title">Campeón</div>' +
+
+  var champion = finalMatch ? finalMatch.winner : null;
+  var centerCol = '<div class="bracket-round-col bracket-final-col">' +
+    (finalMatch ? '<div class="bracket-round-title">Final</div>' + bracketColumnBodyHtml([finalMatch], false) : '') +
+    '<div class="bracket-round-title' + (finalMatch ? ' mt' : '') + '">Campeón</div>' +
     '<div class="bracket-trophy-wrap">' +
       '<div class="bracket-trophy' + (champion ? '' : ' is-pending') + '">🏆</div>' +
       '<div class="bracket-champion-name">' + (champion ? (champion.isPlayer ? 'Tú' : escapeHtml(champion.name)) : '?') + '</div>' +
     '</div></div>';
+
+  html += leftCols + centerCol + rightCols;
   html += '</div></div>';
+  var lastRound = t.rounds[t.rounds.length - 1];
   var pendingPlayerMatch = lastRound.filter(function (m) { return (m.a.isPlayer || m.b.isPlayer) && m.winner === null; })[0];
   if (pendingPlayerMatch) {
     html += '<button class="btn btn-primary btn-block" onclick="playFutDraftMatch()">Jugar mi partido</button>';

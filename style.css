@@ -921,6 +921,16 @@ a { color: var(--accent); }
   border-radius: 0 8px 8px 0;
   opacity: 0.55;
 }
+/* Cuadro a doble cara (renderFutDraftBracket): en el lado derecho el
+   conector apunta hacia la izquierda (hacia el centro), en vez de hacia
+   la derecha como en el lado izquierdo -- mismo bloque, en espejo. */
+.bracket-pair-mirror::after {
+  right: auto; left: -16px;
+  border-left: 2px solid var(--accent-2);
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+}
+.bracket-final-col { flex: 0 0 156px; }
 .bracket-match { display: flex; flex-direction: column; gap: 5px; position: relative; }
 .bracket-team {
   display: flex;
