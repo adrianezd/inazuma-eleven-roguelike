@@ -33,9 +33,12 @@
      CAREER_MAX_SIGNINGS_PER_DAY, reseteados en actionAdvanceCareerMarketDay).
      Además, mientras el mercado está abierto también pueden LLEGARTE
      ofertas por tus propios jugadores sin que hagas nada
-     (careerGenerateIncomingOffers, ±20% del valor, 18% de probabilidad
-     por jugador y día, no aplica a cedidos/fichados esta temporada):
-     salen listadas en el panel "Ofertas recibidas" de Mercado
+     (careerGenerateIncomingOffers, entre 2 y 4 ofertas nuevas al día a
+     jugadores distintos elegidos al azar -- pocas a propósito, para que
+     no llueva -- por ±20% de su valor de mercado o, si es cesión, de su
+     precio de cesión; no aplica a cedidos/fichados esta temporada):
+     salen listadas en el panel "Ofertas recibidas" de Mercado, con el
+     precio de mercado al lado de la oferta para poder comparar
      (renderCareerIncomingOffers), caducan a los 2 días
      (CAREER_INCOMING_OFFER_DAYS) y se pueden Aceptar (vende al precio
      ofrecido, al momento), Rechazar, o Negociar -- la negociación de una
@@ -203,16 +206,23 @@ function careerNewMarketWindow(phase, totalDays) {
 }
 
 // Ofertas ENTRANTES (otros clubes te ofrecen por tus jugadores), a
-// petición explícita: cada día de ventana abierta, cada jugador tuyo
-// elegible tiene una probabilidad de recibir una -- precio al azar entre
-// ±20% de su valor de mercado (careerPlayerValue), compra o cesión.
-// Nunca a un jugador cedido (no es tuyo) ni fichado esta misma temporada
-// (no se puede mover hasta la que viene, ver CAREER_MIN_SQUAD_SIZE y los
-// guardas de actionSellCareerPlayer/actionLoanCareerPlayer), ni si ya
-// tiene una oferta pendiente. Cada oferta dura CAREER_INCOMING_OFFER_DAYS
-// días desde que llega -- pasado ese plazo se retira sola al avanzar el
-// día (ver actionAdvanceCareerMarketDay).
-var CAREER_INCOMING_OFFER_CHANCE = 0.18;
+// petición explícita: cada día de ventana abierta llegan entre
+// CAREER_INCOMING_OFFERS_MIN_PER_DAY y CAREER_INCOMING_OFFERS_MAX_PER_DAY
+// ofertas nuevas (pocas a propósito, para que no llueva), repartidas al
+// azar entre jugadores elegibles distintos -- precio al azar entre ±20%
+// de su valor de mercado (careerPlayerValue) o, si es cesión, de su
+// precio de cesión (1/3 del valor, careerNegotiationAskingValue -- si no,
+// una cesión podía "ofrecer" más que comprarlo entero). Nunca a un
+// jugador cedido (no es tuyo) ni fichado esta misma temporada (no se
+// puede mover hasta la que viene, ver CAREER_MIN_SQUAD_SIZE y los guardas
+// de actionSellCareerPlayer/actionLoanCareerPlayer), ni si ya tiene una
+// oferta pendiente. Cada oferta dura CAREER_INCOMING_OFFER_DAYS días
+// desde que llega -- pasado ese plazo se retira sola al avanzar el día
+// (ver actionAdvanceCareerMarketDay), así que el número de ofertas
+// VISIBLES a la vez puede ser algo mayor que el máximo diario si se
+// solapan con las del día anterior.
+var CAREER_INCOMING_OFFERS_MIN_PER_DAY = 2;
+var CAREER_INCOMING_OFFERS_MAX_PER_DAY = 4;
 var CAREER_INCOMING_OFFER_VARIANCE = 0.2;
 var CAREER_INCOMING_OFFER_DAYS = 2;
 function careerGenerateIncomingOffers(c) {
@@ -222,17 +232,21 @@ function careerGenerateIncomingOffers(c) {
   var boughtIds = c.boughtThisSeasonIds || [];
   var pending = c.incomingOffers || (c.incomingOffers = []);
   var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
-  all.forEach(function (p) {
-    if (loanedIds.indexOf(p.id) !== -1 || boughtIds.indexOf(p.id) !== -1) return;
-    if (pending.some(function (o) { return o.playerId === p.id; })) return;
-    if (Math.random() >= CAREER_INCOMING_OFFER_CHANCE) return;
-    var value = careerPlayerValue(p);
+  var eligible = all.filter(function (p) {
+    return loanedIds.indexOf(p.id) === -1 && boughtIds.indexOf(p.id) === -1 &&
+      !pending.some(function (o) { return o.playerId === p.id; });
+  });
+  var shuffled = eligible.slice().sort(function () { return Math.random() - 0.5; });
+  var target = CAREER_INCOMING_OFFERS_MIN_PER_DAY + Math.floor(Math.random() * (CAREER_INCOMING_OFFERS_MAX_PER_DAY - CAREER_INCOMING_OFFERS_MIN_PER_DAY + 1));
+  shuffled.slice(0, target).forEach(function (p) {
+    var mode = Math.random() < 0.25 ? 'loan' : 'buy';
+    var asking = careerNegotiationAskingValue(p, mode);
     var variance = 1 + (Math.random() * 2 - 1) * CAREER_INCOMING_OFFER_VARIANCE;
     pending.push({
       id: uid(),
       playerId: p.id,
-      mode: Math.random() < 0.25 ? 'loan' : 'buy',
-      amount: Math.max(0.1, Math.round(value * variance * 10) / 10),
+      mode: mode,
+      amount: Math.max(0.1, Math.round(asking * variance * 10) / 10),
       dayReceived: w.dayIndex,
       expiresOnDay: w.dayIndex + CAREER_INCOMING_OFFER_DAYS
     });
@@ -1110,30 +1124,48 @@ function renderCareerCounterNegotiation(c) {
   );
 }
 
-// "📨 Ofertas recibidas": una fila por oferta entrante pendiente (ver
-// careerGenerateIncomingOffers), con cuántos días le quedan antes de
-// caducar y los 3 botones -- Aceptar, Rechazar, Negociar (al momento,
-// ver renderCareerCounterNegotiation). Vacío si no hay ninguna ahora
-// mismo (no siempre llegan ofertas).
+// "📨 Ofertas recibidas": una tarjeta por oferta entrante pendiente (ver
+// careerGenerateIncomingOffers), con el precio de mercado del jugador al
+// lado de lo que ofrecen (para poder comparar de un vistazo -- antes solo
+// salía la oferta), cuántos días le quedan antes de caducar y los 3
+// botones -- Aceptar, Rechazar, Negociar (al momento, ver
+// renderCareerCounterNegotiation). Si aceptar te dejaría por debajo de
+// CAREER_MIN_SQUAD_SIZE, Aceptar/Negociar salen deshabilitados con un
+// tooltip explicándolo, en vez de fallar en silencio (careerResolveIncomingOffer
+// ya rechaza igualmente el negociar-al-momento, pero mejor que ni se
+// pueda intentar). Vacío si no hay ninguna ahora mismo (no siempre llegan
+// ofertas).
 function renderCareerIncomingOffers(c) {
   var offers = c.incomingOffers || [];
   if (!offers.length) return '';
   var w = c.marketWindow;
+  var atMinSquad = (c.lineup.length + c.bench.length) <= CAREER_MIN_SQUAD_SIZE;
+  var blockedTitle = 'No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores en plantilla -- vende o cede a otro primero.';
   var rowsHtml = offers.map(function (o) {
     var p = ROSTER.find(function (x) { return x.id === o.playerId; });
     if (!p) return '';
     var daysLeft = o.expiresOnDay - (w ? w.dayIndex : o.expiresOnDay);
-    return '<div class="futdraft-timeline-row">' + avatarHtml(p) +
-      '<span>' + escapeHtml(p.nombre) + ' <span class="dim">· ' + (o.mode === 'loan' ? 'cesión' : 'compra') + ' · caduca en ' + daysLeft + ' día' + (daysLeft === 1 ? '' : 's') + '</span></span>' +
-      '<strong style="margin-left:auto;white-space:nowrap;color:var(--accent-2)">' + o.amount + ' M€</strong>' +
-      '<button class="btn btn-tiny" style="margin-left:6px" onclick="actionAcceptIncomingOffer(\'' + o.id + '\')">✅ Aceptar</button>' +
-      '<button class="btn btn-tiny" onclick="actionStartCounterNegotiation(\'' + o.id + '\')">💬 Negociar</button>' +
-      '<button class="btn btn-tiny" onclick="actionRejectIncomingOffer(\'' + o.id + '\')">❌ Rechazar</button>' +
+    var value = careerPlayerValue(p);
+    return '<div class="career-offer-card">' +
+      '<div class="career-offer-head">' + avatarHtml(p) +
+        '<span class="career-offer-name">' + escapeHtml(p.nombre) + '</span>' +
+        '<span class="dim small">' + (o.mode === 'loan' ? 'cesión' : 'compra') + ' · caduca en ' + daysLeft + ' día' + (daysLeft === 1 ? '' : 's') + '</span>' +
+      '</div>' +
+      '<div class="career-offer-prices">' +
+        '<span class="dim">Precio mercado: <strong>' + value + ' M€</strong></span>' +
+        '<span class="dim">Te ofrecen: <strong style="color:var(--accent-2)">' + o.amount + ' M€</strong></span>' +
+      '</div>' +
+      '<div class="btn-row">' +
+        '<button class="btn btn-tiny" ' + (atMinSquad ? 'disabled title="' + escapeHtml(blockedTitle) + '"' : '') + ' onclick="actionAcceptIncomingOffer(\'' + o.id + '\')">✅ Aceptar</button>' +
+        '<button class="btn btn-tiny" ' + (atMinSquad ? 'disabled title="' + escapeHtml(blockedTitle) + '"' : '') + ' onclick="actionStartCounterNegotiation(\'' + o.id + '\')">💬 Negociar</button>' +
+        '<button class="btn btn-tiny" onclick="actionRejectIncomingOffer(\'' + o.id + '\')">❌ Rechazar</button>' +
+      '</div>' +
     '</div>';
   }).join('');
   return '<div class="panel">' +
     '<h3 style="margin-bottom:4px">📨 Ofertas recibidas</h3>' +
-    '<div class="futdraft-timeline">' + rowsHtml + '</div>' +
+    (atMinSquad ? '<p class="dim small" style="color:var(--danger)">' + escapeHtml(blockedTitle) + '</p>' : '') +
+    rowsHtml +
   '</div>';
 }
 

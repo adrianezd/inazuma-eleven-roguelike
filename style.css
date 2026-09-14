@@ -855,6 +855,25 @@ a { color: var(--accent); }
 .futdraft-timeline-row .avatar { width: 22px; height: 22px; flex-shrink: 0; }
 .futdraft-timeline-row .avatar-pos-badge { display: none; }
 
+/* ===== Ofertas de mercado (recibidas/enviadas): una tarjeta por línea en
+   vez de una fila de flex de una sola línea -- con avatar+nombre, precio
+   de mercado vs. oferta y botones, no cabía todo en una fila en móvil
+   (ver .futdraft-timeline-row, pensada para líneas cortas de solo texto)
+   y todo se amontonaba envolviendo palabra a palabra. ===== */
+.career-offer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.career-offer-card:last-child { border-bottom: none; }
+.career-offer-head { display: flex; align-items: center; gap: 8px; }
+.career-offer-head .avatar { width: 26px; height: 26px; flex-shrink: 0; }
+.career-offer-head .avatar-pos-badge { display: none; }
+.career-offer-name { font-weight: 700; }
+.career-offer-prices { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.85rem; }
+
 /* ===== Tabla de la Liga ===== */
 .liga-table {
   width: 100%;
