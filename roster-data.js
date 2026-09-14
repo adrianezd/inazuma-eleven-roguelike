@@ -2279,7 +2279,7 @@ var ROSTER = [
 {
   id:'r263', nombre:'Clay Ellement', original:'Clay Ellement',
   posicion:'Centrocampista', tipo:'Montaña',
-  tiro:58,pase:68,defensa:62,especial:66,
+  tiro:68,pase:72,defensa:62,especial:66,
   hissatsu:['Escáner Defensa'],
   desc:'Centrocampista de Tarjeteros, tranquilo y con un estilo de juego inteligente.',
   locked:false,
@@ -2315,7 +2315,7 @@ var ROSTER = [
 {
   id:'r267', nombre:'Woody Ellement', original:'Woody Ellement',
   posicion:'Defensa', tipo:'Bosque',
-  tiro:40,pase:59,defensa:73,especial:78,
+  tiro:40,pase:69,defensa:73,especial:78,
   hissatsu:['Descodificación'],
   desc:'Defensa de Tarjeteros rodeado de un aura enigmática y experto en tácticas ilusorias.',
   locked:false,
@@ -2324,7 +2324,7 @@ var ROSTER = [
 {
   id:'r268', nombre:'Lucien Rarey', original:'Lucien Rarey',
   posicion:'Centrocampista', tipo:'Viento',
-  tiro:61,pase:64,defensa:45,especial:70,
+  tiro:61,pase:64,defensa:65,especial:70,
   hissatsu:['Tiro Cegador'],
   desc:'Centrocampista de Tarjeteros con una presencia llamativa y brillante.',
   locked:false,
@@ -2333,10 +2333,37 @@ var ROSTER = [
 {
   id:'r269', nombre:'Stackem Skyhigh', original:'Stackem Skyhigh',
   posicion:'Delantero', tipo:'Fuego',
-  tiro:78,pase:50,defensa:42,especial:68,
+  tiro:78,pase:65,defensa:42,especial:68,
   hissatsu:['Tornado de Fuego'],
   desc:'Delantero de Tarjeteros de gran presencia y apasionado por el fútbol.',
   locked:false,
   sprite:'assets/sprites/r269.webp'
+},
+{
+  id:'r270', nombre:'Deck', original:'Deck',
+  posicion:'Portero', tipo:'Viento',
+  tiro:43,pase:56,defensa:72,especial:64,
+  hissatsu:['Mandril'],
+  desc:'Portero de Tarjeteros en Inazuma Eleven 3.',
+  locked:false,cost:85,
+  sprite:'assets/sprites/r270.webp'
+},
+{
+  id:'r271', nombre:'Cardson', original:'Cardson',
+  posicion:'Defensa', tipo:'Fuego',
+  tiro:55,pase:64,defensa:78,especial:67,
+  hissatsu:['Pisotón de sumo'],
+  desc:'Defensa de Tarjeteros en Inazuma Eleven 3.',
+  locked:false,cost:85,
+  sprite:'assets/sprites/r271.webp'
+},
+{
+  id:'r272', nombre:'Binder', original:'Binder',
+  posicion:'Centrocampista', tipo:'Fuego',
+  tiro:72,pase:69,defensa:69,especial:65,
+  hissatsu:['Ataque afilado'],
+  desc:'Centrocampista de Tarjeteros en Inazuma Eleven 3.',
+  locked:false,cost:90,
+  sprite:'assets/sprites/r272.webp'
 },
 ];

@@ -214,6 +214,19 @@ a { color: var(--accent); }
 .btn-block { display: flex; width: 100%; }
 .btn-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
 
+.select-field {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
 /* ===== Type badges (sin emoji: marca de letra + color) ===== */
 
 .type-badge {
