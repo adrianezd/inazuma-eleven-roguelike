@@ -791,15 +791,24 @@ function generateTournamentBracket(size) {
   var usedTeamNames = {};
   var bossPool = RIVAL_TEAM_BOSSES.slice().sort(function () { return Math.random() - 0.5; });
   var normalPool = RIVAL_TEAM_NAMES.slice().sort(function () { return Math.random() - 0.5; });
-  function drawUniqueTeamName(pool) {
+  function drawFrom(pool) {
     for (var i = 0; i < pool.length; i++) {
       var key = normalizeTeamKey(pool[i]);
       if (!usedTeamNames[key]) { usedTeamNames[key] = true; return pool[i]; }
     }
-    return pool[rand(0, pool.length - 1)]; // mazo agotado (torneo enorme): último recurso, puede repetir
+    return null;
+  }
+  // Mazo propio (jefes o normales) primero; si ya está agotado (torneos
+  // grandes, 64 equipos) se prueba el otro mazo antes de repetir de
+  // verdad -- entre los dos suman 69 nombres únicos, de sobra para
+  // cualquier FUTDRAFT_BRACKET_SIZES sin que se repita ningún equipo.
+  function drawUniqueTeamName(pool, otherPool) {
+    return drawFrom(pool) || drawFrom(otherPool) || pool[rand(0, pool.length - 1)];
   }
   var rivals = tiers.map(function (tier) {
-    return { isPlayer: false, name: drawUniqueTeamName(tier === 'jefe' ? bossPool : normalPool), tier: tier };
+    var pool = tier === 'jefe' ? bossPool : normalPool;
+    var otherPool = tier === 'jefe' ? normalPool : bossPool;
+    return { isPlayer: false, name: drawUniqueTeamName(pool, otherPool), tier: tier };
   });
   var slots = new Array(size);
   var playerSlot = rand(0, size - 1);
@@ -935,6 +944,7 @@ function roundNameForIndex(idx, totalRounds) {
   if (fromEnd === 2) return 'Cuartos de Final';
   if (fromEnd === 3) return 'Octavos de Final';
   if (fromEnd === 4) return 'Dieciseisavos de Final';
+  if (fromEnd === 5) return 'Treintaidosavos de Final';
   return 'Ronda ' + (idx + 1);
 }
 
@@ -1261,7 +1271,6 @@ function render() {
     case 'futdraftModeSelect': html = renderFutDraftModeSelect(); break;
     case 'futdraftAffinitySelect': html = renderFutDraftAffinitySelect(); break;
     case 'futdraftFormationSelect': html = renderFutDraftFormationSelect(); break;
-    case 'futdraftModifierSelect': html = renderFutDraftModifierSelect(); break;
     case 'futdraftPick': html = renderFutDraftPick(); break;
     case 'futdraftTeam': html = renderFutDraftTeam(); break;
     case 'futdraftBracket': html = renderFutDraftBracket(); break;
@@ -3699,7 +3708,7 @@ function futDraftAvailableFormations() {
 
 // Por defecto "Clásico" (índice 1 de FUTDRAFT_MODE_OPTIONS), no "Libre" --
 // a petición explícita.
-function actionGoFutDraftModeSelect() { G.futdraftBracketSizeIdx = 0; G.futdraftModeChoiceIdx = 1; G.screen = 'futdraftModeSelect'; render(); }
+function actionGoFutDraftModeSelect() { G.futdraftBracketSizeIdx = 0; G.futdraftModeChoiceIdx = 1; G.futdraftModifierChoiceIdx = 0; G.screen = 'futdraftModeSelect'; render(); }
 
 // Tipo de FutDraft (antes 3 botones apilados) y tamaño del torneo (antes
 // un stepper dentro de la pantalla de equipo, ver renderFutDraftTeam) se
@@ -3742,6 +3751,13 @@ function renderFutDraftModeSelect() {
           '<span style="min-width:110px;font-weight:700;font-size:1.1rem">' + futDraftBracketSize() + ' equipos</span>' +
           '<button class="btn btn-outline" onclick="actionFutDraftBracketSizeStep(1)">▶</button>' +
         '</div>' +
+        '<h3 style="margin-bottom:8px;margin-top:14px">Condiciones del partido</h3>' +
+        '<div class="btn-row" style="justify-content:center;align-items:center;gap:14px">' +
+          '<button class="btn btn-outline" onclick="actionFutDraftModifierStep(-1)">◀</button>' +
+          '<span style="min-width:170px;font-weight:700;font-size:1.1rem">' + FUTDRAFT_MODIFIERS[futDraftModifierChoiceIdx()].name + '</span>' +
+          '<button class="btn btn-outline" onclick="actionFutDraftModifierStep(1)">▶</button>' +
+        '</div>' +
+        '<p class="dim small">' + FUTDRAFT_MODIFIERS[futDraftModifierChoiceIdx()].desc + '</p>' +
         '<button class="btn btn-primary btn-block mt" onclick="actionContinueFutDraftModeSelect()">Continuar</button>' +
       '</div>' +
     '</div>'
@@ -3824,15 +3840,16 @@ function renderFutDraftFormationSelect() {
   );
 }
 
-// Condiciones del partido para todo el FutDraft/Liga que empieza: se
-// eligen con flechas (mismo patrón que Tipo de FutDraft/Tamaño del
-// torneo) justo después de la formación, antes de draftear. Por defecto
-// "Sin modificador" (índice 0), a petición explícita. Lluvia y Partido
-// cerrado afectan a los dos equipos por igual (bothMult); Aire/Calor/
-// Niebla/Barro favorecen solo a tu equipo, escalados por cuántos
-// jugadores de ese tipo elemental tengas en el once (ver
-// futDraftModifierMultipliers) -- el rival en FutDraft es solo un número
-// (teamPower), no tiene un once real con el que comparar tipos.
+// Condiciones del partido para todo el FutDraft que empieza: se eligen
+// con flechas en la propia pantalla de Tipo de FutDraft/Tamaño del
+// torneo (renderFutDraftModeSelect), antes de draftear. Por defecto "Sin
+// modificador" (índice 0), a petición explícita. Lluvia y Partido cerrado
+// afectan a los dos equipos por igual (bothMult); Aire/Calor/Niebla/Barro
+// favorecen solo a tu equipo, escalados por cuántos jugadores de ese tipo
+// elemental tengas en el once (ver futDraftModifierMultipliers) -- el
+// rival en FutDraft es solo un número (teamPower), no tiene un once real
+// con el que comparar tipos. Liga no pasa por esta pantalla, así que
+// siempre juega "Sin modificador" (ver actionGoLigaTierSelect).
 var FUTDRAFT_MODIFIERS = [
   { id: 'ninguno', name: 'Sin modificador', desc: 'Partido en condiciones normales, sin ningún efecto añadido.' },
   { id: 'lluvia', name: 'Lluvia', desc: 'El balón resbala: baja el rendimiento ofensivo y defensivo de los dos equipos por igual.', bothMult: 0.9 },
@@ -3852,38 +3869,10 @@ function actionFutDraftModifierStep(delta) {
   G.futdraftModifierChoiceIdx = ((futDraftModifierChoiceIdx() + delta) % n + n) % n;
   render();
 }
-function actionBackToFutDraftFormationSelect() { G.screen = 'futdraftFormationSelect'; render(); }
-
-function renderFutDraftModifierSelect() {
-  var mod = FUTDRAFT_MODIFIERS[futDraftModifierChoiceIdx()];
-  return (
-    '<div class="screen">' +
-      '<div class="panel center-text">' +
-        '<button class="btn btn-outline btn-block" onclick="actionBackToFutDraftFormationSelect()">Volver</button>' +
-        '<h2 class="panel-title mt">Condiciones del partido</h2>' +
-        '<div class="btn-row" style="justify-content:center;align-items:center;gap:14px">' +
-          '<button class="btn btn-outline" onclick="actionFutDraftModifierStep(-1)">◀</button>' +
-          '<span style="min-width:170px;font-weight:700;font-size:1.1rem">' + mod.name + '</span>' +
-          '<button class="btn btn-outline" onclick="actionFutDraftModifierStep(1)">▶</button>' +
-        '</div>' +
-        '<p class="dim small">' + mod.desc + '</p>' +
-        '<button class="btn btn-primary btn-block mt" onclick="actionContinueFutDraftModifierSelect()">Continuar</button>' +
-      '</div>' +
-    '</div>'
-  );
-}
-
 function actionChooseFutDraftFormation(id) {
-  G.futdraftPendingFormation = id;
-  G.futdraftModifierChoiceIdx = 0;
-  G.screen = 'futdraftModifierSelect';
-  render();
-}
-
-function actionContinueFutDraftModifierSelect() {
   var mode = G.futdraftPendingMode || 'clasico';
   G.futdraft = {
-    squad: [], formation: G.futdraftPendingFormation, mode: mode,
+    squad: [], formation: id, mode: mode,
     affinity: mode === 'afinidad' ? G.futdraftAffinity : null,
     ligaPool: mode === 'liga' ? G.ligaPendingPool : null,
     ligaTier: mode === 'liga' ? G.ligaPendingTier : null,
@@ -4373,7 +4362,7 @@ var FUTDRAFT_WIN_REWARD = 10;
 
 // Tamaño del bracket elegible con flechas (antes fijo a 8) -- a petición
 // explícita, mismas 3 opciones que ya existían en Modo Torneo.
-var FUTDRAFT_BRACKET_SIZES = [8, 16, 32];
+var FUTDRAFT_BRACKET_SIZES = [8, 16, 32, 64];
 function futDraftBracketSizeIdx() { return G.futdraftBracketSizeIdx === undefined ? 0 : G.futdraftBracketSizeIdx; }
 function futDraftBracketSize() { return FUTDRAFT_BRACKET_SIZES[futDraftBracketSizeIdx()]; }
 function actionFutDraftBracketSizeStep(delta) {
@@ -4510,7 +4499,8 @@ function futDraftModifierTypeFraction(lineup, tipo) {
 }
 
 // Multiplicadores del modificador elegido para ESTE FutDraft/Liga
-// (f.modifier, fijado al final del draft, ver actionContinueFutDraftModifierSelect).
+// (f.modifier, fijado en actionChooseFutDraftFormation a partir de lo
+// elegido en renderFutDraftModeSelect; en Liga siempre "ninguno").
 // bothMult toca ataque y defensa propios Y la fuerza del rival por igual
 // (lluvia, cerrojo); los que favorecen un tipo elemental solo tocan a tu
 // equipo, escalados por la fracción de tu once que sea de ese tipo (un
@@ -5089,7 +5079,11 @@ function ligaSimulateCpuVsCpu(nameA, nameB) {
   return simulateCpuMatchGoals({ name: nameA }, { name: nameB });
 }
 
-function actionGoLigaTierSelect() { G.screen = 'ligaTierSelect'; render(); }
+// Liga no tiene pantalla propia de "Condiciones del partido" (no pasa por
+// renderFutDraftModeSelect): se resetea aquí para que siempre juegue "Sin
+// modificador", en vez de arrastrar por accidente el modificador elegido
+// en un FutDraft anterior de la misma sesión.
+function actionGoLigaTierSelect() { G.futdraftModifierChoiceIdx = 0; G.screen = 'ligaTierSelect'; render(); }
 
 function renderLigaTierSelect() {
   var meta = G.meta;
