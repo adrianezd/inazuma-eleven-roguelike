@@ -77,6 +77,7 @@ function render() {
     case 'menu': html = renderMenu(); break;
     case 'jugarHub': html = renderJugarHub(); break;
     case 'otrosModos': html = renderOtrosModos(); break;
+    case 'careerMode': html = renderCareerMode(); break;
     case 'modeSelect': html = renderModeSelect(); break;
     case 'captainSelect': html = renderCaptainSelect(); break;
     case 'map': html = renderMap(); break;
@@ -223,6 +224,9 @@ function renderOtrosModos() {
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-block" onclick="actionGoLigaTierSelect()">Liga</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionGoCareerMode()">Modo Carrera</button>' +
         '</div>' +
       '</div>' +
     '</div>'
