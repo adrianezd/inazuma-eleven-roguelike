@@ -4732,14 +4732,23 @@ function renderFutDraftLive() {
 // independiente (que se sigue jugando a mano, zona a zona), aquí se
 // SIMULA entera de golpe -- a petición explícita, para no interrumpir el
 // ritmo de un torneo/temporada con una tanda manual cada vez que hay
-// empate. La probabilidad de acierto de cada lanzamiento sale de comparar
-// la puntuación de tu equipo (futDraftTeamScore) con la fuerza del rival
-// (teamPower): con equipos parejos ronda el 72% típico de un penalti real,
-// y se desplaza unos puntos a tu favor o en tu contra según quién sea mejor.
+// empate -- pero se REVELA lanzamiento a lanzamiento, rápido (ver
+// futDraftPenaltyTick), igual que el minuto a minuto de un partido
+// normal, en vez de aparecer el resultado final de golpe. La probabilidad
+// de acierto de cada lanzamiento sale de comparar la puntuación de tu
+// equipo (futDraftTeamScore) con la fuerza del rival (teamPower): con
+// equipos parejos ronda el 72% típico de un penalti real, y se desplaza
+// unos puntos a tu favor o en tu contra según quién sea mejor.
 function futDraftPenaltyShotChance(favor) {
   return clamp(0.72 + favor / 250, 0.45, 0.92);
 }
 
+// Quién tira cada lanzamiento: de tu once real para tu equipo, del pool
+// de no drafteados (mismo "plantel fantasma" que ya usan los goles del
+// rival en el partido normal, ver futDraftUndraftedPool) para el rival.
+// Reutiliza futDraftGoalEvent (mismo peso por posición que un gol de
+// verdad, sin asistencia porque un penalti no la tiene) tanto si se
+// marca como si se falla, para poder decir siempre quién tiró.
 function simulateFutDraftPenaltyShootout(oppSide) {
   var f = G.futdraft;
   var myScore = futDraftTeamScore(f.lineup, f.captainId);
@@ -4747,34 +4756,68 @@ function simulateFutDraftPenaltyShootout(oppSide) {
   var diff = myScore - oppPower;
   var myChance = futDraftPenaltyShotChance(diff);
   var rivalChance = futDraftPenaltyShotChance(-diff);
-  var log = [];
+  var myPlayers = f.lineup.map(function (s) { return s.player; });
+  var oppPlayers = futDraftUndraftedPool();
+  var attempts = [];
   var playerGoals = 0, rivalGoals = 0;
   var round = 1;
   while (true) {
     var myScored = Math.random() < myChance;
     if (myScored) playerGoals++;
-    log.push((myScored ? '⚽ ' : '🧤 ') + 'Ronda ' + round + ': ' + (myScored ? 'marcas tu penalti.' : 'el portero rival ataja tu disparo.'));
+    attempts.push({ side: 'me', round: round, player: futDraftGoalEvent(myPlayers).scorer, scored: myScored });
     var rivalScored = Math.random() < rivalChance;
     if (rivalScored) rivalGoals++;
-    log.push((rivalScored ? '⚽ ' : '🧤 ') + 'Ronda ' + round + ': ' + (rivalScored ? (escapeHtml(oppSide.name) + ' anota el penalti.') : ('¡detienes el penalti de ' + escapeHtml(oppSide.name) + '!')));
+    attempts.push({ side: 'opp', round: round, player: futDraftGoalEvent(oppPlayers).scorer, scored: rivalScored });
     if (round >= PENALTY_MODE_ROUNDS && playerGoals !== rivalGoals) break;
     round++;
   }
-  return { playerGoals: playerGoals, rivalGoals: rivalGoals, log: log };
+  return { playerGoals: playerGoals, rivalGoals: rivalGoals, attempts: attempts };
 }
 
 // Con su propio estado (G.futdraft.penalty) para no interferir con el
 // Modo Penaltis independiente, y que al acabar retoma el bracket de
-// FutDraft en vez de terminar la tanda.
+// FutDraft en vez de terminar la tanda. Todo el resultado se calcula de
+// golpe (simulateFutDraftPenaltyShootout) pero se revela lanzamiento a
+// lanzamiento (futDraftPenaltyTick), no de golpe.
 function startFutDraftPenaltyShootout(oppSide) {
   var sim = simulateFutDraftPenaltyShootout(oppSide);
   G.futdraft.penalty = {
-    playerGoals: sim.playerGoals, rivalGoals: sim.rivalGoals, log: sim.log,
-    oppName: oppSide.name, oppShield: teamShieldPath(oppSide.name)
+    playerGoals: 0, rivalGoals: 0,
+    pending: sim.attempts, revealed: [],
+    oppName: oppSide.name, oppShield: teamShieldPath(oppSide.name),
+    done: false
   };
   G.screen = 'futdraftPenalty';
   render();
+  futDraftPenaltyTick();
 }
+
+// Revela un lanzamiento cada 450ms (más rápido que el minuto a minuto de
+// un partido normal, a petición explícita, porque aquí no hay "minutos"
+// de por medio que rellenar). Se para sola si se navega a otra pantalla,
+// igual que futDraftLiveTick.
+function futDraftPenaltyTick() {
+  var p = G.futdraft && G.futdraft.penalty;
+  if (G.screen !== 'futdraftPenalty' || !p || p.done) return;
+  var ev = p.pending.shift();
+  if (ev.scored) { if (ev.side === 'me') p.playerGoals++; else p.rivalGoals++; }
+  p.revealed.push(ev);
+  if (!p.pending.length) p.done = true;
+  render();
+  if (!p.done) setTimeout(futDraftPenaltyTick, 450);
+}
+
+window.futDraftSkipPenalty = function () {
+  var p = G.futdraft.penalty;
+  if (!p || p.done) return;
+  p.pending.forEach(function (ev) {
+    if (ev.scored) { if (ev.side === 'me') p.playerGoals++; else p.rivalGoals++; }
+    p.revealed.push(ev);
+  });
+  p.pending = [];
+  p.done = true;
+  render();
+};
 
 function finishFutDraftPenaltyShootout() {
   var f = G.futdraft;
@@ -4796,11 +4839,28 @@ function finishFutDraftPenaltyShootout() {
   render();
 }
 
+// Fila de un lanzamiento revelado: mismo formato que una fila de gol del
+// partido normal (futDraftTimelineRowHtml) -- escudo, avatar, nombre, y
+// en espejo a la derecha si es del rival -- pero con la ronda en vez del
+// minuto, y sin asistencia (un penalti no la tiene). Deliberadamente NO
+// se llama a futDraftRecordGoalEvents con estos lanzamientos en ningún
+// sitio: los goles de penaltis no cuentan para la tabla de goleadores del
+// torneo, a petición explícita.
+function futDraftPenaltyRowHtml(ev, oppShield) {
+  var isOpp = ev.side === 'opp';
+  var shieldSrc = isOpp ? oppShield : getPlayerShieldPath();
+  var text = (ev.scored ? '⚽ ' : '🧤 ') + '<strong>' + escapeHtml(ev.player.nombre) + '</strong>' + (ev.scored ? ' ¡gol!' : ' — parada.');
+  var rowClass = 'futdraft-timeline-row' + (isOpp ? ' futdraft-timeline-row-opp' : '');
+  return '<div class="' + rowClass + '"><span class="futdraft-timeline-minute">R' + ev.round + '</span><img class="futdraft-timeline-shield" src="' + escapeHtml(shieldSrc) + '" alt="">' + avatarHtml(ev.player) + '<span>' + text + '</span></div>';
+}
+
 function renderFutDraftPenalty() {
   var p = G.futdraft.penalty;
   if (!p) return '';
-  var playerWon = p.playerGoals > p.rivalGoals;
-  var logHtml = p.log.map(function (l) { return '<p>' + l + '</p>'; }).join('');
+  var logHtml = p.revealed.slice().reverse().map(function (ev) {
+    return futDraftPenaltyRowHtml(ev, p.oppShield);
+  }).join('');
+  var playerWon = p.done && p.playerGoals > p.rivalGoals;
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
@@ -4812,11 +4872,11 @@ function renderFutDraftPenalty() {
         '<div class="score-vs">VS</div>' +
         '<div class="score-side"><img class="team-shield" src="' + escapeHtml(p.oppShield) + '" alt=""><div class="score-name">' + escapeHtml(p.oppName) + '</div><div class="score-num">' + p.rivalGoals + '</div></div>' +
       '</div>' +
-      '<div class="panel"><div class="log-panel">' + logHtml + '</div></div>' +
-      '<div class="panel center-text">' +
-        '<h3 style="margin-bottom:4px">' + (playerWon ? '🏆 ¡Ganas la tanda!' : '💔 Pierdes la tanda.') + '</h3>' +
-        '<button class="btn btn-primary btn-block mt" onclick="finishFutDraftPenaltyShootout()">Continuar</button>' +
-      '</div>' +
+      '<div class="panel"><div class="futdraft-timeline">' + (logHtml || '<p class="dim small center-text">Empieza la tanda…</p>') + '</div></div>' +
+      (p.done
+        ? '<div class="panel center-text"><h3 style="margin-bottom:4px">' + (playerWon ? '🏆 ¡Ganas la tanda!' : '💔 Pierdes la tanda.') + '</h3>' +
+          '<button class="btn btn-primary btn-block mt" onclick="finishFutDraftPenaltyShootout()">Continuar</button></div>'
+        : '<button class="btn btn-outline btn-block" onclick="futDraftSkipPenalty()">Saltar</button>') +
     '</div>'
   );
 }
