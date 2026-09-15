@@ -294,9 +294,14 @@ var CAREER_PROGRESSION_VARIANCE = 2;
 // es infraestructura del club -- nunca se resetea entre temporadas,
 // igual que el presupuesto.
 var CAREER_TRAINING_MAX_LEVEL = 10;
-var CAREER_TRAINING_ANCHOR_PER_LEVEL = 1.5;
-var CAREER_TRAINING_RATE_PER_LEVEL = 0.02;
-var CAREER_TRAINING_VARIANCE_REDUCTION_PER_LEVEL = 0.05;
+// Subidos un poco (a petición explícita, "que la mejora del centro de
+// entrenamiento valga un poco más"): con el máximo (nivel 10), el ancla
+// llega a 98 en vez de 93.5, la velocidad a 0.52 en vez de 0.43 y el
+// ruido baja a 1.46 en vez de 1.55 -- cada nivel se nota algo más que
+// antes, sin disparar el efecto de golpe.
+var CAREER_TRAINING_ANCHOR_PER_LEVEL = 2;
+var CAREER_TRAINING_RATE_PER_LEVEL = 0.03;
+var CAREER_TRAINING_VARIANCE_REDUCTION_PER_LEVEL = 0.06;
 var CAREER_TRAINING_LEVEL_COSTS = [0.3, 0.5, 0.8, 1.2, 1.8, 2.5, 3.5, 5, 7];
 function careerTrainingEffectiveParams(level) {
   var lvl = level || 1;
@@ -1854,12 +1859,15 @@ function careerSimulateMatchGoals(powerA, powerB) {
 // Modo Carrera es más exigente que el resto de modos: TODOS los rivales
 // se nivelan hacia arriba (a petición explícita: "aunque un equipo sea
 // 70 que juegue como uno de 85, uno de 60 como uno de 80"), no solo los
-// flojos -- la fórmula es la media entre su potencia real y el máximo
-// (100), que encaja exacto con los dos ejemplos dados (70 -> 85, 60 ->
-// 80) y de paso también sube un poco a los equipos ya fuertes, en vez de
+// flojos -- la fórmula es la media entre su potencia real y este techo,
+// y de paso también sube un poco a los equipos ya fuertes, en vez de
 // solo aplanar por abajo. No se toca TEAM_POWER global porque eso
 // afectaría también a FutDraft/Torneo/Liga estándar.
-var CAREER_RIVAL_LEVEL_TARGET = 100;
+// Bajado de 100 a 92 (a petición explícita, "baja un poco la dificultad
+// a la hora de los partidos, solo un poco"): al ser una media, la resta
+// es siempre 4 puntos exactos para cualquier rival ((100-92)/2), un
+// recorte parejo y suave en vez de tocar la curva de gol entera.
+var CAREER_RIVAL_LEVEL_TARGET = 92;
 function careerRivalPower(name) {
   var p = teamPower({ name: name });
   return Math.round((p + CAREER_RIVAL_LEVEL_TARGET) / 2);
