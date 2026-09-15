@@ -343,7 +343,10 @@ function careerBuildLeague() {
     // partido según se resuelve cada jornada).
     results: schedule.map(function (fixtures) { return fixtures.map(function () { return null; }); }),
     matchdayIndex: 0,
-    stats: { scorers: {}, assists: {} }
+    stats: { scorers: {}, assists: {} },
+    // Ver careerMaybeAwardLeagueFinish -- evita dar el premio de fin de
+    // Liga más de una vez si se repasa la pantalla de Jornada.
+    finishBonusAwarded: false
   };
 }
 
@@ -463,7 +466,8 @@ function careerFreshState() {
     // carrera, como bestPosition/careerStats, nunca se resetea.
     cup: careerNewCup(),
     cupsWon: 0,
-    lastCupResult: null
+    lastCupResult: null,
+    lastLeagueFinish: null
   };
   careerGenerateIncomingOffers(state);
   return state;
@@ -490,7 +494,7 @@ function careerSerialize(c) {
     league: c.league,
     lastMatchdayResult: c.lastMatchdayResult,
     calendarView: c.calendarView,
-    marketFilter: c.marketFilter, marketSearch: c.marketSearch, marketOnlyInterested: c.marketOnlyInterested,
+    marketFilter: c.marketFilter, marketTypeFilter: c.marketTypeFilter, marketSearch: c.marketSearch, marketOnlyInterested: c.marketOnlyInterested,
     marketSort: c.marketSort, marketSortDir: c.marketSortDir, marketPage: c.marketPage,
     plantillaFilter: c.plantillaFilter, plantillaSearch: c.plantillaSearch,
     plantillaSort: c.plantillaSort, plantillaSortDir: c.plantillaSortDir,
@@ -503,7 +507,8 @@ function careerSerialize(c) {
     playerProgression: c.playerProgression || {},
     lastPlayerProgressionDelta: c.lastPlayerProgressionDelta || {},
     trainingLevel: c.trainingLevel || 1,
-    cup: c.cup, cupsWon: c.cupsWon || 0, lastCupResult: c.lastCupResult || null
+    cup: c.cup, cupsWon: c.cupsWon || 0, lastCupResult: c.lastCupResult || null,
+    lastLeagueFinish: c.lastLeagueFinish || null
   };
 }
 function careerDeserialize(data) {
@@ -524,7 +529,7 @@ function careerDeserialize(data) {
     budget: typeof data.budget === 'number' ? data.budget : CAREER_STARTING_BUDGET,
     loanedIds: data.loanedIds || [],
     calendarView: data.calendarView,
-    marketFilter: data.marketFilter || null, marketSearch: data.marketSearch || '', marketOnlyInterested: !!data.marketOnlyInterested,
+    marketFilter: data.marketFilter || null, marketTypeFilter: data.marketTypeFilter || null, marketSearch: data.marketSearch || '', marketOnlyInterested: !!data.marketOnlyInterested,
     marketSort: data.marketSort, marketSortDir: data.marketSortDir, marketPage: data.marketPage || 0,
     plantillaFilter: data.plantillaFilter || null, plantillaSearch: data.plantillaSearch || '',
     plantillaSort: data.plantillaSort, plantillaSortDir: data.plantillaSortDir,
@@ -540,7 +545,8 @@ function careerDeserialize(data) {
     trainingMessage: null,
     cup: careerCupRelinkWinners(data.cup) || careerNewCup(),
     cupsWon: data.cupsWon || 0,
-    lastCupResult: data.lastCupResult || null
+    lastCupResult: data.lastCupResult || null,
+    lastLeagueFinish: data.lastLeagueFinish || null
   };
 }
 // Guarda el estado ACTUAL (G.career) en el hueco activo
@@ -813,6 +819,19 @@ function careerPositionFilterBtnsHtml(filter, actionName) {
   }).join('');
 }
 
+// Mismo patrón que careerPositionFilterBtnsHtml pero por afinidad
+// elemental (TYPES: Fuego/Bosque/Viento/Montaña), con el símbolo de cada
+// tipo (getTypeSymbol) en vez del icono de posición -- a petición
+// explícita, para Mercado.
+function careerTypeFilterBtnsHtml(filter, actionName) {
+  return [null].concat(TYPES).map(function (tipo) {
+    var active = filter === tipo;
+    var arg = tipo ? "'" + tipo + "'" : 'null';
+    var label = tipo ? getTypeSymbol(tipo) : 'Todos';
+    return '<button class="btn btn-tiny' + (active ? ' active' : '') + '" onclick="' + actionName + '(' + arg + ')" title="' + (tipo || 'Todos') + '">' + label + '</button>';
+  }).join('');
+}
+
 window.actionSetCareerPlantillaFilter = function (pos) {
   G.career.plantillaFilter = pos;
   render();
@@ -1074,6 +1093,11 @@ function renderCareerEntrenamiento(c) {
 
 window.actionSetCareerMarketFilter = function (pos) {
   G.career.marketFilter = pos;
+  G.career.marketPage = 0;
+  render();
+};
+window.actionSetCareerMarketTypeFilter = function (tipo) {
+  G.career.marketTypeFilter = tipo;
   G.career.marketPage = 0;
   render();
 };
@@ -1500,6 +1524,7 @@ function renderCareerMercado(c) {
   var incomingOffersHtml = renderCareerIncomingOffers(c);
   var owned = c.lineup.map(function (s) { return s.player.id; }).concat(c.bench.map(function (p) { return p.id; }));
   var filter = c.marketFilter || null;
+  var typeFilter = c.marketTypeFilter || null;
   var search = (c.marketSearch || '').trim().toLowerCase();
   var onlyInterested = !!c.marketOnlyInterested;
   var teamAvg = careerTeamAvgScore(c);
@@ -1509,6 +1534,7 @@ function renderCareerMercado(c) {
     var score = careerPlayerScore(p);
     if (score >= signableCap) return false;
     if (filter && p.posicion !== filter) return false;
+    if (typeFilter && p.tipo !== typeFilter) return false;
     if (search && p.nombre.toLowerCase().indexOf(search) === -1) return false;
     if (onlyInterested && (score - teamAvg) > CAREER_INTERESTED_GAP) return false;
     return true;
@@ -1523,6 +1549,7 @@ function renderCareerMercado(c) {
   var pageItems = available.slice(page * CAREER_MARKET_PAGE_SIZE, (page + 1) * CAREER_MARKET_PAGE_SIZE);
 
   var filterBtnsHtml = careerPositionFilterBtnsHtml(filter, 'actionSetCareerMarketFilter');
+  var typeFilterBtnsHtml = careerTypeFilterBtnsHtml(typeFilter, 'actionSetCareerMarketTypeFilter');
   var sortOptionsHtml = CAREER_MARKET_SORT_FIELDS.map(function (f) {
     return '<option value="' + f.id + '"' + (f.id === sortField.id ? ' selected' : '') + '>' + f.name + '</option>';
   }).join('');
@@ -1531,7 +1558,7 @@ function renderCareerMercado(c) {
   var rowsHtml = pageItems.map(function (p) {
     var value = careerPlayerValue(p);
     return '<div class="futdraft-timeline-row">' + careerMediaBadgeHtml(p) + avatarHtml(p) +
-      '<span>' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + '</span>' +
+      '<span>' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + ' <span title="' + escapeHtml(p.tipo) + '">' + getTypeSymbol(p.tipo) + '</span></span>' +
       '<strong style="margin-left:auto;white-space:nowrap;color:var(--accent-2)">' + value + ' M€</strong>' +
       '<button class="btn btn-tiny" style="margin-left:6px" ' + (squadFull ? 'disabled' : '') + ' onclick="actionStartCareerNegotiation(\'' + p.id + '\', \'buy\')">Negociar</button>' +
       '<button class="btn btn-tiny" ' + (squadFull || loansFull ? 'disabled' : '') + ' onclick="actionStartCareerNegotiation(\'' + p.id + '\', \'loan\')" title="Cesión de 1 temporada por 1/3 del valor">Cesión</button>' +
@@ -1558,6 +1585,7 @@ function renderCareerMercado(c) {
       '<div class="btn-row mt">' + filterBtnsHtml +
         '<button class="btn btn-tiny' + (onlyInterested ? ' active' : '') + '" onclick="actionToggleCareerMarketInterested()">Podrían unirse</button>' +
       '</div>' +
+      '<div class="btn-row mt">' + typeFilterBtnsHtml + '</div>' +
       '<div class="btn-row mt" style="align-items:center">' +
         '<select class="select-field" style="width:auto;min-height:36px;padding:6px 10px" onchange="actionSetCareerMarketSort(this.value)">' + sortOptionsHtml + '</select>' +
         '<button class="btn btn-tiny" onclick="actionToggleCareerMarketSortDir()">' + (sortDir === -1 ? '⬇ Mayor a menor' : '⬆ Menor a mayor') + '</button>' +
@@ -1741,6 +1769,41 @@ function careerUpdateBestPosition(c) {
   var position = idx + 1;
   if (!c.bestPosition || position < c.bestPosition) c.bestPosition = position;
 }
+// Tu puesto final en la tabla (1 = primero), null si por lo que sea no
+// se encuentra (no debería pasar, "Tú" siempre está en la tabla).
+function careerFinalLeaguePosition(c) {
+  var sorted = ligaSortedTable(c.league.table);
+  var idx = sorted.findIndex(function (t) { return t.idx === 0; });
+  return idx === -1 ? null : idx + 1;
+}
+// Premio de fin de Liga según la posición final, a petición explícita:
+// 1º 25M€, 2º 20M€, 3º 15M€, 4º 10M€, 5º 5M€, y desde el 6º baja 0.1M€
+// por puesto (6º 4.9M€ ... 20º 3.5M€ con los 20 equipos de siempre).
+function careerLeaguePositionBonus(position) {
+  if (position <= 1) return 25;
+  if (position === 2) return 20;
+  if (position === 3) return 15;
+  if (position === 4) return 10;
+  if (position === 5) return 5;
+  return Math.round((5 - (position - 5) * 0.1) * 10) / 10;
+}
+// Se concede UNA sola vez, justo al jugar la última jornada de la
+// temporada (mismo patrón que careerCupMaybeAwardChampion con su propio
+// flag -- aquí league.finishBonusAwarded -- para no darlo dos veces si
+// se repasa la pantalla de Jornada antes de pulsar "Empezar temporada").
+// c.lastLeagueFinish queda guardado para el resumen de temporada
+// (careerSeasonSummaryHtml), que se sigue viendo hasta que se pulsa ese
+// botón (actionStartNewCareerSeason reconstruye la liga de cero).
+function careerMaybeAwardLeagueFinish(c) {
+  var league = c.league;
+  if (league.matchdayIndex < league.schedule.length || league.finishBonusAwarded) return;
+  league.finishBonusAwarded = true;
+  var position = careerFinalLeaguePosition(c);
+  if (position === null) return;
+  var bonus = careerLeaguePositionBonus(position);
+  c.budget = Math.round((c.budget + bonus) * 10) / 10;
+  c.lastLeagueFinish = { position: position, bonus: bonus };
+}
 
 // Resuelve todos los partidos de la jornada actual que NO sean el tuyo
 // (o todos, si fromIdx se omite): comparando potencias 0-100, igual que
@@ -1818,6 +1881,7 @@ window.actionSkipCareerMatchday = function () {
   league.matchdayIndex++;
   careerUpdateBestPosition(c);
   careerMaybeOpenMidseasonWindow(c);
+  careerMaybeAwardLeagueFinish(c);
   render();
 };
 
@@ -1891,6 +1955,7 @@ function finishCareerMatchdayMatch() {
   league.matchdayIndex++;
   careerUpdateBestPosition(c);
   careerMaybeOpenMidseasonWindow(c);
+  careerMaybeAwardLeagueFinish(c);
 
   G.futdraft.lastMatchResult = {
     oppName: oppName, oppShield: teamShieldPath(oppName), oppPower: careerRivalPower(oppName),
@@ -1955,6 +2020,7 @@ window.actionStartNewCareerSeason = function () {
   c.calendarView = null;
   c.cup = careerNewCup();
   c.lastCupResult = null;
+  c.lastLeagueFinish = null;
   render();
 };
 
@@ -2221,6 +2287,44 @@ function renderCareerCopa(c) {
   return headerHtml + actionHtml + bracketHtml;
 }
 
+// Resumen de temporada, a petición explícita ("quiero un resumen de mi
+// temporada al acabar, donde diga mi posición en copa, en liga, que
+// jugadores cedidos se van"): se lee de c.league/c.cup/c.loanedIds
+// TAL CUAL están al terminar la última jornada, todavía sin tocar --
+// actionStartNewCareerSeason (el botón de abajo) es quien de verdad
+// reconstruye la liga/copa y devuelve los cedidos, así que este resumen
+// sigue viéndose exactamente igual hasta que se pulsa ese botón.
+function careerSeasonSummaryHtml(c) {
+  var position = careerFinalLeaguePosition(c);
+  var finish = c.lastLeagueFinish;
+  var bonus = (finish && finish.position === position) ? finish.bonus : (position ? careerLeaguePositionBonus(position) : null);
+  var positionText = position ? (position + 'º de ' + CAREER_LEAGUE_TEAM_COUNT) : 'sin datos';
+  var cup = c.cup;
+  var champion = careerCupChampion(cup);
+  var cupText;
+  if (champion && champion.isPlayer) {
+    cupText = '🏆 Campeón de la Copa del Rey';
+  } else if (cup.eliminated) {
+    cupText = 'Eliminado en ' + roundNameForIndex(cup.eliminatedRound, Math.log2(cup.size));
+  } else {
+    cupText = 'Sin completar';
+  }
+  var loanedIds = c.loanedIds || [];
+  var allPlayers = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
+  var loanedNames = loanedIds.map(function (id) {
+    var p = allPlayers.find(function (x) { return x.id === id; });
+    return p ? p.nombre : null;
+  }).filter(Boolean);
+  return '<div class="panel center-text">' +
+    '<h3 style="margin-bottom:4px">Resumen de la temporada ' + c.season + '</h3>' +
+    '<p class="dim small">Posición en Liga: <strong style="color:var(--accent-2)">' + positionText + '</strong>' + (bonus ? ' -- <strong style="color:var(--accent-2)">+' + bonus + ' M€</strong> de premio' : '') + '</p>' +
+    '<p class="dim small">Copa del Rey: <strong>' + cupText + '</strong></p>' +
+    (loanedNames.length
+      ? '<p class="dim small">Fin de cesión, vuelven a su club: <strong>' + loanedNames.map(escapeHtml).join(', ') + '</strong></p>'
+      : '<p class="dim small">Sin cedidos que devolver.</p>') +
+  '</div>';
+}
+
 function renderCareerJornada(c) {
   var league = c.league;
   var w = c.marketWindow;
@@ -2255,13 +2359,13 @@ function renderCareerJornada(c) {
     '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">' + (seasonOver ? 'Temporada ' + c.season + ' terminada' : ('Jornada ' + (league.matchdayIndex + 1) + ' de ' + league.schedule.length)) + '</h3>' +
       (seasonOver
-        ? '<p class="dim small">Ya se han jugado las ' + league.schedule.length + ' jornadas.</p>' +
-          '<button class="btn btn-primary btn-block mt" onclick="actionStartNewCareerSeason()">Empezar temporada ' + (c.season + 1) + '</button>'
+        ? '<button class="btn btn-primary btn-block mt" onclick="actionStartNewCareerSeason()">Empezar temporada ' + (c.season + 1) + '</button>'
         : '<div class="btn-row" style="justify-content:center">' +
             '<button class="btn btn-primary" onclick="actionSimulateCareerMatchday()">▶ Simular partido</button>' +
             '<button class="btn btn-outline" onclick="actionSkipCareerMatchday()">Saltar</button>' +
           '</div>') +
     '</div>' +
+    (seasonOver ? careerSeasonSummaryHtml(c) : '') +
     resultHtml
   );
 }
