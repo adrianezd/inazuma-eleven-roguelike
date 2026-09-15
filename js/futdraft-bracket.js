@@ -166,9 +166,11 @@ function renderFutDraftMatchResult() {
 }
 
 // Panel de "Máximo goleador y asistente" + top 8 de cada uno, compartido
-// por el resumen del torneo de FutDraft y el de Liga -- stats es
-// { scorers: {}, assists: {} } (ver futDraftRecordGoalEvents).
-function renderTopScorersAssistsPanel(stats) {
+// por el resumen del torneo de FutDraft, el de Liga y (con título propio,
+// ver segundo parámetro) las dos tablas de Modo Carrera (temporada actual
+// e histórico del club) -- stats es { scorers: {}, assists: {} } (ver
+// futDraftRecordGoalEvents).
+function renderTopScorersAssistsPanel(stats, title) {
   stats = stats || { scorers: {}, assists: {} };
   var scorers = sortedStatsList(stats.scorers).slice(0, 3);
   var assists = sortedStatsList(stats.assists).slice(0, 3);
@@ -184,7 +186,7 @@ function renderTopScorersAssistsPanel(stats) {
   }
   return (
     '<div class="panel">' +
-      '<h3 style="margin-bottom:8px">Goleadores y asistentes del torneo</h3>' +
+      '<h3 style="margin-bottom:8px">' + escapeHtml(title || 'Goleadores y asistentes del torneo') + '</h3>' +
       (topScorer ? '<p class="dim small">⚽ Máximo goleador: <strong>' + escapeHtml(topScorer.nombre) + '</strong> (' + escapeHtml(topScorer.team) + ') — ' + topScorer.count + ' gol' + (topScorer.count === 1 ? '' : 'es') + '</p>' : '') +
       (topAssist ? '<p class="dim small">🅰️ Máximo asistente: <strong>' + escapeHtml(topAssist.nombre) + '</strong> (' + escapeHtml(topAssist.team) + ') — ' + topAssist.count + ' asistencia' + (topAssist.count === 1 ? '' : 's') + '</p>' : '') +
       '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">' +

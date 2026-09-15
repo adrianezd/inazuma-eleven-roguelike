@@ -57,31 +57,44 @@
      (careerCounterOfferAccepts/actionSendCounterOffer): pedir igual o
      menos de lo que ofrecían es aceptado seguro, por encima la
      probabilidad cae cuanto más te alejes.
-   - Calendario: liga de 20 equipos a una vuelta real (generateRoundRobin,
-     igual que Liga), con 19 rivales de nombre real sacados de las mismas
-     listas que usa FutDraft/Liga.
+   - Calendario: liga a DOBLE vuelta (careerGenerateDoubleRoundRobin, a
+     diferencia de Liga que es a una vuelta -- 16 equipos dan 30
+     jornadas, 20 dan 38), con rivales de nombre real sacados de las
+     mismas listas que usa FutDraft/Liga. Dos divisiones (c.division, 1
+     o 2): Segunda (16
+     equipos: tú + 10 jefes + 5 "malos") al empezar la carrera, Primera
+     (20 equipos: tú + 19, todos de nivel jefe) si asciendes -- ver
+     careerInitialDivisionTeams/careerBuildLeague/careerComputePromotionRelegation
+     más abajo.
    - Liga: la clasificación de esa misma liga (mismas funciones genéricas
      que renderLigaTable: ligaEmptyStanding/ligaApplyResult/ligaSortedTable/
-     ligaFormHtml, con las mismas zonas de color por puesto) + botón de
-     máximos goleadores y asistentes (renderTopScorersAssistsPanel).
+     ligaFormHtml) + insignia de posición propia (careerLigaPosBadgeHtml:
+     verde la zona de ascenso en Segunda, rojo la de descenso en Primera)
+     + botón de máximos goleadores y asistentes DE ESTA TEMPORADA
+     (renderTopScorersAssistsPanel).
    - Jornada: bloqueada mientras el mercado está abierto (5 días de
      pretemporada siempre al empezar cada temporada, más 2 días a mitad de
      liga tras la jornada 10 -- CAREER_PRESEASON_DAYS/CAREER_MIDSEASON_DAYS/
-     CAREER_MIDSEASON_AT_MATCHDAY, careerMaybeOpenMidseasonWindow). Con la
-     liga en marcha: "Simular partido" ve tu partido de verdad con el
-     motor en vivo de FutDraft/Liga; "Saltar" lo resuelve de golpe sin
-     verlo. El resto de la jornada siempre se resuelve de golpe. Ganar
-     suelta 50k/100k/150k de presupuesto al azar (careerAwardWinBonus). Al
-     terminar la liga (20 jornadas) se puede "Empezar temporada N+1"
-     (actionStartNewCareerSeason): resetea liga/tabla/calendario y abre una
-     nueva ventana de pretemporada, pero conserva presupuesto, plantilla y
-     careerStats/bestPosition (esos nunca se resetean entre temporadas).
+     CAREER_MIDSEASON_AT_MATCHDAY, careerMaybeOpenMidseasonWindow) y
+     mientras la Copa del Rey esté pendiente (careerCupPending, solo
+     aplica en Primera, ver más abajo). Con la liga en marcha: "Simular
+     partido" ve tu partido de verdad con el motor en vivo de FutDraft/
+     Liga; "Saltar" lo resuelve de golpe sin verlo. El resto de la
+     jornada siempre se resuelve de golpe. Ganar suelta 50k/100k/150k de
+     presupuesto al azar (careerAwardWinBonus). Al terminar todas las
+     jornadas se concede el premio de posición (careerMaybeAwardLeagueFinish)
+     y se calculan los ascensos/descensos (careerComputePromotionRelegation,
+     mostrados en el resumen de temporada) y se puede "Empezar temporada
+     N+1" (actionStartNewCareerSeason): aplica ese ascenso/descenso de
+     verdad, resetea liga/tabla/calendario y abre una nueva ventana de
+     pretemporada, pero conserva presupuesto, plantilla y careerStats/
+     bestPosition (esos nunca se resetean entre temporadas).
    - Copa del Rey: cuadro de eliminación directa de 16 equipos (careerNewCup,
-     uno nuevo cada temporada), independiente de la Liga -- no bloquea ni
-     depende de la ventana de fichajes ni del calendario. Reutiliza el
-     motor de Modo Torneo tal cual para repartir rivales y resolver
-     cruces CPU-vs-CPU (generateTournamentBracket/simulateCpuMatch) y su
-     mismo árbol visual (roundNameForIndex/bracketMatchHtml/...), con el
+     uno nuevo cada temporada), solo jugable en Primera División y tras la
+     jornada 10 (careerCupLocked) -- en Segunda está bloqueada del todo.
+     Reutiliza el motor de Modo Torneo tal cual para repartir rivales y
+     resolver cruces CPU-vs-CPU (generateTournamentBracket/simulateCpuMatch)
+     y su mismo árbol visual (roundNameForIndex/bracketMatchHtml/...), con el
      mismo puente de FutDraft que Jornada para tu partido. Al ser
      eliminatoria no puede quedar en empate: si sigue igualado, una tanda
      de penaltis resumida (careerCupPenaltyShootout) decide el marcador
@@ -149,7 +162,25 @@ var CAREER_MODE_STARTER_IDS = ['r41', 'r170', 'r67', 'r264', 'r267', 'r263', 'r2
 // original que se queda.
 var CAREER_MODE_BENCH_IDS = ['r270', 'r271', 'r272', 'r66', 'r57'];
 var CAREER_MODE_DEFAULT_FORMATION = '433';
-var CAREER_LEAGUE_TEAM_COUNT = 20; // tú + 19 rivales, a petición explícita
+// Dos divisiones, a petición explícita: empiezas en Segunda (16 equipos:
+// tú + 10 jefes + 5 "malos" de RIVAL_TEAM_NAMES) y, si asciendes, juegas
+// en Primera (20 equipos: tú + 19, todos de nivel jefe). c.division (1 o
+// 2) y c.divisionTeams ({1:[...], 2:[...]}, los nombres reales de CADA
+// división que NO eres tú, siempre) viven en el estado -- ver
+// careerInitialDivisionTeams/careerBuildLeague/careerComputePromotionRelegation.
+var CAREER_DIVISION1_TEAM_COUNT = 20;
+var CAREER_DIVISION2_TEAM_COUNT = 16;
+var CAREER_DIVISION2_BOSS_COUNT = 10;
+var CAREER_DIVISION2_NORMAL_COUNT = 5;
+// Cuántos ascienden/descienden cada temporada -- los 2 primeros de
+// Segunda suben, los 2 últimos de Primera bajan, siempre.
+var CAREER_PROMOTION_SPOTS = 2;
+function careerDivisionTeamCount(division) {
+  return division === 1 ? CAREER_DIVISION1_TEAM_COUNT : CAREER_DIVISION2_TEAM_COUNT;
+}
+function careerDivisionName(division) {
+  return division === 1 ? 'Primera División' : 'Segunda División';
+}
 
 function careerModeRoster(ids) {
   return ids.map(function (id) { return ROSTER.find(function (p) { return p.id === id; }); }).filter(Boolean);
@@ -307,30 +338,57 @@ function careerPlayerValue(p) {
   return Math.max(0.1, Math.round(millions * 10) / 10);
 }
 
-// Mismo criterio que ligaPickRivalNames (más equipos "jefe" cuanto más
-// alto el bossChance), pero con el tamaño de liga como parámetro en vez
-// de fijo a LIGA_TEAM_COUNT, porque el Modo Carrera es de 16 equipos, no
-// de los 18 de Liga.
-function careerPickRivalNames(count) {
-  var used = {};
+// Saca `count` nombres distintos de `pool`, evitando los que ya estén en
+// `used` (compartido entre llamadas para que las dos divisiones nunca se
+// pisen equipos entre sí al arrancar la carrera).
+function careerPickNamesFromPool(pool, count, used) {
   var names = [];
   var guard = 0;
-  while (names.length < count && guard < 2000) {
+  while (names.length < count && guard < 4000) {
     guard++;
-    var pool = Math.random() < 0.4 ? RIVAL_TEAM_BOSSES : RIVAL_TEAM_NAMES;
     var name = choice(pool);
     if (!used[name]) { used[name] = true; names.push(name); }
   }
   return names;
 }
 
-// Calendario + tabla, construidos una sola vez: mismo método del círculo
-// (generateRoundRobin) y misma forma de standing vacío (ligaEmptyStanding)
-// que ya usa Liga, solo que con 16 equipos en vez de 18.
-function careerBuildLeague() {
-  var rivalNames = careerPickRivalNames(CAREER_LEAGUE_TEAM_COUNT - 1);
-  var teamNames = [null].concat(rivalNames); // índice 0 = tú
-  var schedule = generateRoundRobin(CAREER_LEAGUE_TEAM_COUNT);
+// Reparto inicial de las dos divisiones al empezar una carrera nueva, a
+// petición explícita: Segunda con 16 equipos (tú + 10 jefes + 5 "malos"
+// de RIVAL_TEAM_NAMES), Primera con 20 (tú + 19, todos de nivel jefe) --
+// tú arrancas en Segunda (careerFreshState), así que de entrada Primera
+// es la división "en la sombra" y necesita a sus 20 completos, mientras
+// que Segunda solo necesita 15 nombres reales (el hueco 16 eres tú).
+function careerInitialDivisionTeams() {
+  var used = {};
+  var div2 = careerPickNamesFromPool(RIVAL_TEAM_BOSSES, CAREER_DIVISION2_BOSS_COUNT, used)
+    .concat(careerPickNamesFromPool(RIVAL_TEAM_NAMES, CAREER_DIVISION2_NORMAL_COUNT, used));
+  var div1 = careerPickNamesFromPool(RIVAL_TEAM_BOSSES, CAREER_DIVISION1_TEAM_COUNT, used);
+  return { 1: div1, 2: div2 };
+}
+
+// Modo Carrera es IDA Y VUELTA (a diferencia de Liga, que es a una
+// vuelta), a petición explícita ("si son 16 equipos, 30 partidos, si son
+// 20, 38 partidos"): la vuelta usa el mismo círculo (generateRoundRobin)
+// que la ida, con local/visitante invertido en cada partido -- así 16
+// equipos dan 2×15=30 jornadas y 20 dan 2×19=38, exacto. No se toca
+// generateRoundRobin en sí (es de Liga, que sigue siendo a una vuelta).
+function careerGenerateDoubleRoundRobin(n) {
+  var firstLeg = generateRoundRobin(n);
+  var secondLeg = firstLeg.map(function (round) {
+    return round.map(function (fx) { return [fx[1], fx[0]]; });
+  });
+  return firstLeg.concat(secondLeg);
+}
+
+// Calendario + tabla de LA DIVISIÓN QUE JUEGAS, construidos una sola vez:
+// mismo método del círculo, a doble vuelta (careerGenerateDoubleRoundRobin)
+// y misma forma de standing vacío (ligaEmptyStanding) que ya usa Liga.
+// divisionTeams[division] son los nombres reales de esa división (sin
+// ti); careerComputePromotionRelegation/careerApplyPromotionRelegation
+// son quienes mueven nombres entre las dos listas de una temporada a otra.
+function careerBuildLeague(division, divisionTeams) {
+  var teamNames = [null].concat(divisionTeams[division]); // índice 0 = tú
+  var schedule = careerGenerateDoubleRoundRobin(teamNames.length);
   return {
     teamNames: teamNames,
     table: teamNames.map(function () { return ligaEmptyStanding(); }),
@@ -423,6 +481,9 @@ function careerGenerateIncomingOffers(c) {
 
 function careerFreshState() {
   var starters = careerModeRoster(CAREER_MODE_STARTER_IDS);
+  // Arrancas en Segunda División por defecto, a petición explícita.
+  var division = 2;
+  var divisionTeams = careerInitialDivisionTeams();
   var state = {
     tab: 'equipo',
     season: 1,
@@ -432,8 +493,11 @@ function careerFreshState() {
     captainId: null,
     pickingCaptain: false,
     swapSelectedId: null,
-    league: careerBuildLeague(),
+    division: division,
+    divisionTeams: divisionTeams,
+    league: careerBuildLeague(division, divisionTeams),
     lastMatchdayResult: null,
+    lastPromotionResult: null,
     loanedIds: [],
     // Jugadores comprados (fichaje en propiedad) ESTA temporada: no se
     // pueden vender ni ceder hasta la que viene, a petición explícita --
@@ -491,6 +555,8 @@ function careerSerialize(c) {
     lineup: c.lineup.map(function (s) { return { pos: s.pos, id: s.player.id }; }),
     bench: c.bench.map(function (p) { return p.id; }),
     loanedIds: c.loanedIds || [],
+    division: c.division || 2,
+    divisionTeams: c.divisionTeams,
     league: c.league,
     lastMatchdayResult: c.lastMatchdayResult,
     calendarView: c.calendarView,
@@ -508,7 +574,8 @@ function careerSerialize(c) {
     lastPlayerProgressionDelta: c.lastPlayerProgressionDelta || {},
     trainingLevel: c.trainingLevel || 1,
     cup: c.cup, cupsWon: c.cupsWon || 0, lastCupResult: c.lastCupResult || null,
-    lastLeagueFinish: c.lastLeagueFinish || null
+    lastLeagueFinish: c.lastLeagueFinish || null,
+    lastPromotionResult: c.lastPromotionResult || null
   };
 }
 function careerDeserialize(data) {
@@ -524,6 +591,14 @@ function careerDeserialize(data) {
     lineup: lineup, bench: bench,
     captainId: data.captainId || null,
     pickingCaptain: false, swapSelectedId: null,
+    // Partidas guardadas de ANTES de que existieran las dos divisiones no
+    // tienen este campo -- se asume Primera (1), no Segunda, porque su
+    // c.league ya guardado tiene 20 equipos (el formato de Primera), así
+    // que es la continuidad más coherente hasta la próxima transición de
+    // temporada (careerBuildLeague ya reconstruye todo bien a partir de
+    // ahí).
+    division: data.division || 1,
+    divisionTeams: data.divisionTeams || careerInitialDivisionTeams(),
     league: data.league,
     lastMatchdayResult: data.lastMatchdayResult || null,
     budget: typeof data.budget === 'number' ? data.budget : CAREER_STARTING_BUDGET,
@@ -546,7 +621,8 @@ function careerDeserialize(data) {
     cup: careerCupRelinkWinners(data.cup) || careerNewCup(),
     cupsWon: data.cupsWon || 0,
     lastCupResult: data.lastCupResult || null,
-    lastLeagueFinish: data.lastLeagueFinish || null
+    lastLeagueFinish: data.lastLeagueFinish || null,
+    lastPromotionResult: data.lastPromotionResult || null
   };
 }
 // Guarda el estado ACTUAL (G.career) en el hueco activo
@@ -576,7 +652,7 @@ function careerSlotSummary(slot) {
     return {
       season: data.season || 1,
       matchday: data.league ? Math.min(data.league.matchdayIndex + 1, data.league.schedule.length) : 1,
-      totalMatchdays: data.league ? data.league.schedule.length : CAREER_LEAGUE_TEAM_COUNT - 1,
+      totalMatchdays: data.league ? data.league.schedule.length : CAREER_DIVISION2_TEAM_COUNT - 1,
       budget: typeof data.budget === 'number' ? data.budget : CAREER_STARTING_BUDGET
     };
   } catch (e) { return null; }
@@ -1687,6 +1763,20 @@ function renderCareerCalendario(c) {
   );
 }
 
+// Insignia de posición para la tabla de Modo Carrera: verde para la zona
+// de ASCENSO (los CAREER_PROMOTION_SPOTS primeros de Segunda) o rojo
+// para la de DESCENSO (los mismos últimos de Primera), a petición
+// explícita ("los 2 primeros ascienden, tienen que estar en verde, como
+// en la foto") -- distinta de la genérica ligaPosBadgeHtml (Champions/
+// Europa/descenso de la Liga independiente de 18 equipos), aunque
+// reutiliza las mismas clases CSS (liga-pos-top/liga-pos-bottom).
+function careerLigaPosBadgeHtml(rank, totalTeams, division) {
+  var zoneCls = '';
+  if (division === 2 && rank <= CAREER_PROMOTION_SPOTS) zoneCls = 'liga-pos-top';
+  else if (division === 1 && rank > totalTeams - CAREER_PROMOTION_SPOTS) zoneCls = 'liga-pos-bottom';
+  return '<span class="liga-pos-badge' + (zoneCls ? ' ' + zoneCls : '') + '">' + rank + '</span>';
+}
+
 function renderCareerLiga(c) {
   var league = c.league;
   var sorted = ligaSortedTable(league.table);
@@ -1695,7 +1785,7 @@ function renderCareerLiga(c) {
     var label = isYou ? 'Tú' : league.teamNames[t.idx];
     var shield = isYou ? getPlayerShieldPath() : teamShieldPath(league.teamNames[t.idx]);
     return '<tr class="' + (isYou ? 'liga-you' : '') + '">' +
-      '<td>' + ligaPosBadgeHtml(pos + 1, sorted.length) + '</td>' +
+      '<td>' + careerLigaPosBadgeHtml(pos + 1, sorted.length, c.division) + '</td>' +
       '<td><img class="liga-row-shield" src="' + escapeHtml(shield) + '" alt=""></td>' +
       '<td>' + escapeHtml(label) + '</td>' +
       '<td>' + t.pj + '</td><td>' + t.pg + '</td><td>' + t.pe + '</td><td>' + t.pp + '</td>' +
@@ -1704,10 +1794,14 @@ function renderCareerLiga(c) {
       '<td>' + ligaFormHtml(t.form) + '</td>' +
     '</tr>';
   }).join('');
-  var topScorersHtml = c.showTopScorers ? renderTopScorersAssistsPanel(league.stats) : '';
+  var topScorersHtml = c.showTopScorers ? renderTopScorersAssistsPanel(league.stats, 'Goleadores y asistentes de esta temporada') : '';
+  var zoneHint = c.division === 2
+    ? 'Verde: zona de ascenso a Primera (' + CAREER_PROMOTION_SPOTS + ' primeros).'
+    : 'Rojo: zona de descenso a Segunda (' + CAREER_PROMOTION_SPOTS + ' últimos).';
   return (
     '<div class="panel center-text">' +
-      '<p class="dim small">Jornada ' + Math.min(league.matchdayIndex + 1, league.schedule.length) + ' de ' + league.schedule.length + '</p>' +
+      '<p class="dim small">' + escapeHtml(careerDivisionName(c.division)) + ' -- Jornada ' + Math.min(league.matchdayIndex + 1, league.schedule.length) + ' de ' + league.schedule.length + '</p>' +
+      '<p class="dim small">' + zoneHint + '</p>' +
       '<button class="btn btn-tiny' + (c.showTopScorers ? ' active' : '') + '" onclick="actionToggleCareerTopScorers()">Máximos goleadores y asistentes</button>' +
     '</div>' +
     (topScorersHtml || '') +
@@ -1792,7 +1886,10 @@ function careerUpdateBestPosition(c) {
   var idx = sorted.findIndex(function (t) { return t.idx === 0; });
   if (idx === -1) return;
   var position = idx + 1;
-  if (!c.bestPosition || position < c.bestPosition) c.bestPosition = position;
+  // totalTeams se guarda junto a la posición (no solo el número) porque
+  // las dos divisiones tienen tamaños distintos (16/20) -- sin esto no
+  // se podría enseñar "Xº de Y" con el Y correcto en Estadísticas.
+  if (!c.bestPosition || position < c.bestPosition.position) c.bestPosition = { position: position, totalTeams: c.league.teamNames.length };
 }
 // Tu puesto final en la tabla (1 = primero), null si por lo que sea no
 // se encuentra (no debería pasar, "Tú" siempre está en la tabla).
@@ -1803,7 +1900,9 @@ function careerFinalLeaguePosition(c) {
 }
 // Premio de fin de Liga según la posición final, a petición explícita:
 // 1º 25M€, 2º 20M€, 3º 15M€, 4º 10M€, 5º 5M€, y desde el 6º baja 0.1M€
-// por puesto (6º 4.9M€ ... 20º 3.5M€ con los 20 equipos de siempre).
+// por puesto (6º 4.9M€... 16º 3.9M€ en Segunda, hasta 20º 3.5M€ en
+// Primera) -- mismos premios en las dos divisiones, no se ha pedido que
+// Segunda pague menos.
 function careerLeaguePositionBonus(position) {
   if (position <= 1) return 25;
   if (position === 2) return 20;
@@ -1828,6 +1927,78 @@ function careerMaybeAwardLeagueFinish(c) {
   var bonus = careerLeaguePositionBonus(position);
   c.budget = Math.round((c.budget + bonus) * 10) / 10;
   c.lastLeagueFinish = { position: position, bonus: bonus };
+  // Ascensos/descensos se calculan YA (para poder enseñarlos en el
+  // resumen de temporada, ver careerSeasonSummaryHtml) pero no se
+  // aplican hasta actionStartNewCareerSeason (careerApplyPromotionRelegation),
+  // igual que el resto de la transición de temporada.
+  c.lastPromotionResult = careerComputePromotionRelegation(c);
+}
+
+// Simula la temporada COMPLETA de la división en la que NO juegas (nunca
+// se ve partido a partido, solo hace falta el resultado final para saber
+// quién asciende/desciende) -- mismas fórmulas de potencia/gol que el
+// resto de Modo Carrera (careerRivalPower/careerSimulateMatchGoals), así
+// que un equipo más fuerte tiene más opciones de quedar arriba, igual
+// que en tu propia división. Devuelve los nombres ordenados de mejor a
+// peor puesto.
+function careerSimulateOtherDivisionOrder(teamNames) {
+  var schedule = careerGenerateDoubleRoundRobin(teamNames.length);
+  var table = teamNames.map(function () { return ligaEmptyStanding(); });
+  schedule.forEach(function (round) {
+    round.forEach(function (fx) {
+      var powerA = careerRivalPower(teamNames[fx[0]]);
+      var powerB = careerRivalPower(teamNames[fx[1]]);
+      var goles = careerSimulateMatchGoals(powerA, powerB);
+      ligaApplyResult(table, fx[0], fx[1], goles[0], goles[1]);
+    });
+  });
+  return ligaSortedTable(table).map(function (t) { return teamNames[t.idx]; });
+}
+
+// Ascensos/descensos de fin de temporada, a petición explícita: los
+// CAREER_PROMOTION_SPOTS primeros de Segunda suben, los mismos últimos
+// de Primera bajan, SIEMPRE -- tanto si juegas esa división como si es
+// la "en la sombra" (careerSimulateOtherDivisionOrder). null en
+// promotedNames/relegatedNames representa "tú" mientras se calcula --
+// nunca sale así en el resultado final (se filtra).
+function careerComputePromotionRelegation(c) {
+  var myDivision = c.division;
+  var otherDivision = myDivision === 1 ? 2 : 1;
+  var mySorted = ligaSortedTable(c.league.table).map(function (t) {
+    return t.idx === 0 ? null : c.league.teamNames[t.idx];
+  });
+  var otherSorted = careerSimulateOtherDivisionOrder(c.divisionTeams[otherDivision]);
+  var promotedNames, relegatedNames;
+  if (myDivision === 2) {
+    promotedNames = mySorted.slice(0, CAREER_PROMOTION_SPOTS);
+    relegatedNames = otherSorted.slice(-CAREER_PROMOTION_SPOTS);
+  } else {
+    relegatedNames = mySorted.slice(-CAREER_PROMOTION_SPOTS);
+    promotedNames = otherSorted.slice(0, CAREER_PROMOTION_SPOTS);
+  }
+  var youPromoted = promotedNames.indexOf(null) !== -1;
+  var youRelegated = relegatedNames.indexOf(null) !== -1;
+  return {
+    promotedNames: promotedNames.filter(function (n) { return n !== null; }),
+    relegatedNames: relegatedNames.filter(function (n) { return n !== null; }),
+    youPromoted: youPromoted,
+    youRelegated: youRelegated,
+    newDivision: youPromoted ? 1 : (youRelegated ? 2 : myDivision)
+  };
+}
+
+// Aplica de verdad un resultado ya calculado (c.lastPromotionResult):
+// mueve los nombres reales entre las dos listas de divisionTeams y
+// actualiza c.division si te toca a ti. Llamado solo desde
+// actionStartNewCareerSeason, antes de construir la liga de la temporada
+// que empieza.
+function careerApplyPromotionRelegation(c) {
+  var r = c.lastPromotionResult;
+  if (!r) return;
+  var newDiv1 = c.divisionTeams[1].filter(function (n) { return r.relegatedNames.indexOf(n) === -1; }).concat(r.promotedNames);
+  var newDiv2 = c.divisionTeams[2].filter(function (n) { return r.promotedNames.indexOf(n) === -1; }).concat(r.relegatedNames);
+  c.divisionTeams = { 1: newDiv1, 2: newDiv2 };
+  c.division = r.newDivision;
 }
 
 // Resuelve todos los partidos de la jornada actual que NO sean el tuyo
@@ -2036,7 +2207,16 @@ window.actionStartNewCareerSeason = function () {
     if (returnedNames.length) c.plantillaMessage = 'Fin de la cesión: ' + returnedNames.join(', ') + ' -- vuelven a su club.';
   }
   careerProgressAllPlayers(c);
-  c.league = careerBuildLeague();
+  // Ascensos/descensos: careerComputePromotionRelegation ya calculó el
+  // resultado al terminar la última jornada (careerMaybeAwardLeagueFinish,
+  // para poder enseñarlo en el resumen de temporada) -- aquí es donde se
+  // APLICA de verdad, moviendo nombres reales entre divisiones y
+  // actualizando c.division si te toca a ti, justo antes de construir la
+  // liga de la temporada que empieza (para que ya salga en la división
+  // correcta).
+  careerApplyPromotionRelegation(c);
+  c.lastPromotionResult = null;
+  c.league = careerBuildLeague(c.division, c.divisionTeams);
   c.marketWindow = careerNewMarketWindow('preseason', CAREER_PRESEASON_DAYS);
   c.incomingOffers = [];
   c.boughtThisSeasonIds = []; // temporada nueva: ya se pueden volver a mover
@@ -2109,17 +2289,19 @@ function careerCupChampion(cup) {
 // seguir con la Liga (careerCupPending) como para el mensaje de la propia
 // pestaña Copa.
 function careerCupFinished(cup) { return cup.eliminated || !!careerCupChampion(cup); }
-// La Copa se juega siempre JUSTO DESPUÉS de la jornada 10 (a petición
-// explícita: "la copa del rey, se juega siempre justo después de la
-// jornada 10, y luego sigue la liga"), no en cualquier momento como
-// antes -- comparte umbral con la ventana de fichajes de mitad de
-// temporada (CAREER_MIDSEASON_AT_MATCHDAY) porque las dos cosas pasan en
-// el mismo punto del calendario. Antes de llegar ahí, la pestaña Copa
-// está bloqueada (careerCupLocked); una vez desbloqueada, la Liga no deja
-// jugar la jornada 11 hasta que la Copa esté careerCupFinished
-// (careerCupPending, comprobado en renderCareerJornada y en los dos
-// actionSkip/actionSimulateCareerMatchday).
-function careerCupLocked(c) { return c.league.matchdayIndex < CAREER_MIDSEASON_AT_MATCHDAY; }
+// La Copa solo se juega en Primera División (a petición explícita: "la
+// copa del rey solo se desbloquea al estar en primera división") y,
+// dentro de Primera, siempre JUSTO DESPUÉS de la jornada 10 (petición
+// anterior: "se juega siempre justo después de la jornada 10, y luego
+// sigue la liga") -- las dos condiciones a la vez, no una u otra.
+// Comparte umbral con la ventana de fichajes de mitad de temporada
+// (CAREER_MIDSEASON_AT_MATCHDAY) porque las dos cosas pasan en el mismo
+// punto del calendario. Antes de llegar ahí (o mientras sigas en
+// Segunda), la pestaña Copa está bloqueada (careerCupLocked); una vez
+// desbloqueada, la Liga no deja jugar la jornada 11 hasta que la Copa
+// esté careerCupFinished (careerCupPending, comprobado en
+// renderCareerJornada y en los dos actionSkip/actionSimulateCareerMatchday).
+function careerCupLocked(c) { return c.division !== 1 || c.league.matchdayIndex < CAREER_MIDSEASON_AT_MATCHDAY; }
 function careerCupPending(c) { return !careerCupLocked(c) && !careerCupFinished(c.cup); }
 // Resuelve cualquier partido pendiente de la ronda actual que no sea el
 // tuyo (CPU vs CPU, igual que careerResolveOtherFixtures en Liga) y, si
@@ -2256,9 +2438,12 @@ window.actionSkipCareerCupMatch = function () {
 };
 function renderCareerCopa(c) {
   if (careerCupLocked(c)) {
+    var lockedMsg = c.division !== 1
+      ? 'La Copa del Rey solo se juega en Primera División -- ahora mismo estás en ' + careerDivisionName(c.division) + '. Asciende para desbloquearla.'
+      : ('La Copa del Rey se juega justo después de la jornada ' + CAREER_MIDSEASON_AT_MATCHDAY + ' -- llevas jugadas ' + c.league.matchdayIndex + ' de ' + CAREER_MIDSEASON_AT_MATCHDAY + ' jornadas.');
     return '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Copa del Rey</h3>' +
-      '<p class="dim small">La Copa del Rey se juega justo después de la jornada ' + CAREER_MIDSEASON_AT_MATCHDAY + ' -- llevas jugadas ' + c.league.matchdayIndex + ' de ' + CAREER_MIDSEASON_AT_MATCHDAY + ' jornadas.</p>' +
+      '<p class="dim small">' + lockedMsg + '</p>' +
     '</div>';
   }
   var cup = c.cup;
@@ -2323,11 +2508,13 @@ function careerSeasonSummaryHtml(c) {
   var position = careerFinalLeaguePosition(c);
   var finish = c.lastLeagueFinish;
   var bonus = (finish && finish.position === position) ? finish.bonus : (position ? careerLeaguePositionBonus(position) : null);
-  var positionText = position ? (position + 'º de ' + CAREER_LEAGUE_TEAM_COUNT) : 'sin datos';
+  var positionText = position ? (position + 'º de ' + c.league.teamNames.length) : 'sin datos';
   var cup = c.cup;
   var champion = careerCupChampion(cup);
   var cupText;
-  if (champion && champion.isPlayer) {
+  if (c.division !== 1) {
+    cupText = 'No disponible (jugada en Segunda División)';
+  } else if (champion && champion.isPlayer) {
     cupText = '🏆 Campeón de la Copa del Rey';
   } else if (cup.eliminated) {
     cupText = 'Eliminado en ' + roundNameForIndex(cup.eliminatedRound, Math.log2(cup.size));
@@ -2340,9 +2527,27 @@ function careerSeasonSummaryHtml(c) {
     var p = allPlayers.find(function (x) { return x.id === id; });
     return p ? p.nombre : null;
   }).filter(Boolean);
+  // Ascensos/descensos: careerMaybeAwardLeagueFinish ya calculó el
+  // resultado (c.lastPromotionResult) al terminar la última jornada --
+  // aquí solo se enseña, la aplicación real (mover nombres, cambiar
+  // c.division) pasa al pulsar "Empezar temporada" (actionStartNewCareerSeason).
+  var pr = c.lastPromotionResult;
+  var promotionText = '';
+  if (pr) {
+    if (pr.youPromoted) {
+      promotionText = '🔼 ¡Ascenso a Primera División!';
+    } else if (pr.youRelegated) {
+      promotionText = '🔽 Descenso a Segunda División.';
+    } else {
+      promotionText = 'Sigues en ' + careerDivisionName(c.division) + '.';
+    }
+    if (pr.promotedNames.length) promotionText += ' Ascienden: ' + pr.promotedNames.map(escapeHtml).join(', ') + '.';
+    if (pr.relegatedNames.length) promotionText += ' Descienden: ' + pr.relegatedNames.map(escapeHtml).join(', ') + '.';
+  }
   return '<div class="panel center-text">' +
     '<h3 style="margin-bottom:4px">Resumen de la temporada ' + c.season + '</h3>' +
-    '<p class="dim small">Posición en Liga: <strong style="color:var(--accent-2)">' + positionText + '</strong>' + (bonus ? ' -- <strong style="color:var(--accent-2)">+' + bonus + ' M€</strong> de premio' : '') + '</p>' +
+    '<p class="dim small">' + escapeHtml(careerDivisionName(c.division)) + ' -- Posición: <strong style="color:var(--accent-2)">' + positionText + '</strong>' + (bonus ? ' -- <strong style="color:var(--accent-2)">+' + bonus + ' M€</strong> de premio' : '') + '</p>' +
+    (promotionText ? '<p class="dim small">' + promotionText + '</p>' : '') +
     '<p class="dim small">Copa del Rey: <strong>' + cupText + '</strong></p>' +
     (loanedNames.length
       ? '<p class="dim small">Fin de cesión, vuelven a su club: <strong>' + loanedNames.map(escapeHtml).join(', ') + '</strong></p>'
@@ -2399,16 +2604,25 @@ function renderCareerJornada(c) {
 // actual) -- mejor posición en liga alcanzada nunca (careerUpdateBestPosition)
 // y máximos goleadores/asistentes acumulados (c.careerStats, solo de TUS
 // jugadores, ver careerRecordMatchGoals), a petición explícita.
+// A petición explícita ("quiero un máximo histórico de goleadores y
+// asistentes del club, y el de esta temporada"): dos paneles separados
+// en vez de uno solo -- c.league.stats (esta temporada, se reinicia en
+// cada careerBuildLeague) y c.careerStats (histórico del club, ACUMULADO
+// de toda la carrera, nunca se resetea). Antes solo se enseñaba el
+// histórico, con el título genérico compartido "...del torneo" (pensado
+// para FutDraft/Torneo), que no pintaba nada en Modo Carrera.
 function renderCareerEstadisticas(c) {
-  var bestPosText = c.bestPosition ? (c.bestPosition + 'º de ' + CAREER_LEAGUE_TEAM_COUNT) : 'Todavía sin datos.';
-  var statsPanel = renderTopScorersAssistsPanel(c.careerStats);
+  var bestPosText = c.bestPosition ? (c.bestPosition.position + 'º de ' + c.bestPosition.totalTeams) : 'Todavía sin datos.';
+  var seasonPanel = renderTopScorersAssistsPanel(c.league.stats, 'Goleadores y asistentes de esta temporada');
+  var historicPanel = renderTopScorersAssistsPanel(c.careerStats, 'Máximos históricos del club');
   return (
     '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Estadísticas de la carrera</h3>' +
-      '<p class="dim small">Temporada actual: <strong>' + (c.season || 1) + '</strong></p>' +
+      '<p class="dim small">Temporada actual: <strong>' + (c.season || 1) + '</strong> · ' + escapeHtml(careerDivisionName(c.division)) + '</p>' +
       '<p class="dim small">Mejor posición en liga: <strong style="color:var(--accent-2)">' + bestPosText + '</strong></p>' +
     '</div>' +
-    (statsPanel || '<div class="panel center-text"><p class="dim small">Todavía no hay goles registrados.</p></div>')
+    (seasonPanel || '<div class="panel center-text"><p class="dim small">Todavía no hay goles registrados esta temporada.</p></div>') +
+    (historicPanel || '<div class="panel center-text"><p class="dim small">Todavía no hay goles históricos registrados.</p></div>')
   );
 }
 
@@ -2432,8 +2646,7 @@ function renderCareerMode() {
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionGoOtrosModos()">Volver</button>' +
         '<h2 class="panel-title mt mb0">Modo Carrera</h2>' +
-        '<p class="dim small">Todavía en construcción -- esta es la base: equipo, plantilla, mercado, calendario, liga, jornada y estadísticas de una liga de ' + CAREER_LEAGUE_TEAM_COUNT + ' equipos.</p>' +
-        '<p class="dim small">Temporada <strong>' + (c.season || 1) + '</strong> · Presupuesto: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong> · Hueco ' + G.careerActiveSlot + '</p>' +
+        '<p class="dim small">Temporada <strong>' + (c.season || 1) + '</strong> · <strong>' + escapeHtml(careerDivisionName(c.division)) + '</strong> (' + careerDivisionTeamCount(c.division) + ' equipos) · Presupuesto: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong> · Hueco ' + G.careerActiveSlot + '</p>' +
         (c.saveMessage ? '<p class="dim small">' + escapeHtml(c.saveMessage) + '</p>' : '') +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-tiny" onclick="actionSaveCareerNow()">Guardar</button>' +
