@@ -903,6 +903,20 @@ a { color: var(--accent); }
 .career-offer-name { font-weight: 700; }
 .career-offer-prices { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.85rem; }
 
+/* ===== Estrellas de Entrenamiento (nivel del centro + valoración por
+   jugador), a petición explícita ("entrenamiento tiene que verse
+   mejor"). Sin color propio en el hueco vacío (var(--border)) para que
+   se note el contraste con las llenas (var(--accent-2)) en los dos
+   temas. ===== */
+.career-stars { display: inline-flex; gap: 1px; line-height: 1; }
+.career-star-lg { font-size: 1.15rem; color: var(--border); }
+.career-star-lg.filled { color: var(--accent-2); }
+.career-star-sm { font-size: 0.8rem; color: var(--border); }
+.career-star-sm.filled { color: var(--accent-2); }
+.career-training-level-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 4px 0; }
+.career-training-level-num { font-weight: 700; color: var(--accent-2); }
+.career-training-valoracion { display: flex; align-items: center; gap: 6px; }
+
 /* ===== Tabla de la Liga ===== */
 .liga-table {
   width: 100%;
@@ -951,6 +965,34 @@ a { color: var(--accent); }
 .liga-form-loss { background: var(--danger); }
 .liga-form-empty { background: transparent; border: 1px solid var(--border); }
 .liga-table tr.liga-you .liga-form-draw { color: var(--bg); }
+
+/* ===== Tabla de Liga de Modo Carrera (Resumida/Completa/Forma) -- propia
+   de .liga-table (que sigue siendo la de Liga independiente/Torneo, sin
+   tocar) porque aquí el nombre de equipo SÍ puede partirse en dos líneas
+   en vez de forzar scroll horizontal, a petición explícita ("que se vea
+   sin necesidad de scrollear"): menos columnas por vista (Resumida 6,
+   Completa 10, Forma 4) que las 12 de siempre, así que cada una cabe
+   entera en una pantalla de móvil normal. */
+.career-liga-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+.career-liga-table th, .career-liga-table td {
+  padding: 6px 4px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+.career-liga-table th { color: var(--text-dim); font-weight: 600; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.02em; }
+.career-liga-table td:nth-child(3), .career-liga-table th:nth-child(3) { text-align: left; white-space: normal; word-break: break-word; }
+.career-liga-table tr.liga-you { background: var(--accent-2); color: #06202f; font-weight: 700; }
+.career-liga-table tr.liga-you td { border-bottom-color: var(--accent-2); }
+.career-liga-table tr.liga-you .liga-pos-badge:not(.liga-pos-top):not(.liga-pos-bottom) { color: #06202f; }
+.career-liga-table tr.liga-you .liga-form-draw { color: var(--bg); }
+/* Botones de vista (Resumida/Completa/Forma/Calendario): mismo pill que
+   el resto de filtros de la app, pero en su propia fila centrada para
+   que se lean bien incluso en 4 a la vez en pantallas estrechas. */
+.career-liga-view-row { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
 
 /* ===== Choice cards (training / recruit) ===== */
 

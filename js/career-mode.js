@@ -139,15 +139,18 @@
    no interferir con una partida de FutDraft/Liga en curso.
    --------------------------------------------------------------------- */
 
+// Calendario/Liga/Copa del Rey vivían como 3 pestañas sueltas -- ahora
+// Calendario se ve DENTRO de Liga (un botón más de vista, junto a
+// Resumida/Completa/Forma) y Liga+Copa del Rey viven dentro de una única
+// pestaña "Competiciones" con su propia sub-navegación (c.competicionesTab,
+// ver renderCareerCompeticiones), a petición explícita.
 var CAREER_TABS = [
   { id: 'equipo', name: 'Mi equipo' },
   { id: 'plantilla', name: 'Gestionar plantilla' },
   { id: 'entrenamiento', name: 'Entrenamiento' },
   { id: 'mercado', name: 'Mercado' },
-  { id: 'calendario', name: 'Calendario' },
-  { id: 'liga', name: 'Liga' },
+  { id: 'competiciones', name: 'Competiciones' },
   { id: 'jornada', name: 'Jornada' },
-  { id: 'copa', name: 'Copa del Rey' },
   { id: 'estadisticas', name: 'Estadísticas' }
 ];
 
@@ -579,7 +582,8 @@ function careerSlotKey(slot) { return 'inazumaRoguelike_career_slot_' + slot; }
 
 function careerSerialize(c) {
   return {
-    tab: c.tab, season: c.season || 1, formation: c.formation, captainId: c.captainId, budget: c.budget,
+    tab: c.tab, competicionesTab: c.competicionesTab || 'liga', ligaView: c.ligaView || 'resumida',
+    season: c.season || 1, formation: c.formation, captainId: c.captainId, budget: c.budget,
     lineup: c.lineup.map(function (s) { return { pos: s.pos, id: s.player.id }; }),
     bench: c.bench.map(function (p) { return p.id; }),
     loanedIds: c.loanedIds || [],
@@ -612,8 +616,19 @@ function careerDeserialize(data) {
     return p ? { pos: s.pos, player: p } : null;
   }).filter(Boolean);
   var bench = (data.bench || []).map(function (id) { return ROSTER.find(function (x) { return x.id === id; }); }).filter(Boolean);
+  // Partidas guardadas de ANTES de que Calendario/Liga/Copa del Rey se
+  // fundieran en "Competiciones" podían tener c.tab en cualquiera de
+  // esas 3 -- se traducen a la pestaña nueva (con la sub-pestaña que
+  // corresponda) en vez de caer silenciosamente en "Mi equipo".
+  var savedTab = data.tab;
+  var migratedCompeticionesTab = data.competicionesTab || null;
+  if (savedTab === 'calendario') { savedTab = 'competiciones'; migratedCompeticionesTab = migratedCompeticionesTab || 'liga'; }
+  else if (savedTab === 'liga') { savedTab = 'competiciones'; migratedCompeticionesTab = migratedCompeticionesTab || 'liga'; }
+  else if (savedTab === 'copa') { savedTab = 'competiciones'; migratedCompeticionesTab = migratedCompeticionesTab || 'copa'; }
   return {
-    tab: data.tab || 'equipo',
+    tab: savedTab || 'equipo',
+    competicionesTab: migratedCompeticionesTab || 'liga',
+    ligaView: data.ligaView || 'resumida',
     season: data.season || 1,
     formation: data.formation || CAREER_MODE_DEFAULT_FORMATION,
     lineup: lineup, bench: bench,
@@ -1156,18 +1171,37 @@ function careerDeltaHtml(d) {
   var color = d > 0 ? 'var(--success)' : 'var(--danger)';
   return '<strong style="color:' + color + '">' + (d > 0 ? '+' : '') + d + '</strong>';
 }
+// Estrellas de nivel del centro de entrenamiento (llenas = nivel actual,
+// de CAREER_TRAINING_MAX_LEVEL) y de valoración por jugador (media 0-99
+// repartida en 5 estrellas) -- a petición explícita ("entrenamiento
+// tiene que verse mejor, algo así", con una captura de referencia de
+// nivel en estrellas + valoración en estrellas por jugador). Puramente
+// decorativas, el número real sigue siendo el nivel/la media de siempre.
+function careerStarsHtml(filled, total, cls) {
+  var html = '';
+  for (var i = 1; i <= total; i++) html += '<span class="' + cls + (i <= filled ? ' filled' : '') + '">★</span>';
+  return '<span class="career-stars">' + html + '</span>';
+}
+function careerPlayerStarRatingHtml(score) {
+  var filled = clamp(Math.round((score / 99) * 5), 0, 5);
+  return careerStarsHtml(filled, 5, 'career-star-sm');
+}
 function renderCareerEntrenamiento(c) {
   var level = c.trainingLevel || 1;
   var maxed = level >= CAREER_TRAINING_MAX_LEVEL;
   var nextCost = maxed ? null : CAREER_TRAINING_LEVEL_COSTS[level - 1];
   var headerHtml =
     '<div class="panel center-text">' +
-      '<h3 style="margin-bottom:4px">Entrenamiento</h3>' +
-      '<p class="dim small">Centro de entrenamiento: nivel <strong style="color:var(--accent-2)">' + level + '</strong> / ' + CAREER_TRAINING_MAX_LEVEL + '. Cuanto más alto, más tienden a mejorar tus jugadores cada temporada (y menos a bajar los veteranos) -- afecta a todo el mundo, no solo a tu plantilla.</p>' +
+      '<h3 style="margin-bottom:4px">Nivel de Entrenamiento</h3>' +
+      '<div class="career-training-level-row">' +
+        careerStarsHtml(level, CAREER_TRAINING_MAX_LEVEL, 'career-star-lg') +
+        '<span class="career-training-level-num">' + level + '/' + CAREER_TRAINING_MAX_LEVEL + '</span>' +
+      '</div>' +
+      '<p class="dim small">Cuanto más alto el nivel, más tienden a mejorar tus jugadores cada temporada (y menos a bajar los veteranos) -- afecta a todo el mundo, no solo a tu plantilla.</p>' +
       (c.trainingMessage ? '<p class="dim small">' + escapeHtml(c.trainingMessage) + '</p>' : '') +
       (maxed
         ? '<p class="dim small">Centro al máximo.</p>'
-        : '<button class="btn btn-primary btn-block mt" ' + (c.budget < nextCost ? 'disabled' : '') + ' onclick="actionUpgradeTrainingCenter()">Mejorar a nivel ' + (level + 1) + ' (' + nextCost + ' M€)</button>') +
+        : '<button class="btn btn-primary btn-block mt" ' + (c.budget < nextCost ? 'disabled' : '') + ' onclick="actionUpgradeTrainingCenter()">POTENCIAR -- nivel ' + (level + 1) + ' (' + nextCost + ' M€)</button>') +
     '</div>';
   var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
   var rowsHtml = all.map(function (p) {
@@ -1178,12 +1212,12 @@ function renderCareerEntrenamiento(c) {
     var cost = careerQuickBoostCost(p);
     var canAfford = c.budget >= cost && !atCap;
     return '<div class="career-offer-card">' +
-      '<div class="career-offer-head">' + careerMediaBadgeHtml(p) + avatarHtml(p) +
+      '<div class="career-offer-head">' + avatarHtml(p) +
         '<span class="career-offer-name">' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + '</span>' +
         '<span style="margin-left:auto" title="' + escapeHtml(p.tipo) + '">' + getTypeSymbol(p.tipo).replace(/22px/g, '18px') + '</span>' +
       '</div>' +
+      '<div class="career-training-valoracion">' + careerPlayerStarRatingHtml(currentScore) + '<span class="dim small">' + Math.round(currentScore) + '</span></div>' +
       '<div class="career-offer-prices">' +
-        '<span class="dim">Media: <strong>' + Math.round(currentScore) + '</strong></span>' +
         '<span class="dim">Progresión temporada pasada: ' + careerDeltaHtml(lastDelta) + '</span>' +
         '<span class="dim">Media esperada próxima temporada: <strong>' + Math.round(expectedScore) + '</strong></span>' +
       '</div>' +
@@ -1805,9 +1839,111 @@ function careerLigaPosBadgeHtml(rank, totalTeams, division) {
   return '<span class="liga-pos-badge' + (zoneCls ? ' ' + zoneCls : '') + '">' + rank + '</span>';
 }
 
-function renderCareerLiga(c) {
+// Competiciones agrupa Liga (con Calendario dentro, como una vista más)
+// y Copa del Rey en una sola pestaña con su propia sub-navegación, a
+// petición explícita ("competiciones tiene que tener liga y copa del
+// rey dentro"). c.competicionesTab ('liga'/'copa') es independiente de
+// c.tab (la pestaña de arriba).
+window.actionSetCareerCompeticionesTab = function (tab) {
+  G.career.competicionesTab = tab;
+  render();
+};
+// Cambia de pestaña de arriba a "Competiciones" Y de sub-pestaña a la
+// vez -- para enlaces desde fuera de Competiciones (el aviso de "toca
+// Copa del Rey" en Jornada, volver de un partido de Copa) que necesitan
+// las dos cosas en un solo paso.
+window.actionGoToCareerCompeticionesTab = function (subTab) {
+  var c = G.career;
+  c.tab = 'competiciones';
+  c.competicionesTab = subTab;
+  render();
+};
+function renderCareerCompeticiones(c) {
+  var sub = c.competicionesTab === 'copa' ? 'copa' : 'liga';
+  var subTabsHtml = '<div class="btn-row" style="justify-content:center">' +
+    '<button class="btn btn-tiny' + (sub === 'liga' ? ' active' : '') + '" onclick="actionSetCareerCompeticionesTab(\'liga\')">Liga</button>' +
+    '<button class="btn btn-tiny' + (sub === 'copa' ? ' active' : '') + '" onclick="actionSetCareerCompeticionesTab(\'copa\')">Copa del Rey</button>' +
+  '</div>';
+  return subTabsHtml + (sub === 'copa' ? renderCareerCopa(c) : renderCareerLigaSection(c));
+}
+
+window.actionSetCareerLigaView = function (view) {
+  G.career.ligaView = view;
+  render();
+};
+var CAREER_LIGA_VIEWS = [
+  { id: 'resumida', name: 'Resumida' },
+  { id: 'completa', name: 'Completa' },
+  { id: 'forma', name: 'Forma' },
+  { id: 'calendario', name: 'Calendario' }
+];
+// Insignia de posición para la tabla de Modo Carrera: verde para la zona
+// de ASCENSO (los CAREER_PROMOTION_SPOTS primeros de Segunda) o rojo
+// para la de DESCENSO (los mismos últimos de Primera), a petición
+// explícita ("los 2 primeros ascienden, tienen que estar en verde, como
+// en la foto") -- distinta de la genérica ligaPosBadgeHtml (Champions/
+// Europa/descenso de la Liga independiente de 18 equipos), aunque
+// reutiliza las mismas clases CSS (liga-pos-top/liga-pos-bottom).
+function careerLigaPosBadgeHtml(rank, totalTeams, division) {
+  var zoneCls = '';
+  if (division === 2 && rank <= CAREER_PROMOTION_SPOTS) zoneCls = 'liga-pos-top';
+  else if (division === 1 && rank > totalTeams - CAREER_PROMOTION_SPOTS) zoneCls = 'liga-pos-bottom';
+  return '<span class="liga-pos-badge' + (zoneCls ? ' ' + zoneCls : '') + '">' + rank + '</span>';
+}
+
+// Liga: tabla de clasificación en 3 "vistas" con menos columnas cada una
+// (en vez de una sola tabla de 12 columnas con scroll horizontal, a
+// petición explícita, "sin necesidad de scrollear... con los mismos 3
+// botones... Resumida, Completa, o la Forma") + Calendario como cuarta
+// vista (antes pestaña propia, ahora "dentro de Liga"), todo compartiendo
+// la misma cabecera con la división/jornada actual.
+function renderCareerLigaSection(c) {
+  var league = c.league;
+  var view = c.ligaView && CAREER_LIGA_VIEWS.some(function (v) { return v.id === c.ligaView; }) ? c.ligaView : 'resumida';
+  var viewBtnsHtml = CAREER_LIGA_VIEWS.map(function (v) {
+    return '<button class="btn btn-tiny' + (view === v.id ? ' active' : '') + '" onclick="actionSetCareerLigaView(\'' + v.id + '\')">' + v.name + '</button>';
+  }).join('');
+  var zoneHint = c.division === 2
+    ? 'Verde: zona de ascenso a Primera (' + CAREER_PROMOTION_SPOTS + ' primeros).'
+    : 'Rojo: zona de descenso a Segunda (' + CAREER_PROMOTION_SPOTS + ' últimos).';
+  var headerHtml =
+    '<div class="panel center-text">' +
+      '<p class="dim small">' + escapeHtml(careerDivisionName(c.division)) + ' -- Jornada ' + Math.min(league.matchdayIndex + 1, league.schedule.length) + ' de ' + league.schedule.length + '</p>' +
+      (view !== 'calendario' ? '<p class="dim small">' + zoneHint + '</p>' : '') +
+      '<div class="career-liga-view-row mt">' + viewBtnsHtml + '</div>' +
+      (view !== 'calendario' ? '<button class="btn btn-tiny mt' + (c.showTopScorers ? ' active' : '') + '" onclick="actionToggleCareerTopScorers()">Máximos goleadores y asistentes</button>' : '') +
+    '</div>';
+  if (view === 'calendario') return headerHtml + renderCareerCalendario(c);
+  var topScorersHtml = c.showTopScorers ? renderTopScorersAssistsPanel(league.stats, 'Goleadores y asistentes de esta temporada') : '';
+  return headerHtml + (topScorersHtml || '') + renderCareerLigaTable(c, view);
+}
+
+// Construye la tabla de UNA vista concreta -- Resumida (#, equipo, J, DG,
+// PTS), Completa (+ G/E/P y goles a favor-en contra) o Forma (#, equipo,
+// últimos 5 resultados) -- todas comparten fila/insignia de posición,
+// solo cambian las columnas de después del nombre.
+function renderCareerLigaTable(c, view) {
   var league = c.league;
   var sorted = ligaSortedTable(league.table);
+  var headCells, bodyCellsFor;
+  if (view === 'completa') {
+    headCells = '<th>#</th><th></th><th>Equipo</th><th>J</th><th>G</th><th>E</th><th>P</th><th>+/-</th><th>DG</th><th>PTS</th>';
+    bodyCellsFor = function (t) {
+      var dg = t.gf - t.gc;
+      return '<td>' + t.pj + '</td><td>' + t.pg + '</td><td>' + t.pe + '</td><td>' + t.pp + '</td>' +
+        '<td>' + t.gf + '-' + t.gc + '</td><td>' + (dg >= 0 ? '+' : '') + dg + '</td>' +
+        '<td><strong>' + t.pts + '</strong></td>';
+    };
+  } else if (view === 'forma') {
+    headCells = '<th>#</th><th></th><th>Equipo</th><th>Últimos partidos</th>';
+    bodyCellsFor = function (t) { return '<td>' + ligaFormHtml(t.form) + '</td>'; };
+  } else {
+    headCells = '<th>#</th><th></th><th>Equipo</th><th>J</th><th>DG</th><th>PTS</th>';
+    bodyCellsFor = function (t) {
+      var dg = t.gf - t.gc;
+      return '<td>' + t.pj + '</td><td>' + (dg >= 0 ? '+' : '') + dg + '</td><td><strong>' + t.pts + '</strong></td>';
+    };
+  }
   var rows = sorted.map(function (t, pos) {
     var isYou = t.idx === 0;
     var label = isYou ? 'Tú' : league.teamNames[t.idx];
@@ -1816,28 +1952,13 @@ function renderCareerLiga(c) {
       '<td>' + careerLigaPosBadgeHtml(pos + 1, sorted.length, c.division) + '</td>' +
       '<td><img class="liga-row-shield" src="' + escapeHtml(shield) + '" alt=""></td>' +
       '<td>' + escapeHtml(label) + '</td>' +
-      '<td>' + t.pj + '</td><td>' + t.pg + '</td><td>' + t.pe + '</td><td>' + t.pp + '</td>' +
-      '<td>' + t.gf + '</td><td>' + t.gc + '</td><td>' + (t.gf - t.gc) + '</td>' +
-      '<td><strong>' + t.pts + '</strong></td>' +
-      '<td>' + ligaFormHtml(t.form) + '</td>' +
+      bodyCellsFor(t) +
     '</tr>';
   }).join('');
-  var topScorersHtml = c.showTopScorers ? renderTopScorersAssistsPanel(league.stats, 'Goleadores y asistentes de esta temporada') : '';
-  var zoneHint = c.division === 2
-    ? 'Verde: zona de ascenso a Primera (' + CAREER_PROMOTION_SPOTS + ' primeros).'
-    : 'Rojo: zona de descenso a Segunda (' + CAREER_PROMOTION_SPOTS + ' últimos).';
-  return (
-    '<div class="panel center-text">' +
-      '<p class="dim small">' + escapeHtml(careerDivisionName(c.division)) + ' -- Jornada ' + Math.min(league.matchdayIndex + 1, league.schedule.length) + ' de ' + league.schedule.length + '</p>' +
-      '<p class="dim small">' + zoneHint + '</p>' +
-      '<button class="btn btn-tiny' + (c.showTopScorers ? ' active' : '') + '" onclick="actionToggleCareerTopScorers()">Máximos goleadores y asistentes</button>' +
-    '</div>' +
-    (topScorersHtml || '') +
-    '<div class="panel" style="overflow-x:auto">' +
-      '<table class="liga-table"><thead><tr><th>#</th><th></th><th>Equipo</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>Pts</th><th>Últimos</th></tr></thead>' +
-      '<tbody>' + rows + '</tbody></table>' +
-    '</div>'
-  );
+  return '<div class="panel">' +
+    '<table class="career-liga-table"><thead><tr>' + headCells + '</tr></thead>' +
+    '<tbody>' + rows + '</tbody></table>' +
+  '</div>';
 }
 
 window.actionToggleCareerTopScorers = function () {
@@ -2207,8 +2328,7 @@ window.continueCareerCupMatch = function () {
   G.futdraft = c.savedFutdraft;
   c.savedFutdraft = null;
   G.screen = 'careerMode';
-  c.tab = 'copa';
-  render();
+  actionGoToCareerCompeticionesTab('copa');
 };
 
 // Nueva temporada: sube el número, aplica la progresión anual a TODO
@@ -2603,7 +2723,7 @@ function renderCareerJornada(c) {
     return '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Toca Copa del Rey</h3>' +
       '<p class="dim small">Antes de seguir con la jornada ' + (league.matchdayIndex + 1) + ' hay que resolver la Copa del Rey.</p>' +
-      '<button class="btn btn-primary btn-block mt" onclick="actionSetCareerTab(\'copa\')">Ir a la Copa del Rey</button>' +
+      '<button class="btn btn-primary btn-block mt" onclick="actionGoToCareerCompeticionesTab(\'copa\')">Ir a la Copa del Rey</button>' +
     '</div>';
   }
   var seasonOver = league.matchdayIndex >= league.schedule.length;
@@ -2666,10 +2786,8 @@ function renderCareerMode() {
   if (c.tab === 'plantilla') bodyHtml = renderCareerPlantilla(c);
   else if (c.tab === 'entrenamiento') bodyHtml = renderCareerEntrenamiento(c);
   else if (c.tab === 'mercado') bodyHtml = renderCareerMercado(c);
-  else if (c.tab === 'calendario') bodyHtml = renderCareerCalendario(c);
-  else if (c.tab === 'liga') bodyHtml = renderCareerLiga(c);
+  else if (c.tab === 'competiciones') bodyHtml = renderCareerCompeticiones(c);
   else if (c.tab === 'jornada') bodyHtml = renderCareerJornada(c);
-  else if (c.tab === 'copa') bodyHtml = renderCareerCopa(c);
   else if (c.tab === 'estadisticas') bodyHtml = renderCareerEstadisticas(c);
   else bodyHtml = renderCareerEquipo(c);
   return (
