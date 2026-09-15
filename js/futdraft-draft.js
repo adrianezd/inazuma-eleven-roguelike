@@ -427,20 +427,25 @@ function futDraftPlayerScore(p) {
   return sum / stats.length;
 }
 
-// El capitán aporta un bonus (o penalización) directo a la puntuación de
-// equipo según lo BUENO que sea comparado con la media del resto del once
-// -- no un simple "cuenta doble en la media", que con 11 titulares diluía
-// tanto el efecto que muchas veces no se notaba nada al elegir capitán.
-// Se recorta a [-8, 8] para que ni un fichaje estrella dispare la nota ni
-// un capitán flojo la hunda de golpe. La sinergia premia tener varios
-// jugadores del mismo tipo elemental en el once (no hay dato de club real
-// en el roster, así que el tipo hace de sustituto). La penalización
-// castiga colocar a un titular en una línea que no es su posición real --
-// el banquillo nunca cuenta aquí, solo quien sale de inicio.
-var FUTDRAFT_CAPTAIN_BONUS_FACTOR = 0.4;
+// El capitán CUENTA DOBLE en la media del once (a petición explícita:
+// "tiene que sumar como dos jugadores... pero no subir tanto" -- antes
+// era un bonus aparte, (captainScore-base)*0.4, que con números como
+// capitán 95 / media 91 podía dar un +4 "que no tenía sentido" según lo
+// mismo pedido). Con el doble conteo, el bonus es la diferencia entre la
+// media CON el capitán contado dos veces y la media normal -- se diluye
+// solo con el tamaño del once (12 "jugadores" en vez de 11), así que un
+// crack de capitán ya no dispara la nota de golpe. Se sigue recortando a
+// [-8, 8] como red de seguridad, aunque con este cálculo el máximo real
+// ronda los 5-6 puntos. La sinergia premia tener varios jugadores del
+// mismo tipo elemental en el once (no hay dato de club real en el
+// roster, así que el tipo hace de sustituto) -- bajada de +3 a +1 a
+// petición explícita ("que suba 1"), en TODOS los modos que reutilizan
+// este cálculo (FutDraft/Torneo/Liga/Modo Carrera). La penalización
+// castiga colocar a un titular en una línea que no es su posición real
+// -- el banquillo nunca cuenta aquí, solo quien sale de inicio.
 var FUTDRAFT_CAPTAIN_BONUS_CAP = 8;
 var FUTDRAFT_SYNERGY_THRESHOLD = 4;
-var FUTDRAFT_SYNERGY_BONUS = 3;
+var FUTDRAFT_SYNERGY_BONUS = 1;
 var FUTDRAFT_OUT_OF_POSITION_PENALTY = 3;
 
 // lineup: array de { pos, player } (la línea de la formación y quien la
@@ -461,7 +466,7 @@ function futDraftScoreBreakdown(lineup, captainId) {
     typeCounts[p.tipo] = (typeCounts[p.tipo] || 0) + 1;
   });
   var base = sum / lineup.length;
-  var captainBonus = captainScore === null ? 0 : clamp(Math.round((captainScore - base) * FUTDRAFT_CAPTAIN_BONUS_FACTOR), -FUTDRAFT_CAPTAIN_BONUS_CAP, FUTDRAFT_CAPTAIN_BONUS_CAP);
+  var captainBonus = captainScore === null ? 0 : Math.round(clamp(((sum + captainScore) / (lineup.length + 1)) - base, -FUTDRAFT_CAPTAIN_BONUS_CAP, FUTDRAFT_CAPTAIN_BONUS_CAP) * 10) / 10;
   var synergyBonus = 0;
   Object.keys(typeCounts).forEach(function (t) {
     if (typeCounts[t] >= FUTDRAFT_SYNERGY_THRESHOLD) synergyBonus += FUTDRAFT_SYNERGY_BONUS;

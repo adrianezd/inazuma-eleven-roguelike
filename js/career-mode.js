@@ -63,7 +63,7 @@
      diferencia de Liga que es a una vuelta -- 16 equipos dan 30
      jornadas, 20 dan 38), con rivales de nombre real sacados de las
      mismas listas que usa FutDraft/Liga. Dos divisiones (c.division, 1
-     o 2): Segunda (16 equipos: tú + 10 jefes + 5 "normales") al empezar
+     o 2): Segunda (16 equipos: tú + 4 jefes + 11 "normales") al empezar
      la carrera, con Primera "en la sombra" de 20 (17 jefes + 3
      "normales", sin ti todavía) -- si asciendes, ocupas un hueco ahí y
      quedan 19 reales (16 jefes + 3 normales). Los mismos 35 rivales de
@@ -175,7 +175,7 @@ var CAREER_MODE_STARTER_IDS = ['r41', 'r170', 'r67', 'r264', 'r267', 'r263', 'r2
 var CAREER_MODE_BENCH_IDS = ['r270', 'r271', 'r272', 'r66', 'r57'];
 var CAREER_MODE_DEFAULT_FORMATION = '433';
 // Dos divisiones, a petición explícita: empiezas en Segunda (16 equipos:
-// tú + 10 jefes + 5 "malos" de RIVAL_TEAM_NAMES) y, si asciendes, juegas
+// tú + 4 jefes + 11 "malos" de RIVAL_TEAM_NAMES) y, si asciendes, juegas
 // en Primera (20 equipos: tú + 16 jefes + 3 "normales" -- 17 jefes + 3
 // normales mientras es la división "en la sombra", sin ti). 36 equipos en
 // total entre las dos divisiones (35 rivales + tú), SIEMPRE los mismos
@@ -198,8 +198,11 @@ var CAREER_DIVISION2_TEAM_COUNT = 16;
 // ese comentario para el porqué del 19/20 según si juegas ahí o no).
 var CAREER_DIVISION1_BOSS_COUNT = 17;
 var CAREER_DIVISION1_NORMAL_COUNT = 3;
-var CAREER_DIVISION2_BOSS_COUNT = 10;
-var CAREER_DIVISION2_NORMAL_COUNT = 5;
+// Bajado de 10 jefes/5 normales a 4/11, a petición explícita ("mete en
+// segunda división, 4 jefes y 11 normales") -- Segunda mucho más
+// asequible, en línea con bajar la dificultad general.
+var CAREER_DIVISION2_BOSS_COUNT = 4;
+var CAREER_DIVISION2_NORMAL_COUNT = 11;
 // Cuántos ascienden/descienden cada temporada -- los 2 primeros de
 // Segunda suben, los 2 últimos de Primera bajan, siempre.
 var CAREER_PROMOTION_SPOTS = 2;
@@ -267,7 +270,10 @@ function careerScoreBreakdown(lineup, captainId) {
     typeCounts[p.tipo] = (typeCounts[p.tipo] || 0) + 1;
   });
   var base = sum / lineup.length;
-  var captainBonus = captainScore === null ? 0 : clamp(Math.round((captainScore - base) * FUTDRAFT_CAPTAIN_BONUS_FACTOR), -FUTDRAFT_CAPTAIN_BONUS_CAP, FUTDRAFT_CAPTAIN_BONUS_CAP);
+  // Mismo cálculo que futDraftScoreBreakdown (el capitán cuenta doble en
+  // vez de un bonus aparte por diferencia, a petición explícita -- ver
+  // el comentario grande junto a esa función en futdraft-draft.js).
+  var captainBonus = captainScore === null ? 0 : Math.round(clamp(((sum + captainScore) / (lineup.length + 1)) - base, -FUTDRAFT_CAPTAIN_BONUS_CAP, FUTDRAFT_CAPTAIN_BONUS_CAP) * 10) / 10;
   var synergyBonus = 0;
   Object.keys(typeCounts).forEach(function (t) {
     if (typeCounts[t] >= FUTDRAFT_SYNERGY_THRESHOLD) synergyBonus += FUTDRAFT_SYNERGY_BONUS;
@@ -289,9 +295,16 @@ function careerScoreBreakdown(lineup, captainId) {
 // Se aplica a TODO ROSTER, no solo a tu plantilla (a petición explícita:
 // "para el resto de jugadores también"), así que el mercado entero se
 // mueve de una temporada a otra, no solo quien fichas tú.
+// Bajados a petición explícita ("progresión mucho más lenta"): con el
+// rate/variance de antes (0.25/2), el tirón hacia el ancla por sí solo
+// ya daba +4/+6 puntos de golpe con el centro subido, tapando por
+// completo la diferencia entre crecimiento Bajo/Normal/Alto (ver
+// careerGrowthTierBonus más abajo, que antes quedaba diluido al lado de
+// esto). Con 0.08/1 el tirón es mucho más discreto y el crecimiento fijo
+// del jugador pasa a mandar de verdad en quién sube más.
 var CAREER_PROGRESSION_ANCHOR = 80;
-var CAREER_PROGRESSION_RATE = 0.25;
-var CAREER_PROGRESSION_VARIANCE = 2;
+var CAREER_PROGRESSION_RATE = 0.08;
+var CAREER_PROGRESSION_VARIANCE = 1;
 
 // Centro de entrenamiento (pestaña Entrenamiento): arranca SIN construir
 // (nivel 0, a petición explícita: "haz que construir el centro de
@@ -307,35 +320,40 @@ var CAREER_PROGRESSION_VARIANCE = 2;
 // del club -- nunca se resetea entre temporadas, igual que el
 // presupuesto.
 var CAREER_TRAINING_MAX_LEVEL = 10;
-var CAREER_TRAINING_ANCHOR_PER_LEVEL = 2;
-var CAREER_TRAINING_RATE_PER_LEVEL = 0.03;
-var CAREER_TRAINING_VARIANCE_REDUCTION_PER_LEVEL = 0.06;
-// Subido otra vez (a petición explícita, "nivel de entrenamiento más
-// caro"): índice 0 es CONSTRUIRLO desde cero (1M€, "por ejemplo" tal
-// cual lo pidió), los 9 siguientes son subir de nivel, con una curva
-// bastante más empinada que antes (tope 23M€ para llegar al máximo, en
-// vez de 10.5M€).
-var CAREER_TRAINING_LEVEL_COSTS = [1, 1.5, 2.2, 3.2, 4.6, 6.5, 9, 12.5, 17, 23];
+// Bajados en la misma proporción que CAREER_PROGRESSION_RATE de arriba,
+// para que el centro siga siendo notable pero no vuelva a disparar el
+// tirón por encima del crecimiento fijo del jugador.
+var CAREER_TRAINING_ANCHOR_PER_LEVEL = 1;
+var CAREER_TRAINING_RATE_PER_LEVEL = 0.01;
+var CAREER_TRAINING_VARIANCE_REDUCTION_PER_LEVEL = 0.03;
+// Subida otra vez (a petición explícita, "más caro las mejoras del
+// centro de entrenamiento"): índice 0 es CONSTRUIRLO desde cero (1M€,
+// "por ejemplo" tal cual lo pidieron), los 9 siguientes son subir de
+// nivel, con una curva bastante más empinada que antes (tope 40M€ para
+// llegar al máximo, en vez de 23M€).
+var CAREER_TRAINING_LEVEL_COSTS = [1, 2, 3.2, 4.8, 7, 10, 14.5, 21, 30, 40];
 function careerTrainingEffectiveParams(level) {
   var lvl = typeof level === 'number' ? level : 0;
   return {
     anchor: CAREER_PROGRESSION_ANCHOR + lvl * CAREER_TRAINING_ANCHOR_PER_LEVEL,
     rate: CAREER_PROGRESSION_RATE + lvl * CAREER_TRAINING_RATE_PER_LEVEL,
-    variance: Math.max(0.5, CAREER_PROGRESSION_VARIANCE - lvl * CAREER_TRAINING_VARIANCE_REDUCTION_PER_LEVEL)
+    variance: Math.max(0.3, CAREER_PROGRESSION_VARIANCE - lvl * CAREER_TRAINING_VARIANCE_REDUCTION_PER_LEVEL)
   };
 }
 // Cuánto se diluye el crecimiento fijo del jugador (careerPlayerGrowthTier)
 // cuanto más cerca esté del máximo (99) -- a petición explícita ("sin
 // que suban tanto los que son muy alto de crecimiento, que baje un
 // poco... tiene que ser progresivo, sube más rápido de 70 a 76 que de
-// 84 a 90"). CAREER_GROWTH_TIER_SCALE (0.8, antes el tier se sumaba
-// entero) ya recorta el máximo un poco; el factor de aquí lo diluye más
-// según el margen que le queda hasta 99 -- un "muy alto" (5) que ya vaya
-// por 90 solo suma una fracción de esos 5 puntos, no los 5 enteros de
-// siempre daba antes.
-var CAREER_GROWTH_TIER_SCALE = 0.8;
+// 84 a 90"). Subido a 1.3 (antes 0.8): con el tirón hacia el ancla ya
+// muy rebajado arriba, el crecimiento fijo del jugador tiene que ser
+// quien de verdad decida quién sube más -- antes, con el tirón fuerte
+// de antes, dos jugadores de crecimiento distinto (Bajo/Normal/Alto)
+// podían acabar subiendo prácticamente lo mismo (o hasta al revés) solo
+// por su media de partida, a petición explícita ("no tiene sentido que
+// crezca lo mismo uno bajo que uno normal que uno alto").
+var CAREER_GROWTH_TIER_SCALE = 1.3;
 var CAREER_GROWTH_ROOM_SPAN = 35;
-var CAREER_GROWTH_ROOM_FLOOR = 0.2;
+var CAREER_GROWTH_ROOM_FLOOR = 0.3;
 function careerGrowthRoomFactor(current) {
   return clamp((99 - current) / CAREER_GROWTH_ROOM_SPAN, CAREER_GROWTH_ROOM_FLOOR, 1);
 }
@@ -416,7 +434,7 @@ function careerPickNamesFromPool(pool, count, used) {
 }
 
 // Reparto inicial de las dos divisiones al empezar una carrera nueva, a
-// petición explícita: Segunda con 16 equipos (tú + 10 jefes + 5
+// petición explícita: Segunda con 16 equipos (tú + 4 jefes + 11
 // "normales"), Primera con 20 (17 jefes + 3 "normales", sin ti -- tú
 // arrancas en Segunda, careerFreshState, así que de entrada Primera es
 // la división "en la sombra" y necesita sus 20 rivales completos).
@@ -491,10 +509,13 @@ var CAREER_STARTING_BUDGET = 2;
 // carrera -- careerRivalPower y careerNegotiationAccepts las leen de
 // G.career directamente. El dinero inicial no necesita guardarse aparte
 // porque solo afecta a c.budget en el momento de crear la partida.
+// Bajados otra vez (a petición explícita, "baja la dificultad") -- eran
+// 82/92/100, luego 77/87/95. "Fácil" bajado una tercera vez aparte ("baja
+// más todavía el nivel de la dificultad fácil"), las otras dos se quedan.
 var CAREER_DIFFICULTY_TIERS = {
-  facil: { name: 'Fácil', rivalLevelTarget: 82 },
-  normal: { name: 'Normal', rivalLevelTarget: 92 },
-  dificil: { name: 'Difícil', rivalLevelTarget: 100 }
+  facil: { name: 'Fácil', rivalLevelTarget: 65 },
+  normal: { name: 'Normal', rivalLevelTarget: 87 },
+  dificil: { name: 'Difícil', rivalLevelTarget: 95 }
 };
 var CAREER_DIFFICULTY_ORDER = ['facil', 'normal', 'dificil'];
 var CAREER_NEGOTIATION_MODES = {
@@ -2225,11 +2246,11 @@ function careerSimulateMatchGoals(powerA, powerB) {
 // solo aplanar por abajo. No se toca TEAM_POWER global porque eso
 // afectaría también a FutDraft/Torneo/Liga estándar.
 // El techo depende de la dificultad elegida al crear la carrera
-// (c.difficulty, ver CAREER_DIFFICULTY_TIERS/renderCareerSetup) -- 92 es
-// el de "Normal" (bajado de 100 el 15-09, "baja un poco la dificultad a
-// la hora de los partidos, solo un poco"); se mantiene como valor de
-// reserva por si c.difficulty no existiera (partidas viejas).
-var CAREER_RIVAL_LEVEL_TARGET = 92;
+// (c.difficulty, ver CAREER_DIFFICULTY_TIERS/renderCareerSetup) -- 87 es
+// el de "Normal" (bajado dos veces el 15-09, de 100 a 92 y luego a 87,
+// "baja la dificultad"); se mantiene como valor de reserva por si
+// c.difficulty no existiera (partidas viejas).
+var CAREER_RIVAL_LEVEL_TARGET = 87;
 function careerRivalPower(name) {
   var c = G.career;
   var tier = c && CAREER_DIFFICULTY_TIERS[c.difficulty];
