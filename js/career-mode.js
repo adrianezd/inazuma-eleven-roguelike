@@ -573,10 +573,13 @@ var CAREER_STARTING_BUDGET_OPTIONS = [1, 2, 5, 10];
 // personal del jugador que se mantiene toda la carrera. Pesos
 // 12/23/40/18/7 (careerRollGrowthTier) para que "Normal" sea lo más
 // común y "Muy alto" sea de verdad raro de encontrar (7%, dentro del
-// 5-10% pedido explícitamente) -- antes era 10/20/40/20/10 (10%).
-var CAREER_GROWTH_TIER_LABELS = { 1: 'Muy bajo', 2: 'Bajo', 3: 'Normal', 4: 'Alto', 5: 'Muy alto' };
-var CAREER_GROWTH_TIER_ARROWS = { 1: '▼▼', 2: '▼', 3: '►', 4: '▲', 5: '▲▲' };
-var CAREER_GROWTH_TIER_COLORS = { 1: 'var(--danger)', 2: '#e08a1e', 3: 'var(--text-dim)', 4: 'var(--success)', 5: 'var(--accent-2)' };
+// 5-10% pedido explícitamente) -- antes era 10/20/40/20/10 (10%). Por
+// encima de todo eso, exactamente 2 jugadores de toda la carrera son
+// "Prodigio" (nivel 6, ver careerInitialGrowthTiers más abajo), a
+// petición explícita.
+var CAREER_GROWTH_TIER_LABELS = { 1: 'Muy bajo', 2: 'Bajo', 3: 'Normal', 4: 'Alto', 5: 'Muy alto', 6: 'Prodigio' };
+var CAREER_GROWTH_TIER_ARROWS = { 1: '▼▼', 2: '▼', 3: '►', 4: '▲', 5: '▲▲', 6: '★' };
+var CAREER_GROWTH_TIER_COLORS = { 1: 'var(--danger)', 2: '#e08a1e', 3: 'var(--text-dim)', 4: 'var(--success)', 5: 'var(--accent-2)', 6: '#ff5fa8' };
 var CAREER_GROWTH_TIER_WEIGHTS = [12, 23, 40, 18, 7];
 function careerRollGrowthTier() {
   var r = Math.random() * 100;
@@ -587,9 +590,23 @@ function careerRollGrowthTier() {
   }
   return 5;
 }
+// "Prodigio" (6): por encima de "Muy alto", a petición explícita ("haz
+// que haya dos jugadores aleatorios durante la partida de cada modo
+// carrera que sea más que muy alto, que suba más todavía"). Ni siquiera
+// entra en el sorteo normal de CAREER_GROWTH_TIER_WEIGHTS -- son
+// exactamente CAREER_PRODIGY_COUNT jugadores, elegidos al azar entre
+// TODO ROSTER (unos 266, "aleatoriamente entre los 200 que hay") DESPUÉS
+// de repartir el resto, así que siempre hay dos y nunca más de dos.
+var CAREER_PRODIGY_COUNT = 2;
 function careerInitialGrowthTiers() {
   var tiers = {};
   ROSTER.forEach(function (p) { tiers[p.id] = careerRollGrowthTier(); });
+  var pool = ROSTER.slice();
+  for (var i = 0; i < CAREER_PRODIGY_COUNT && pool.length; i++) {
+    var idx = Math.floor(Math.random() * pool.length);
+    tiers[pool[idx].id] = 6;
+    pool.splice(idx, 1);
+  }
   return tiers;
 }
 function careerPlayerGrowthTier(c, p) {
@@ -1532,7 +1549,7 @@ window.actionSetCareerMarketGrowthFilter = function (tier) {
 // con la flecha de color de cada nivel (careerGrowthArrowHtml) en vez de
 // un icono.
 function careerGrowthFilterBtnsHtml(filter, actionName) {
-  return [null, 1, 2, 3, 4, 5].map(function (tier) {
+  return [null, 1, 2, 3, 4, 5, 6].map(function (tier) {
     var active = filter === tier;
     var arg = tier === null ? 'null' : tier;
     var label = tier === null ? 'Todos' : careerGrowthArrowHtml(tier);

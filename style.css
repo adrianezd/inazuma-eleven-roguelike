@@ -185,32 +185,58 @@ a { color: var(--accent); }
 
 /* ===== Buttons ===== */
 
+/* Botones con algo de profundidad de verdad (sombra + un degradado sutil
+   encima del color plano, no un rectángulo liso) y una transición que
+   junta color/sombra/tamaño en vez de solo el borde -- a petición
+   explícita ("mucho más estéticos... que no parezca hecho por IA o mal
+   hecho"). El degradado va en background-image (no en el color base) a
+   propósito: así funciona igual encima de cualquier --accent/--panel-2
+   que tengan los dos temas, sin tener que fijar un tono a mano por tema. */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   min-height: 48px;
-  padding: 10px 18px;
+  padding: 11px 20px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  background: var(--panel-2);
+  background-color: var(--panel-2);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 45%, rgba(0, 0, 0, 0.08));
   color: var(--text);
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   cursor: pointer;
   touch-action: manipulation;
-  transition: border-color 0.15s ease, transform 0.08s ease;
+  transition: border-color 0.15s ease, transform 0.08s ease, box-shadow 0.15s ease, background-color 0.15s ease, filter 0.15s ease;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 2px 6px rgba(0, 0, 0, 0.22);
 }
-.btn:hover { border-color: var(--accent); }
-.btn:active { transform: scale(0.97); }
-.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn:hover { border-color: var(--accent); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07) inset, 0 4px 14px rgba(0, 0, 0, 0.28); }
+.btn:active { transform: scale(0.97); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) inset; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; filter: none; }
 
-.btn-primary { background: var(--accent); color: #06202f; border-color: var(--accent); }
-.btn-danger { background: var(--danger); border-color: var(--danger); color: #2b0000; }
-.btn-outline { background: transparent; }
+.btn-primary {
+  background-color: var(--accent);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 45%, rgba(0, 0, 0, 0.1));
+  color: #06202f;
+  border-color: var(--accent);
+  font-weight: 800;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.3) inset, 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+.btn-primary:hover { filter: brightness(1.06); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset, 0 6px 20px rgba(0, 0, 0, 0.32); }
+.btn-danger {
+  background-color: var(--danger);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0) 45%, rgba(0, 0, 0, 0.1));
+  border-color: var(--danger);
+  color: #2b0000;
+  font-weight: 800;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 4px 14px rgba(0, 0, 0, 0.28);
+}
+.btn-outline { background-color: transparent; background-image: none; box-shadow: none; }
+.btn-outline:hover { background-color: var(--panel-2); }
 .btn-block { display: flex; width: 100%; }
 .btn-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
 
@@ -353,19 +379,35 @@ a { color: var(--accent); }
 .panel-title-row h3 { margin: 0; }
 .view-toggle { display: flex; gap: 3px; background: var(--bg-alt); border-radius: 999px; padding: 3px; flex-shrink: 0; }
 .view-toggle-wrap { flex-wrap: wrap; border-radius: var(--radius-sm); width: 100%; }
+/* Antes era texto flotando sobre transparente, invisible como botón
+   hasta que se activaba -- ahora tiene una píldora de verdad en reposo
+   (fondo + sombra suave) y el estado activo se nota con relieve, no solo
+   relleno plano, a petición explícita ("mucho más estéticos"). */
 .btn-tiny {
-  border: none;
-  background: transparent;
+  border: 1px solid transparent;
+  background-color: var(--panel-2);
   color: var(--text-dim);
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 6px 12px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 7px 14px;
   border-radius: 999px;
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.08s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
 }
-.btn-tiny.active { background: var(--accent); color: #06202f; }
+.btn-tiny:hover { border-color: var(--accent); color: var(--text); }
+.btn-tiny:active { transform: scale(0.96); }
+.btn-tiny:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+.btn-tiny.active {
+  background-color: var(--accent);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0) 50%);
+  color: #06202f;
+  border-color: var(--accent);
+  font-weight: 800;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.3) inset, 0 3px 10px rgba(0, 0, 0, 0.25);
+}
 
 /* Variantes de color para botones pequeños de acción (aceptar/rechazar
    una oferta, vender...) -- texto + color en vez de un emoji suelto
