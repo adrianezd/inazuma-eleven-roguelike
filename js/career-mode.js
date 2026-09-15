@@ -870,6 +870,15 @@ function careerRemoveFromSquad(c, id) {
 // de 23 (tope realista de convocatoria de temporada).
 var CAREER_MIN_SQUAD_SIZE = 14;
 var CAREER_MAX_SQUAD_SIZE = 23;
+// El mínimo de 14 es de jugadores TUYOS -- los cedidos entrantes no
+// cuentan (se van solos al acabar la temporada, ver actionStartNewCareerSeason,
+// así que no puedes depender de ellos para llegar al mínimo), a petición
+// explícita. Se usa en vez de "c.lineup.length + c.bench.length" en todos
+// los sitios que bloquean vender/ceder/aceptar una oferta por debajo del
+// mínimo.
+function careerOwnedSquadCount(c) {
+  return c.lineup.length + c.bench.length - careerLoanCount(c);
+}
 
 // Venta rápida: se cobra al momento, pero por debajo del valor de
 // mercado (85% -- "un poco menos", a petición explícita), ya que es una
@@ -882,8 +891,8 @@ window.actionSellCareerPlayer = function (id) {
   var c = G.career;
   if ((c.loanedIds || []).indexOf(id) !== -1) { c.plantillaMessage = 'No puedes vender a un jugador cedido -- no es tuyo. Puedes devolverlo cuando quieras.'; render(); return; }
   if ((c.boughtThisSeasonIds || []).indexOf(id) !== -1) { c.plantillaMessage = 'No puedes vender a un jugador fichado esta misma temporada -- espera a la que viene.'; render(); return; }
+  if (careerOwnedSquadCount(c) <= CAREER_MIN_SQUAD_SIZE) { c.plantillaMessage = 'No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores tuyos en plantilla (los cedidos no cuentan).'; render(); return; }
   var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
-  if (all.length <= CAREER_MIN_SQUAD_SIZE) { c.plantillaMessage = 'No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores en plantilla.'; render(); return; }
   var p = all.find(function (x) { return x.id === id; });
   if (!p) return;
   var payout = Math.round(careerPlayerValue(p) * CAREER_QUICK_SELL_FACTOR * 10) / 10;
@@ -903,8 +912,8 @@ window.actionLoanCareerPlayer = function (id) {
   var c = G.career;
   if ((c.loanedIds || []).indexOf(id) !== -1) { c.plantillaMessage = 'No puedes ceder a un jugador que ya tienes cedido -- no es tuyo. Puedes devolverlo cuando quieras.'; render(); return; }
   if ((c.boughtThisSeasonIds || []).indexOf(id) !== -1) { c.plantillaMessage = 'No puedes ceder a un jugador fichado esta misma temporada -- espera a la que viene.'; render(); return; }
+  if (careerOwnedSquadCount(c) <= CAREER_MIN_SQUAD_SIZE) { c.plantillaMessage = 'No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores tuyos en plantilla (los cedidos no cuentan).'; render(); return; }
   var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
-  if (all.length <= CAREER_MIN_SQUAD_SIZE) { c.plantillaMessage = 'No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores en plantilla.'; render(); return; }
   var p = all.find(function (x) { return x.id === id; });
   if (!p) return;
   var destTeam = choice(Math.random() < 0.4 ? RIVAL_TEAM_BOSSES : RIVAL_TEAM_NAMES);
@@ -945,7 +954,7 @@ function renderCareerPlantilla(c) {
     return '<option value="' + f.id + '"' + (f.id === sortField.id ? ' selected' : '') + '>' + f.name + '</option>';
   }).join('');
   var filterBtnsHtml = careerPositionFilterBtnsHtml(filter, 'actionSetCareerPlantillaFilter');
-  var canRemove = all.length > CAREER_MIN_SQUAD_SIZE;
+  var canRemove = careerOwnedSquadCount(c) > CAREER_MIN_SQUAD_SIZE;
   var loanedIds = c.loanedIds || [];
   var boughtIds = c.boughtThisSeasonIds || [];
   var offeredIds = (c.incomingOffers || []).map(function (o) { return o.playerId; });
@@ -1186,8 +1195,8 @@ window.actionAcceptIncomingOffer = function (offerId) {
   var c = G.career;
   var offer = (c.incomingOffers || []).find(function (o) { return o.id === offerId; });
   if (!offer) return;
+  if (careerOwnedSquadCount(c) <= CAREER_MIN_SQUAD_SIZE) { c.marketMessage = 'No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores tuyos en plantilla -- vende o cede a otro primero.'; render(); return; }
   var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
-  if (all.length <= CAREER_MIN_SQUAD_SIZE) { c.marketMessage = 'No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores en plantilla -- vende o cede a otro primero.'; render(); return; }
   var p = all.find(function (x) { return x.id === offer.playerId; });
   careerResolveIncomingOffer(c, offer, offer.amount);
   c.marketMessage = p ? ('Aceptada la oferta por ' + p.nombre + ': ' + offer.amount + ' M€.') : 'Oferta aceptada.';
@@ -1233,8 +1242,7 @@ window.actionSendCounterOffer = function () {
   if (!cn) return;
   var offer = (c.incomingOffers || []).find(function (o) { return o.id === cn.offerId; });
   if (!offer) { c.counterNegotiation = null; render(); return; }
-  var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
-  if (all.length <= CAREER_MIN_SQUAD_SIZE) { cn.lastResult = 'plantillaMinima'; render(); return; }
+  if (careerOwnedSquadCount(c) <= CAREER_MIN_SQUAD_SIZE) { cn.lastResult = 'plantillaMinima'; render(); return; }
   var accepted = careerCounterOfferAccepts(cn.counter, offer.amount);
   if (accepted) {
     careerResolveIncomingOffer(c, offer, cn.counter);
@@ -1441,8 +1449,8 @@ function renderCareerIncomingOffers(c) {
   var offers = c.incomingOffers || [];
   if (!offers.length) return '';
   var w = c.marketWindow;
-  var atMinSquad = (c.lineup.length + c.bench.length) <= CAREER_MIN_SQUAD_SIZE;
-  var blockedTitle = 'No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores en plantilla -- vende o cede a otro primero.';
+  var atMinSquad = careerOwnedSquadCount(c) <= CAREER_MIN_SQUAD_SIZE;
+  var blockedTitle = 'No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores tuyos en plantilla -- vende o cede a otro primero.';
   var rowsHtml = offers.map(function (o) {
     var p = ROSTER.find(function (x) { return x.id === o.playerId; });
     if (!p) return '';
@@ -1922,6 +1930,21 @@ window.actionStartNewCareerSeason = function () {
   var c = G.career;
   if (c.league.matchdayIndex < c.league.schedule.length) return;
   c.season = (c.season || 1) + 1;
+  // Las cesiones ENTRANTES duran 1 temporada -- al empezar la siguiente,
+  // todos los cedidos que te quedaran vuelven solos a su club (no son
+  // tuyos), a petición explícita ("los jugadores cedidos se van de tu
+  // equipo al acabar la temporada"). careerRemoveFromSquad ya sabe subir
+  // a alguien del banquillo si el cedido era titular.
+  var returningLoans = (c.loanedIds || []).slice();
+  if (returningLoans.length) {
+    var returnedNames = returningLoans.map(function (id) {
+      var p = c.lineup.map(function (s) { return s.player; }).concat(c.bench).find(function (x) { return x.id === id; });
+      careerRemoveFromSquad(c, id);
+      return p ? p.nombre : null;
+    }).filter(Boolean);
+    c.loanedIds = [];
+    if (returnedNames.length) c.plantillaMessage = 'Fin de la cesión: ' + returnedNames.join(', ') + ' -- vuelven a su club.';
+  }
   careerProgressAllPlayers(c);
   c.league = careerBuildLeague();
   c.marketWindow = careerNewMarketWindow('preseason', CAREER_PRESEASON_DAYS);
