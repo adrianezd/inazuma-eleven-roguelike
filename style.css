@@ -916,6 +916,12 @@ a { color: var(--accent); }
 .career-training-level-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 4px 0; }
 .career-training-level-num { font-weight: 700; color: var(--accent-2); }
 .career-training-valoracion { display: flex; align-items: center; gap: 6px; }
+/* Flecha de crecimiento (careerGrowthArrowHtml): rasgo fijo de cada
+   jugador para toda la carrera, a petición explícita ("puedes hacerlo
+   con flechas de colores para decir lo que es cada uno"). El color lo
+   pone inline cada llamada (depende del nivel 1-5); aquí solo el grosor
+   para que se lea bien en línea con el resto del texto. */
+.career-growth-arrow { font-weight: 800; }
 
 /* ===== Tabla de la Liga ===== */
 .liga-table {

@@ -323,12 +323,14 @@ function careerTrainingEffectiveParams(level) {
   };
 }
 // "Media esperada" de la pestaña Entrenamiento: la parte DETERMINISTA del
-// cálculo de abajo (el tirón hacia el ancla, sin el ruido al azar), para
-// poder enseñar una previsión antes de que pase la temporada.
+// cálculo de abajo (el tirón hacia el ancla + el crecimiento fijo del
+// jugador, sin el ruido al azar), para poder enseñar una previsión antes
+// de que pase la temporada.
 function careerExpectedProgressionDelta(c, p) {
   var params = careerTrainingEffectiveParams(c.trainingLevel);
   var current = careerPlayerScore(p);
-  return Math.round((params.anchor - current) * params.rate * 2) / 2;
+  var tier = careerPlayerGrowthTier(c, p);
+  return Math.round(((params.anchor - current) * params.rate + tier) * 2) / 2;
 }
 // "Potencial" de la pestaña Entrenamiento: un rango (bajo-alto), no un
 // único número, a petición explícita ("puede ser cualquiera de los 3
@@ -356,7 +358,8 @@ function careerProgressAllPlayers(c) {
   var params = careerTrainingEffectiveParams(c.trainingLevel);
   ROSTER.forEach(function (p) {
     var current = careerPlayerScore(p);
-    var pull = (params.anchor - current) * params.rate;
+    var tier = careerPlayerGrowthTier(c, p);
+    var pull = (params.anchor - current) * params.rate + tier;
     var noise = (Math.random() * 2 - 1) * params.variance;
     var delta = Math.round((pull + noise) * 2) / 2;
     c.playerProgression[p.id] = (c.playerProgression[p.id] || 0) + delta;
@@ -465,10 +468,76 @@ function careerBuildLeague(division, divisionTeams) {
 }
 
 // Presupuesto en M€, misma unidad que careerPlayerValue -- 2M€ de
-// salida, +50k/100k/150k al azar por cada partido tuyo ganado (ver
-// careerAwardWinBonus), gastable en fichajes (Mercado) y repuesto al
-// vender/ceder (Gestionar plantilla).
+// salida por defecto (elegible al crear la carrera, ver
+// CAREER_STARTING_BUDGET_OPTIONS/renderCareerSetup), +50k/100k/150k al
+// azar por cada partido tuyo ganado (ver careerAwardWinBonus), gastable
+// en fichajes (Mercado) y repuesto al vender/ceder (Gestionar plantilla).
 var CAREER_STARTING_BUDGET = 2;
+
+// ===== Configuración inicial (pantalla previa a crear la carrera) =====
+// A petición explícita ("antes de empezar partida en modo carrera,
+// puedes elegir dificultad, dinero inicial, y negociaciones duras o
+// blandas"): 3 elecciones independientes, guardadas en el estado
+// (c.difficulty/c.negotiation) para que sigan aplicando toda la
+// carrera -- careerRivalPower y careerNegotiationAccepts las leen de
+// G.career directamente. El dinero inicial no necesita guardarse aparte
+// porque solo afecta a c.budget en el momento de crear la partida.
+var CAREER_DIFFICULTY_TIERS = {
+  facil: { name: 'Fácil', rivalLevelTarget: 82 },
+  normal: { name: 'Normal', rivalLevelTarget: 92 },
+  dificil: { name: 'Difícil', rivalLevelTarget: 100 }
+};
+var CAREER_DIFFICULTY_ORDER = ['facil', 'normal', 'dificil'];
+var CAREER_NEGOTIATION_MODES = {
+  blandas: { name: 'Blandas', moneyExponent: 3 },
+  duras: { name: 'Duras', moneyExponent: 8 }
+};
+var CAREER_NEGOTIATION_ORDER = ['blandas', 'duras'];
+var CAREER_STARTING_BUDGET_OPTIONS = [1, 2, 5, 10];
+
+// ===== Crecimiento por jugador (rasgo fijo de la carrera) =====
+// A petición explícita ("no todos los jugadores suban igual... crecimiento
+// muy bajo, bajo, normal, alto y muy alto... sube de 1 a 5 por temporada...
+// es aleatorio antes de empezar el modo carrera, se genera cuando empieza
+// el modo carrera, y ya no cambia durante las temporadas"): cada jugador
+// de TODO ROSTER recibe un nivel 1-5 al crear la partida (careerInitialGrowthTiers,
+// llamado una sola vez desde careerFreshState) que se suma TAL CUAL al
+// tirón hacia el ancla en careerProgressAllPlayers/careerExpectedProgressionDelta
+// -- no es un multiplicador ni depende del centro de entrenamiento, es un
+// rasgo personal del jugador que se mantiene toda la carrera. Pesos
+// 10/20/40/20/10 (careerRollGrowthTier) para que "Normal" sea lo más
+// común y los extremos sean raros de verdad, no un dado uniforme.
+var CAREER_GROWTH_TIER_LABELS = { 1: 'Muy bajo', 2: 'Bajo', 3: 'Normal', 4: 'Alto', 5: 'Muy alto' };
+var CAREER_GROWTH_TIER_ARROWS = { 1: '▼▼', 2: '▼', 3: '►', 4: '▲', 5: '▲▲' };
+var CAREER_GROWTH_TIER_COLORS = { 1: 'var(--danger)', 2: '#e08a1e', 3: 'var(--text-dim)', 4: 'var(--success)', 5: 'var(--accent-2)' };
+var CAREER_GROWTH_TIER_WEIGHTS = [10, 20, 40, 20, 10];
+function careerRollGrowthTier() {
+  var r = Math.random() * 100;
+  var cum = 0;
+  for (var i = 0; i < CAREER_GROWTH_TIER_WEIGHTS.length; i++) {
+    cum += CAREER_GROWTH_TIER_WEIGHTS[i];
+    if (r < cum) return i + 1;
+  }
+  return 5;
+}
+function careerInitialGrowthTiers() {
+  var tiers = {};
+  ROSTER.forEach(function (p) { tiers[p.id] = careerRollGrowthTier(); });
+  return tiers;
+}
+function careerPlayerGrowthTier(c, p) {
+  return (c && c.playerGrowthTier && c.playerGrowthTier[p.id]) || 3;
+}
+// Flecha de color con el nivel de crecimiento -- a petición explícita
+// ("puedes hacerlo con flechas de colores para decir lo que es cada
+// uno"). Reutilizada en Entrenamiento, Gestionar plantilla y el filtro
+// de Mercado.
+function careerGrowthArrowHtml(tier) {
+  var arrow = CAREER_GROWTH_TIER_ARROWS[tier] || CAREER_GROWTH_TIER_ARROWS[3];
+  var color = CAREER_GROWTH_TIER_COLORS[tier] || CAREER_GROWTH_TIER_COLORS[3];
+  var label = CAREER_GROWTH_TIER_LABELS[tier] || CAREER_GROWTH_TIER_LABELS[3];
+  return '<span class="career-growth-arrow" style="color:' + color + '" title="Crecimiento: ' + label + ' (+' + tier + ' de base cada temporada)">' + arrow + '</span>';
+}
 
 // Ventana de fichajes, a petición explícita, igual en TODAS las
 // temporadas: 5 días de negociación antes de que arranque la liga
@@ -535,7 +604,14 @@ function careerGenerateIncomingOffers(c) {
   });
 }
 
-function careerFreshState() {
+// choices ({difficulty, negotiation, budget}) viene de renderCareerSetup
+// (la pantalla previa a crear la carrera, a petición explícita: "antes
+// de empezar partida en modo carrera, puedes elegir dificultad, dinero
+// inicial, y negociaciones duras o blandas") -- con valores por defecto
+// razonables si se llama sin nada (compatibilidad con quien llamara a
+// careerFreshState() a secas).
+function careerFreshState(choices) {
+  choices = choices || {};
   var starters = careerModeRoster(CAREER_MODE_STARTER_IDS);
   // Arrancas en Segunda División por defecto, a petición explícita.
   var division = 2;
@@ -549,6 +625,11 @@ function careerFreshState() {
     captainId: null,
     pickingCaptain: false,
     swapSelectedId: null,
+    // Dificultad y dureza de negociación elegidas al crear la carrera --
+    // se quedan fijas toda la partida (careerRivalPower/careerNegotiationAccepts
+    // las leen de G.career en cada partido/oferta, no solo aquí).
+    difficulty: CAREER_DIFFICULTY_TIERS[choices.difficulty] ? choices.difficulty : 'normal',
+    negotiation: CAREER_NEGOTIATION_MODES[choices.negotiation] ? choices.negotiation : 'duras',
     division: division,
     divisionTeams: divisionTeams,
     league: careerBuildLeague(division, divisionTeams),
@@ -562,7 +643,7 @@ function careerFreshState() {
     // pero para compras.
     boughtThisSeasonIds: [],
     incomingOffers: [],
-    budget: CAREER_STARTING_BUDGET,
+    budget: CAREER_STARTING_BUDGET_OPTIONS.indexOf(choices.budget) !== -1 ? choices.budget : CAREER_STARTING_BUDGET,
     marketWindow: careerNewMarketWindow('preseason', CAREER_PRESEASON_DAYS),
     // Mejor posición en liga y goleadores/asistentes ACUMULADOS de toda
     // la carrera (todas las temporadas, no se resetean con
@@ -575,6 +656,9 @@ function careerFreshState() {
     // nueva, se rellena a partir de la temporada 2 (actionStartNewCareerSeason).
     playerProgression: {},
     lastPlayerProgressionDelta: {},
+    // Crecimiento fijo por jugador (1-5, TODO ROSTER), sorteado una sola
+    // vez aquí y nunca más -- ver careerInitialGrowthTiers.
+    playerGrowthTier: careerInitialGrowthTiers(),
     // Centro de entrenamiento: infraestructura del club, nunca se
     // resetea entre temporadas (como el presupuesto) -- ver
     // careerTrainingEffectiveParams/CAREER_TRAINING_LEVEL_COSTS.
@@ -612,12 +696,14 @@ function careerSerialize(c) {
     lineup: c.lineup.map(function (s) { return { pos: s.pos, id: s.player.id }; }),
     bench: c.bench.map(function (p) { return p.id; }),
     loanedIds: c.loanedIds || [],
+    difficulty: c.difficulty || 'normal',
+    negotiation: c.negotiation || 'duras',
     division: c.division || 2,
     divisionTeams: c.divisionTeams,
     league: c.league,
     lastMatchdayResult: c.lastMatchdayResult,
     calendarView: c.calendarView,
-    marketFilter: c.marketFilter, marketTypeFilter: c.marketTypeFilter, marketSearch: c.marketSearch, marketOnlyInterested: c.marketOnlyInterested,
+    marketFilter: c.marketFilter, marketTypeFilter: c.marketTypeFilter, marketGrowthFilter: c.marketGrowthFilter, marketSearch: c.marketSearch,
     marketSort: c.marketSort, marketSortDir: c.marketSortDir, marketPage: c.marketPage,
     plantillaFilter: c.plantillaFilter, plantillaSearch: c.plantillaSearch,
     plantillaSort: c.plantillaSort, plantillaSortDir: c.plantillaSortDir,
@@ -629,6 +715,7 @@ function careerSerialize(c) {
     incomingOffers: c.incomingOffers || [],
     playerProgression: c.playerProgression || {},
     lastPlayerProgressionDelta: c.lastPlayerProgressionDelta || {},
+    playerGrowthTier: c.playerGrowthTier || careerInitialGrowthTiers(),
     trainingLevel: c.trainingLevel || 1,
     cup: c.cup, cupsWon: c.cupsWon || 0, lastCupResult: c.lastCupResult || null,
     lastLeagueFinish: c.lastLeagueFinish || null,
@@ -665,6 +752,8 @@ function careerDeserialize(data) {
     // que es la continuidad más coherente hasta la próxima transición de
     // temporada (careerBuildLeague ya reconstruye todo bien a partir de
     // ahí).
+    difficulty: CAREER_DIFFICULTY_TIERS[data.difficulty] ? data.difficulty : 'normal',
+    negotiation: CAREER_NEGOTIATION_MODES[data.negotiation] ? data.negotiation : 'duras',
     division: data.division || 1,
     divisionTeams: data.divisionTeams || careerInitialDivisionTeams(),
     league: data.league,
@@ -672,7 +761,7 @@ function careerDeserialize(data) {
     budget: typeof data.budget === 'number' ? data.budget : CAREER_STARTING_BUDGET,
     loanedIds: data.loanedIds || [],
     calendarView: data.calendarView,
-    marketFilter: data.marketFilter || null, marketTypeFilter: data.marketTypeFilter || null, marketSearch: data.marketSearch || '', marketOnlyInterested: !!data.marketOnlyInterested,
+    marketFilter: data.marketFilter || null, marketTypeFilter: data.marketTypeFilter || null, marketGrowthFilter: data.marketGrowthFilter || null, marketSearch: data.marketSearch || '',
     marketSort: data.marketSort, marketSortDir: data.marketSortDir, marketPage: data.marketPage || 0,
     plantillaFilter: data.plantillaFilter || null, plantillaSearch: data.plantillaSearch || '',
     plantillaSort: data.plantillaSort, plantillaSortDir: data.plantillaSortDir,
@@ -684,6 +773,10 @@ function careerDeserialize(data) {
     incomingOffers: data.incomingOffers || [],
     playerProgression: data.playerProgression || {},
     lastPlayerProgressionDelta: data.lastPlayerProgressionDelta || {},
+    // Partidas guardadas de antes de que existiera el crecimiento fijo
+    // por jugador no tienen este campo -- se sortea una vez aquí y, al
+    // guardar de nuevo, ya queda fijo para siempre como el resto.
+    playerGrowthTier: data.playerGrowthTier || careerInitialGrowthTiers(),
     trainingLevel: data.trainingLevel || 1,
     trainingMessage: null,
     cup: careerCupRelinkWinners(data.cup) || careerNewCup(),
@@ -733,13 +826,93 @@ function actionGoCareerMode() {
   G.screen = 'careerSlots';
   render();
 }
+// "Nueva partida" ya no crea la carrera al momento -- primero pasa por
+// una pantalla de configuración (dificultad/dinero inicial/negociaciones,
+// ver renderCareerSetup) a petición explícita ("antes de empezar partida
+// en modo carrera, puedes elegir dificultad, dinero inicial, y
+// negociaciones duras o blandas"). G.careerSetupSlot/G.careerSetupChoices
+// viven fuera de G.career porque todavía no existe ninguna partida en
+// este punto.
 window.actionNewCareerInSlot = function (slot) {
-  G.career = careerFreshState();
+  G.careerSetupSlot = slot;
+  G.careerSetupChoices = { difficulty: 'normal', budget: CAREER_STARTING_BUDGET, negotiation: 'duras' };
+  G.screen = 'careerSetup';
+  render();
+};
+window.actionSetCareerSetupDifficulty = function (tier) {
+  if (!CAREER_DIFFICULTY_TIERS[tier]) return;
+  G.careerSetupChoices.difficulty = tier;
+  render();
+};
+window.actionSetCareerSetupNegotiation = function (mode) {
+  if (!CAREER_NEGOTIATION_MODES[mode]) return;
+  G.careerSetupChoices.negotiation = mode;
+  render();
+};
+window.actionSetCareerSetupBudget = function (amount) {
+  if (CAREER_STARTING_BUDGET_OPTIONS.indexOf(amount) === -1) return;
+  G.careerSetupChoices.budget = amount;
+  render();
+};
+window.actionCancelCareerSetup = function () {
+  G.screen = 'careerSlots';
+  render();
+};
+window.actionConfirmCareerSetup = function () {
+  var slot = G.careerSetupSlot;
+  if (!slot) return;
+  G.career = careerFreshState(G.careerSetupChoices);
   G.careerActiveSlot = slot;
   saveCareerToSlot(slot);
   G.screen = 'careerMode';
   render();
 };
+// Dificultad/dinero inicial/negociaciones a elegir antes de crear la
+// carrera -- fijas para toda la partida (careerRivalPower/
+// careerNegotiationAccepts las leen de G.career en cada partido/oferta).
+function renderCareerSetup() {
+  var choices = G.careerSetupChoices || {};
+  var difficulty = choices.difficulty || 'normal';
+  var negotiation = choices.negotiation || 'duras';
+  var budget = CAREER_STARTING_BUDGET_OPTIONS.indexOf(choices.budget) !== -1 ? choices.budget : CAREER_STARTING_BUDGET;
+  var difficultyBtnsHtml = CAREER_DIFFICULTY_ORDER.map(function (id) {
+    var tier = CAREER_DIFFICULTY_TIERS[id];
+    return '<button class="btn btn-tiny' + (difficulty === id ? ' active' : '') + '" onclick="actionSetCareerSetupDifficulty(\'' + id + '\')">' + tier.name + '</button>';
+  }).join('');
+  var negotiationBtnsHtml = CAREER_NEGOTIATION_ORDER.map(function (id) {
+    var mode = CAREER_NEGOTIATION_MODES[id];
+    return '<button class="btn btn-tiny' + (negotiation === id ? ' active' : '') + '" onclick="actionSetCareerSetupNegotiation(\'' + id + '\')">' + mode.name + '</button>';
+  }).join('');
+  var budgetBtnsHtml = CAREER_STARTING_BUDGET_OPTIONS.map(function (amount) {
+    return '<button class="btn btn-tiny' + (budget === amount ? ' active' : '') + '" onclick="actionSetCareerSetupBudget(' + amount + ')">' + amount + ' M€</button>';
+  }).join('');
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<button class="btn btn-outline btn-block" onclick="actionCancelCareerSetup()">Volver</button>' +
+        '<h2 class="panel-title mt">Nueva partida -- Hueco ' + G.careerSetupSlot + '</h2>' +
+        '<p class="dim small">Elige cómo quieres jugar esta carrera -- no se puede cambiar después de empezar.</p>' +
+      '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:4px">Dificultad</h3>' +
+        '<p class="dim small">Cuánto se nivelan los rivales hacia arriba en Jornada y Copa (Fácil ' + CAREER_DIFFICULTY_TIERS.facil.rivalLevelTarget + ' · Normal ' + CAREER_DIFFICULTY_TIERS.normal.rivalLevelTarget + ' · Difícil ' + CAREER_DIFFICULTY_TIERS.dificil.rivalLevelTarget + ').</p>' +
+        '<div class="btn-row mt">' + difficultyBtnsHtml + '</div>' +
+      '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:4px">Dinero inicial</h3>' +
+        '<div class="btn-row mt">' + budgetBtnsHtml + '</div>' +
+      '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:4px">Negociaciones</h3>' +
+        '<p class="dim small">Duras: cuesta más conseguir un descuento al fichar. Blandas: es más fácil regatear el precio.</p>' +
+        '<div class="btn-row mt">' + negotiationBtnsHtml + '</div>' +
+      '</div>' +
+      '<div class="panel center-text">' +
+        '<button class="btn btn-primary btn-block" onclick="actionConfirmCareerSetup()">Empezar carrera</button>' +
+      '</div>' +
+    '</div>'
+  );
+}
 window.actionLoadCareerFromSlot = function (slot) {
   var data = loadCareerFromSlot(slot);
   if (!data) return;
@@ -888,6 +1061,19 @@ function renderCareerLineupPitch(c) {
   return '<div class="pitch pitch-11">' + rowsHtml + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div>';
 }
 
+// Mismo truco que futDraftElementCounts (FutDraft), pero sobre c.lineup
+// -- cuántos titulares hay de cada tipo elemental, para la "Bonificación
+// de atributo" de Mi equipo (careerScoreBreakdown ya usa este mismo
+// umbral internamente para el synergyBonus, esto solo lo enseña en
+// pantalla, a petición explícita: "añade lo de la bonificación de
+// atributo en mi equipo").
+function careerElementCounts(c) {
+  var counts = {};
+  TYPES.forEach(function (t) { counts[t] = 0; });
+  c.lineup.forEach(function (slot) { counts[slot.player.tipo] = (counts[slot.player.tipo] || 0) + 1; });
+  return counts;
+}
+
 function renderCareerEquipo(c) {
   var breakdown = careerScoreBreakdown(c.lineup, c.captainId);
   var captain = c.captainId ? c.lineup.find(function (s) { return s.player.id === c.captainId; }) : null;
@@ -908,6 +1094,12 @@ function renderCareerEquipo(c) {
   var formationOptionsHtml = FUTDRAFT_FORMATIONS.map(function (f) {
     return '<option value="' + f.id + '"' + (f.id === c.formation ? ' selected' : '') + '>' + f.name + '</option>';
   }).join('');
+  var elementCounts = careerElementCounts(c);
+  var elementCountsHtml = TYPES.map(function (t) {
+    return '<span class="type-badge type-' + t.toLowerCase().replace('ñ', 'n') + '" style="margin:2px">' +
+      'Bonificación atributo ' + getTypeSymbol(t) + ' ' + elementCounts[t] + '/' + FUTDRAFT_SYNERGY_THRESHOLD +
+    '</span>';
+  }).join(' ');
   return (
     '<div class="panel center-text">' +
       '<p class="dim small">Puntuación de equipo: <strong style="color:var(--accent-2)">' + breakdown.total + '</strong> / 100</p>' +
@@ -920,6 +1112,10 @@ function renderCareerEquipo(c) {
       '<select class="select-field" onchange="setCareerFormation(this.value)">' + formationOptionsHtml + '</select>' +
     '</div>' +
     '<div class="panel">' + renderCareerLineupPitch(c) + '</div>' +
+    '<div class="panel center-text">' +
+      '<h3 style="margin-bottom:8px">Bonificación de atributo (once titular)</h3>' +
+      '<div>' + elementCountsHtml + '</div>' +
+    '</div>' +
     '<div class="panel">' +
       '<h3 style="margin-bottom:4px">Banquillo</h3>' +
       '<div class="pitch-row" style="justify-content:center">' + benchHtml + '</div>' +
@@ -1135,7 +1331,7 @@ function renderCareerPlantilla(c) {
       (isBought ? ' <span class="player-tag player-tag-new" title="Fichado esta temporada: no se puede mover hasta la que viene">Nuevo</span>' : '') +
       (hasOffer ? ' <span class="player-tag player-tag-offer" title="Tienes una oferta por él, mira Mercado">Oferta</span>' : '');
     return '<div class="futdraft-timeline-row">' + careerMediaBadgeHtml(p) + avatarHtml(p) +
-      '<span>' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + tagsHtml + '</span>' +
+      '<span>' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + ' ' + careerGrowthArrowHtml(careerPlayerGrowthTier(c, p)) + tagsHtml + '</span>' +
       '<strong style="margin-left:auto;white-space:nowrap;color:var(--accent-2)">' + careerPlayerValue(p) + ' M€</strong>' +
       actionsHtml +
     '</div>';
@@ -1241,7 +1437,9 @@ function renderCareerEntrenamiento(c) {
         '<span class="career-offer-name">' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + '</span>' +
         '<span style="margin-left:auto" title="' + escapeHtml(p.tipo) + '">' + getTypeSymbol(p.tipo).replace(/22px/g, '18px') + '</span>' +
       '</div>' +
-      '<div class="career-training-valoracion">' + careerPlayerStarRatingHtml(currentScore) + '<span class="dim small">' + Math.round(currentScore) + '</span></div>' +
+      '<div class="career-training-valoracion">' + careerPlayerStarRatingHtml(currentScore) + '<span class="dim small">' + Math.round(currentScore) + '</span>' +
+        '<span class="dim small" style="margin-left:auto">Crecimiento: ' + careerGrowthArrowHtml(careerPlayerGrowthTier(c, p)) + ' ' + CAREER_GROWTH_TIER_LABELS[careerPlayerGrowthTier(c, p)] + '</span>' +
+      '</div>' +
       '<div class="career-offer-prices">' +
         '<span class="dim">Progresión temporada pasada: ' + careerDeltaHtml(lastDelta) + '</span>' +
         '<span class="dim">Potencial próxima temporada: <strong>' + (potential.low === potential.high ? potential.low : (potential.low + '-' + potential.high)) + '</strong></span>' +
@@ -1269,11 +1467,26 @@ window.actionSetCareerMarketSearch = function (value) {
   G.career.marketPage = 0;
   render();
 };
-window.actionToggleCareerMarketInterested = function () {
-  G.career.marketOnlyInterested = !G.career.marketOnlyInterested;
+// Filtro por crecimiento (1-5, ver careerPlayerGrowthTier) en vez del
+// antiguo "Podrían unirse" -- a petición explícita ("quita el filtro de
+// podrían unirse en el mercado, añade un filtro de crecimiento también").
+window.actionSetCareerMarketGrowthFilter = function (tier) {
+  G.career.marketGrowthFilter = tier;
   G.career.marketPage = 0;
   render();
 };
+// Mismo patrón que careerPositionFilterBtnsHtml/careerTypeFilterBtnsHtml,
+// con la flecha de color de cada nivel (careerGrowthArrowHtml) en vez de
+// un icono.
+function careerGrowthFilterBtnsHtml(filter, actionName) {
+  return [null, 1, 2, 3, 4, 5].map(function (tier) {
+    var active = filter === tier;
+    var arg = tier === null ? 'null' : tier;
+    var label = tier === null ? 'Todos' : careerGrowthArrowHtml(tier);
+    var title = tier === null ? 'Todos' : CAREER_GROWTH_TIER_LABELS[tier];
+    return '<button class="btn btn-tiny' + (active ? ' active' : '') + '" onclick="' + actionName + '(' + arg + ')" title="' + title + '">' + label + '</button>';
+  }).join('');
+}
 
 // Ordenar por un atributo concreto (media, valor, o cualquiera de las 4
 // stats) de mayor a menor o al revés -- a petición explícita ("filtros
@@ -1350,9 +1563,15 @@ function careerMarketSignableCap(teamAvg) {
 //    de 81/82, igual no quiere"). Cada punto por encima de tu media
 //    resta un 8% de ganas, con un suelo del 5% (nunca es del todo
 //    imposible, pero muy raro).
+// El exponente depende de si elegiste negociaciones "duras" (8, el de
+// arriba) o "blandas" (3, el original) al crear la carrera --
+// c.negotiation, ver CAREER_NEGOTIATION_MODES/renderCareerSetup.
 var CAREER_NEGOTIATION_MONEY_EXPONENT = 8;
 function careerNegotiationAccepts(offer, value, playerScore, teamAvgScore) {
-  var moneyFactor = offer >= value ? 1 : Math.pow(offer / value, CAREER_NEGOTIATION_MONEY_EXPONENT);
+  var c = G.career;
+  var mode = c && CAREER_NEGOTIATION_MODES[c.negotiation];
+  var exponent = mode ? mode.moneyExponent : CAREER_NEGOTIATION_MONEY_EXPONENT;
+  var moneyFactor = offer >= value ? 1 : Math.pow(offer / value, exponent);
   var gap = Math.max(0, playerScore - teamAvgScore);
   var prestigeFactor = clamp(1 - gap * 0.08, 0.05, 1);
   return Math.random() < moneyFactor * prestigeFactor;
@@ -1713,8 +1932,8 @@ function renderCareerMercado(c) {
   var owned = c.lineup.map(function (s) { return s.player.id; }).concat(c.bench.map(function (p) { return p.id; }));
   var filter = c.marketFilter || null;
   var typeFilter = c.marketTypeFilter || null;
+  var growthFilter = c.marketGrowthFilter || null;
   var search = (c.marketSearch || '').trim().toLowerCase();
-  var onlyInterested = !!c.marketOnlyInterested;
   var teamAvg = careerTeamAvgScore(c);
   var signableCap = careerMarketSignableCap(teamAvg);
   var available = ROSTER.filter(function (p) {
@@ -1723,8 +1942,8 @@ function renderCareerMercado(c) {
     if (score >= signableCap) return false;
     if (filter && p.posicion !== filter) return false;
     if (typeFilter && p.tipo !== typeFilter) return false;
+    if (growthFilter && careerPlayerGrowthTier(c, p) !== growthFilter) return false;
     if (search && p.nombre.toLowerCase().indexOf(search) === -1) return false;
-    if (onlyInterested && (score - teamAvg) > CAREER_INTERESTED_GAP) return false;
     return true;
   });
   var sortField = CAREER_MARKET_SORT_FIELDS.find(function (f) { return f.id === c.marketSort; }) || CAREER_MARKET_SORT_FIELDS[0];
@@ -1738,6 +1957,7 @@ function renderCareerMercado(c) {
 
   var filterBtnsHtml = careerPositionFilterBtnsHtml(filter, 'actionSetCareerMarketFilter');
   var typeFilterBtnsHtml = careerTypeFilterBtnsHtml(typeFilter, 'actionSetCareerMarketTypeFilter');
+  var growthFilterBtnsHtml = careerGrowthFilterBtnsHtml(growthFilter, 'actionSetCareerMarketGrowthFilter');
   var sortOptionsHtml = CAREER_MARKET_SORT_FIELDS.map(function (f) {
     return '<option value="' + f.id + '"' + (f.id === sortField.id ? ' selected' : '') + '>' + f.name + '</option>';
   }).join('');
@@ -1746,7 +1966,7 @@ function renderCareerMercado(c) {
   var rowsHtml = pageItems.map(function (p) {
     var value = careerPlayerValue(p);
     return '<div class="futdraft-timeline-row">' + careerMediaBadgeHtml(p) + avatarHtml(p) +
-      '<span>' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + ' <span title="' + escapeHtml(p.tipo) + '">' + getTypeSymbol(p.tipo) + '</span></span>' +
+      '<span>' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + ' <span title="' + escapeHtml(p.tipo) + '">' + getTypeSymbol(p.tipo) + '</span> ' + careerGrowthArrowHtml(careerPlayerGrowthTier(c, p)) + '</span>' +
       '<strong style="margin-left:auto;white-space:nowrap;color:var(--accent-2)">' + value + ' M€</strong>' +
       '<button class="btn btn-tiny" style="margin-left:6px" ' + (squadFull ? 'disabled' : '') + ' onclick="actionStartCareerNegotiation(\'' + p.id + '\', \'buy\')">Negociar</button>' +
       '<button class="btn btn-tiny" ' + (squadFull || loansFull ? 'disabled' : '') + ' onclick="actionStartCareerNegotiation(\'' + p.id + '\', \'loan\')" title="Cesión de 1 temporada por 1/3 del valor">Cesión</button>' +
@@ -1770,10 +1990,9 @@ function renderCareerMercado(c) {
       (loansFull ? '<p class="dim small" style="color:var(--danger)">Ya tienes ' + CAREER_MAX_LOANS_IN + ' cesiones, el máximo -- devuelve a alguna antes de fichar cedido a otro.</p>' : '') +
       (c.marketMessage ? '<p class="dim small">' + escapeHtml(c.marketMessage) + '</p>' : '') +
       '<input class="select-field" type="text" placeholder="Buscar por nombre…" value="' + escapeHtml(c.marketSearch || '') + '" oninput="actionSetCareerMarketSearch(this.value)">' +
-      '<div class="btn-row mt">' + filterBtnsHtml +
-        '<button class="btn btn-tiny' + (onlyInterested ? ' active' : '') + '" onclick="actionToggleCareerMarketInterested()">Podrían unirse</button>' +
-      '</div>' +
+      '<div class="btn-row mt">' + filterBtnsHtml + '</div>' +
       '<div class="btn-row mt">' + typeFilterBtnsHtml + '</div>' +
+      '<div class="btn-row mt">' + growthFilterBtnsHtml + '</div>' +
       '<div class="btn-row mt" style="align-items:center">' +
         '<select class="select-field" style="width:auto;min-height:36px;padding:6px 10px" onchange="actionSetCareerMarketSort(this.value)">' + sortOptionsHtml + '</select>' +
         '<button class="btn btn-tiny" onclick="actionToggleCareerMarketSortDir()">' + (sortDir === -1 ? '⬇ Mayor a menor' : '⬆ Menor a mayor') + '</button>' +
@@ -2009,14 +2228,18 @@ function careerSimulateMatchGoals(powerA, powerB) {
 // y de paso también sube un poco a los equipos ya fuertes, en vez de
 // solo aplanar por abajo. No se toca TEAM_POWER global porque eso
 // afectaría también a FutDraft/Torneo/Liga estándar.
-// Bajado de 100 a 92 (a petición explícita, "baja un poco la dificultad
-// a la hora de los partidos, solo un poco"): al ser una media, la resta
-// es siempre 4 puntos exactos para cualquier rival ((100-92)/2), un
-// recorte parejo y suave en vez de tocar la curva de gol entera.
+// El techo depende de la dificultad elegida al crear la carrera
+// (c.difficulty, ver CAREER_DIFFICULTY_TIERS/renderCareerSetup) -- 92 es
+// el de "Normal" (bajado de 100 el 15-09, "baja un poco la dificultad a
+// la hora de los partidos, solo un poco"); se mantiene como valor de
+// reserva por si c.difficulty no existiera (partidas viejas).
 var CAREER_RIVAL_LEVEL_TARGET = 92;
 function careerRivalPower(name) {
+  var c = G.career;
+  var tier = c && CAREER_DIFFICULTY_TIERS[c.difficulty];
+  var target = tier ? tier.rivalLevelTarget : CAREER_RIVAL_LEVEL_TARGET;
   var p = teamPower({ name: name });
-  return Math.round((p + CAREER_RIVAL_LEVEL_TARGET) / 2);
+  return Math.round((p + target) / 2);
 }
 
 // Plantel "fantasma" para goleadores/asistentes de cualquier gol que no

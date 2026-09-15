@@ -78,6 +78,7 @@ function render() {
     case 'jugarHub': html = renderJugarHub(); break;
     case 'otrosModos': html = renderOtrosModos(); break;
     case 'careerSlots': html = renderCareerSlots(); break;
+    case 'careerSetup': html = renderCareerSetup(); break;
     case 'careerMode': html = renderCareerMode(); break;
     case 'modeSelect': html = renderModeSelect(); break;
     case 'captainSelect': html = renderCaptainSelect(); break;
