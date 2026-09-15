@@ -410,7 +410,23 @@ function coleccionFilterChange(filterType, value) {
   G.coleccionFilter[filterType] = value;
   render();
 }
-function actionBackToMenu() { G.screen = 'menu'; render(); }
+// Confirmación genérica antes de salir de un modo con progreso en
+// curso, a petición explícita ("el volver siempre con confirmación en
+// cualquier modo... preguntar si has guardado") -- ningún modo aparte de
+// Carrera tiene guardado real, así que salir sin más SÍ pierde lo que
+// llevaras, de ahí el aviso. Solo se usa en botones que de verdad
+// abandonan el modo (no en "Cancelar" de un diálogo suelto, que no
+// pierde nada). Devuelve true/false; si window.confirm no existe (fuera
+// de navegador), deja pasar sin preguntar.
+function confirmLeaveMode() {
+  if (typeof window === 'undefined' || typeof window.confirm !== 'function') return true;
+  return window.confirm('¿Seguro que quieres salir? Si no has guardado, perderás el progreso.');
+}
+function actionBackToMenu() {
+  if (!confirmLeaveMode()) return;
+  G.screen = 'menu';
+  render();
+}
 
 function renderCaptainSelect() {
   var cards = G.pendingCaptainOffers.map(function (c) {

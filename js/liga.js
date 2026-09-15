@@ -155,7 +155,7 @@ function renderLigaPoolSelect() {
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
-        '<button class="btn btn-outline btn-block" onclick="actionGoLigaTierSelect()">Volver</button>' +
+        '<button class="btn btn-outline btn-block" onclick="if(confirmLeaveMode())actionGoLigaTierSelect()">Volver</button>' +
         '<h2 class="panel-title mt">Liga · ' + ligaTierName(G.ligaPendingTier) + '</h2>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-primary btn-block" onclick="actionChooseLigaPool(\'desbloqueados\')">Personajes desbloqueados<br><small class="dim">Solo puedes draftear a quien ya tengas desbloqueado en el Vestuario.</small></button>' +

@@ -17,17 +17,19 @@
      temporada (tampoco se puede mover hasta la que viene --
      boughtThisSeasonIds, se limpia en actionStartNewCareerSeason) y
      "Oferta" si tienes una oferta entrante por él (ver Mercado).
-   - Entrenamiento: centro de entrenamiento de 10 niveles (cada uno más
-     caro que el anterior, CAREER_TRAINING_LEVEL_COSTS) que sube el
+   - Entrenamiento: centro de entrenamiento que arranca SIN construir
+     (nivel 0) y sube hasta 10, cada nivel más caro que el anterior
+     (CAREER_TRAINING_LEVEL_COSTS, índice 0 = construirlo) y sube el
      "techo natural" y la velocidad de la progresión anual de TODO
      ROSTER (careerTrainingEffectiveParams, ver progresión más abajo) --
      infraestructura del club, nunca se resetea entre temporadas. Por
-     jugador de tu plantilla se ve su media, cuánto subió/bajó la
-     temporada pasada y la media esperada la que viene (la parte
-     determinista de la progresión, sin el ruido al azar), más un botón
-     de subida rápida manual (+1 de media al momento, careerQuickBoostCost
-     = fracción del valor de mercado con suelo mínimo, así que es barata
-     para un jugador normal y carísima para un crack).
+     jugador de tu plantilla se ve su media, su crecimiento fijo (flecha
+     de color, careerGrowthArrowHtml), cuánto subió/bajó la temporada
+     pasada y el potencial (rango bajo-alto) la que viene, la parte
+     determinista de la progresión más ese crecimiento, ya diluido cerca
+     del máximo -- ver careerPlayerPotentialRange/careerGrowthTierBonus.
+     Ya no hay subida rápida manual por jugador (se quitó a petición
+     explícita).
    - Mercado: fichar (en propiedad o cedido) es NEGOCIAR
      (careerNegotiationAccepts) -- ofreces un precio y el club puede
      aceptar o rechazar según cuánto ofrezcas respecto a su valor (por
@@ -291,46 +293,65 @@ var CAREER_PROGRESSION_ANCHOR = 80;
 var CAREER_PROGRESSION_RATE = 0.25;
 var CAREER_PROGRESSION_VARIANCE = 2;
 
-// Centro de entrenamiento (pestaña Entrenamiento): 10 niveles, cada uno
-// más caro que el anterior (CAREER_TRAINING_LEVEL_COSTS, índice = subir
-// de ese nivel al siguiente), que MEJORAN los parámetros de progresión
-// de ARRIBA para TODO ROSTER, a petición explícita ("para que tus
-// jugadores suban en vez de bajar, suban más"): cada nivel por encima
-// del 1 sube el ancla (así hasta un crack casi tocando el 99 sigue
-// teniendo margen para no bajar) y la velocidad de acercamiento, y baja
-// el ruido (menos mala suerte, progresión más fiable). c.trainingLevel
-// es infraestructura del club -- nunca se resetea entre temporadas,
-// igual que el presupuesto.
+// Centro de entrenamiento (pestaña Entrenamiento): arranca SIN construir
+// (nivel 0, a petición explícita: "haz que construir el centro de
+// entrenamiento valga dinero también"), hay que pagar para construirlo
+// (nivel 0→1) y luego 9 niveles más, cada uno más caro que el anterior
+// (CAREER_TRAINING_LEVEL_COSTS, índice = nivel actual -- construirlo
+// cuesta el índice 0), que MEJORAN los parámetros de progresión de
+// ABAJO para TODO ROSTER, a petición explícita ("para que tus jugadores
+// suban en vez de bajar, suban más"): cada nivel sube el ancla (así
+// hasta un crack casi tocando el 99 sigue teniendo margen para no
+// bajar) y la velocidad de acercamiento, y baja el ruido (menos mala
+// suerte, progresión más fiable). c.trainingLevel es infraestructura
+// del club -- nunca se resetea entre temporadas, igual que el
+// presupuesto.
 var CAREER_TRAINING_MAX_LEVEL = 10;
-// Subidos un poco (a petición explícita, "que la mejora del centro de
-// entrenamiento valga un poco más"): con el máximo (nivel 10), el ancla
-// llega a 98 en vez de 93.5, la velocidad a 0.52 en vez de 0.43 y el
-// ruido baja a 1.46 en vez de 1.55 -- cada nivel se nota algo más que
-// antes, sin disparar el efecto de golpe.
 var CAREER_TRAINING_ANCHOR_PER_LEVEL = 2;
 var CAREER_TRAINING_RATE_PER_LEVEL = 0.03;
 var CAREER_TRAINING_VARIANCE_REDUCTION_PER_LEVEL = 0.06;
-// ×1.5 sobre los de antes (0.3/0.5/0.8/1.2/1.8/2.5/3.5/5/7), a petición
-// explícita ("haz que las mejoras del centro valgan más dinero, 1.5 de
-// lo que vale ahora mismo").
-var CAREER_TRAINING_LEVEL_COSTS = [0.45, 0.75, 1.2, 1.8, 2.7, 3.75, 5.25, 7.5, 10.5];
+// Subido otra vez (a petición explícita, "nivel de entrenamiento más
+// caro"): índice 0 es CONSTRUIRLO desde cero (1M€, "por ejemplo" tal
+// cual lo pidió), los 9 siguientes son subir de nivel, con una curva
+// bastante más empinada que antes (tope 23M€ para llegar al máximo, en
+// vez de 10.5M€).
+var CAREER_TRAINING_LEVEL_COSTS = [1, 1.5, 2.2, 3.2, 4.6, 6.5, 9, 12.5, 17, 23];
 function careerTrainingEffectiveParams(level) {
-  var lvl = level || 1;
+  var lvl = typeof level === 'number' ? level : 0;
   return {
-    anchor: CAREER_PROGRESSION_ANCHOR + (lvl - 1) * CAREER_TRAINING_ANCHOR_PER_LEVEL,
-    rate: CAREER_PROGRESSION_RATE + (lvl - 1) * CAREER_TRAINING_RATE_PER_LEVEL,
-    variance: Math.max(0.5, CAREER_PROGRESSION_VARIANCE - (lvl - 1) * CAREER_TRAINING_VARIANCE_REDUCTION_PER_LEVEL)
+    anchor: CAREER_PROGRESSION_ANCHOR + lvl * CAREER_TRAINING_ANCHOR_PER_LEVEL,
+    rate: CAREER_PROGRESSION_RATE + lvl * CAREER_TRAINING_RATE_PER_LEVEL,
+    variance: Math.max(0.5, CAREER_PROGRESSION_VARIANCE - lvl * CAREER_TRAINING_VARIANCE_REDUCTION_PER_LEVEL)
   };
+}
+// Cuánto se diluye el crecimiento fijo del jugador (careerPlayerGrowthTier)
+// cuanto más cerca esté del máximo (99) -- a petición explícita ("sin
+// que suban tanto los que son muy alto de crecimiento, que baje un
+// poco... tiene que ser progresivo, sube más rápido de 70 a 76 que de
+// 84 a 90"). CAREER_GROWTH_TIER_SCALE (0.8, antes el tier se sumaba
+// entero) ya recorta el máximo un poco; el factor de aquí lo diluye más
+// según el margen que le queda hasta 99 -- un "muy alto" (5) que ya vaya
+// por 90 solo suma una fracción de esos 5 puntos, no los 5 enteros de
+// siempre daba antes.
+var CAREER_GROWTH_TIER_SCALE = 0.8;
+var CAREER_GROWTH_ROOM_SPAN = 35;
+var CAREER_GROWTH_ROOM_FLOOR = 0.2;
+function careerGrowthRoomFactor(current) {
+  return clamp((99 - current) / CAREER_GROWTH_ROOM_SPAN, CAREER_GROWTH_ROOM_FLOOR, 1);
+}
+function careerGrowthTierBonus(c, p, current) {
+  var tier = careerPlayerGrowthTier(c, p);
+  return tier * CAREER_GROWTH_TIER_SCALE * careerGrowthRoomFactor(current);
 }
 // "Media esperada" de la pestaña Entrenamiento: la parte DETERMINISTA del
 // cálculo de abajo (el tirón hacia el ancla + el crecimiento fijo del
-// jugador, sin el ruido al azar), para poder enseñar una previsión antes
-// de que pase la temporada.
+// jugador ya diluido según lo cerca que esté del máximo, sin el ruido al
+// azar), para poder enseñar una previsión antes de que pase la temporada.
 function careerExpectedProgressionDelta(c, p) {
   var params = careerTrainingEffectiveParams(c.trainingLevel);
   var current = careerPlayerScore(p);
-  var tier = careerPlayerGrowthTier(c, p);
-  return Math.round(((params.anchor - current) * params.rate + tier) * 2) / 2;
+  var tierBonus = careerGrowthTierBonus(c, p, current);
+  return Math.round(((params.anchor - current) * params.rate + tierBonus) * 2) / 2;
 }
 // "Potencial" de la pestaña Entrenamiento: un rango (bajo-alto), no un
 // único número, a petición explícita ("puede ser cualquiera de los 3
@@ -358,8 +379,8 @@ function careerProgressAllPlayers(c) {
   var params = careerTrainingEffectiveParams(c.trainingLevel);
   ROSTER.forEach(function (p) {
     var current = careerPlayerScore(p);
-    var tier = careerPlayerGrowthTier(c, p);
-    var pull = (params.anchor - current) * params.rate + tier;
+    var tierBonus = careerGrowthTierBonus(c, p, current);
+    var pull = (params.anchor - current) * params.rate + tierBonus;
     var noise = (Math.random() * 2 - 1) * params.variance;
     var delta = Math.round((pull + noise) * 2) / 2;
     c.playerProgression[p.id] = (c.playerProgression[p.id] || 0) + delta;
@@ -367,18 +388,6 @@ function careerProgressAllPlayers(c) {
   });
 }
 
-// Subida rápida manual (Entrenamiento): +1 de media al momento por
-// dinero, a petición explícita ("no es barata", "de 1 en 1"). El coste
-// es una fracción del valor de mercado del jugador (careerPlayerValue),
-// así que por diseño se dispara para un crack ya carísimo (la misma
-// curva exponencial de careerPlayerValue) y se queda asequible para un
-// jugador normal -- con un suelo mínimo para que nunca sea gratis.
-var CAREER_QUICK_BOOST_FACTOR = 0.15;
-var CAREER_QUICK_BOOST_MIN_COST = 0.3;
-var CAREER_QUICK_BOOST_CAP = 99;
-function careerQuickBoostCost(p) {
-  return Math.max(CAREER_QUICK_BOOST_MIN_COST, Math.round(careerPlayerValue(p) * CAREER_QUICK_BOOST_FACTOR * 10) / 10);
-}
 
 var CAREER_VALUE_ANCHOR_SCORE = 75;
 var CAREER_VALUE_ANCHOR_MILLIONS = 1;
@@ -501,16 +510,17 @@ var CAREER_STARTING_BUDGET_OPTIONS = [1, 2, 5, 10];
 // es aleatorio antes de empezar el modo carrera, se genera cuando empieza
 // el modo carrera, y ya no cambia durante las temporadas"): cada jugador
 // de TODO ROSTER recibe un nivel 1-5 al crear la partida (careerInitialGrowthTiers,
-// llamado una sola vez desde careerFreshState) que se suma TAL CUAL al
-// tirón hacia el ancla en careerProgressAllPlayers/careerExpectedProgressionDelta
-// -- no es un multiplicador ni depende del centro de entrenamiento, es un
-// rasgo personal del jugador que se mantiene toda la carrera. Pesos
-// 10/20/40/20/10 (careerRollGrowthTier) para que "Normal" sea lo más
-// común y los extremos sean raros de verdad, no un dado uniforme.
+// llamado una sola vez desde careerFreshState), diluido según lo cerca
+// que esté cada jugador del máximo (careerGrowthTierBonus, no se suma
+// tal cual) -- no depende del centro de entrenamiento, es un rasgo
+// personal del jugador que se mantiene toda la carrera. Pesos
+// 12/23/40/18/7 (careerRollGrowthTier) para que "Normal" sea lo más
+// común y "Muy alto" sea de verdad raro de encontrar (7%, dentro del
+// 5-10% pedido explícitamente) -- antes era 10/20/40/20/10 (10%).
 var CAREER_GROWTH_TIER_LABELS = { 1: 'Muy bajo', 2: 'Bajo', 3: 'Normal', 4: 'Alto', 5: 'Muy alto' };
 var CAREER_GROWTH_TIER_ARROWS = { 1: '▼▼', 2: '▼', 3: '►', 4: '▲', 5: '▲▲' };
 var CAREER_GROWTH_TIER_COLORS = { 1: 'var(--danger)', 2: '#e08a1e', 3: 'var(--text-dim)', 4: 'var(--success)', 5: 'var(--accent-2)' };
-var CAREER_GROWTH_TIER_WEIGHTS = [10, 20, 40, 20, 10];
+var CAREER_GROWTH_TIER_WEIGHTS = [12, 23, 40, 18, 7];
 function careerRollGrowthTier() {
   var r = Math.random() * 100;
   var cum = 0;
@@ -659,10 +669,10 @@ function careerFreshState(choices) {
     // Crecimiento fijo por jugador (1-5, TODO ROSTER), sorteado una sola
     // vez aquí y nunca más -- ver careerInitialGrowthTiers.
     playerGrowthTier: careerInitialGrowthTiers(),
-    // Centro de entrenamiento: infraestructura del club, nunca se
-    // resetea entre temporadas (como el presupuesto) -- ver
-    // careerTrainingEffectiveParams/CAREER_TRAINING_LEVEL_COSTS.
-    trainingLevel: 1,
+    // Centro de entrenamiento: arranca SIN construir (0), infraestructura
+    // del club, nunca se resetea entre temporadas (como el presupuesto)
+    // -- ver careerTrainingEffectiveParams/CAREER_TRAINING_LEVEL_COSTS.
+    trainingLevel: 0,
     trainingMessage: null,
     // Copa del Rey: cuadro nuevo cada temporada (careerNewCup), no
     // bloqueado por la ventana de fichajes ni por el calendario de Liga
@@ -716,7 +726,7 @@ function careerSerialize(c) {
     playerProgression: c.playerProgression || {},
     lastPlayerProgressionDelta: c.lastPlayerProgressionDelta || {},
     playerGrowthTier: c.playerGrowthTier || careerInitialGrowthTiers(),
-    trainingLevel: c.trainingLevel || 1,
+    trainingLevel: typeof c.trainingLevel === 'number' ? c.trainingLevel : 0,
     cup: c.cup, cupsWon: c.cupsWon || 0, lastCupResult: c.lastCupResult || null,
     lastLeagueFinish: c.lastLeagueFinish || null,
     lastPromotionResult: c.lastPromotionResult || null
@@ -777,7 +787,10 @@ function careerDeserialize(data) {
     // por jugador no tienen este campo -- se sortea una vez aquí y, al
     // guardar de nuevo, ya queda fijo para siempre como el resto.
     playerGrowthTier: data.playerGrowthTier || careerInitialGrowthTiers(),
-    trainingLevel: data.trainingLevel || 1,
+    // Partidas guardadas de antes del centro "sin construir" ya tenían
+    // trainingLevel >= 1 de verdad (nunca 0), así que se conserva tal
+    // cual -- 0 aquí solo es de reserva para un guardado sin el campo.
+    trainingLevel: typeof data.trainingLevel === 'number' ? data.trainingLevel : 0,
     trainingMessage: null,
     cup: careerCupRelinkWinners(data.cup) || careerNewCup(),
     cupsWon: data.cupsWon || 0,
@@ -1354,33 +1367,21 @@ function renderCareerPlantilla(c) {
 
 // ===== Entrenamiento =====
 // Centro de entrenamiento (mejora los parámetros de careerProgressAllPlayers
-// para TODO ROSTER, ver arriba) + subida rápida manual de un punto por
-// dinero para TU plantilla -- a petición explícita: "veas la progresión
-// del jugador, cuánto ha subido, cuánto debería subir... y puedas
-// gastarte dinero para mejorar las instalaciones... y además, puedes
-// subir a los jugadores manualmente tú".
+// para TODO ROSTER, ver arriba), desde construirlo (nivel 0→1) hasta el
+// máximo -- a petición explícita: "veas la progresión del jugador,
+// cuánto ha subido, cuánto debería subir... y puedas gastarte dinero
+// para mejorar las instalaciones". La subida rápida manual por jugador
+// que había aquí se quitó del todo, a petición explícita ("subir uno de
+// media a un jugador en especial no se pueda, eso desactivado, quítalo").
 window.actionUpgradeTrainingCenter = function () {
   var c = G.career;
-  var level = c.trainingLevel || 1;
+  var level = typeof c.trainingLevel === 'number' ? c.trainingLevel : 0;
   if (level >= CAREER_TRAINING_MAX_LEVEL) return;
-  var cost = CAREER_TRAINING_LEVEL_COSTS[level - 1];
-  if (c.budget < cost) { c.trainingMessage = 'No tienes presupuesto para mejorar el centro de entrenamiento (' + cost + ' M€).'; render(); return; }
+  var cost = CAREER_TRAINING_LEVEL_COSTS[level];
+  if (c.budget < cost) { c.trainingMessage = 'No tienes presupuesto para ' + (level === 0 ? 'construir' : 'mejorar') + ' el centro de entrenamiento (' + cost + ' M€).'; render(); return; }
   c.budget = Math.round((c.budget - cost) * 10) / 10;
   c.trainingLevel = level + 1;
-  c.trainingMessage = 'Centro de entrenamiento mejorado a nivel ' + c.trainingLevel + '.';
-  render();
-};
-window.actionQuickBoostPlayer = function (id) {
-  var c = G.career;
-  var p = c.lineup.map(function (s) { return s.player; }).concat(c.bench).find(function (x) { return x.id === id; });
-  if (!p) return;
-  if (careerPlayerScore(p) >= CAREER_QUICK_BOOST_CAP) { c.trainingMessage = escapeHtml(p.nombre) + ' ya está al máximo (99).'; render(); return; }
-  var cost = careerQuickBoostCost(p);
-  if (c.budget < cost) { c.trainingMessage = 'No tienes presupuesto para pagar la subida rápida de ' + escapeHtml(p.nombre) + ' (' + cost + ' M€).'; render(); return; }
-  c.budget = Math.round((c.budget - cost) * 10) / 10;
-  c.playerProgression = c.playerProgression || {};
-  c.playerProgression[p.id] = (c.playerProgression[p.id] || 0) + 1;
-  c.trainingMessage = 'Subida rápida pagada: ' + escapeHtml(p.nombre) + ' ahora tiene ' + Math.round(careerPlayerScore(p)) + ' de media (-' + cost + ' M€).';
+  c.trainingMessage = level === 0 ? 'Centro de entrenamiento construido.' : ('Centro de entrenamiento mejorado a nivel ' + c.trainingLevel + '.');
   render();
 };
 // Texto con color para un delta (+/-), reutilizado tanto para la
@@ -1408,9 +1409,9 @@ function careerPlayerStarRatingHtml(score) {
   return careerStarsHtml(filled, 5, 'career-star-sm');
 }
 function renderCareerEntrenamiento(c) {
-  var level = c.trainingLevel || 1;
+  var level = typeof c.trainingLevel === 'number' ? c.trainingLevel : 0;
   var maxed = level >= CAREER_TRAINING_MAX_LEVEL;
-  var nextCost = maxed ? null : CAREER_TRAINING_LEVEL_COSTS[level - 1];
+  var nextCost = maxed ? null : CAREER_TRAINING_LEVEL_COSTS[level];
   var headerHtml =
     '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Nivel de Entrenamiento</h3>' +
@@ -1418,20 +1419,18 @@ function renderCareerEntrenamiento(c) {
         careerStarsHtml(level, CAREER_TRAINING_MAX_LEVEL, 'career-star-lg') +
         '<span class="career-training-level-num">' + level + '/' + CAREER_TRAINING_MAX_LEVEL + '</span>' +
       '</div>' +
+      (level === 0 ? '<p class="dim small">Todavía no has construido el centro de entrenamiento -- tus jugadores progresan a su ritmo natural, sin ayuda.</p>' : '') +
       '<p class="dim small">Cuanto más alto el nivel, más tienden a mejorar tus jugadores cada temporada (y menos a bajar los veteranos) -- afecta a todo el mundo, no solo a tu plantilla.</p>' +
       (c.trainingMessage ? '<p class="dim small">' + escapeHtml(c.trainingMessage) + '</p>' : '') +
       (maxed
         ? '<p class="dim small">Centro al máximo.</p>'
-        : '<button class="btn btn-primary btn-block mt" ' + (c.budget < nextCost ? 'disabled' : '') + ' onclick="actionUpgradeTrainingCenter()">POTENCIAR -- nivel ' + (level + 1) + ' (' + nextCost + ' M€)</button>') +
+        : '<button class="btn btn-primary btn-block mt" ' + (c.budget < nextCost ? 'disabled' : '') + ' onclick="actionUpgradeTrainingCenter()">' + (level === 0 ? 'CONSTRUIR' : 'POTENCIAR -- nivel ' + (level + 1)) + ' (' + nextCost + ' M€)</button>') +
     '</div>';
   var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
   var rowsHtml = all.map(function (p) {
     var currentScore = careerPlayerScore(p);
     var lastDelta = (c.lastPlayerProgressionDelta || {})[p.id];
     var potential = careerPlayerPotentialRange(c, p);
-    var atCap = currentScore >= CAREER_QUICK_BOOST_CAP;
-    var cost = careerQuickBoostCost(p);
-    var canAfford = c.budget >= cost && !atCap;
     return '<div class="career-offer-card">' +
       '<div class="career-offer-head">' + avatarHtml(p) +
         '<span class="career-offer-name">' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + '</span>' +
@@ -1443,9 +1442,6 @@ function renderCareerEntrenamiento(c) {
       '<div class="career-offer-prices">' +
         '<span class="dim">Progresión temporada pasada: ' + careerDeltaHtml(lastDelta) + '</span>' +
         '<span class="dim">Potencial próxima temporada: <strong>' + (potential.low === potential.high ? potential.low : (potential.low + '-' + potential.high)) + '</strong></span>' +
-      '</div>' +
-      '<div class="btn-row">' +
-        '<button class="btn btn-tiny" ' + (canAfford ? '' : 'disabled') + ' title="' + (atCap ? 'Ya está al máximo' : 'Sube +1 de media al momento') + '" onclick="actionQuickBoostPlayer(\'' + p.id + '\')">Subida rápida +1 (' + cost + ' M€)</button>' +
       '</div>' +
     '</div>';
   }).join('');
@@ -3039,6 +3035,7 @@ function renderCareerGestion(c) {
       '<button class="btn btn-tiny" onclick="actionSaveCareerNow()">Guardar</button>' +
       '<button class="btn btn-tiny" onclick="actionGoCareerMode()">Cambiar partida</button>' +
     '</div>' +
+    '<button class="btn btn-outline btn-block mt" onclick="if(confirmLeaveMode())actionGoOtrosModos()">Volver</button>' +
   '</div>';
 }
 
@@ -3060,11 +3057,14 @@ function renderCareerMode() {
   else if (c.tab === 'estadisticas') bodyHtml = renderCareerEstadisticas(c);
   else if (c.tab === 'gestion') bodyHtml = renderCareerGestion(c);
   else bodyHtml = renderCareerEquipo(c);
+  // "Volver" ya no vive aquí (fijo en todas las pestañas) -- ahora está
+  // SOLO en "Gestión de partida" (renderCareerGestion), a petición
+  // explícita ("volver ahí está mal, en modo carrera, déjalo en gestión
+  // de partida solo").
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
-        '<button class="btn btn-outline btn-block" onclick="actionGoOtrosModos()">Volver</button>' +
-        '<h2 class="panel-title mt mb0">Modo Carrera</h2>' +
+        '<h2 class="panel-title mb0">Modo Carrera</h2>' +
       '</div>' +
       '<div class="career-tabs-scroll">' + tabsHtml + '</div>' +
       bodyHtml +
