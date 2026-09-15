@@ -61,11 +61,13 @@
      diferencia de Liga que es a una vuelta -- 16 equipos dan 30
      jornadas, 20 dan 38), con rivales de nombre real sacados de las
      mismas listas que usa FutDraft/Liga. Dos divisiones (c.division, 1
-     o 2): Segunda (16
-     equipos: tú + 10 jefes + 5 "malos") al empezar la carrera, Primera
-     (20 equipos: tú + 19, todos de nivel jefe) si asciendes -- ver
-     careerInitialDivisionTeams/careerBuildLeague/careerComputePromotionRelegation
-     más abajo.
+     o 2): Segunda (16 equipos: tú + 10 jefes + 5 "normales") al empezar
+     la carrera, con Primera "en la sombra" de 20 (17 jefes + 3
+     "normales", sin ti todavía) -- si asciendes, ocupas un hueco ahí y
+     quedan 19 reales (16 jefes + 3 normales). Los mismos 35 rivales de
+     toda la carrera, nunca se sustituyen por otros, solo se mueven entre
+     las dos listas por ascenso/descenso. Ver careerInitialDivisionTeams/
+     careerBuildLeague/careerComputePromotionRelegation más abajo.
    - Liga: la clasificación de esa misma liga (mismas funciones genéricas
      que renderLigaTable: ligaEmptyStanding/ligaApplyResult/ligaSortedTable/
      ligaFormHtml) + insignia de posición propia (careerLigaPosBadgeHtml:
@@ -164,12 +166,28 @@ var CAREER_MODE_BENCH_IDS = ['r270', 'r271', 'r272', 'r66', 'r57'];
 var CAREER_MODE_DEFAULT_FORMATION = '433';
 // Dos divisiones, a petición explícita: empiezas en Segunda (16 equipos:
 // tú + 10 jefes + 5 "malos" de RIVAL_TEAM_NAMES) y, si asciendes, juegas
-// en Primera (20 equipos: tú + 19, todos de nivel jefe). c.division (1 o
-// 2) y c.divisionTeams ({1:[...], 2:[...]}, los nombres reales de CADA
-// división que NO eres tú, siempre) viven en el estado -- ver
-// careerInitialDivisionTeams/careerBuildLeague/careerComputePromotionRelegation.
+// en Primera (20 equipos: tú + 16 jefes + 3 "normales" -- 17 jefes + 3
+// normales mientras es la división "en la sombra", sin ti). 36 equipos en
+// total entre las dos divisiones (35 rivales + tú), SIEMPRE los mismos
+// 35 durante toda la partida -- nunca se regeneran de una temporada a
+// otra, solo se mueven entre divisiones por ascenso/descenso (a
+// petición explícita: "esos rivales no van cambiando cada temporada por
+// otros... cada 35 rivales son únicos en cada partida"). c.division (1
+// o 2) y c.divisionTeams ({1:[...], 2:[...]}, los nombres reales de
+// CADA división que NO eres tú, siempre) viven en el estado -- ver
+// careerInitialDivisionTeams (arma el reparto una única vez, al crear la
+// partida)/careerBuildLeague/careerComputePromotionRelegation (mueve
+// nombres entre las dos listas, nunca los sustituye por otros).
 var CAREER_DIVISION1_TEAM_COUNT = 20;
 var CAREER_DIVISION2_TEAM_COUNT = 16;
+// 17+3=20: la Primera inicial es la división "en la sombra" (arrancas en
+// Segunda, ver careerInitialDivisionTeams), así que necesita sus 20
+// reales completos -- en cuanto asciendas y ocupes un hueco, quedan 19
+// reales ahí (16 jefes + 3 normales) de forma natural, sin tocar estas
+// constantes: careerApplyPromotionRelegation ya lo resuelve solo (ver
+// ese comentario para el porqué del 19/20 según si juegas ahí o no).
+var CAREER_DIVISION1_BOSS_COUNT = 17;
+var CAREER_DIVISION1_NORMAL_COUNT = 3;
 var CAREER_DIVISION2_BOSS_COUNT = 10;
 var CAREER_DIVISION2_NORMAL_COUNT = 5;
 // Cuántos ascienden/descienden cada temporada -- los 2 primeros de
@@ -353,16 +371,21 @@ function careerPickNamesFromPool(pool, count, used) {
 }
 
 // Reparto inicial de las dos divisiones al empezar una carrera nueva, a
-// petición explícita: Segunda con 16 equipos (tú + 10 jefes + 5 "malos"
-// de RIVAL_TEAM_NAMES), Primera con 20 (tú + 19, todos de nivel jefe) --
-// tú arrancas en Segunda (careerFreshState), así que de entrada Primera
-// es la división "en la sombra" y necesita a sus 20 completos, mientras
-// que Segunda solo necesita 15 nombres reales (el hueco 16 eres tú).
+// petición explícita: Segunda con 16 equipos (tú + 10 jefes + 5
+// "normales"), Primera con 20 (17 jefes + 3 "normales", sin ti -- tú
+// arrancas en Segunda, careerFreshState, así que de entrada Primera es
+// la división "en la sombra" y necesita sus 20 rivales completos).
+// Segunda solo necesita 15 nombres reales (el hueco 16 eres tú). Se
+// llama UNA sola vez por partida nueva -- de ahí en adelante los mismos
+// 35 nombres solo se mueven entre las dos listas por ascenso/descenso
+// (careerApplyPromotionRelegation), nunca se vuelve a sortear nada
+// nuevo.
 function careerInitialDivisionTeams() {
   var used = {};
   var div2 = careerPickNamesFromPool(RIVAL_TEAM_BOSSES, CAREER_DIVISION2_BOSS_COUNT, used)
     .concat(careerPickNamesFromPool(RIVAL_TEAM_NAMES, CAREER_DIVISION2_NORMAL_COUNT, used));
-  var div1 = careerPickNamesFromPool(RIVAL_TEAM_BOSSES, CAREER_DIVISION1_TEAM_COUNT, used);
+  var div1 = careerPickNamesFromPool(RIVAL_TEAM_BOSSES, CAREER_DIVISION1_BOSS_COUNT, used)
+    .concat(careerPickNamesFromPool(RIVAL_TEAM_NAMES, CAREER_DIVISION1_NORMAL_COUNT, used));
   return { 1: div1, 2: div2 };
 }
 
