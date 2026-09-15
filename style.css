@@ -965,6 +965,59 @@ a { color: var(--accent); }
    para que se lea bien en línea con el resto del texto. */
 .career-growth-arrow { font-weight: 800; }
 
+/* ===== Modal de confirmación al salir (renderConfirmLeaveModal), a
+   petición explícita ("tratamiento tipo tarjeta/insignia... se leería
+   más rápido que texto corrido") -- sustituye al window.confirm() nativo
+   de antes, que no se podía ni tocar de estilo. ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+.modal-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 26px 22px 22px;
+  max-width: 340px;
+  width: 100%;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+.modal-icon { font-size: 2.2rem; margin-bottom: 8px; line-height: 1; }
+
+/* ===== Resumen de temporada (careerSeasonSummaryHtml) -- tarjetas con
+   icono en vez de párrafos sueltos, a petición explícita ("un
+   tratamiento tipo tarjeta/insignia... se leería más rápido que texto
+   corrido"). Reutiliza la misma tipografía Oswald que .stat-tile (menú
+   principal) para el número/texto grande, así queda dentro del mismo
+   lenguaje visual en vez de inventar uno nuevo. ===== */
+.season-summary-badges { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; text-align: left; }
+.season-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+}
+.season-badge-icon { font-size: 1.5rem; line-height: 1; flex-shrink: 0; }
+.season-badge-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.03em; font-weight: 700; }
+.season-badge-text { font-size: 1.05rem; font-family: 'Oswald', sans-serif; font-weight: 600; }
+.season-badge-good { border-left-color: var(--success); }
+.season-badge-good .season-badge-text { color: var(--success); }
+.season-badge-bad { border-left-color: var(--danger); }
+.season-badge-bad .season-badge-text { color: var(--danger); }
+.season-badge-gold { border-left-color: var(--accent-2); }
+.season-badge-gold .season-badge-text { color: var(--accent-2); }
+.season-loan-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+
 /* ===== Tabla de la Liga ===== */
 .liga-table {
   width: 100%;
@@ -1037,6 +1090,16 @@ a { color: var(--accent); }
 .career-liga-table tr.liga-you td { border-bottom-color: var(--accent-2); }
 .career-liga-table tr.liga-you .liga-pos-badge:not(.liga-pos-top):not(.liga-pos-bottom) { color: #06202f; }
 .career-liga-table tr.liga-you .liga-form-draw { color: var(--bg); }
+/* Barra de color en el borde izquierdo de la fila entera (ascenso/
+   descenso), a petición explícita ("se leería más rápido de un
+   vistazo") -- además de la insignia de posición ya coloreada, no en su
+   lugar. El borde se pone en la primera celda (no en el <tr>: los
+   navegadores no pintan border-left/right sobre <tr> de forma fiable en
+   una tabla normal) para que quede pegado al borde real de la fila. */
+.career-liga-table tr.liga-row-zone-top td:first-child { border-left: 4px solid #1b5e20; }
+.career-liga-table tr.liga-row-zone-bottom td:first-child { border-left: 4px solid #c0392b; }
+.career-liga-table tr.liga-you.liga-row-zone-top td:first-child,
+.career-liga-table tr.liga-you.liga-row-zone-bottom td:first-child { border-left-width: 4px; }
 /* Botones de vista (Resumida/Completa/Forma/Calendario): mismo pill que
    el resto de filtros de la app, pero en su propia fila centrada para
    que se lean bien incluso en 4 a la vez en pantallas estrechas. */

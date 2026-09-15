@@ -116,6 +116,7 @@ function render() {
     case 'ligaSummary': html = renderLigaSummary(); break;
     default: html = renderMenu();
   }
+  if (G.confirmLeaveOpen) html += renderConfirmLeaveModal();
   appEl.innerHTML = html;
   if (G.screen === 'map') drawMapConnections();
   var howToEl = document.getElementById('como-jugar');
@@ -410,20 +411,61 @@ function coleccionFilterChange(filterType, value) {
   G.coleccionFilter[filterType] = value;
   render();
 }
-// Confirmación genérica antes de salir de un modo con progreso en
-// curso, a petición explícita ("el volver siempre con confirmación en
-// cualquier modo... preguntar si has guardado") -- ningún modo aparte de
-// Carrera tiene guardado real, así que salir sin más SÍ pierde lo que
-// llevaras, de ahí el aviso. Solo se usa en botones que de verdad
-// abandonan el modo (no en "Cancelar" de un diálogo suelto, que no
-// pierde nada). Devuelve true/false; si window.confirm no existe (fuera
-// de navegador), deja pasar sin preguntar.
-function confirmLeaveMode() {
-  if (typeof window === 'undefined' || typeof window.confirm !== 'function') return true;
-  return window.confirm('¿Seguro que quieres salir? Si no has guardado, perderás el progreso.');
+// Confirmación genérica antes de salir de un modo con progreso en curso,
+// a petición explícita ("el volver siempre con confirmación en
+// cualquier modo... preguntar si has guardado"). Antes era un
+// window.confirm() nativo -- imposible de dar estilo, así que ahora es
+// un modal propio (renderConfirmLeaveModal, pintado encima de lo que
+// sea que haya en pantalla, ver el final de render()), a petición
+// explícita ("tratamiento tipo tarjeta/insignia... se leería más rápido
+// que texto corrido"). Como el modal es asíncrono (hay que esperar a que
+// el usuario pulse un botón), requestConfirmLeave no puede devolver
+// true/false al momento como el confirm() de antes -- en vez de eso
+// guarda el NOMBRE de la función a llamar si confirman (G.pendingLeaveFn,
+// buscada luego en window[...]) y solo pinta el modal. Solo se usa en
+// botones que de verdad abandonan el modo (no en "Cancelar" de un
+// diálogo suelto, que no pierde nada).
+function requestConfirmLeave(fnName) {
+  G.pendingLeaveFn = fnName;
+  G.confirmLeaveOpen = true;
+  render();
 }
+function actionConfirmLeaveYes() {
+  var fn = G.pendingLeaveFn;
+  G.pendingLeaveFn = null;
+  G.confirmLeaveOpen = false;
+  if (fn && typeof window[fn] === 'function') window[fn]();
+  else render();
+}
+function actionConfirmLeaveNo() {
+  G.pendingLeaveFn = null;
+  G.confirmLeaveOpen = false;
+  render();
+}
+function renderConfirmLeaveModal() {
+  return (
+    '<div class="modal-overlay">' +
+      '<div class="modal-card center-text">' +
+        '<div class="modal-icon">🚪</div>' +
+        '<h3 style="margin-bottom:4px">¿Seguro que quieres salir?</h3>' +
+        '<p class="dim small">Si no has guardado, perderás el progreso.</p>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-outline" onclick="actionConfirmLeaveNo()">Cancelar</button>' +
+          '<button class="btn btn-danger" onclick="actionConfirmLeaveYes()">Salir sin guardar</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>'
+  );
+}
+// actionBackToMenu es el punto de entrada de ~18 botones "Volver" por
+// toda la app -- se queda con el mismo nombre para no tocar ninguno de
+// esos onclick, solo que ahora PIDE confirmación en vez de navegar al
+// momento; doBackToMenuNow es la navegación real, llamada por
+// actionConfirmLeaveYes tras confirmar.
 function actionBackToMenu() {
-  if (!confirmLeaveMode()) return;
+  requestConfirmLeave('doBackToMenuNow');
+}
+function doBackToMenuNow() {
   G.screen = 'menu';
   render();
 }

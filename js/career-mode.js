@@ -2139,18 +2139,31 @@ function renderCareerCalendario(c) {
   );
 }
 
-// Insignia de posición para la tabla de Modo Carrera: verde para la zona
-// de ASCENSO (los CAREER_PROMOTION_SPOTS primeros de Segunda) o rojo
-// para la de DESCENSO (los mismos últimos de Primera), a petición
-// explícita ("los 2 primeros ascienden, tienen que estar en verde, como
-// en la foto") -- distinta de la genérica ligaPosBadgeHtml (Champions/
-// Europa/descenso de la Liga independiente de 18 equipos), aunque
-// reutiliza las mismas clases CSS (liga-pos-top/liga-pos-bottom).
+// Zona de la tabla de Modo Carrera: verde para ASCENSO (los
+// CAREER_PROMOTION_SPOTS primeros de Segunda) o rojo para DESCENSO (los
+// mismos últimos de Primera), a petición explícita ("los 2 primeros
+// ascienden, tienen que estar en verde, como en la foto"). Se usa TANTO
+// en la insignia de posición como en el borde izquierdo de la fila entera
+// (careerLigaZoneRowClass), a petición explícita ("una barra de color en
+// el borde izquierdo... se leería más rápido de un vistazo") -- la
+// insignia se queda porque ya estaba y sigue aportando (el número en sí
+// coloreado), la barra es solo un refuerzo visual más rápido de leer.
+function careerLigaZoneClass(rank, totalTeams, division) {
+  if (division === 2 && rank <= CAREER_PROMOTION_SPOTS) return 'liga-pos-top';
+  if (division === 1 && rank > totalTeams - CAREER_PROMOTION_SPOTS) return 'liga-pos-bottom';
+  return '';
+}
 function careerLigaPosBadgeHtml(rank, totalTeams, division) {
-  var zoneCls = '';
-  if (division === 2 && rank <= CAREER_PROMOTION_SPOTS) zoneCls = 'liga-pos-top';
-  else if (division === 1 && rank > totalTeams - CAREER_PROMOTION_SPOTS) zoneCls = 'liga-pos-bottom';
+  var zoneCls = careerLigaZoneClass(rank, totalTeams, division);
   return '<span class="liga-pos-badge' + (zoneCls ? ' ' + zoneCls : '') + '">' + rank + '</span>';
+}
+// Misma zona que arriba, pero como clase para la fila entera (borde
+// izquierdo de color) en vez de la insignia -- distinto prefijo
+// (liga-row-zone-*) para no arrastrar el fondo/color de texto que trae
+// liga-pos-top/bottom en la insignia, aquí solo hace falta el borde.
+function careerLigaZoneRowClass(rank, totalTeams, division) {
+  var zoneCls = careerLigaZoneClass(rank, totalTeams, division);
+  return zoneCls === 'liga-pos-top' ? 'liga-row-zone-top' : (zoneCls === 'liga-pos-bottom' ? 'liga-row-zone-bottom' : '');
 }
 
 // Competiciones agrupa Liga (con Calendario dentro, como una vista más)
@@ -2191,20 +2204,6 @@ var CAREER_LIGA_VIEWS = [
   { id: 'forma', name: 'Forma' },
   { id: 'calendario', name: 'Calendario' }
 ];
-// Insignia de posición para la tabla de Modo Carrera: verde para la zona
-// de ASCENSO (los CAREER_PROMOTION_SPOTS primeros de Segunda) o rojo
-// para la de DESCENSO (los mismos últimos de Primera), a petición
-// explícita ("los 2 primeros ascienden, tienen que estar en verde, como
-// en la foto") -- distinta de la genérica ligaPosBadgeHtml (Champions/
-// Europa/descenso de la Liga independiente de 18 equipos), aunque
-// reutiliza las mismas clases CSS (liga-pos-top/liga-pos-bottom).
-function careerLigaPosBadgeHtml(rank, totalTeams, division) {
-  var zoneCls = '';
-  if (division === 2 && rank <= CAREER_PROMOTION_SPOTS) zoneCls = 'liga-pos-top';
-  else if (division === 1 && rank > totalTeams - CAREER_PROMOTION_SPOTS) zoneCls = 'liga-pos-bottom';
-  return '<span class="liga-pos-badge' + (zoneCls ? ' ' + zoneCls : '') + '">' + rank + '</span>';
-}
-
 // Liga: tabla de clasificación en 3 "vistas" con menos columnas cada una
 // (en vez de una sola tabla de 12 columnas con scroll horizontal, a
 // petición explícita, "sin necesidad de scrollear... con los mismos 3
@@ -2262,7 +2261,8 @@ function renderCareerLigaTable(c, view) {
     var isYou = t.idx === 0;
     var label = isYou ? 'Tú' : league.teamNames[t.idx];
     var shield = isYou ? getPlayerShieldPath() : teamShieldPath(league.teamNames[t.idx]);
-    return '<tr class="' + (isYou ? 'liga-you' : '') + '">' +
+    var rowCls = ((isYou ? 'liga-you' : '') + ' ' + careerLigaZoneRowClass(pos + 1, sorted.length, c.division)).trim();
+    return '<tr class="' + rowCls + '">' +
       '<td>' + careerLigaPosBadgeHtml(pos + 1, sorted.length, c.division) + '</td>' +
       '<td><img class="liga-row-shield" src="' + escapeHtml(shield) + '" alt=""></td>' +
       '<td>' + escapeHtml(label) + '</td>' +
@@ -2973,22 +2973,31 @@ function renderCareerCopa(c) {
 // actionStartNewCareerSeason (el botón de abajo) es quien de verdad
 // reconstruye la liga/copa y devuelve los cedidos, así que este resumen
 // sigue viéndose exactamente igual hasta que se pulsa ese botón.
+// Tarjeta con icono en vez de un párrafo suelto (careerSeasonBadgeHtml),
+// a petición explícita ("un tratamiento tipo tarjeta/insignia... se
+// leería más rápido que texto corrido").
+function careerSeasonBadgeHtml(icon, label, text, cls) {
+  return '<div class="season-badge' + (cls ? ' ' + cls : '') + '">' +
+    '<div class="season-badge-icon">' + icon + '</div>' +
+    '<div><div class="season-badge-label">' + escapeHtml(label) + '</div><div class="season-badge-text">' + text + '</div></div>' +
+  '</div>';
+}
 function careerSeasonSummaryHtml(c) {
   var position = careerFinalLeaguePosition(c);
   var finish = c.lastLeagueFinish;
   var bonus = (finish && finish.position === position) ? finish.bonus : (position ? careerLeaguePositionBonus(position) : null);
-  var positionText = position ? (position + 'º de ' + c.league.teamNames.length) : 'sin datos';
+  var positionText = position ? (position + 'º de ' + c.league.teamNames.length) : 'Sin datos';
   var cup = c.cup;
   var champion = careerCupChampion(cup);
-  var cupText;
+  var cupBadge;
   if (c.division !== 1) {
-    cupText = 'No disponible (jugada en Segunda División)';
+    cupBadge = careerSeasonBadgeHtml('🔒', 'Copa del Rey', 'No disponible (Segunda División)', '');
   } else if (champion && champion.isPlayer) {
-    cupText = '🏆 Campeón de la Copa del Rey';
+    cupBadge = careerSeasonBadgeHtml('🏆', 'Copa del Rey', 'Campeón', 'season-badge-good');
   } else if (cup.eliminated) {
-    cupText = 'Eliminado en ' + roundNameForIndex(cup.eliminatedRound, Math.log2(cup.size));
+    cupBadge = careerSeasonBadgeHtml('❌', 'Copa del Rey', 'Eliminado en ' + roundNameForIndex(cup.eliminatedRound, Math.log2(cup.size)), 'season-badge-bad');
   } else {
-    cupText = 'Sin completar';
+    cupBadge = careerSeasonBadgeHtml('⏳', 'Copa del Rey', 'Sin completar', '');
   }
   var loanedIds = c.loanedIds || [];
   var allPlayers = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
@@ -3001,26 +3010,29 @@ function careerSeasonSummaryHtml(c) {
   // aquí solo se enseña, la aplicación real (mover nombres, cambiar
   // c.division) pasa al pulsar "Empezar temporada" (actionStartNewCareerSeason).
   var pr = c.lastPromotionResult;
-  var promotionText = '';
+  var promotionBadge = '';
   if (pr) {
-    if (pr.youPromoted) {
-      promotionText = '🔼 ¡Ascenso a Primera División!';
-    } else if (pr.youRelegated) {
-      promotionText = '🔽 Descenso a Segunda División.';
-    } else {
-      promotionText = 'Sigues en ' + careerDivisionName(c.division) + '.';
-    }
-    if (pr.promotedNames.length) promotionText += ' Ascienden: ' + pr.promotedNames.map(escapeHtml).join(', ') + '.';
-    if (pr.relegatedNames.length) promotionText += ' Descienden: ' + pr.relegatedNames.map(escapeHtml).join(', ') + '.';
+    var moveText;
+    if (pr.youPromoted) moveText = careerSeasonBadgeHtml('⬆️', 'Ascenso', 'A Primera División', 'season-badge-good');
+    else if (pr.youRelegated) moveText = careerSeasonBadgeHtml('⬇️', 'Descenso', 'A Segunda División', 'season-badge-bad');
+    else moveText = careerSeasonBadgeHtml('➡️', 'Sigues en', escapeHtml(careerDivisionName(c.division)), '');
+    var movementsText = '';
+    if (pr.promotedNames.length) movementsText += '<p class="dim small">Ascienden: ' + pr.promotedNames.map(escapeHtml).join(', ') + '.</p>';
+    if (pr.relegatedNames.length) movementsText += '<p class="dim small">Descienden: ' + pr.relegatedNames.map(escapeHtml).join(', ') + '.</p>';
+    promotionBadge = moveText + movementsText;
   }
   return '<div class="panel center-text">' +
     '<h3 style="margin-bottom:4px">Resumen de la temporada ' + c.season + '</h3>' +
-    '<p class="dim small">' + escapeHtml(careerDivisionName(c.division)) + ' -- Posición: <strong style="color:var(--accent-2)">' + positionText + '</strong>' + (bonus ? ' -- <strong style="color:var(--accent-2)">+' + bonus + ' M€</strong> de premio' : '') + '</p>' +
-    (promotionText ? '<p class="dim small">' + promotionText + '</p>' : '') +
-    '<p class="dim small">Copa del Rey: <strong>' + cupText + '</strong></p>' +
-    (loanedNames.length
-      ? '<p class="dim small">Fin de cesión, vuelven a su club: <strong>' + loanedNames.map(escapeHtml).join(', ') + '</strong></p>'
-      : '<p class="dim small">Sin cedidos que devolver.</p>') +
+    '<p class="dim small">' + escapeHtml(careerDivisionName(c.division)) + '</p>' +
+    '<div class="season-summary-badges">' +
+      careerSeasonBadgeHtml('📊', 'Posición final', positionText, '') +
+      (bonus ? careerSeasonBadgeHtml('💰', 'Premio de Liga', '+' + bonus + ' M€', 'season-badge-gold') : '') +
+      promotionBadge +
+      cupBadge +
+      (loanedNames.length
+        ? careerSeasonBadgeHtml('🔁', 'Fin de cesión, vuelven a su club', loanedNames.map(escapeHtml).join(', '), '')
+        : '') +
+    '</div>' +
   '</div>';
 }
 
@@ -3064,8 +3076,7 @@ function renderCareerJornada(c) {
             '<button class="btn btn-outline" onclick="actionSkipCareerMatchday()">Saltar</button>' +
           '</div>') +
     '</div>' +
-    (seasonOver ? careerSeasonSummaryHtml(c) : '') +
-    resultHtml
+    (seasonOver ? careerSeasonSummaryHtml(c) : resultHtml)
   );
 }
 
@@ -3109,7 +3120,7 @@ function renderCareerGestion(c) {
       '<button class="btn btn-tiny" onclick="actionSaveCareerNow()">Guardar</button>' +
       '<button class="btn btn-tiny" onclick="actionGoCareerMode()">Cambiar partida</button>' +
     '</div>' +
-    '<button class="btn btn-outline btn-block mt" onclick="if(confirmLeaveMode())actionGoOtrosModos()">Volver</button>' +
+    '<button class="btn btn-outline btn-block mt" onclick="requestConfirmLeave(\'actionGoOtrosModos\')">Volver</button>' +
   '</div>';
 }
 
