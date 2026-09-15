@@ -1109,17 +1109,15 @@ window.actionCareerMarketPageStep = function (delta) {
   render();
 };
 
-// Media de TODA la plantilla (titulares + banquillo, sin bonus de
-// capitán ni de formación -- eso es la puntuación TÁCTICA de
-// futDraftScoreBreakdown, esto es "qué nivel de club eres" en general),
-// usada para decidir qué tan dispuesto está un jugador a ficharte (ver
-// careerNegotiationAccepts): cuanto más por encima de tu media esté el
-// suyo, menos ganas tiene de bajar de nivel.
+// La misma "Puntuación de equipo" que se ve en Mi equipo (careerScoreBreakdown,
+// con capitán/sinergia/fuera de posición incluidos), reutilizada aquí como
+// "qué nivel de club eres" para Mercado/negociación -- antes esta función
+// calculaba una media plana aparte (titulares + banquillo, sin bonus), que
+// daba un número DISTINTO al de Mi equipo y confundía sobre qué media
+// manda para fichar ("mi media de equipo es 75... debería fichar hasta
+// 80", a petición explícita: un solo número, no dos que no cuadran).
 function careerTeamAvgScore(c) {
-  var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
-  if (!all.length) return 0;
-  var sum = all.reduce(function (s, p) { return s + careerPlayerScore(p); }, 0);
-  return sum / all.length;
+  return careerScoreBreakdown(c.lineup, c.captainId).total;
 }
 // Un jugador se considera "puede que quiera unirse" si no está
 // demasiado por encima de tu nivel de club (gap corto -> más probable
@@ -1543,7 +1541,7 @@ function renderCareerMercado(c) {
     incomingOffersHtml +
     '<div class="panel">' +
       '<h3 style="margin-bottom:4px">Mercado</h3>' +
-      '<p class="dim small">Presupuesto disponible: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong>. Con tu media de plantilla (' + Math.round(teamAvg) + ') puedes fichar hasta <strong style="color:var(--accent-2)">' + (signableCap - 1) + '</strong> de media -- los mejores todavía no están a la venta, pero el techo sube según mejora tu equipo. Fichar (en propiedad o cedido) es negociar: ofreces dinero y el club puede aceptar o rechazar. Cedidos: ' + careerLoanCount(c) + ' / ' + CAREER_MAX_LOANS_IN + '.</p>' +
+      '<p class="dim small">Presupuesto disponible: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong>. Con tu puntuación de equipo (' + Math.round(teamAvg) + ', la misma que en Mi equipo) puedes fichar hasta <strong style="color:var(--accent-2)">' + (signableCap - 1) + '</strong> de media -- los mejores todavía no están a la venta, pero el techo sube según mejora tu equipo. Fichar (en propiedad o cedido) es negociar: ofreces dinero y el club puede aceptar o rechazar. Cedidos: ' + careerLoanCount(c) + ' / ' + CAREER_MAX_LOANS_IN + '.</p>' +
       '<p class="dim small">' + available.length + ' jugador' + (available.length === 1 ? '' : 'es') + ' con este filtro.</p>' +
       (squadFull ? '<p class="dim small" style="color:var(--danger)">Plantilla al máximo (' + CAREER_MAX_SQUAD_SIZE + '). Vende o cede a alguien antes de fichar.</p>' : '') +
       (loansFull ? '<p class="dim small" style="color:var(--danger)">Ya tienes ' + CAREER_MAX_LOANS_IN + ' cesiones, el máximo -- devuelve a alguna antes de fichar cedido a otro.</p>' : '') +
