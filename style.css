@@ -994,6 +994,27 @@ a { color: var(--accent); }
    que se lean bien incluso en 4 a la vez en pantallas estrechas. */
 .career-liga-view-row { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
 
+/* Fila de pestañas de Modo Carrera: ÚNICA línea que se desliza en
+   horizontal (arrastrando con el dedo en móvil, con la rueda/trackpad en
+   escritorio) en vez de partirse en dos líneas cuando no caben todas, a
+   petición explícita ("tanto en móvil como en web, tiene que ser una
+   única fila que se pueda ir deslizando... y pinchar tú en uno de
+   ellos"). flex-shrink:0 en los botones es lo que evita que se encojan
+   o envuelvan texto en vez de desbordar hacia el scroll. */
+.career-tabs-scroll {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  padding: 6px 4px 10px;
+  margin: 0 -4px;
+}
+.career-tabs-scroll::-webkit-scrollbar { height: 4px; }
+.career-tabs-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+.career-tabs-scroll .btn { flex-shrink: 0; white-space: nowrap; }
+
 /* ===== Choice cards (training / recruit) ===== */
 
 .choice-card {

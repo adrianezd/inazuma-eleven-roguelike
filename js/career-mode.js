@@ -144,6 +144,10 @@
 // Resumida/Completa/Forma) y Liga+Copa del Rey viven dentro de una única
 // pestaña "Competiciones" con su propia sub-navegación (c.competicionesTab,
 // ver renderCareerCompeticiones), a petición explícita.
+// "Guardar"/"Cambiar partida" vivían siempre visibles en la cabecera --
+// ahora son su propia pestaña "Gestión de partida", a petición explícita
+// ("guardar y cambiar partida, pertenecen a gestión de partida, un
+// nuevo modo también a la misma altura que liga, mi plantilla...").
 var CAREER_TABS = [
   { id: 'equipo', name: 'Mi equipo' },
   { id: 'plantilla', name: 'Gestionar plantilla' },
@@ -151,7 +155,8 @@ var CAREER_TABS = [
   { id: 'mercado', name: 'Mercado' },
   { id: 'competiciones', name: 'Competiciones' },
   { id: 'jornada', name: 'Jornada' },
-  { id: 'estadisticas', name: 'Estadísticas' }
+  { id: 'estadisticas', name: 'Estadísticas' },
+  { id: 'gestion', name: 'Gestión de partida' }
 ];
 
 // 11 titulares + 5 suplentes elegidos por el usuario. Larry Pogue (r43,
@@ -305,7 +310,10 @@ var CAREER_TRAINING_MAX_LEVEL = 10;
 var CAREER_TRAINING_ANCHOR_PER_LEVEL = 2;
 var CAREER_TRAINING_RATE_PER_LEVEL = 0.03;
 var CAREER_TRAINING_VARIANCE_REDUCTION_PER_LEVEL = 0.06;
-var CAREER_TRAINING_LEVEL_COSTS = [0.3, 0.5, 0.8, 1.2, 1.8, 2.5, 3.5, 5, 7];
+// ×1.5 sobre los de antes (0.3/0.5/0.8/1.2/1.8/2.5/3.5/5/7), a petición
+// explícita ("haz que las mejoras del centro valgan más dinero, 1.5 de
+// lo que vale ahora mismo").
+var CAREER_TRAINING_LEVEL_COSTS = [0.45, 0.75, 1.2, 1.8, 2.7, 3.75, 5.25, 7.5, 10.5];
 function careerTrainingEffectiveParams(level) {
   var lvl = level || 1;
   return {
@@ -321,6 +329,23 @@ function careerExpectedProgressionDelta(c, p) {
   var params = careerTrainingEffectiveParams(c.trainingLevel);
   var current = careerPlayerScore(p);
   return Math.round((params.anchor - current) * params.rate * 2) / 2;
+}
+// "Potencial" de la pestaña Entrenamiento: un rango (bajo-alto), no un
+// único número, a petición explícita ("puede ser cualquiera de los 3
+// valores al final... añade algo de aleatoriedad ahí"). El centro es la
+// media esperada de arriba (careerExpectedProgressionDelta, la parte
+// determinista); los extremos son ± el ruido real que usa
+// careerProgressAllPlayers (params.variance), así que el rango mostrado
+// SÍ es el rango real en el que puede caer la progresión de la próxima
+// temporada, no un adorno inventado aparte.
+function careerPlayerPotentialRange(c, p) {
+  var params = careerTrainingEffectiveParams(c.trainingLevel);
+  var current = careerPlayerScore(p);
+  var expected = current + careerExpectedProgressionDelta(c, p);
+  return {
+    low: clamp(Math.round(expected - params.variance), 30, 99),
+    high: clamp(Math.round(expected + params.variance), 30, 99)
+  };
 }
 function careerProgressAllPlayers(c) {
   c.playerProgression = c.playerProgression || {};
@@ -1207,7 +1232,7 @@ function renderCareerEntrenamiento(c) {
   var rowsHtml = all.map(function (p) {
     var currentScore = careerPlayerScore(p);
     var lastDelta = (c.lastPlayerProgressionDelta || {})[p.id];
-    var expectedScore = clamp(currentScore + careerExpectedProgressionDelta(c, p), 30, 99);
+    var potential = careerPlayerPotentialRange(c, p);
     var atCap = currentScore >= CAREER_QUICK_BOOST_CAP;
     var cost = careerQuickBoostCost(p);
     var canAfford = c.budget >= cost && !atCap;
@@ -1219,7 +1244,7 @@ function renderCareerEntrenamiento(c) {
       '<div class="career-training-valoracion">' + careerPlayerStarRatingHtml(currentScore) + '<span class="dim small">' + Math.round(currentScore) + '</span></div>' +
       '<div class="career-offer-prices">' +
         '<span class="dim">Progresión temporada pasada: ' + careerDeltaHtml(lastDelta) + '</span>' +
-        '<span class="dim">Media esperada próxima temporada: <strong>' + Math.round(expectedScore) + '</strong></span>' +
+        '<span class="dim">Potencial próxima temporada: <strong>' + (potential.low === potential.high ? potential.low : (potential.low + '-' + potential.high)) + '</strong></span>' +
       '</div>' +
       '<div class="btn-row">' +
         '<button class="btn btn-tiny" ' + (canAfford ? '' : 'disabled') + ' title="' + (atCap ? 'Ya está al máximo' : 'Sube +1 de media al momento') + '" onclick="actionQuickBoostPlayer(\'' + p.id + '\')">Subida rápida +1 (' + cost + ' M€)</button>' +
@@ -2777,8 +2802,29 @@ function renderCareerEstadisticas(c) {
   );
 }
 
+// "Gestión de partida": guardado manual + cambiar de hueco, antes fijo
+// en la cabecera de toda la pantalla, ahora su propia pestaña (ver
+// CAREER_TABS) -- el resumen de temporada/división/presupuesto se
+// repite aquí porque este es ahora el sitio "administrativo" de la
+// partida, a petición explícita.
+function renderCareerGestion(c) {
+  return '<div class="panel center-text">' +
+    '<h3 style="margin-bottom:4px">Gestión de partida</h3>' +
+    '<p class="dim small">Temporada <strong>' + (c.season || 1) + '</strong> · <strong>' + escapeHtml(careerDivisionName(c.division)) + '</strong> (' + careerDivisionTeamCount(c.division) + ' equipos) · Presupuesto: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong> · Hueco ' + G.careerActiveSlot + '</p>' +
+    (c.saveMessage ? '<p class="dim small">' + escapeHtml(c.saveMessage) + '</p>' : '') +
+    '<div class="btn-row" style="justify-content:center">' +
+      '<button class="btn btn-tiny" onclick="actionSaveCareerNow()">Guardar</button>' +
+      '<button class="btn btn-tiny" onclick="actionGoCareerMode()">Cambiar partida</button>' +
+    '</div>' +
+  '</div>';
+}
+
 function renderCareerMode() {
   var c = G.career;
+  // Fila de pestañas ÚNICA que se desliza en horizontal (career-tabs-scroll)
+  // en vez de partirse en dos líneas cuando no caben todas, a petición
+  // explícita ("tanto en móvil como en web, tiene que ser una única fila
+  // que se pueda ir deslizando... y pinchar tú en uno de ellos").
   var tabsHtml = CAREER_TABS.map(function (t) {
     return '<button class="btn btn-tiny' + (c.tab === t.id ? ' active' : '') + '" onclick="actionSetCareerTab(\'' + t.id + '\')">' + t.name + '</button>';
   }).join('');
@@ -2789,20 +2835,15 @@ function renderCareerMode() {
   else if (c.tab === 'competiciones') bodyHtml = renderCareerCompeticiones(c);
   else if (c.tab === 'jornada') bodyHtml = renderCareerJornada(c);
   else if (c.tab === 'estadisticas') bodyHtml = renderCareerEstadisticas(c);
+  else if (c.tab === 'gestion') bodyHtml = renderCareerGestion(c);
   else bodyHtml = renderCareerEquipo(c);
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionGoOtrosModos()">Volver</button>' +
         '<h2 class="panel-title mt mb0">Modo Carrera</h2>' +
-        '<p class="dim small">Temporada <strong>' + (c.season || 1) + '</strong> · <strong>' + escapeHtml(careerDivisionName(c.division)) + '</strong> (' + careerDivisionTeamCount(c.division) + ' equipos) · Presupuesto: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong> · Hueco ' + G.careerActiveSlot + '</p>' +
-        (c.saveMessage ? '<p class="dim small">' + escapeHtml(c.saveMessage) + '</p>' : '') +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-tiny" onclick="actionSaveCareerNow()">Guardar</button>' +
-          '<button class="btn btn-tiny" onclick="actionGoCareerMode()">Cambiar partida</button>' +
-        '</div>' +
       '</div>' +
-      '<div class="btn-row" style="justify-content:center">' + tabsHtml + '</div>' +
+      '<div class="career-tabs-scroll">' + tabsHtml + '</div>' +
       bodyHtml +
     '</div>'
   );
