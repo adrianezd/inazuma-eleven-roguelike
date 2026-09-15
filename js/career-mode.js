@@ -389,8 +389,8 @@ function careerNewMarketWindow(phase, totalDays) {
 // (ver actionAdvanceCareerMarketDay), así que el número de ofertas
 // VISIBLES a la vez puede ser algo mayor que el máximo diario si se
 // solapan con las del día anterior.
-var CAREER_INCOMING_OFFERS_MIN_PER_DAY = 2;
-var CAREER_INCOMING_OFFERS_MAX_PER_DAY = 4;
+var CAREER_INCOMING_OFFERS_MIN_PER_DAY = 1;
+var CAREER_INCOMING_OFFERS_MAX_PER_DAY = 3;
 var CAREER_INCOMING_OFFER_VARIANCE = 0.2;
 var CAREER_INCOMING_OFFER_DAYS = 2;
 function careerGenerateIncomingOffers(c) {
@@ -1172,18 +1172,24 @@ function careerMarketSignableCap(teamAvg) {
 }
 
 // Decide si el club rival acepta tu oferta: dos factores independientes.
-// 1) Dinero: si ofreces igual o más que su valor de mercado, seguro;
-//    por debajo, la probabilidad cae con el cubo de la proporción (una
-//    oferta muy baja casi nunca cuela, una oferta cercana al valor casi
-//    siempre sí).
+// 1) Dinero: si ofreces igual o más que su valor de mercado, seguro; por
+//    debajo, la probabilidad cae con la proporción elevada a
+//    CAREER_NEGOTIATION_MONEY_EXPONENT -- antes era un cubo (exponente 3),
+//    demasiado blando: un jugador de 14.4M se podía llevar por 11.5M (20%
+//    de descuento, ratio 0.8) más de la mitad de las veces (0.8^3 ≈ 51%),
+//    "un poco falso" a petición explícita. Con exponente 8, ese mismo
+//    0.8 baja a ≈17% -- un descuento pequeño (5%, ratio 0.95) sigue
+//    siendo bastante probable (≈66%), pero uno grande ya es raro de
+//    verdad, no la norma.
 // 2) Prestigio: un jugador bastante mejor que la media de tu plantilla
 //    no quiere bajar de nivel aunque pagues su precio -- a petición
 //    explícita ("si la media del equipo es 70 e intentas fichar a uno
 //    de 81/82, igual no quiere"). Cada punto por encima de tu media
 //    resta un 8% de ganas, con un suelo del 5% (nunca es del todo
 //    imposible, pero muy raro).
+var CAREER_NEGOTIATION_MONEY_EXPONENT = 8;
 function careerNegotiationAccepts(offer, value, playerScore, teamAvgScore) {
-  var moneyFactor = offer >= value ? 1 : Math.pow(offer / value, 3);
+  var moneyFactor = offer >= value ? 1 : Math.pow(offer / value, CAREER_NEGOTIATION_MONEY_EXPONENT);
   var gap = Math.max(0, playerScore - teamAvgScore);
   var prestigeFactor = clamp(1 - gap * 0.08, 0.05, 1);
   return Math.random() < moneyFactor * prestigeFactor;
@@ -1242,11 +1248,22 @@ function careerCounterOfferAccepts(counter, originalAmount) {
   var ratio = counter / originalAmount;
   return Math.random() < clamp(1 - (ratio - 1) * 2, 0.05, 1);
 }
+// Máximo de contraofertas por oferta entrante, a petición explícita
+// ("que yo pueda negociar solo 2 veces... si pido 0.8 y rechazan, y pido
+// 0.7 y rechazan, la oferta finaliza"): tras CAREER_MAX_COUNTER_ATTEMPTS
+// intentos rechazados, la oferta se retira sola de c.incomingOffers (ver
+// actionSendCounterOffer) -- no se puede seguir regateando indefinidamente.
+var CAREER_MAX_COUNTER_ATTEMPTS = 2;
 window.actionStartCounterNegotiation = function (offerId) {
   var c = G.career;
   var offer = (c.incomingOffers || []).find(function (o) { return o.id === offerId; });
   if (!offer) return;
-  c.counterNegotiation = { offerId: offerId, playerId: offer.playerId, counter: offer.amount, lastResult: null };
+  // originalAmount/mode se guardan aparte porque, una vez agotados los
+  // intentos o aceptada la contraoferta, la oferta ya no está en
+  // c.incomingOffers (se quitó de ahí) -- así la pantalla de resultado
+  // final puede seguir mostrando esos datos sin tener que volver a
+  // buscarla.
+  c.counterNegotiation = { offerId: offerId, playerId: offer.playerId, originalAmount: offer.amount, mode: offer.mode, counter: offer.amount, attempts: 0, lastResult: null };
   render();
 };
 window.actionCancelCounterNegotiation = function () {
@@ -1272,7 +1289,13 @@ window.actionSendCounterOffer = function () {
     careerResolveIncomingOffer(c, offer, cn.counter);
     cn.lastResult = 'accepted';
   } else {
-    cn.lastResult = 'rejected';
+    cn.attempts = (cn.attempts || 0) + 1;
+    if (cn.attempts >= CAREER_MAX_COUNTER_ATTEMPTS) {
+      c.incomingOffers = (c.incomingOffers || []).filter(function (o) { return o.id !== offer.id; });
+      cn.lastResult = 'exhausted';
+    } else {
+      cn.lastResult = 'rejected';
+    }
   }
   render();
 };
@@ -1284,7 +1307,10 @@ window.actionStartCareerNegotiation = function (id, mode) {
   if (!p) return;
   mode = mode === 'loan' ? 'loan' : 'buy';
   var asking = careerNegotiationAskingValue(p, mode);
-  c.negotiation = { playerId: id, mode: mode, offer: Math.max(0.1, Math.round(asking * 0.8 * 10) / 10), lastResult: null };
+  // Oferta inicial sugerida al 90% del valor (antes 80%, muy optimista
+  // ahora que el descuento cuesta mucho más de conseguir, ver
+  // careerNegotiationAccepts) -- se puede seguir ajustando a mano.
+  c.negotiation = { playerId: id, mode: mode, offer: Math.max(0.1, Math.round(asking * 0.9 * 10) / 10), lastResult: null };
   render();
 };
 window.actionCancelCareerNegotiation = function () {
@@ -1409,48 +1435,47 @@ window.actionAdvanceCareerMarketDay = function () {
 
 function renderCareerCounterNegotiation(c) {
   var cn = c.counterNegotiation;
-  // Cuando se acepta, careerResolveIncomingOffer ya quitó la oferta de
-  // c.incomingOffers (está resuelta) -- hay que mirar lastResult ANTES de
-  // buscarla ahí, si no el siguiente render la da por perdida y borra
-  // counterNegotiation justo después de aceptar.
-  if (cn.lastResult === 'accepted') {
-    var acceptedPlayer = ROSTER.find(function (x) { return x.id === cn.playerId; });
+  var p = ROSTER.find(function (x) { return x.id === cn.playerId; });
+  if (!p) { c.counterNegotiation = null; return renderCareerMercado(c); }
+  // 'accepted'/'exhausted' ya quitaron la oferta de c.incomingOffers
+  // (careerResolveIncomingOffer, o el propio actionSendCounterOffer al
+  // agotar los intentos) -- se comprueban ANTES de buscarla ahí, o el
+  // siguiente render la daría por perdida y cerraría la pantalla sin
+  // mostrar el resultado final. cn.originalAmount/mode se guardaron
+  // aparte en actionStartCounterNegotiation por lo mismo.
+  if (cn.lastResult === 'accepted' || cn.lastResult === 'exhausted') {
+    var finalMsg = cn.lastResult === 'accepted'
+      ? '<p class="dim small" style="color:var(--accent-2)">¡Trato cerrado! ' + escapeHtml(p.nombre) + ' se va por ' + cn.counter + ' M€.</p>'
+      : '<p class="dim small" style="color:var(--danger)">Sin acuerdo tras ' + CAREER_MAX_COUNTER_ATTEMPTS + ' intentos -- la oferta por ' + escapeHtml(p.nombre) + ' ha terminado.</p>';
     return (
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:4px">Negociar la oferta</h3>' +
-        '<p class="dim small" style="color:var(--accent-2)">¡Trato cerrado! ' + escapeHtml(acceptedPlayer ? acceptedPlayer.nombre : '') + ' se va por ' + cn.counter + ' M€.</p>' +
+      '<div class="panel center-text">' +
+        '<h3 style="margin-bottom:8px">Negociar la oferta por ' + escapeHtml(p.nombre) + '</h3>' +
+        '<div style="display:flex;justify-content:center;margin-bottom:8px">' + careerMediaBadgeHtml(p) + avatarHtml(p) + '</div>' +
+        finalMsg +
         '<button class="btn btn-primary btn-block mt" onclick="actionCancelCounterNegotiation()">Volver al mercado</button>' +
       '</div>'
     );
   }
   var offer = (c.incomingOffers || []).find(function (o) { return o.id === cn.offerId; });
   if (!offer) { c.counterNegotiation = null; return renderCareerMercado(c); }
-  var p = ROSTER.find(function (x) { return x.id === offer.playerId; });
-  if (!p) { c.counterNegotiation = null; c.incomingOffers = c.incomingOffers.filter(function (o) { return o.id !== offer.id; }); return renderCareerMercado(c); }
-  var resultHtml;
-  if (cn.lastResult === 'accepted') {
-    resultHtml =
-      '<p class="dim small" style="color:var(--accent-2)">¡Trato cerrado! ' + escapeHtml(p.nombre) + ' se va por ' + cn.counter + ' M€.</p>' +
-      '<button class="btn btn-primary btn-block mt" onclick="actionCancelCounterNegotiation()">Volver al mercado</button>';
-  } else {
-    resultHtml =
-      (cn.lastResult === 'rejected' ? '<p class="dim small" style="color:var(--danger)">El club no acepta ' + cn.counter + ' M€ por ' + escapeHtml(p.nombre) + '.</p>' : '') +
-      (cn.lastResult === 'plantillaMinima' ? '<p class="dim small" style="color:var(--danger)">No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores en plantilla.</p>' : '') +
-      '<div class="stepper-row">' +
-        '<button class="btn stepper-arrow" onclick="actionAdjustCounterOffer(-0.1)">◀</button>' +
-        '<span class="stepper-value">' + cn.counter + ' M€</span>' +
-        '<button class="btn stepper-arrow" onclick="actionAdjustCounterOffer(0.1)">▶</button>' +
-      '</div>' +
-      '<div class="btn-row" style="justify-content:center">' +
-        '<button class="btn btn-primary" onclick="actionSendCounterOffer()">Enviar contraoferta</button>' +
-        '<button class="btn btn-outline" onclick="actionCancelCounterNegotiation()">Cancelar</button>' +
-      '</div>';
-  }
+  var attemptsLeft = CAREER_MAX_COUNTER_ATTEMPTS - (cn.attempts || 0);
+  var resultHtml =
+    (cn.lastResult === 'rejected' ? '<p class="dim small" style="color:var(--danger)">El club no acepta ' + cn.counter + ' M€ por ' + escapeHtml(p.nombre) + ' -- te queda ' + attemptsLeft + ' intento' + (attemptsLeft === 1 ? '' : 's') + '.</p>' : '') +
+    (cn.lastResult === 'plantillaMinima' ? '<p class="dim small" style="color:var(--danger)">No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores en plantilla.</p>' : '') +
+    '<div class="stepper-row">' +
+      '<button class="btn stepper-arrow" onclick="actionAdjustCounterOffer(-0.1)">◀</button>' +
+      '<span class="stepper-value">' + cn.counter + ' M€</span>' +
+      '<button class="btn stepper-arrow" onclick="actionAdjustCounterOffer(0.1)">▶</button>' +
+    '</div>' +
+    '<div class="btn-row" style="justify-content:center">' +
+      '<button class="btn btn-primary" onclick="actionSendCounterOffer()">Enviar contraoferta</button>' +
+      '<button class="btn btn-outline" onclick="actionCancelCounterNegotiation()">Cancelar</button>' +
+    '</div>';
   return (
     '<div class="panel center-text">' +
       '<h3 style="margin-bottom:8px">Negociar la oferta por ' + escapeHtml(p.nombre) + '</h3>' +
       '<div style="display:flex;justify-content:center;margin-bottom:8px">' + careerMediaBadgeHtml(p) + avatarHtml(p) + '</div>' +
-      '<p class="dim small">Te ofrecían <strong style="color:var(--accent-2)">' + offer.amount + ' M€</strong> (' + (offer.mode === 'loan' ? 'cesión' : 'compra') + '). Se resuelve al momento: pedir más de eso baja las probabilidades de que acepten.</p>' +
+      '<p class="dim small">Te ofrecían <strong style="color:var(--accent-2)">' + cn.originalAmount + ' M€</strong> (' + (cn.mode === 'loan' ? 'cesión' : 'compra') + '). Se resuelve al momento: pedir más de eso baja las probabilidades de que acepten. Intento ' + ((cn.attempts || 0) + 1) + ' de ' + CAREER_MAX_COUNTER_ATTEMPTS + '.</p>' +
       resultHtml +
     '</div>'
   );
