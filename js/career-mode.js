@@ -366,13 +366,24 @@ function careerGrowthTierBonus(c, p, current) {
 // nunca va a poder subir más de 2 puntos en una misma temporada"): sin
 // esto, el tirón hacia el ancla + el ruido al azar todavía podían
 // disparar la subida de un jugador "Muy bajo" por encima de lo que su
-// crecimiento debería permitir. 2 puntos por nivel de crecimiento (Muy
-// bajo=2, Bajo=4, Normal=6, Alto=8, Muy alto=10) -- solo pone techo a
-// SUBIR, nunca a bajar (un veterano por encima del ancla sigue pudiendo
-// declinar sin límite, eso no ha cambiado).
+// crecimiento debería permitir. 2 puntos por nivel de crecimiento en el
+// TOPE del centro de entrenamiento (Muy bajo=2, Bajo=4, Normal=6, Alto=8,
+// Muy alto=10) -- solo pone techo a SUBIR, nunca a bajar (un veterano
+// por encima del ancla sigue pudiendo declinar sin límite, eso no ha
+// cambiado).
+// El tope en sí ESCALA con el nivel del centro (mitad en nivel 0, el
+// tope entero solo con el centro al máximo), a petición explícita: sin
+// esto, para un jugador débil (muy por debajo del ancla) el tirón por sí
+// solo ya llegaba casi al tope incluso en nivel 0, así que construir o
+// mejorar el centro no cambiaba nada para los jugadores de crecimiento
+// bajo -- "como sea con centro de entrenamiento nivel bajo me corto las
+// pelotas". Con el tope también escalando, mejorar el centro sigue
+// notándose en CUALQUIER jugador, del crecimiento que sea.
 var CAREER_GROWTH_TIER_SEASON_CAP_PER_TIER = 2;
-function careerGrowthSeasonCap(tier) {
-  return tier * CAREER_GROWTH_TIER_SEASON_CAP_PER_TIER;
+function careerGrowthSeasonCap(tier, level) {
+  var lvl = typeof level === 'number' ? level : 0;
+  var levelFactor = 0.5 + 0.5 * (lvl / CAREER_TRAINING_MAX_LEVEL);
+  return tier * CAREER_GROWTH_TIER_SEASON_CAP_PER_TIER * levelFactor;
 }
 // "Media esperada" de la pestaña Entrenamiento: la parte DETERMINISTA del
 // cálculo de abajo (el tirón hacia el ancla + el crecimiento fijo del
@@ -385,7 +396,7 @@ function careerExpectedProgressionDelta(c, p) {
   var tier = careerPlayerGrowthTier(c, p);
   var tierBonus = careerGrowthTierBonus(c, p, current);
   var raw = (params.anchor - current) * params.rate + tierBonus;
-  return Math.round(Math.min(raw, careerGrowthSeasonCap(tier)) * 2) / 2;
+  return Math.round(Math.min(raw, careerGrowthSeasonCap(tier, c.trainingLevel)) * 2) / 2;
 }
 // "Potencial" de la pestaña Entrenamiento: un rango (bajo-alto), no un
 // único número, a petición explícita ("puede ser cualquiera de los 3
@@ -401,7 +412,11 @@ function careerPlayerPotentialRange(c, p) {
   var current = careerPlayerScore(p);
   var tier = careerPlayerGrowthTier(c, p);
   var expected = current + careerExpectedProgressionDelta(c, p);
-  var seasonCapScore = current + careerGrowthSeasonCap(tier);
+  // Redondeado también aquí (no solo el otro lado del Math.min) -- sin
+  // esto, si "current" alguna vez no cae en un múltiplo de 0.5 (no
+  // debería, pero por si acaso), el tope podía colarse como número no
+  // entero en pantalla (ej. "72.33").
+  var seasonCapScore = Math.round(current + careerGrowthSeasonCap(tier, c.trainingLevel));
   return {
     low: clamp(Math.round(expected - params.variance), 30, 99),
     high: clamp(Math.min(Math.round(expected + params.variance), seasonCapScore), 30, 99)
@@ -421,7 +436,7 @@ function careerProgressAllPlayers(c) {
     var pull = (params.anchor - current) * params.rate + tierBonus;
     var noise = (Math.random() * 2 - 1) * params.variance;
     var delta = Math.round((pull + noise) * 2) / 2;
-    delta = Math.min(delta, careerGrowthSeasonCap(tier));
+    delta = Math.min(delta, careerGrowthSeasonCap(tier, c.trainingLevel));
     c.playerProgression[p.id] = (c.playerProgression[p.id] || 0) + delta;
     c.lastPlayerProgressionDelta[p.id] = delta;
   });
