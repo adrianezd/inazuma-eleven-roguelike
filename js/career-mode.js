@@ -187,6 +187,37 @@ function careerPlayerScore(p) {
   return clamp(futDraftPlayerScore(p) + delta, 30, 99);
 }
 
+// Mismo cálculo que futDraftScoreBreakdown (capitán/sinergia/fuera de
+// posición), pero con careerPlayerScore en vez de futDraftPlayerScore como
+// base -- para que la pestaña Mi equipo (puntuación de equipo + insignia de
+// cada jugador) SÍ refleje la progresión de Entrenamiento, a petición
+// explícita ("que suba la media de ese jugador en mi equipo, que ahora
+// mismo no se actualiza"). Antes de esto, Mi equipo usaba el cálculo
+// genérico de FutDraft, que solo mira las stats crudas del roster y nunca
+// se entera de c.playerProgression.
+function careerScoreBreakdown(lineup, captainId) {
+  if (!lineup.length) return { base: 0, captainBonus: 0, synergyBonus: 0, misplaced: 0, misplacedPenalty: 0, total: 0 };
+  var sum = 0, misplaced = 0, captainScore = null;
+  var typeCounts = {};
+  lineup.forEach(function (slot) {
+    var p = slot.player;
+    var score = careerPlayerScore(p);
+    sum += score;
+    if (captainId && p.id === captainId) captainScore = score;
+    if (slot.pos !== p.posicion) misplaced++;
+    typeCounts[p.tipo] = (typeCounts[p.tipo] || 0) + 1;
+  });
+  var base = sum / lineup.length;
+  var captainBonus = captainScore === null ? 0 : clamp(Math.round((captainScore - base) * FUTDRAFT_CAPTAIN_BONUS_FACTOR), -FUTDRAFT_CAPTAIN_BONUS_CAP, FUTDRAFT_CAPTAIN_BONUS_CAP);
+  var synergyBonus = 0;
+  Object.keys(typeCounts).forEach(function (t) {
+    if (typeCounts[t] >= FUTDRAFT_SYNERGY_THRESHOLD) synergyBonus += FUTDRAFT_SYNERGY_BONUS;
+  });
+  var misplacedPenalty = misplaced * FUTDRAFT_OUT_OF_POSITION_PENALTY;
+  var total = Math.round(clamp(base + captainBonus + synergyBonus - misplacedPenalty, 0, 100));
+  return { base: Math.round(base), captainBonus: captainBonus, synergyBonus: synergyBonus, misplaced: misplaced, misplacedPenalty: misplacedPenalty, total: total };
+}
+
 // Progresión anual: cada jugador tira hacia un "techo natural"
 // (CAREER_PROGRESSION_ANCHOR) con algo de ruido -- uno con media baja
 // tiene mucho margen por debajo del ancla, así que sube bastante (un
@@ -700,7 +731,7 @@ function renderCareerLineupPitch(c) {
         (outOfPosition ? ' futdraft-out-of-position' : '');
       var badge = c.captainId === p.id ? '<span class="futdraft-captain-badge" title="Capitán">👑</span>' : '';
       var nameSuffix = outOfPosition ? ' <span class="dim">(' + p.posicion + ')</span>' : '';
-      return '<div class="' + cls + '" onclick="selectCareerPlayer(\'' + p.id + '\')">' + badge + pitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + nameSuffix + '</span></div>';
+      return '<div class="' + cls + '" onclick="selectCareerPlayer(\'' + p.id + '\')">' + badge + careerPitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + nameSuffix + '</span></div>';
     }).join('');
     return '<div class="pitch-row">' + itemsHtml + '</div>';
   }).join('');
@@ -708,7 +739,7 @@ function renderCareerLineupPitch(c) {
 }
 
 function renderCareerEquipo(c) {
-  var breakdown = futDraftScoreBreakdown(c.lineup, c.captainId);
+  var breakdown = careerScoreBreakdown(c.lineup, c.captainId);
   var captain = c.captainId ? c.lineup.find(function (s) { return s.player.id === c.captainId; }) : null;
   var captainHint;
   if (!captain) {
@@ -722,7 +753,7 @@ function renderCareerEquipo(c) {
   }
   var benchHtml = c.bench.map(function (p) {
     var cls = 'pitch-player futdraft-swappable' + (c.swapSelectedId === p.id ? ' selected' : '');
-    return '<div class="' + cls + '" onclick="selectCareerPlayer(\'' + p.id + '\')">' + pitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
+    return '<div class="' + cls + '" onclick="selectCareerPlayer(\'' + p.id + '\')">' + careerPitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
   }).join('');
   var formationOptionsHtml = FUTDRAFT_FORMATIONS.map(function (f) {
     return '<option value="' + f.id + '"' + (f.id === c.formation ? ' selected' : '') + '>' + f.name + '</option>';
@@ -753,6 +784,16 @@ function renderCareerEquipo(c) {
 function careerMediaBadgeHtml(p) {
   var score = Math.round(careerPlayerScore(p));
   return '<span class="media-badge" style="background:' + mediaBadgeColor(score) + '" title="Media según su posición">' + score + '</span>';
+}
+
+// Igual que pitchMediaBadgeHtml (misma clase "pitch-media-badge", posición
+// de esquina sobre el avatar en el campo), pero con careerPlayerScore en
+// vez de futDraftPlayerScore -- para el campo/banquillo de Mi equipo, que
+// necesita la media CON progresión (a diferencia del resto de FutDraft/
+// Torneo, que no tienen progresión y siguen usando pitchMediaBadgeHtml).
+function careerPitchMediaBadgeHtml(p) {
+  var score = Math.round(careerPlayerScore(p));
+  return '<span class="pitch-media-badge" style="background:' + mediaBadgeColor(score) + '" title="Media según su posición">' + score + '</span>';
 }
 
 // Icono de posición (los mismos PR/DF/MD/DL de siempre, ver
@@ -1743,6 +1784,7 @@ function careerMaybeOpenMidseasonWindow(c) {
 window.actionSkipCareerMatchday = function () {
   var c = G.career;
   if (c.marketWindow && c.marketWindow.open) return;
+  if (careerCupPending(c)) return;
   var league = c.league;
   if (league.matchdayIndex >= league.schedule.length) return;
   var myPower = futDraftScoreBreakdown(c.lineup, c.captainId).total;
@@ -1784,6 +1826,7 @@ window.actionSkipCareerMatchday = function () {
 window.actionSimulateCareerMatchday = function () {
   var c = G.career;
   if (c.marketWindow && c.marketWindow.open) return;
+  if (careerCupPending(c)) return;
   var league = c.league;
   if (league.matchdayIndex >= league.schedule.length) return;
   var fixtures = league.schedule[league.matchdayIndex];
@@ -1949,6 +1992,23 @@ function careerCupChampion(cup) {
   var round = cup.rounds[cup.rounds.length - 1];
   return (round.length === 1 && round[0].winner) ? round[0].winner : null;
 }
+// true si ya no queda nada por jugar en la Copa esta temporada (o la
+// ganaste, o caíste en algún cruce) -- usado tanto para saber si se puede
+// seguir con la Liga (careerCupPending) como para el mensaje de la propia
+// pestaña Copa.
+function careerCupFinished(cup) { return cup.eliminated || !!careerCupChampion(cup); }
+// La Copa se juega siempre JUSTO DESPUÉS de la jornada 10 (a petición
+// explícita: "la copa del rey, se juega siempre justo después de la
+// jornada 10, y luego sigue la liga"), no en cualquier momento como
+// antes -- comparte umbral con la ventana de fichajes de mitad de
+// temporada (CAREER_MIDSEASON_AT_MATCHDAY) porque las dos cosas pasan en
+// el mismo punto del calendario. Antes de llegar ahí, la pestaña Copa
+// está bloqueada (careerCupLocked); una vez desbloqueada, la Liga no deja
+// jugar la jornada 11 hasta que la Copa esté careerCupFinished
+// (careerCupPending, comprobado en renderCareerJornada y en los dos
+// actionSkip/actionSimulateCareerMatchday).
+function careerCupLocked(c) { return c.league.matchdayIndex < CAREER_MIDSEASON_AT_MATCHDAY; }
+function careerCupPending(c) { return !careerCupLocked(c) && !careerCupFinished(c.cup); }
 // Resuelve cualquier partido pendiente de la ronda actual que no sea el
 // tuyo (CPU vs CPU, igual que careerResolveOtherFixtures en Liga) y, si
 // ya está completa, arma la siguiente ronda con los ganadores -- si la
@@ -2083,6 +2143,12 @@ window.actionSkipCareerCupMatch = function () {
   render();
 };
 function renderCareerCopa(c) {
+  if (careerCupLocked(c)) {
+    return '<div class="panel center-text">' +
+      '<h3 style="margin-bottom:4px">Copa del Rey</h3>' +
+      '<p class="dim small">La Copa del Rey se juega justo después de la jornada ' + CAREER_MIDSEASON_AT_MATCHDAY + ' -- llevas jugadas ' + c.league.matchdayIndex + ' de ' + CAREER_MIDSEASON_AT_MATCHDAY + ' jornadas.</p>' +
+    '</div>';
+  }
   var cup = c.cup;
   var totalRounds = Math.log2(cup.size);
   var champion = careerCupChampion(cup);
@@ -2141,6 +2207,17 @@ function renderCareerJornada(c) {
     return '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Ventana de fichajes abierta</h3>' +
       '<p class="dim small">Día ' + w.dayIndex + ' de ' + w.totalDays + ' (' + (w.phase === 'preseason' ? 'pretemporada' : 'mercado de invierno') + '). No se puede jugar hasta que cierre -- ve a la pestaña Mercado para negociar o avanzar el día.</p>' +
+    '</div>';
+  }
+  // La Copa del Rey se cuela justo después de la jornada 10 -- hasta que
+  // no esté resuelta (campeón o eliminado), la Liga no sigue a la jornada
+  // 11, a petición explícita ("la copa del rey, se juega siempre justo
+  // después de la jornada 10, y luego sigue la liga").
+  if (careerCupPending(c)) {
+    return '<div class="panel center-text">' +
+      '<h3 style="margin-bottom:4px">Toca Copa del Rey</h3>' +
+      '<p class="dim small">Antes de seguir con la jornada ' + (league.matchdayIndex + 1) + ' hay que resolver la Copa del Rey.</p>' +
+      '<button class="btn btn-primary btn-block mt" onclick="actionSetCareerTab(\'copa\')">Ir a la Copa del Rey</button>' +
     '</div>';
   }
   var seasonOver = league.matchdayIndex >= league.schedule.length;
