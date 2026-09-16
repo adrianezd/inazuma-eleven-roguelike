@@ -220,7 +220,7 @@ function playerModeRollDecision(p) {
   return {
     type: type,
     options: [
-      { club: p.club, stay: true, hint: type === 'crisis' ? 'Menos chances de salir campeón' : 'Quedarte en tu club' },
+      { club: p.club, stay: true, hint: type === 'crisis' ? 'Menos opciones de ser campeón' : 'Quedarte en tu club' },
       { club: alts[0], stay: false, hint: 'Nuevo club' },
       { club: alts[1], stay: false, hint: 'Nuevo club' }
     ]
@@ -306,6 +306,12 @@ window.actionAdvancePlayerCareer = function () {
   } else {
     p.pendingDecision = playerModeRollDecision(p);
   }
+  // Animación de trofeo al ganar algo (individual o colectivo), a
+  // petición explícita ("cuando gano un trofeo tiene que salir en
+  // pantalla con una animación chula") -- overlay a pantalla completa
+  // (renderJugadorTrophyPopup) que se cierra tocando/pulsando "Seguir".
+  var wonTitles = block.colectivo.concat(block.individual);
+  if (wonTitles.length) G.jugadorTrophyPopup = { titles: wonTitles };
   render();
 };
 // idx = índice de la opción elegida dentro de p.pendingDecision.options
@@ -347,6 +353,16 @@ window.actionPickPlayerClub = function (idx) {
   render();
 };
 
+// Insignia de media con color según nivel (bronce/plata/oro/élite),
+// mismo lenguaje visual que la referencia que dio el usuario ("esto más
+// bonito también") -- puramente decorativo, el número es el mismo p.ovr
+// de siempre.
+function playerModeOvrTierClass(ovr) {
+  if (ovr >= 85) return 'jugador-ovr-elite';
+  if (ovr >= 75) return 'jugador-ovr-gold';
+  if (ovr >= 60) return 'jugador-ovr-silver';
+  return 'jugador-ovr-bronze';
+}
 function playerModeCardHtml(p) {
   return '<div class="panel matchup-card">' +
     '<div class="matchup-row">' +
@@ -356,9 +372,14 @@ function playerModeCardHtml(p) {
       '</div>' +
     '</div>' +
     (p.onLoan ? '<p class="dim small center-text">Perteneces a <strong>' + escapeHtml(p.homeClub) + '</strong>.</p>' : '') +
-    '<p class="center-text" style="margin-top:10px">' +
+    '<div class="jugador-ovr-badge ' + playerModeOvrTierClass(p.ovr) + '">' + p.ovr + '</div>' +
+    '<p class="center-text" style="margin-top:4px">' +
       '<strong style="font-family:\'Oswald\',sans-serif;font-size:1.3rem">' + escapeHtml(p.apellido) + '</strong> ' +
-      '<span class="dim small">#' + p.dorsal + ' -- ' + escapeHtml(p.posicion) + ' -- ' + p.edad + ' años</span>' +
+      '<span class="dim small">#' + p.dorsal + '</span>' +
+    '</p>' +
+    '<p class="center-text dim small" style="display:flex;align-items:center;justify-content:center;gap:6px">' +
+      (typeof positionIconPath === 'function' ? '<img src="' + positionIconPath(p.posicion) + '" alt="" style="width:16px;height:16px">' : '') +
+      escapeHtml(p.posicion) + ' -- ' + p.edad + ' años' +
     '</p>' +
     '<div class="stats-summary" style="grid-template-columns:repeat(4,1fr)">' +
       '<div class="stat-tile"><div class="num">' + p.ovr + '</div><div class="label">Media</div></div>' +
@@ -398,7 +419,10 @@ function playerModeHistoryHtml(p) {
 function renderJugadorSetup() {
   var ch = G.jugadorSetupChoices;
   var posBtns = POSITIONS.map(function (pos) {
-    return '<button class="btn btn-tiny' + (ch.posicion === pos ? ' active' : '') + '" onclick="actionSetJugadorField(\'posicion\',\'' + pos + '\')">' + pos + '</button>';
+    return '<button class="jugador-pos-card' + (ch.posicion === pos ? ' active' : '') + '" onclick="actionSetJugadorField(\'posicion\',\'' + pos + '\')">' +
+      '<img src="' + positionIconPath(pos) + '" alt="' + pos + '">' +
+      '<span>' + pos + '</span>' +
+    '</button>';
   }).join('');
   var clubItems = ch.clubOptions.map(function (name) {
     var selected = ch.club === name;
@@ -430,7 +454,7 @@ function renderJugadorSetup() {
           '<button class="btn btn-tiny' + (ch.pierna === 'derecha' ? ' active' : '') + '" onclick="actionSetJugadorField(\'pierna\',\'derecha\')">Derecha</button>' +
         '</div>' +
         '<p class="dim small mt">Posición</p>' +
-        '<div class="btn-row">' + posBtns + '</div>' +
+        '<div class="jugador-pos-grid">' + posBtns + '</div>' +
       '</div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:8px">Primer club</h3>' +
@@ -550,10 +574,30 @@ function renderJugadorShared() {
   );
 }
 
+window.actionDismissJugadorTrophyPopup = function () {
+  G.jugadorTrophyPopup = null;
+  render();
+};
+// Overlay a pantalla completa con animación (keyframes jugadorTrophyPop/
+// jugadorTrophyShine en style.css) para celebrar un título nuevo -- se
+// cierra tocando "Seguir" o fuera de la tarjeta.
+function renderJugadorTrophyPopup() {
+  var titles = G.jugadorTrophyPopup.titles;
+  return '<div class="modal-overlay" onclick="actionDismissJugadorTrophyPopup()">' +
+    '<div class="jugador-trophy-card" onclick="event.stopPropagation()">' +
+      '<div class="jugador-trophy-icon">🏆</div>' +
+      '<h3 style="margin-bottom:4px">¡Título conseguido!</h3>' +
+      '<div class="season-summary-badges">' +
+        titles.map(function (t) { return '<div class="season-badge season-badge-gold"><div class="season-badge-icon">⭐</div><div class="season-badge-text">' + escapeHtml(t) + '</div></div>'; }).join('') +
+      '</div>' +
+      '<button class="btn btn-primary btn-block mt" onclick="actionDismissJugadorTrophyPopup()">Seguir</button>' +
+    '</div>' +
+  '</div>';
+}
 function renderJugadorMode() {
   var p = G.playerCareer;
   if (!p) { return '<div class="panel center-text"><p class="dim small">Todavía no has creado a tu jugador.</p><button class="btn btn-primary btn-block mt" onclick="actionGoJugadorSetup()">Crear jugador</button></div>'; }
-  if (p.retired) return '<div class="screen">' + renderJugadorRetired(p) + '</div>';
+  if (p.retired) return '<div class="screen">' + renderJugadorRetired(p) + (G.jugadorTrophyPopup ? renderJugadorTrophyPopup() : '') + '</div>';
   var bodyHtml = p.pendingDecision
     ? renderJugadorDecision(p)
     : '<div class="panel center-text"><button class="btn btn-primary btn-block" onclick="actionAdvancePlayerCareer()">Avanzar 2 años ▶</button></div>';
@@ -566,6 +610,7 @@ function renderJugadorMode() {
       bodyHtml +
       playerModeTrophyCaseHtml(p) +
       playerModeHistoryHtml(p) +
+      (G.jugadorTrophyPopup ? renderJugadorTrophyPopup() : '') +
     '</div>'
   );
 }

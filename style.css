@@ -510,6 +510,78 @@ a { color: var(--accent); }
 .jugador-decision-card:hover { border-color: var(--accent); }
 .jugador-decision-icon { font-size: 2.2rem; line-height: 1; }
 
+/* Selector de posición del creador de identidad de Modo Jugador, con la
+   imagen real de cada posición (PR/DF/MD/DL, las mismas que ya usa el
+   resto de la app) en vez de un simple texto -- a petición explícita
+   ("esto hazlo con las imágenes de DL, MD, DF... esto más bonito
+   también"). */
+.jugador-pos-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.jugador-pos-card {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 4px;
+  text-align: center;
+  cursor: pointer;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+.jugador-pos-card img { width: 30px; height: 30px; }
+.jugador-pos-card:hover { border-color: var(--accent); }
+.jugador-pos-card.active { background: var(--accent); border-color: var(--accent); color: #06202f; }
+
+/* Insignia de media con color según nivel, en la ficha de Modo Jugador. */
+.jugador-ovr-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  margin: 4px auto 0;
+  border-radius: 14px;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+.jugador-ovr-bronze { background: #8a5a2b; color: #fff; }
+.jugador-ovr-silver { background: #98a5b3; color: #0b1520; }
+.jugador-ovr-gold { background: var(--accent-2); color: #06202f; }
+.jugador-ovr-elite { background: linear-gradient(135deg, #ff5fa8, #7c4dff); color: #fff; }
+
+/* Animación de trofeo al ganar un título en Modo Jugador, a petición
+   explícita ("cuando gano un trofeo tiene que salir en pantalla con una
+   animación chula") -- reaprovecha .modal-overlay (ya existía para el
+   modal de confirmar salida) como fondo, con su propia tarjeta que entra
+   con rebote y un trofeo que brilla/gira ligeramente. */
+@keyframes jugadorTrophyPop {
+  0% { transform: scale(0.4) rotate(-8deg); opacity: 0; }
+  60% { transform: scale(1.12) rotate(4deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes jugadorTrophyShine {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(255, 200, 60, 0)); transform: translateY(0); }
+  50% { filter: drop-shadow(0 0 18px rgba(255, 200, 60, 0.85)); transform: translateY(-4px); }
+}
+.jugador-trophy-card {
+  background: var(--panel);
+  border: 1px solid var(--accent-2);
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  max-width: 340px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  animation: jugadorTrophyPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.jugador-trophy-icon { font-size: 3.4rem; line-height: 1; animation: jugadorTrophyShine 1.6s ease-in-out infinite; }
+
 .pitch {
   position: relative;
   background: repeating-linear-gradient(0deg, #12241a, #12241a 26px, #16301f 26px, #16301f 52px);
