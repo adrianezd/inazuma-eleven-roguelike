@@ -646,18 +646,30 @@ function careerRollGrowthTier() {
 // que haya dos jugadores aleatorios durante la partida de cada modo
 // carrera que sea más que muy alto, que suba más todavía"). Ni siquiera
 // entra en el sorteo normal de CAREER_GROWTH_TIER_WEIGHTS -- son
-// exactamente CAREER_PRODIGY_COUNT jugadores, elegidos al azar entre
-// TODO ROSTER (unos 266, "aleatoriamente entre los 200 que hay") DESPUÉS
-// de repartir el resto, así que siempre hay dos y nunca más de dos.
+// exactamente CAREER_PRODIGY_COUNT jugadores del MERCADO (fuera de tu
+// plantilla inicial) más CAREER_PRODIGY_SQUAD_COUNT DENTRO de tu
+// plantilla inicial, elegidos al azar DESPUÉS de repartir el resto, a
+// petición explícita ("a partir de ahora hay 2 aleatorios en mercado,
+// más alguien aleatorio en tu plantilla inicial") -- así siempre hay
+// exactamente 3 prodigios por partida, y siempre al menos uno ya en tu
+// equipo desde el primer día.
 var CAREER_PRODIGY_COUNT = 2;
-function careerInitialGrowthTiers() {
+var CAREER_PRODIGY_SQUAD_COUNT = 1;
+function careerInitialGrowthTiers(squadIds) {
   var tiers = {};
   ROSTER.forEach(function (p) { tiers[p.id] = careerRollGrowthTier(); });
-  var pool = ROSTER.slice();
-  for (var i = 0; i < CAREER_PRODIGY_COUNT && pool.length; i++) {
-    var idx = Math.floor(Math.random() * pool.length);
-    tiers[pool[idx].id] = 6;
-    pool.splice(idx, 1);
+  squadIds = squadIds || [];
+  var squadPool = ROSTER.filter(function (p) { return squadIds.indexOf(p.id) !== -1; });
+  var marketPool = ROSTER.filter(function (p) { return squadIds.indexOf(p.id) === -1; });
+  for (var i = 0; i < CAREER_PRODIGY_COUNT && marketPool.length; i++) {
+    var idx = Math.floor(Math.random() * marketPool.length);
+    tiers[marketPool[idx].id] = 6;
+    marketPool.splice(idx, 1);
+  }
+  for (var j = 0; j < CAREER_PRODIGY_SQUAD_COUNT && squadPool.length; j++) {
+    var idx2 = Math.floor(Math.random() * squadPool.length);
+    tiers[squadPool[idx2].id] = 6;
+    squadPool.splice(idx2, 1);
   }
   return tiers;
 }
@@ -802,7 +814,7 @@ function careerFreshState(choices) {
     lastPlayerProgressionDelta: {},
     // Crecimiento fijo por jugador (1-5, TODO ROSTER), sorteado una sola
     // vez aquí y nunca más -- ver careerInitialGrowthTiers.
-    playerGrowthTier: careerInitialGrowthTiers(),
+    playerGrowthTier: careerInitialGrowthTiers(CAREER_MODE_STARTER_IDS.concat(CAREER_MODE_BENCH_IDS)),
     // Jornadas de titular esta temporada por jugador de tu plantilla, ver
     // careerRecordStarterAppearances/careerApplySquadGrowthSplit -- vacío
     // en una partida nueva, se reinicia cada actionStartNewCareerSeason.
@@ -1272,6 +1284,9 @@ function renderCareerEquipo(c) {
   var formationOptionsHtml = FUTDRAFT_FORMATIONS.map(function (f) {
     return '<option value="' + f.id + '"' + (f.id === c.formation ? ' selected' : '') + '>' + f.name + '</option>';
   }).join('');
+  var styleOptionsHtml = CAREER_PLAY_STYLES.map(function (s) {
+    return '<option value="' + s.id + '"' + (s.id === careerPlayStyle(c).id ? ' selected' : '') + '>' + s.name + '</option>';
+  }).join('');
   var elementCounts = careerElementCounts(c);
   var elementCountsHtml = TYPES.map(function (t) {
     return '<span class="type-badge type-' + t.toLowerCase().replace('ñ', 'n') + '" style="margin:2px">' +
@@ -1287,6 +1302,10 @@ function renderCareerEquipo(c) {
     '<div class="panel">' +
       '<h3 style="margin-bottom:8px">Formación</h3>' +
       '<select class="select-field" onchange="setCareerFormation(this.value)">' + formationOptionsHtml + '</select>' +
+    '</div>' +
+    '<div class="panel">' +
+      '<h3 style="margin-bottom:8px">Estilo de juego</h3>' +
+      '<select class="select-field" onchange="actionSetCareerPlayStyle(this.value)">' + styleOptionsHtml + '</select>' +
     '</div>' +
     '<div class="panel">' + renderCareerLineupPitch(c) + '</div>' +
     '<div class="panel center-text">' +
@@ -1530,23 +1549,11 @@ function renderCareerPlantilla(c) {
       actionsHtml +
     '</div>';
   }).join('');
-  var styleOptionsHtml = CAREER_PLAY_STYLES.map(function (s) {
-    return '<option value="' + s.id + '"' + (s.id === careerPlayStyle(c).id ? ' selected' : '') + '>' + s.name + '</option>';
-  }).join('');
-  var styleMods = careerPlayStyleModifiers(c);
-  var styleHint = styleMods.aligned
-    ? 'Encaja con tu formación -- se nota entero en los goles a favor y en contra.'
-    : 'No encaja del todo con tu formación -- se nota menos de lo normal.';
   return (
     '<div class="panel">' +
       '<h3 style="margin-bottom:4px">Gestionar plantilla</h3>' +
       '<p class="dim small">Valor total de la plantilla: <strong style="color:var(--accent-2)">' + total + ' M€</strong>. Presupuesto disponible: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong>. Cedidos: ' + loanedIds.length + ' / ' + CAREER_MAX_LOANS_IN + '.</p>' +
       (c.plantillaMessage ? '<p class="dim small">' + escapeHtml(c.plantillaMessage) + '</p>' : '') +
-      '<div class="btn-row mt" style="align-items:center">' +
-        '<span class="dim small">Estilo de juego:</span>' +
-        '<select class="select-field" style="width:auto;min-height:36px;padding:6px 10px" onchange="actionSetCareerPlayStyle(this.value)">' + styleOptionsHtml + '</select>' +
-      '</div>' +
-      '<p class="dim small">' + styleHint + '</p>' +
       '<input class="select-field" type="text" placeholder="Buscar por nombre…" value="' + escapeHtml(c.plantillaSearch || '') + '" oninput="actionSetCareerPlantillaSearch(this.value)">' +
       '<div class="btn-row mt">' + filterBtnsHtml + '</div>' +
       '<div class="btn-row mt" style="align-items:center">' +
@@ -2223,21 +2230,27 @@ function calendarTeamLabel(league, idx) { return idx === 0 ? 'Tú' : league.team
 // juego... pon mi escudo VS el escudo del equipo rival en grande") --
 // se enseña justo antes de los botones Simular/Saltar en Jornada, Copa
 // del Rey y Champions League (mismo componente en las 3, solo cambia el
-// texto de contexto que se le pasa: jornada+casa/fuera, o la ronda).
-function careerMatchupCardHtml(oppName, contextLabel) {
+// texto de contexto que se le pasa: jornada, o la ronda). youAreHome
+// decide el ORDEN de los escudos -- si juegas fuera, tu escudo va a la
+// derecha y el del rival a la izquierda (como en un marcador real,
+// local-visitante), a petición explícita. Copa/Champions son sede
+// neutral (sin local/visitante de verdad), así que se llaman sin este
+// parámetro y se quedan con el orden de siempre (tú a la izquierda).
+function careerMatchupCardHtml(oppName, contextLabel, youAreHome) {
+  var youSideHtml =
+    '<div class="matchup-side">' +
+      '<img class="matchup-shield" src="' + escapeHtml(getPlayerShieldPath()) + '" alt="">' +
+      '<div class="matchup-name">Tú</div>' +
+    '</div>';
+  var oppSideHtml =
+    '<div class="matchup-side">' +
+      '<img class="matchup-shield" src="' + escapeHtml(teamShieldPath(oppName)) + '" alt="">' +
+      '<div class="matchup-name">' + escapeHtml(oppName) + '</div>' +
+    '</div>';
+  var sidesHtml = youAreHome === false ? (oppSideHtml + '<div class="matchup-vs">VS</div>' + youSideHtml) : (youSideHtml + '<div class="matchup-vs">VS</div>' + oppSideHtml);
   return '<div class="panel matchup-card">' +
     (contextLabel ? '<p class="dim small center-text">' + contextLabel + '</p>' : '') +
-    '<div class="matchup-row">' +
-      '<div class="matchup-side">' +
-        '<img class="matchup-shield" src="' + escapeHtml(getPlayerShieldPath()) + '" alt="">' +
-        '<div class="matchup-name">Tú</div>' +
-      '</div>' +
-      '<div class="matchup-vs">VS</div>' +
-      '<div class="matchup-side">' +
-        '<img class="matchup-shield" src="' + escapeHtml(teamShieldPath(oppName)) + '" alt="">' +
-        '<div class="matchup-name">' + escapeHtml(oppName) + '</div>' +
-      '</div>' +
-    '</div>' +
+    '<div class="matchup-row">' + sidesHtml + '</div>' +
   '</div>';
 }
 // Encuentra tu partido de la próxima jornada de Liga sin jugarlo -- para
@@ -2527,7 +2540,8 @@ var CAREER_PLAY_STYLES = [
   { id: 'muy_defensiva', name: 'Muy defensiva', atk: 0.85, def: 1.18 },
   { id: 'defensiva', name: 'Defensiva', atk: 0.93, def: 1.09 },
   { id: 'equilibrado', name: 'Equilibrado', atk: 1, def: 1 },
-  { id: 'ofensiva', name: 'Ofensiva', atk: 1.15, def: 0.88 }
+  { id: 'ofensiva', name: 'Ofensiva', atk: 1.15, def: 0.88 },
+  { id: 'muy_ofensiva', name: 'Muy ofensiva', atk: 1.28, def: 0.78 }
 ];
 function careerPlayStyle(c) {
   return CAREER_PLAY_STYLES.find(function (s) { return s.id === c.playStyle; }) || CAREER_PLAY_STYLES[2];
@@ -3287,14 +3301,7 @@ function renderCareerCopa(c) {
   var totalRounds = Math.log2(cup.size);
   var champion = careerCupChampion(cup);
   var myMatch = careerCupMyMatch(cup);
-  var headerHtml =
-    '<div class="panel center-text">' +
-      '<h3 style="margin-bottom:4px">Copa del Rey</h3>' +
-      '<p class="dim small">Tú y ' + (cup.size - 1) + ' rivales, eliminación directa. Copas ganadas en la carrera: <strong style="color:var(--accent-2)">' + (c.cupsWon || 0) + '</strong>.</p>' +
-      (c.lastCupResult
-        ? '<p class="dim small">Último resultado: Tú ' + c.lastCupResult.myGoals + ' - ' + c.lastCupResult.oppGoals + ' ' + escapeHtml(c.lastCupResult.oppName) + (c.lastCupResult.penalty ? ' (penaltis ' + c.lastCupResult.penalty.myGoals + '-' + c.lastCupResult.penalty.oppGoals + ')' : '') + ' -- ' + (c.lastCupResult.playerWon ? 'ganaste' : 'perdiste') + '.</p>'
-        : '') +
-    '</div>';
+  var headerHtml = '<div class="panel center-text"><h3 style="margin-bottom:4px">Copa del Rey</h3></div>';
   var actionHtml;
   if (champion) {
     actionHtml = '<div class="panel center-text"><p class="dim small">' + (champion.isPlayer ? '¡Campeón de la Copa!' : 'Campeón: ' + escapeHtml(champion.name)) + '</p></div>';
@@ -3667,8 +3674,8 @@ function renderCareerJornada(c) {
   if (!seasonOver) {
     var info = careerNextFixtureInfo(league);
     if (info) {
-      var contextLabel = 'Jornada ' + (league.matchdayIndex + 1) + ' de ' + league.schedule.length + ' -- Juegas ' + (info.youAreHome ? 'en casa' : 'fuera');
-      matchupHtml = careerMatchupCardHtml(info.oppName, contextLabel);
+      var contextLabel = 'Jornada ' + (league.matchdayIndex + 1) + ' de ' + league.schedule.length;
+      matchupHtml = careerMatchupCardHtml(info.oppName, contextLabel, info.youAreHome);
     }
   }
   return (
