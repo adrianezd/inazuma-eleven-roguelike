@@ -1565,7 +1565,7 @@ function renderCareerPlantilla(c) {
       '<h3 style="margin-bottom:4px">Gestionar plantilla</h3>' +
       '<p class="dim small">Valor total de la plantilla: <strong style="color:var(--accent-2)">' + total + ' M€</strong>. Presupuesto disponible: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong>. Cedidos: ' + loanedIds.length + ' / ' + CAREER_MAX_LOANS_IN + '.</p>' +
       (c.plantillaMessage ? '<p class="dim small">' + escapeHtml(c.plantillaMessage) + '</p>' : '') +
-      '<input class="select-field" type="text" placeholder="Buscar por nombre…" value="' + escapeHtml(c.plantillaSearch || '') + '" oninput="actionSetCareerPlantillaSearch(this.value)">' +
+      '<input class="select-field" type="text" placeholder="Buscar por nombre…" data-focus-key="career-plantilla-search" value="' + escapeHtml(c.plantillaSearch || '') + '" oninput="actionSetCareerPlantillaSearch(this.value)">' +
       '<div class="btn-row mt">' + filterBtnsHtml + '</div>' +
       '<div class="btn-row mt" style="align-items:center">' +
         '<select class="select-field" style="width:auto;min-height:36px;padding:6px 10px" onchange="actionSetCareerPlantillaSort(this.value)">' + sortOptionsHtml + '</select>' +
@@ -2216,7 +2216,7 @@ function renderCareerMercado(c) {
       (squadFull ? '<p class="dim small" style="color:var(--danger)">Plantilla al máximo (' + CAREER_MAX_SQUAD_SIZE + '). Vende o cede a alguien antes de fichar.</p>' : '') +
       (loansFull ? '<p class="dim small" style="color:var(--danger)">Ya tienes ' + CAREER_MAX_LOANS_IN + ' cesiones, el máximo -- devuelve a alguna antes de fichar cedido a otro.</p>' : '') +
       (c.marketMessage ? '<p class="dim small">' + escapeHtml(c.marketMessage) + '</p>' : '') +
-      '<input class="select-field" type="text" placeholder="Buscar por nombre…" value="' + escapeHtml(c.marketSearch || '') + '" oninput="actionSetCareerMarketSearch(this.value)">' +
+      '<input class="select-field" type="text" placeholder="Buscar por nombre…" data-focus-key="career-market-search" value="' + escapeHtml(c.marketSearch || '') + '" oninput="actionSetCareerMarketSearch(this.value)">' +
       '<div class="btn-row mt">' + filterBtnsHtml + '</div>' +
       '<div class="btn-row mt">' + typeFilterBtnsHtml + '</div>' +
       '<div class="btn-row mt">' + growthFilterBtnsHtml + '</div>' +

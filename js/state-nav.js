@@ -70,8 +70,33 @@ function recordRunGoalScorer(attackerRaw, isPlayerAttacking) {
 
 var appEl = null;
 
+// Todo render() reemplaza #app.innerHTML entero, así que cualquier
+// <input> pierde el foco (y el cursor) en cada tecla -- a petición
+// explícita ("en cuanto escribo una letra, tengo que volver a darle al
+// cuadrado para escribir la siguiente, como que me quita el cursor").
+// Arreglado de raíz aquí (no solo en el campo que se reportó): si el
+// elemento con el foco lleva un atributo data-focus-key, se guarda antes
+// de tirar el HTML viejo y se restaura (foco + posición del cursor) tras
+// montar el nuevo -- los inputs que se re-renderizan en cada tecla
+// (búsquedas de Mercado/Plantilla, apellido/dorsal de Modo Jugador) lo
+// llevan puesto.
+function captureFocusForRerender() {
+  var active = document.activeElement;
+  if (!active || !appEl || !appEl.contains(active) || !active.dataset || !active.dataset.focusKey) return null;
+  return { key: active.dataset.focusKey, start: active.selectionStart, end: active.selectionEnd };
+}
+function restoreFocusAfterRerender(info) {
+  if (!info) return;
+  var el = appEl.querySelector('[data-focus-key="' + info.key + '"]');
+  if (!el) return;
+  el.focus();
+  if (typeof el.setSelectionRange === 'function' && typeof info.start === 'number') {
+    try { el.setSelectionRange(info.start, info.end); } catch (e) {}
+  }
+}
 function render() {
   if (!appEl) appEl = document.getElementById('app');
+  var focusInfo = captureFocusForRerender();
   var html = '';
   switch (G.screen) {
     case 'menu': html = renderMenu(); break;
@@ -118,6 +143,7 @@ function render() {
   }
   if (G.confirmLeaveOpen) html += renderConfirmLeaveModal();
   appEl.innerHTML = html;
+  restoreFocusAfterRerender(focusInfo);
   if (G.screen === 'map') drawMapConnections();
   var howToEl = document.getElementById('como-jugar');
   if (howToEl) howToEl.hidden = G.screen !== 'menu';
