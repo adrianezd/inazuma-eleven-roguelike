@@ -5,14 +5,24 @@
 if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', function () {
     appEl = document.getElementById('app');
-    // Enlace compartido de Modo Jugador (?jugador=...), a petición
-    // explícita -- ver playerModeEncodeShare/renderJugadorShared.
+    // Enlaces compartidos (?jugador=/?futdraftSquad=/?futdraftResult=),
+    // a petición explícita -- ver encodeShareParam/decodeShareParam en
+    // core.js y cada render*Shared* correspondiente. Solo puede haber
+    // uno a la vez en la URL, se comprueban en orden.
     try {
       var params = new URLSearchParams(location.search);
-      var shared = params.get('jugador');
-      if (shared) {
-        var decoded = playerModeDecodeShare(shared);
-        if (decoded) { G.jugadorSharedSummary = decoded; G.screen = 'jugadorShared'; }
+      var sharedJugador = params.get('jugador');
+      var sharedSquad = params.get('futdraftSquad');
+      var sharedResult = params.get('futdraftResult');
+      if (sharedJugador) {
+        var decodedJugador = playerModeDecodeShare(sharedJugador);
+        if (decodedJugador) { G.jugadorSharedSummary = decodedJugador; G.screen = 'jugadorShared'; }
+      } else if (sharedSquad) {
+        var decodedSquad = decodeShareParam(sharedSquad);
+        if (decodedSquad) { G.futdraftSharedSquad = decodedSquad; G.screen = 'futdraftSharedSquad'; }
+      } else if (sharedResult) {
+        var decodedResult = decodeShareParam(sharedResult);
+        if (decodedResult) { G.futdraftSharedResult = decodedResult; G.screen = 'futdraftSharedResult'; }
       }
     } catch (e) {}
     render();

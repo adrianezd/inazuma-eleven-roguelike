@@ -745,9 +745,98 @@ function renderFutDraftTeam() {
         '<div>' + elementCountsHtml + '</div>' +
       '</div>' +
       benchHtml +
+      '<div class="panel center-text">' +
+        '<button class="btn btn-outline btn-block" onclick="actionShareFutDraftSquad()">Compartir plantilla 🔗</button>' +
+        (G.futdraftShareMessage ? '<p class="dim small">' + escapeHtml(G.futdraftShareMessage) + '</p>' : '') +
+        (G.futdraftShareUrl ? '<input class="select-field mt" type="text" readonly value="' + escapeHtml(G.futdraftShareUrl) + '" onclick="this.select()">' : '') +
+      '</div>' +
       (f.mode === 'liga'
         ? '<button class="btn btn-primary btn-block" onclick="startLigaRun()">Empezar Liga (18 equipos)</button>'
         : '<button class="btn btn-primary btn-block" onclick="startFutDraftMatches()">Jugar torneo (' + futDraftBracketSize() + ' equipos)</button>') +
+    '</div>'
+  );
+}
+
+// "Compartir plantilla" (Tu once inicial), a petición explícita ("que
+// puedas compartir plantillas cuando haces una en futdraft"): codifica
+// formación/titulares/banquillo/capitán en la propia URL
+// (encodeShareParam, ver core.js) -- sin backend no hay otra forma de
+// "guardar" algo así. Abrir ese enlace enseña la misma alineación en
+// modo solo lectura (ver renderFutDraftSharedSquad/case
+// 'futdraftSharedSquad', decodificado en init.js al cargar la página).
+window.actionShareFutDraftSquad = function () {
+  var f = G.futdraft;
+  if (!f || !f.lineup) return;
+  var summary = {
+    mode: f.mode,
+    formation: f.formation,
+    captainId: f.captainId,
+    score: futDraftScoreBreakdown(f.lineup, f.captainId).total,
+    lineup: f.lineup.map(function (s) { return { pos: s.pos, id: s.player.id }; }),
+    bench: f.bench.map(function (p) { return p.id; })
+  };
+  var url = location.origin + location.pathname + '?futdraftSquad=' + encodeShareParam(summary);
+  G.futdraftShareUrl = url;
+  G.futdraftShareMessage = 'Copia el enlace de abajo para compartirlo.';
+  if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(function () {
+      G.futdraftShareMessage = 'Enlace copiado al portapapeles.';
+      render();
+    }).catch(function () { render(); });
+  }
+  render();
+};
+// Reconstruye la plantilla desde el resumen compartido (busca cada id en
+// ROSTER) -- si algún jugador no existiera ya no rompe nada, se filtra.
+function futDraftRebuildSharedSquad(summary) {
+  var lineup = (summary.lineup || []).map(function (s) {
+    var p = ROSTER.find(function (x) { return x.id === s.id; });
+    return p ? { pos: s.pos, player: p } : null;
+  }).filter(Boolean);
+  var bench = (summary.bench || []).map(function (id) { return ROSTER.find(function (x) { return x.id === id; }); }).filter(Boolean);
+  return { lineup: lineup, bench: bench };
+}
+// Campo de juego SOLO LECTURA (sin onclick de intercambiar/seleccionar,
+// a diferencia de renderFutDraftLineupPitch -- esto no es tu G.futdraft
+// real, tocar a alguien no debe intentar mutar nada) para la plantilla
+// compartida por otro.
+function futDraftSharedPitchHtml(formation, lineup, captainId) {
+  var f = FUTDRAFT_FORMATIONS.find(function (x) { return x.id === formation; }) || FUTDRAFT_FORMATIONS[0];
+  var rowsHtml = f.rows.map(function (row) {
+    var itemsHtml = lineup.filter(function (slot) { return slot.pos === row.pos; }).map(function (slot) {
+      var p = slot.player;
+      var outOfPosition = slot.pos !== p.posicion;
+      var badge = captainId === p.id ? '<span class="futdraft-captain-badge" title="Capitán">👑</span>' : '';
+      var nameSuffix = outOfPosition ? ' <span class="dim">(' + p.posicion + ')</span>' : '';
+      return '<div class="pitch-player' + (outOfPosition ? ' futdraft-out-of-position' : '') + '">' + badge + pitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + nameSuffix + '</span></div>';
+    }).join('');
+    return '<div class="pitch-row">' + itemsHtml + '</div>';
+  }).join('');
+  return '<div class="pitch pitch-11">' + rowsHtml + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div>';
+}
+function renderFutDraftSharedSquad() {
+  var summary = G.futdraftSharedSquad;
+  if (!summary) {
+    return '<div class="screen"><div class="panel center-text"><p class="dim small">Este enlace de plantilla no es válido.</p><button class="btn btn-primary btn-block mt" onclick="doBackToMenuNow()">Volver al menú</button></div></div>';
+  }
+  var squad = futDraftRebuildSharedSquad(summary);
+  var benchHtml = squad.bench.length
+    ? '<div class="panel"><h3 style="margin-bottom:4px">Banquillo</h3><div class="pitch-row" style="justify-content:center">' +
+        squad.bench.map(function (p) { return '<div class="pitch-player">' + pitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>'; }).join('') +
+      '</div></div>'
+    : '';
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<h2 class="panel-title">Plantilla compartida</h2>' +
+        '<p class="dim small">Puntuación de equipo: <strong style="color:var(--accent-2)">' + summary.score + '</strong> / 100</p>' +
+      '</div>' +
+      '<div class="panel">' + futDraftSharedPitchHtml(summary.formation, squad.lineup, summary.captainId) + '</div>' +
+      benchHtml +
+      '<div class="panel">' +
+        '<button class="btn btn-primary btn-block" onclick="actionGoFutDraftModeSelect()">Hacer la mía</button>' +
+        '<button class="btn btn-outline btn-block mt" onclick="doBackToMenuNow()">Volver al menú</button>' +
+      '</div>' +
     '</div>'
   );
 }

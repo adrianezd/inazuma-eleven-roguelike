@@ -214,7 +214,61 @@ function renderFutDraftSummary() {
       '</div>' +
       renderTopScorersAssistsPanel(f.stats) +
       '<div class="panel center-text">' +
+        '<button class="btn btn-outline btn-block" onclick="actionShareFutDraftResult()">Compartir resultado 🔗</button>' +
+        (G.futdraftShareMessage ? '<p class="dim small">' + escapeHtml(G.futdraftShareMessage) + '</p>' : '') +
+        (G.futdraftShareUrl ? '<input class="select-field mt" type="text" readonly value="' + escapeHtml(G.futdraftShareUrl) + '" onclick="this.select()">' : '') +
+      '</div>' +
+      '<div class="panel center-text">' +
         '<button class="btn btn-primary btn-block" onclick="actionGoFutDraftModeSelect()">Nuevo draft</button>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+// "Compartir resultado" del torneo terminado, a petición explícita ("que
+// puedas compartir futdrafts también cuando acabas uno"): mismo
+// mecanismo que la plantilla (encodeShareParam en la URL). Reutiliza
+// f.stats (goleadores/asistentes de ESTE torneo) tal cual, ya tiene el
+// formato que espera renderTopScorersAssistsPanel.
+window.actionShareFutDraftResult = function () {
+  var f = G.futdraft;
+  if (!f) return;
+  var summary = {
+    won: !!(f.champion && f.champion.isPlayer),
+    winsCount: f.winsCount, reward: f.reward,
+    mode: f.mode, bracketSize: f.tournament ? f.tournament.size : null,
+    stats: f.stats
+  };
+  var url = location.origin + location.pathname + '?futdraftResult=' + encodeShareParam(summary);
+  G.futdraftShareUrl = url;
+  G.futdraftShareMessage = 'Copia el enlace de abajo para compartirlo.';
+  if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(function () {
+      G.futdraftShareMessage = 'Enlace copiado al portapapeles.';
+      render();
+    }).catch(function () { render(); });
+  }
+  render();
+};
+function renderFutDraftSharedResult() {
+  var summary = G.futdraftSharedResult;
+  if (!summary) {
+    return '<div class="screen"><div class="panel center-text"><p class="dim small">Este enlace de resultado no es válido.</p><button class="btn btn-primary btn-block mt" onclick="doBackToMenuNow()">Volver al menú</button></div></div>';
+  }
+  var title = summary.won ? '🏆 ¡Campeón del torneo!' : 'Eliminado';
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<h2 class="panel-title">Resultado compartido</h2>' +
+        '<h3 class="mt">' + title + '</h3>' +
+        (summary.won ? '<div class="bracket-trophy" style="margin:0 auto">🏆</div>' : '') +
+        '<p class="dim small">' + summary.winsCount + ' partido' + (summary.winsCount === 1 ? '' : 's') + ' ganado' + (summary.winsCount === 1 ? '' : 's') + (summary.bracketSize ? (' de un torneo de ' + summary.bracketSize + ' equipos') : '') + '</p>' +
+        (typeof summary.reward === 'number' ? '<p class="currency-display">' + spiritIcon() + ' +' + summary.reward + ' Puntos de Espíritu</p>' : '') +
+      '</div>' +
+      (summary.stats ? renderTopScorersAssistsPanel(summary.stats) : '') +
+      '<div class="panel center-text">' +
+        '<button class="btn btn-primary btn-block" onclick="actionGoFutDraftModeSelect()">Jugar tú</button>' +
+        '<button class="btn btn-outline btn-block mt" onclick="doBackToMenuNow()">Volver al menú</button>' +
       '</div>' +
     '</div>'
   );

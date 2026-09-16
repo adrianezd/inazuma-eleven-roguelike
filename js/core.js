@@ -152,6 +152,19 @@ function escapeHtml(s) {
   });
 }
 
+// Codifica/decodifica un objeto cualquiera en un parámetro de URL
+// (JSON -> UTF-8 -> base64), para "compartir con un enlace" sin
+// necesidad de backend -- usado por Modo Jugador y FutDraft (plantilla
+// y resultado de torneo). unescape/escape con encodeURIComponent/
+// decodeURIComponent es el truco de siempre para que btoa/atob (que solo
+// entienden Latin1) no rompan con acentos/ñ.
+function encodeShareParam(obj) {
+  return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
+}
+function decodeShareParam(encoded) {
+  try { return JSON.parse(decodeURIComponent(escape(atob(encoded)))); } catch (e) { return null; }
+}
+
 /* ---------------------------------------------------------------------
    2b. CONDICIÓN DE TERRENO: con baja probabilidad (5%), un partido puede
    arrancar con una condición climática que da un pequeño empujón o
