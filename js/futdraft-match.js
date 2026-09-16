@@ -151,8 +151,13 @@ function futDraftSimulateMatchCore(oppPower) {
   var score = futDraftTeamScore(f.lineup, f.captainId);
   var modifier = futDraftRollMatchModifier(f.condition);
   var mods = futDraftModifierMultipliers(modifier, f.lineup);
-  var myAtk = score * formation.atk * mods.bothMult * mods.myAtkMult;
-  var myDef = score * formation.def * mods.bothMult * mods.myDefMult;
+  // f.styleAtkMult/f.styleDefMult: solo Modo Carrera los pone (estilo de
+  // juego de Gestionar plantilla, ver careerPlayStyleModifiers) --
+  // undefined en cualquier otro modo, así que por defecto no cambian nada.
+  var styleAtkMult = typeof f.styleAtkMult === 'number' ? f.styleAtkMult : 1;
+  var styleDefMult = typeof f.styleDefMult === 'number' ? f.styleDefMult : 1;
+  var myAtk = score * formation.atk * mods.bothMult * mods.myAtkMult * styleAtkMult;
+  var myDef = score * formation.def * mods.bothMult * mods.myDefMult * styleDefMult;
   var effectiveOppPower = oppPower * mods.bothMult;
   var myGoals = futDraftRandomGoals(futDraftExpectedGoals(myAtk, effectiveOppPower));
   var oppGoals = futDraftRandomGoals(futDraftExpectedGoals(effectiveOppPower, myDef));

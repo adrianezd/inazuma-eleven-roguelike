@@ -756,6 +756,9 @@ function careerFreshState(choices) {
     tab: 'equipo',
     season: 1,
     formation: CAREER_MODE_DEFAULT_FORMATION,
+    // Estilo de juego (Gestionar plantilla), ver CAREER_PLAY_STYLES --
+    // empieza "equilibrado" (sin efecto) hasta que se cambie a mano.
+    playStyle: 'equilibrado',
     lineup: futDraftBuildLineup(starters, CAREER_MODE_DEFAULT_FORMATION),
     bench: careerModeRoster(CAREER_MODE_BENCH_IDS),
     captainId: null,
@@ -849,7 +852,7 @@ function careerSlotKey(slot) { return 'inazumaRoguelike_career_slot_' + slot; }
 function careerSerialize(c) {
   return {
     tab: c.tab, competicionesTab: c.competicionesTab || 'liga', ligaView: c.ligaView || 'resumida',
-    season: c.season || 1, formation: c.formation, captainId: c.captainId, budget: c.budget,
+    season: c.season || 1, formation: c.formation, playStyle: c.playStyle || 'equilibrado', captainId: c.captainId, budget: c.budget,
     lineup: c.lineup.map(function (s) { return { pos: s.pos, id: s.player.id }; }),
     bench: c.bench.map(function (p) { return p.id; }),
     loanedIds: c.loanedIds || [],
@@ -907,6 +910,7 @@ function careerDeserialize(data) {
     ligaView: data.ligaView || 'resumida',
     season: data.season || 1,
     formation: data.formation || CAREER_MODE_DEFAULT_FORMATION,
+    playStyle: CAREER_PLAY_STYLES.some(function (s) { return s.id === data.playStyle; }) ? data.playStyle : 'equilibrado',
     lineup: lineup, bench: bench,
     captainId: data.captainId || null,
     pickingCaptain: false, swapSelectedId: null,
@@ -1479,6 +1483,12 @@ window.actionReturnLoanedPlayer = function (id) {
   render();
 };
 
+window.actionSetCareerPlayStyle = function (id) {
+  var c = G.career;
+  if (!CAREER_PLAY_STYLES.some(function (s) { return s.id === id; })) return;
+  c.playStyle = id;
+  render();
+};
 function renderCareerPlantilla(c) {
   var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
   var rawTotal = all.reduce(function (sum, p) { return sum + careerPlayerValue(p); }, 0);
@@ -1520,11 +1530,23 @@ function renderCareerPlantilla(c) {
       actionsHtml +
     '</div>';
   }).join('');
+  var styleOptionsHtml = CAREER_PLAY_STYLES.map(function (s) {
+    return '<option value="' + s.id + '"' + (s.id === careerPlayStyle(c).id ? ' selected' : '') + '>' + s.name + '</option>';
+  }).join('');
+  var styleMods = careerPlayStyleModifiers(c);
+  var styleHint = styleMods.aligned
+    ? 'Encaja con tu formación -- se nota entero en los goles a favor y en contra.'
+    : 'No encaja del todo con tu formación -- se nota menos de lo normal.';
   return (
     '<div class="panel">' +
       '<h3 style="margin-bottom:4px">Gestionar plantilla</h3>' +
       '<p class="dim small">Valor total de la plantilla: <strong style="color:var(--accent-2)">' + total + ' M€</strong>. Presupuesto disponible: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong>. Cedidos: ' + loanedIds.length + ' / ' + CAREER_MAX_LOANS_IN + '.</p>' +
       (c.plantillaMessage ? '<p class="dim small">' + escapeHtml(c.plantillaMessage) + '</p>' : '') +
+      '<div class="btn-row mt" style="align-items:center">' +
+        '<span class="dim small">Estilo de juego:</span>' +
+        '<select class="select-field" style="width:auto;min-height:36px;padding:6px 10px" onchange="actionSetCareerPlayStyle(this.value)">' + styleOptionsHtml + '</select>' +
+      '</div>' +
+      '<p class="dim small">' + styleHint + '</p>' +
       '<input class="select-field" type="text" placeholder="Buscar por nombre…" value="' + escapeHtml(c.plantillaSearch || '') + '" oninput="actionSetCareerPlantillaSearch(this.value)">' +
       '<div class="btn-row mt">' + filterBtnsHtml + '</div>' +
       '<div class="btn-row mt" style="align-items:center">' +
@@ -2421,6 +2443,20 @@ function careerSimulateMatchGoals(powerA, powerB) {
   var golB = futDraftRandomGoals(futDraftExpectedGoals(powerB, powerA));
   return [golA, golB];
 }
+// Como careerSimulateMatchGoals, pero con TU ataque y TU defensa por
+// separado (careerMyAtkDef, formación + estilo de juego) en vez de un
+// único "power" simétrico -- así el estilo de juego puede afectar a los
+// goles a favor y en contra de forma distinta (más ofensivo, más goles
+// en los dos sentidos; más defensivo, menos en los dos). El rival sigue
+// siendo un único número para las dos cosas, como siempre -- no tiene
+// formación ni estilo propios que romper esa simetría. Devuelve ya
+// [golesLocal, golesVisitante] listo para ligaApplyResult, según toque
+// jugar en casa o fuera.
+function careerSimulateMyMatchGoals(myAtk, myDef, oppPower, youAreHome) {
+  var myGoals = futDraftRandomGoals(futDraftExpectedGoals(myAtk, oppPower));
+  var oppGoals = futDraftRandomGoals(futDraftExpectedGoals(oppPower, myDef));
+  return youAreHome ? [myGoals, oppGoals] : [oppGoals, myGoals];
+}
 
 // Modo Carrera es más exigente que el resto de modos: TODOS los rivales
 // se nivelan hacia arriba (a petición explícita: "aunque un equipo sea
@@ -2441,6 +2477,58 @@ function careerRivalPower(name) {
   var target = tier ? tier.rivalLevelTarget : CAREER_RIVAL_LEVEL_TARGET;
   var p = teamPower({ name: name });
   return Math.round((p + target) / 2);
+}
+
+// Estilo de juego de tu equipo (Gestionar plantilla), a petición
+// explícita: 4 niveles de Muy defensiva a Ofensiva, cada uno con su
+// propio multiplicador de ataque/defensa -- afecta a los goles que
+// marcas Y a los que encajas (más ofensivo, más goles a favor pero
+// también más en contra; más defensivo, al revés), nunca solo a un lado.
+// "atk"/"def" siguen la misma escala que formation.atk/def de
+// FUTDRAFT_FORMATIONS (1 = neutro), así que se pueden multiplicar entre
+// sí sin más.
+var CAREER_PLAY_STYLES = [
+  { id: 'muy_defensiva', name: 'Muy defensiva', atk: 0.85, def: 1.18 },
+  { id: 'defensiva', name: 'Defensiva', atk: 0.93, def: 1.09 },
+  { id: 'equilibrado', name: 'Equilibrado', atk: 1, def: 1 },
+  { id: 'ofensiva', name: 'Ofensiva', atk: 1.15, def: 0.88 }
+];
+function careerPlayStyle(c) {
+  return CAREER_PLAY_STYLES.find(function (s) { return s.id === c.playStyle; }) || CAREER_PLAY_STYLES[2];
+}
+// Sinergia con la formación, a petición explícita ("tiene que existir
+// una sinergia y tener sentido con la formación, por si hay 4
+// delanteros, 5 defensas"): si el estilo tira en la misma dirección que
+// la formación (ambos ofensivos, o ambos defensivos -- comparando
+// formation.atk-formation.def contra style.atk-style.def), el estilo se
+// aplica entero. Si tira en la dirección CONTRARIA (p.ej. "Ofensiva" con
+// una 5-3-2 muy defensiva, o "Muy defensiva" con una 3-3-4 muy
+// ofensiva), no tiene mucho sentido de verdad -- once jugadores no
+// cambian de sitio en el campo solo por una orden táctica -- así que el
+// efecto se AMORTIGUA a la mitad en vez de aplicarse entero. Nunca se
+// anula del todo ni se vuelve negativo, solo se nota menos.
+var CAREER_PLAY_STYLE_CONTRADICTION_DAMPEN = 0.5;
+function careerPlayStyleModifiers(c) {
+  var style = careerPlayStyle(c);
+  var formation = FUTDRAFT_FORMATIONS.find(function (ft) { return ft.id === c.formation; }) || FUTDRAFT_FORMATIONS[0];
+  var styleLean = style.atk - style.def;
+  var formationLean = formation.atk - formation.def;
+  var aligned = styleLean === 0 || formationLean === 0 || (styleLean > 0) === (formationLean > 0);
+  var blend = aligned ? 1 : CAREER_PLAY_STYLE_CONTRADICTION_DAMPEN;
+  return { atk: 1 + (style.atk - 1) * blend, def: 1 + (style.def - 1) * blend, aligned: aligned };
+}
+// Ataque/defensa de TU equipo para resolver un partido de verdad
+// (Jornada/Copa/Champions, camino "Saltar" -- el camino "Simular" hace
+// lo mismo pero dentro de futDraftSimulateMatchCore, ver styleAtkMult/
+// styleDefMult en los puentes a FutDraft): misma base que ya se usaba
+// (futDraftScoreBreakdown, sin progresión -- limitación ya conocida del
+// motor compartido) multiplicada por la formación y ahora también por
+// el estilo de juego.
+function careerMyAtkDef(c) {
+  var formation = FUTDRAFT_FORMATIONS.find(function (ft) { return ft.id === c.formation; }) || FUTDRAFT_FORMATIONS[0];
+  var mods = careerPlayStyleModifiers(c);
+  var base = futDraftScoreBreakdown(c.lineup, c.captainId).total;
+  return { atk: base * formation.atk * mods.atk, def: base * formation.def * mods.def };
 }
 
 // Rachas de forma: los últimos CAREER_FORM_STREAK_LOOKBACK resultados de
@@ -2724,14 +2812,16 @@ window.actionSkipCareerMatchday = function () {
   if (careerCupPending(c)) return;
   var league = c.league;
   if (league.matchdayIndex >= league.schedule.length) return;
-  var myPower = clamp(futDraftScoreBreakdown(c.lineup, c.captainId).total + careerFormPowerModifier(league.table, 0), 0, 100);
   var myFixtureIdx = league.schedule[league.matchdayIndex].findIndex(function (fx) { return fx[0] === 0 || fx[1] === 0; });
   var myFixture = league.schedule[league.matchdayIndex][myFixtureIdx];
   var youAreHome = myFixture[0] === 0;
   var oppIdx = youAreHome ? myFixture[1] : myFixture[0];
-  var powerHome = youAreHome ? myPower : careerRivalPowerWithForm(league.teamNames[myFixture[0]], league.table, myFixture[0]);
-  var powerAway = youAreHome ? careerRivalPowerWithForm(league.teamNames[myFixture[1]], league.table, myFixture[1]) : myPower;
-  var goles = careerSimulateMatchGoals(powerHome, powerAway);
+  var myAtkDef = careerMyAtkDef(c);
+  var formMod = careerFormPowerModifier(league.table, 0);
+  var myAtk = clamp(myAtkDef.atk + formMod, 0, 100);
+  var myDef = clamp(myAtkDef.def + formMod, 0, 100);
+  var oppPower = careerRivalPowerWithForm(league.teamNames[oppIdx], league.table, oppIdx);
+  var goles = careerSimulateMyMatchGoals(myAtk, myDef, oppPower, youAreHome);
   ligaApplyResult(league.table, myFixture[0], myFixture[1], goles[0], goles[1]);
   league.results[league.matchdayIndex][myFixtureIdx] = goles;
   careerRecordMatchGoals(c, league, myFixture[0], myFixture[1], goles[0], goles[1]);
@@ -2782,7 +2872,8 @@ window.actionSimulateCareerMatchday = function () {
   // rival podía "marcar" con el nombre de un jugador tuyo de verdad, a
   // petición explícita ("no puede meter gol alguien en el equipo
   // contrario al que estoy jugando, un jugador que yo tengo en mi equipo").
-  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna' };
+  var careerStyleMods = careerPlayStyleModifiers(c);
+  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna', styleAtkMult: careerStyleMods.atk, styleDefMult: careerStyleMods.def };
   var sim = futDraftSimulateMatchCore(careerRivalPowerWithForm(oppName, league.table, oppIdx));
   G.futdraft.live = {
     oppSide: { name: oppName }, modifier: sim.modifier,
@@ -3073,7 +3164,8 @@ window.actionSimulateCareerCupMatch = function () {
   // rival podía "marcar" con el nombre de un jugador tuyo de verdad, a
   // petición explícita ("no puede meter gol alguien en el equipo
   // contrario al que estoy jugando, un jugador que yo tengo en mi equipo").
-  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna' };
+  var careerStyleMods = careerPlayStyleModifiers(c);
+  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna', styleAtkMult: careerStyleMods.atk, styleDefMult: careerStyleMods.def };
   var sim = futDraftSimulateMatchCore(careerRivalPower(opp.name));
   G.futdraft.live = {
     oppSide: { name: opp.name }, modifier: sim.modifier,
@@ -3127,9 +3219,9 @@ window.actionSkipCareerCupMatch = function () {
   var match = careerCupMyMatch(cup);
   if (!match) return;
   var opp = careerCupOpponent(match);
-  var myPower = futDraftScoreBreakdown(c.lineup, c.captainId).total;
+  var myAtkDef = careerMyAtkDef(c);
   var oppPower = careerRivalPower(opp.name);
-  var goles = careerSimulateMatchGoals(myPower, oppPower);
+  var goles = careerSimulateMyMatchGoals(myAtkDef.atk, myAtkDef.def, oppPower, true);
   var myGoals = goles[0], oppGoals = goles[1];
   var penalty = myGoals === oppGoals ? careerCupPenaltyShootout(c, opp.name) : null;
   var playerWon = penalty ? penalty.myGoals > penalty.oppGoals : myGoals > oppGoals;
@@ -3283,7 +3375,8 @@ window.actionSimulateCareerChampionsMatch = function () {
   // rival podía "marcar" con el nombre de un jugador tuyo de verdad, a
   // petición explícita ("no puede meter gol alguien en el equipo
   // contrario al que estoy jugando, un jugador que yo tengo en mi equipo").
-  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna' };
+  var careerStyleMods = careerPlayStyleModifiers(c);
+  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna', styleAtkMult: careerStyleMods.atk, styleDefMult: careerStyleMods.def };
   var sim = futDraftSimulateMatchCore(careerRivalPower(opp.name));
   G.futdraft.live = {
     oppSide: { name: opp.name }, modifier: sim.modifier,
@@ -3334,9 +3427,9 @@ window.actionSkipCareerChampionsMatch = function () {
   var match = careerChampionsMyMatch(champions);
   if (!match) return;
   var opp = careerChampionsOpponent(match);
-  var myPower = futDraftScoreBreakdown(c.lineup, c.captainId).total;
+  var myAtkDef = careerMyAtkDef(c);
   var oppPower = careerRivalPower(opp.name);
-  var goles = careerSimulateMatchGoals(myPower, oppPower);
+  var goles = careerSimulateMyMatchGoals(myAtkDef.atk, myAtkDef.def, oppPower, true);
   var myGoals = goles[0], oppGoals = goles[1];
   var penalty = myGoals === oppGoals ? careerCupPenaltyShootout(c, opp.name) : null;
   var playerWon = penalty ? penalty.myGoals > penalty.oppGoals : myGoals > oppGoals;
