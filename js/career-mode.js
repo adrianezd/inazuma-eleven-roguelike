@@ -1270,7 +1270,6 @@ function renderCareerEquipo(c) {
   return (
     '<div class="panel center-text">' +
       '<p class="dim small">Puntuación de equipo: <strong style="color:var(--accent-2)">' + breakdown.total + '</strong> / 100</p>' +
-      '<p class="dim small">Cambios ilimitados: toca a dos jugadores (titulares o suplente) para cambiarlos.</p>' +
       '<p class="dim small">' + captainHint + '</p>' +
       '<button class="btn btn-tiny' + (c.pickingCaptain ? ' active' : '') + '" onclick="toggleCareerCaptainMode()">' + (c.pickingCaptain ? 'Toca a un titular para hacerlo capitán…' : 'Elegir capitán 👑') + '</button>' +
     '</div>' +
@@ -1584,8 +1583,6 @@ function renderCareerEntrenamiento(c) {
         careerStarsHtml(level, CAREER_TRAINING_MAX_LEVEL, 'career-star-lg') +
         '<span class="career-training-level-num">' + level + '/' + CAREER_TRAINING_MAX_LEVEL + '</span>' +
       '</div>' +
-      (level === 0 ? '<p class="dim small">Todavía no has construido el centro de entrenamiento -- tus jugadores progresan a su ritmo natural, sin ayuda.</p>' : '') +
-      '<p class="dim small">Cuanto más alto el nivel, más tienden a mejorar tus jugadores cada temporada (y menos a bajar los veteranos) -- afecta a todo el mundo, no solo a tu plantilla.</p>' +
       (c.trainingMessage ? '<p class="dim small">' + escapeHtml(c.trainingMessage) + '</p>' : '') +
       (locked
         ? '<p class="dim small">Entrenamiento cerrado -- la temporada ya ha terminado, no se puede mejorar hasta la que viene.</p>'
@@ -1613,7 +1610,7 @@ function renderCareerEntrenamiento(c) {
         '<span class="dim">Potencial próxima temporada: <strong>' + (potential.low === potential.high ? potential.low : (potential.low + '-' + potential.high)) + '</strong></span>' +
       '</div>' +
       (totalMatchdays
-        ? '<p class="dim small" style="margin-top:4px">Titular esta temporada: <strong>' + starts + ' de ' + totalMatchdays + '</strong> jornadas -- juega para subir más, además del entrenamiento.</p>'
+        ? '<p class="dim small" style="margin-top:4px">Titular esta temporada: <strong>' + starts + ' de ' + totalMatchdays + '</strong></p>'
         : '') +
     '</div>';
   }).join('');
@@ -2152,7 +2149,7 @@ function renderCareerMercado(c) {
     incomingOffersHtml +
     '<div class="panel">' +
       '<h3 style="margin-bottom:4px">Mercado</h3>' +
-      '<p class="dim small">Presupuesto disponible: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong>. Con tu puntuación de equipo (' + Math.round(teamAvg) + ', la misma que en Mi equipo) puedes fichar hasta <strong style="color:var(--accent-2)">' + (signableCap - 1) + '</strong> de media -- los mejores todavía no están a la venta, pero el techo sube según mejora tu equipo. Fichar (en propiedad o cedido) es negociar: ofreces dinero y el club puede aceptar o rechazar. Cedidos: ' + careerLoanCount(c) + ' / ' + CAREER_MAX_LOANS_IN + '.</p>' +
+      '<p class="dim small">Presupuesto disponible: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong> · Cedidos: <strong>' + careerLoanCount(c) + ' / ' + CAREER_MAX_LOANS_IN + '</strong></p>' +
       '<p class="dim small">' + available.length + ' jugador' + (available.length === 1 ? '' : 'es') + ' con este filtro.</p>' +
       (squadFull ? '<p class="dim small" style="color:var(--danger)">Plantilla al máximo (' + CAREER_MAX_SQUAD_SIZE + '). Vende o cede a alguien antes de fichar.</p>' : '') +
       (loansFull ? '<p class="dim small" style="color:var(--danger)">Ya tienes ' + CAREER_MAX_LOANS_IN + ' cesiones, el máximo -- devuelve a alguna antes de fichar cedido a otro.</p>' : '') +

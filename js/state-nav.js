@@ -127,16 +127,9 @@ function renderMenu() {
     '<div class="screen">' +
       '<div class="panel center-text">' +
         '<p class="currency-display">' + spiritIcon() + ' ' + m.points + ' Puntos de Espíritu</p>' +
-        '<div class="stats-summary">' +
-          '<div class="stat-tile"><div class="num">' + m.bestNode + '</div><div class="label">Mejor progreso (nodos)</div></div>' +
-          '<div class="stat-tile"><div class="num">' + m.bestWins + '</div><div class="label">Mejor racha de victorias</div></div>' +
-          '<div class="stat-tile"><div class="num">' + (m.bestSurvivalWave || 0) + '</div><div class="label">Mejor oleada (Supervivencia)</div></div>' +
-          '<div class="stat-tile"><div class="num">' + (m.tournamentsWon || 0) + '</div><div class="label">Torneos ganados</div></div>' +
-        '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-primary btn-block" onclick="actionStartRun()">Jugar</button>' +
         '</div>' +
-        '<p class="dim small center-text">Normal y Difícil: el mapa ramificado de siempre.</p>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-primary btn-block" onclick="actionGoFutDraftModeSelect()">FutDraft</button>' +
         '</div>' +

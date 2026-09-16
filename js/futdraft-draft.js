@@ -55,7 +55,15 @@ var FUTDRAFT_FORMATIONS = [
   { id: '424', name: '4-2-4', rows: [
       { pos: 'Delantero', count: 4 }, { pos: 'Centrocampista', count: 2 },
       { pos: 'Defensa', count: 4 }, { pos: 'Portero', count: 1 }
-    ], atk: 1.25, def: 1.05 }
+    ], atk: 1.25, def: 1.05 },
+  { id: '523', name: '5-2-3', rows: [
+      { pos: 'Delantero', count: 3 }, { pos: 'Centrocampista', count: 2 },
+      { pos: 'Defensa', count: 5 }, { pos: 'Portero', count: 1 }
+    ], atk: 1.05, def: 1.15 },
+  { id: '451', name: '4-5-1', rows: [
+      { pos: 'Delantero', count: 1 }, { pos: 'Centrocampista', count: 5 },
+      { pos: 'Defensa', count: 4 }, { pos: 'Portero', count: 1 }
+    ], atk: 0.85, def: 1.15 }
 ];
 
 // Cada draft ofrece solo unas pocas formaciones al azar, no las 7 de
