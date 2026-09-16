@@ -799,6 +799,10 @@ function careerFreshState(choices) {
     // careerRecordStarterAppearances/careerApplySquadGrowthSplit -- vacío
     // en una partida nueva, se reinicia cada actionStartNewCareerSeason.
     seasonAppearances: {},
+    // Historial de carrera: una entrada por temporada ya jugada (ver
+    // careerRecordSeasonHistory/renderCareerHistorial) -- ACUMULADO de
+    // toda la carrera, nunca se resetea, como bestPosition/careerStats.
+    seasonHistory: [],
     // Centro de entrenamiento: arranca SIN construir (0), infraestructura
     // del club, nunca se resetea entre temporadas (como el presupuesto)
     // -- ver careerTrainingEffectiveParams/CAREER_TRAINING_LEVEL_COSTS.
@@ -872,7 +876,8 @@ function careerSerialize(c) {
     qualifiedForChampionsNextSeason: !!c.qualifiedForChampionsNextSeason,
     championsWon: c.championsWon || 0,
     lastChampionsResult: c.lastChampionsResult || null,
-    seasonAppearances: c.seasonAppearances || {}
+    seasonAppearances: c.seasonAppearances || {},
+    seasonHistory: c.seasonHistory || []
   };
 }
 function careerDeserialize(data) {
@@ -944,7 +949,8 @@ function careerDeserialize(data) {
     qualifiedForChampionsNextSeason: !!data.qualifiedForChampionsNextSeason,
     championsWon: data.championsWon || 0,
     lastChampionsResult: data.lastChampionsResult || null,
-    seasonAppearances: data.seasonAppearances || {}
+    seasonAppearances: data.seasonAppearances || {},
+    seasonHistory: data.seasonHistory || []
   };
 }
 // Guarda el estado ACTUAL (G.career) en el hueco activo
@@ -2328,6 +2334,7 @@ function renderCareerLigaSection(c) {
     '<div class="panel center-text">' +
       '<p class="dim small">' + escapeHtml(careerDivisionName(c.division)) + ' -- Jornada ' + Math.min(league.matchdayIndex + 1, league.schedule.length) + ' de ' + league.schedule.length + '</p>' +
       (view !== 'calendario' ? '<p class="dim small">' + zoneHint + '</p>' : '') +
+      (view === 'forma' ? '<p class="dim small">Una racha de 3 victorias o derrotas seguidas da un empujón (o un bajón) de forma al siguiente partido.</p>' : '') +
       '<div class="career-liga-view-row mt">' + viewBtnsHtml + '</div>' +
       (view !== 'calendario' ? '<button class="btn btn-tiny mt' + (c.showTopScorers ? ' active' : '') + '" onclick="actionToggleCareerTopScorers()">Máximos goleadores y asistentes</button>' : '') +
     '</div>';
@@ -2415,6 +2422,33 @@ function careerRivalPower(name) {
   var target = tier ? tier.rivalLevelTarget : CAREER_RIVAL_LEVEL_TARGET;
   var p = teamPower({ name: name });
   return Math.round((p + target) / 2);
+}
+
+// Rachas de forma: los últimos CAREER_FORM_STREAK_LOOKBACK resultados de
+// Liga de un equipo (table[idx].form, el mismo array que ya pinta
+// ligaFormHtml en la vista "Forma" de Competiciones) dan un empujón
+// pequeño de potencia al SIGUIENTE partido -- a petición explícita ("la
+// Forma... podría afectar ligeramente el rendimiento en el próximo
+// partido... un equipo en racha rinde un poco mejor"). Solo cuenta
+// cuando ya hay 3 resultados de qué tirar (si no, 0, nada que premiar o
+// castigar todavía); wins-losses va de -3 a 3, así que el modificador
+// queda entre -2 y +2 -- "ligeramente", nunca decide un partido por sí
+// solo. Se usa tanto para el rival (careerRivalPowerWithForm) como para
+// TI (aplicado directo con table[0] donde se calcula myPower) en
+// Jornada, la única competición con tabla/forma de verdad (Copa y
+// Champions son de eliminación directa, sin rachas que mirar).
+var CAREER_FORM_STREAK_LOOKBACK = 3;
+var CAREER_FORM_STREAK_FACTOR = 0.6;
+function careerFormPowerModifier(table, idx) {
+  var form = (table[idx] && table[idx].form) || [];
+  var recent = form.slice(-CAREER_FORM_STREAK_LOOKBACK);
+  if (recent.length < CAREER_FORM_STREAK_LOOKBACK) return 0;
+  var wins = recent.filter(function (r) { return r === 'V'; }).length;
+  var losses = recent.filter(function (r) { return r === 'D'; }).length;
+  return Math.round((wins - losses) * CAREER_FORM_STREAK_FACTOR);
+}
+function careerRivalPowerWithForm(name, table, idx) {
+  return clamp(careerRivalPower(name) + careerFormPowerModifier(table, idx), 0, 100);
 }
 
 // Plantel "fantasma" para goleadores/asistentes de cualquier gol que no
@@ -2521,6 +2555,38 @@ function careerMaybeAwardLeagueFinish(c) {
   c.lastPromotionResult = careerComputePromotionRelegation(c);
 }
 
+// Historial de carrera navegable (pestaña Estadísticas), a petición
+// explícita ("una pantalla con la línea temporal de todas las temporadas
+// jugadas... ya se guarda casi todo en careerStats/bestPosition, falta
+// la vista"): una entrada por temporada, capturada justo al pulsar
+// "Empezar temporada X+1" (actionStartNewCareerSeason, ANTES de resetear
+// c.cup/c.champions/c.lastPromotionResult para la temporada nueva) con
+// los mismos datos que ya enseña el resumen de esa temporada
+// (careerSeasonSummaryHtml) -- así la vista de historial es solo una
+// lista de esos mismos resúmenes ya vividos, no un cálculo aparte.
+function careerRecordSeasonHistory(c) {
+  var position = careerFinalLeaguePosition(c);
+  var cup = c.cup;
+  var cupChampion = careerCupChampion(cup);
+  var cupResult = cupChampion && cupChampion.isPlayer ? 'champion' : (cup.eliminated ? 'eliminated' : 'unfinished');
+  var champions = c.champions;
+  var championsResult = null;
+  if (champions) {
+    var championsChampion = careerChampionsChampion(champions);
+    championsResult = championsChampion && championsChampion.isPlayer ? 'champion' : (champions.eliminated ? 'eliminated' : 'unfinished');
+  }
+  var pr = c.lastPromotionResult;
+  var promotion = pr ? (pr.youPromoted ? 'promoted' : (pr.youRelegated ? 'relegated' : 'stayed')) : 'stayed';
+  c.seasonHistory = c.seasonHistory || [];
+  c.seasonHistory.push({
+    season: c.season, division: c.division,
+    position: position, totalTeams: c.league.teamNames.length,
+    bonus: c.lastLeagueFinish ? c.lastLeagueFinish.bonus : null,
+    cupResult: cupResult, championsResult: championsResult,
+    promotion: promotion
+  });
+}
+
 // Simula la temporada COMPLETA de la división en la que NO juegas (nunca
 // se ve partido a partido, solo hace falta el resultado final para saber
 // quién asciende/desciende) -- mismas fórmulas de potencia/gol que el
@@ -2597,8 +2663,8 @@ function careerResolveOtherFixtures(c, league, skipFixtureIdx) {
   var fixtures = league.schedule[league.matchdayIndex];
   fixtures.forEach(function (fx, fi) {
     if (fi === skipFixtureIdx) return;
-    var powerHome = careerRivalPower(league.teamNames[fx[0]]);
-    var powerAway = careerRivalPower(league.teamNames[fx[1]]);
+    var powerHome = careerRivalPowerWithForm(league.teamNames[fx[0]], league.table, fx[0]);
+    var powerAway = careerRivalPowerWithForm(league.teamNames[fx[1]], league.table, fx[1]);
     var goles = careerSimulateMatchGoals(powerHome, powerAway);
     ligaApplyResult(league.table, fx[0], fx[1], goles[0], goles[1]);
     league.results[league.matchdayIndex][fi] = goles;
@@ -2639,13 +2705,13 @@ window.actionSkipCareerMatchday = function () {
   if (careerCupPending(c)) return;
   var league = c.league;
   if (league.matchdayIndex >= league.schedule.length) return;
-  var myPower = futDraftScoreBreakdown(c.lineup, c.captainId).total;
+  var myPower = clamp(futDraftScoreBreakdown(c.lineup, c.captainId).total + careerFormPowerModifier(league.table, 0), 0, 100);
   var myFixtureIdx = league.schedule[league.matchdayIndex].findIndex(function (fx) { return fx[0] === 0 || fx[1] === 0; });
   var myFixture = league.schedule[league.matchdayIndex][myFixtureIdx];
   var youAreHome = myFixture[0] === 0;
   var oppIdx = youAreHome ? myFixture[1] : myFixture[0];
-  var powerHome = youAreHome ? myPower : careerRivalPower(league.teamNames[myFixture[0]]);
-  var powerAway = youAreHome ? careerRivalPower(league.teamNames[myFixture[1]]) : myPower;
+  var powerHome = youAreHome ? myPower : careerRivalPowerWithForm(league.teamNames[myFixture[0]], league.table, myFixture[0]);
+  var powerAway = youAreHome ? careerRivalPowerWithForm(league.teamNames[myFixture[1]], league.table, myFixture[1]) : myPower;
   var goles = careerSimulateMatchGoals(powerHome, powerAway);
   ligaApplyResult(league.table, myFixture[0], myFixture[1], goles[0], goles[1]);
   league.results[league.matchdayIndex][myFixtureIdx] = goles;
@@ -2692,7 +2758,7 @@ window.actionSimulateCareerMatchday = function () {
 
   c.savedFutdraft = G.futdraft;
   G.futdraft = { lineup: c.lineup, captainId: c.captainId, formation: c.formation, condition: 'ninguna' };
-  var sim = futDraftSimulateMatchCore(careerRivalPower(oppName));
+  var sim = futDraftSimulateMatchCore(careerRivalPowerWithForm(oppName, league.table, oppIdx));
   G.futdraft.live = {
     oppSide: { name: oppName }, modifier: sim.modifier,
     minute: 0, pending: sim.timeline.slice(), revealed: [],
@@ -2778,6 +2844,7 @@ window.continueCareerCupMatch = function () {
 window.actionStartNewCareerSeason = function () {
   var c = G.career;
   if (c.league.matchdayIndex < c.league.schedule.length) return;
+  careerRecordSeasonHistory(c);
   c.season = (c.season || 1) + 1;
   // Las cesiones ENTRANTES duran 1 temporada -- al empezar la siguiente,
   // todos los cedidos que te quedaran vuelven solos a su club (no son
@@ -3430,6 +3497,39 @@ function renderCareerJornada(c) {
 // de toda la carrera, nunca se resetea). Antes solo se enseñaba el
 // histórico, con el título genérico compartido "...del torneo" (pensado
 // para FutDraft/Torneo), que no pintaba nada en Modo Carrera.
+// Icono compacto por temporada para el historial (careerSeasonHistoryHtml):
+// mismo lenguaje visual que careerSeasonBadgeHtml (resumen de temporada),
+// pero en una fila por temporada en vez de una tarjeta grande -- para que
+// la línea temporal completa quepa sin ocupar toda la pantalla.
+function careerSeasonHistoryRowHtml(entry) {
+  var positionText = entry.position ? (entry.position + 'º de ' + entry.totalTeams) : 'Sin datos';
+  var cupIcon = entry.cupResult === 'champion' ? '🏆' : (entry.cupResult === 'eliminated' ? '❌' : '⏳');
+  var championsIcon = entry.championsResult === null ? '' : (entry.championsResult === 'champion' ? ' · Champions 🏆' : (entry.championsResult === 'eliminated' ? ' · Champions ❌' : ' · Champions ⏳'));
+  var moveIcon = entry.promotion === 'promoted' ? ' ⬆️' : (entry.promotion === 'relegated' ? ' ⬇️' : '');
+  var rowCls = entry.promotion === 'promoted' ? 'season-badge-good' : (entry.promotion === 'relegated' ? 'season-badge-bad' : '');
+  return '<div class="season-badge' + (rowCls ? ' ' + rowCls : '') + '">' +
+    '<div class="season-badge-icon">📅</div>' +
+    '<div>' +
+      '<div class="season-badge-label">Temporada ' + entry.season + ' -- ' + escapeHtml(careerDivisionName(entry.division)) + '</div>' +
+      '<div class="season-badge-text">' + positionText + moveIcon + (entry.bonus ? ' · +' + entry.bonus + ' M€' : '') + '</div>' +
+      '<div class="dim small">Copa del Rey ' + cupIcon + championsIcon + '</div>' +
+    '</div>' +
+  '</div>';
+}
+// Historial de carrera navegable, a petición explícita ("una pantalla
+// con la línea temporal de todas las temporadas jugadas... en vez de
+// solo el resumen de la última"): lista TODAS las entradas de
+// c.seasonHistory (careerRecordSeasonHistory, una por temporada ya
+// completada), más reciente primero.
+function careerSeasonHistoryHtml(c) {
+  var history = c.seasonHistory || [];
+  if (!history.length) {
+    return '<div class="panel center-text"><h3 style="margin-bottom:4px">Historial de la carrera</h3><p class="dim small">Todavía no has completado ninguna temporada.</p></div>';
+  }
+  var rows = history.slice().reverse().map(careerSeasonHistoryRowHtml).join('');
+  return '<div class="panel center-text"><h3 style="margin-bottom:4px">Historial de la carrera</h3></div>' +
+    '<div class="panel"><div class="season-summary-badges">' + rows + '</div></div>';
+}
 function renderCareerEstadisticas(c) {
   var bestPosText = c.bestPosition ? (c.bestPosition.position + 'º de ' + c.bestPosition.totalTeams) : 'Todavía sin datos.';
   var seasonPanel = renderTopScorersAssistsPanel(c.league.stats, 'Goleadores y asistentes de esta temporada');
@@ -3441,7 +3541,8 @@ function renderCareerEstadisticas(c) {
       '<p class="dim small">Mejor posición en liga: <strong style="color:var(--accent-2)">' + bestPosText + '</strong></p>' +
     '</div>' +
     (seasonPanel || '<div class="panel center-text"><p class="dim small">Todavía no hay goles registrados esta temporada.</p></div>') +
-    (historicPanel || '<div class="panel center-text"><p class="dim small">Todavía no hay goles históricos registrados.</p></div>')
+    (historicPanel || '<div class="panel center-text"><p class="dim small">Todavía no hay goles históricos registrados.</p></div>') +
+    careerSeasonHistoryHtml(c)
   );
 }
 
