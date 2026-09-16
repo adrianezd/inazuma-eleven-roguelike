@@ -1088,18 +1088,23 @@ a { color: var(--accent); }
 .career-liga-table td:nth-child(3), .career-liga-table th:nth-child(3) { text-align: left; white-space: normal; word-break: break-word; }
 .career-liga-table tr.liga-you { background: var(--accent-2); color: #06202f; font-weight: 700; }
 .career-liga-table tr.liga-you td { border-bottom-color: var(--accent-2); }
-.career-liga-table tr.liga-you .liga-pos-badge:not(.liga-pos-top):not(.liga-pos-bottom) { color: #06202f; }
+.career-liga-table tr.liga-you .liga-pos-badge:not(.liga-pos-top):not(.liga-pos-bottom):not(.liga-pos-champions) { color: #06202f; }
 .career-liga-table tr.liga-you .liga-form-draw { color: var(--bg); }
+/* Azul para plaza de Champions League (4 primeros de Primera), a
+   petición explícita ("pinta de color azul los 4 primeros equipos"). */
+.liga-pos-champions { background: #1565c0; color: #fff; }
 /* Barra de color en el borde izquierdo de la fila entera (ascenso/
-   descenso), a petición explícita ("se leería más rápido de un
+   descenso/Champions), a petición explícita ("se leería más rápido de un
    vistazo") -- además de la insignia de posición ya coloreada, no en su
    lugar. El borde se pone en la primera celda (no en el <tr>: los
    navegadores no pintan border-left/right sobre <tr> de forma fiable en
    una tabla normal) para que quede pegado al borde real de la fila. */
 .career-liga-table tr.liga-row-zone-top td:first-child { border-left: 4px solid #1b5e20; }
 .career-liga-table tr.liga-row-zone-bottom td:first-child { border-left: 4px solid #c0392b; }
+.career-liga-table tr.liga-row-zone-champions td:first-child { border-left: 4px solid #1565c0; }
 .career-liga-table tr.liga-you.liga-row-zone-top td:first-child,
-.career-liga-table tr.liga-you.liga-row-zone-bottom td:first-child { border-left-width: 4px; }
+.career-liga-table tr.liga-you.liga-row-zone-bottom td:first-child,
+.career-liga-table tr.liga-you.liga-row-zone-champions td:first-child { border-left-width: 4px; }
 /* Botones de vista (Resumida/Completa/Forma/Calendario): mismo pill que
    el resto de filtros de la app, pero en su propia fila centrada para
    que se lean bien incluso en 4 a la vez en pantallas estrechas. */

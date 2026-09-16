@@ -206,6 +206,11 @@ var CAREER_DIVISION2_NORMAL_COUNT = 11;
 // Cuántos ascienden/descienden cada temporada -- los 2 primeros de
 // Segunda suben, los 2 últimos de Primera bajan, siempre.
 var CAREER_PROMOTION_SPOTS = 2;
+// Plazas de Champions League: quedar entre los CAREER_CHAMPIONS_QUALIFY_SPOTS
+// primeros de PRIMERA división clasifica para jugarla la temporada
+// SIGUIENTE ("como en la vida real" -- a petición explícita), nunca la
+// misma en la que se logra. Solo existe estando en Primera.
+var CAREER_CHAMPIONS_QUALIFY_SPOTS = 4;
 function careerDivisionTeamCount(division) {
   return division === 1 ? CAREER_DIVISION1_TEAM_COUNT : CAREER_DIVISION2_TEAM_COUNT;
 }
@@ -755,7 +760,15 @@ function careerFreshState(choices) {
     cup: careerNewCup(),
     cupsWon: 0,
     lastCupResult: null,
-    lastLeagueFinish: null
+    lastLeagueFinish: null,
+    // Champions League: no se juega la primera temporada (hay que
+    // clasificarse quedando entre los CAREER_CHAMPIONS_QUALIFY_SPOTS
+    // primeros de Primera la temporada anterior, a petición explícita
+    // "como en la vida real") -- ver careerNewChampions/actionStartNewCareerSeason.
+    champions: null,
+    qualifiedForChampionsNextSeason: false,
+    championsWon: 0,
+    lastChampionsResult: null
   };
   careerGenerateIncomingOffers(state);
   return state;
@@ -803,7 +816,11 @@ function careerSerialize(c) {
     trainingLevel: typeof c.trainingLevel === 'number' ? c.trainingLevel : 0,
     cup: c.cup, cupsWon: c.cupsWon || 0, lastCupResult: c.lastCupResult || null,
     lastLeagueFinish: c.lastLeagueFinish || null,
-    lastPromotionResult: c.lastPromotionResult || null
+    lastPromotionResult: c.lastPromotionResult || null,
+    champions: c.champions || null,
+    qualifiedForChampionsNextSeason: !!c.qualifiedForChampionsNextSeason,
+    championsWon: c.championsWon || 0,
+    lastChampionsResult: c.lastChampionsResult || null
   };
 }
 function careerDeserialize(data) {
@@ -870,7 +887,11 @@ function careerDeserialize(data) {
     cupsWon: data.cupsWon || 0,
     lastCupResult: data.lastCupResult || null,
     lastLeagueFinish: data.lastLeagueFinish || null,
-    lastPromotionResult: data.lastPromotionResult || null
+    lastPromotionResult: data.lastPromotionResult || null,
+    champions: careerCupRelinkWinners(data.champions) || null,
+    qualifiedForChampionsNextSeason: !!data.qualifiedForChampionsNextSeason,
+    championsWon: data.championsWon || 0,
+    lastChampionsResult: data.lastChampionsResult || null
   };
 }
 // Guarda el estado ACTUAL (G.career) en el hueco activo
@@ -2148,9 +2169,14 @@ function renderCareerCalendario(c) {
 // el borde izquierdo... se leería más rápido de un vistazo") -- la
 // insignia se queda porque ya estaba y sigue aportando (el número en sí
 // coloreado), la barra es solo un refuerzo visual más rápido de leer.
+// Azul para plaza de CHAMPIONS (los CAREER_CHAMPIONS_QUALIFY_SPOTS
+// primeros de Primera, a petición explícita: "pinta de color azul los 4
+// primeros equipos de la liga") -- solo en Primera, nunca choca con la
+// zona de descenso porque son los primeros puestos, no los últimos.
 function careerLigaZoneClass(rank, totalTeams, division) {
   if (division === 2 && rank <= CAREER_PROMOTION_SPOTS) return 'liga-pos-top';
   if (division === 1 && rank > totalTeams - CAREER_PROMOTION_SPOTS) return 'liga-pos-bottom';
+  if (division === 1 && rank <= CAREER_CHAMPIONS_QUALIFY_SPOTS) return 'liga-pos-champions';
   return '';
 }
 function careerLigaPosBadgeHtml(rank, totalTeams, division) {
@@ -2160,10 +2186,14 @@ function careerLigaPosBadgeHtml(rank, totalTeams, division) {
 // Misma zona que arriba, pero como clase para la fila entera (borde
 // izquierdo de color) en vez de la insignia -- distinto prefijo
 // (liga-row-zone-*) para no arrastrar el fondo/color de texto que trae
-// liga-pos-top/bottom en la insignia, aquí solo hace falta el borde.
+// liga-pos-top/bottom/champions en la insignia, aquí solo hace falta el
+// borde.
 function careerLigaZoneRowClass(rank, totalTeams, division) {
   var zoneCls = careerLigaZoneClass(rank, totalTeams, division);
-  return zoneCls === 'liga-pos-top' ? 'liga-row-zone-top' : (zoneCls === 'liga-pos-bottom' ? 'liga-row-zone-bottom' : '');
+  if (zoneCls === 'liga-pos-top') return 'liga-row-zone-top';
+  if (zoneCls === 'liga-pos-bottom') return 'liga-row-zone-bottom';
+  if (zoneCls === 'liga-pos-champions') return 'liga-row-zone-champions';
+  return '';
 }
 
 // Competiciones agrupa Liga (con Calendario dentro, como una vista más)
@@ -2186,12 +2216,16 @@ window.actionGoToCareerCompeticionesTab = function (subTab) {
   render();
 };
 function renderCareerCompeticiones(c) {
-  var sub = c.competicionesTab === 'copa' ? 'copa' : 'liga';
+  var hasChampions = !!c.champions;
+  var sub = c.competicionesTab;
+  if (sub !== 'copa' && (sub !== 'champions' || !hasChampions)) sub = 'liga';
   var subTabsHtml = '<div class="btn-row" style="justify-content:center">' +
     '<button class="btn btn-tiny' + (sub === 'liga' ? ' active' : '') + '" onclick="actionSetCareerCompeticionesTab(\'liga\')">Liga</button>' +
     '<button class="btn btn-tiny' + (sub === 'copa' ? ' active' : '') + '" onclick="actionSetCareerCompeticionesTab(\'copa\')">Copa del Rey</button>' +
+    (hasChampions ? '<button class="btn btn-tiny' + (sub === 'champions' ? ' active' : '') + '" onclick="actionSetCareerCompeticionesTab(\'champions\')">Champions</button>' : '') +
   '</div>';
-  return subTabsHtml + (sub === 'copa' ? renderCareerCopa(c) : renderCareerLigaSection(c));
+  var bodyHtml = sub === 'copa' ? renderCareerCopa(c) : (sub === 'champions' ? renderCareerChampions(c) : renderCareerLigaSection(c));
+  return subTabsHtml + bodyHtml;
 }
 
 window.actionSetCareerLigaView = function (view) {
@@ -2218,7 +2252,7 @@ function renderCareerLigaSection(c) {
   }).join('');
   var zoneHint = c.division === 2
     ? 'Verde: zona de ascenso a Primera (' + CAREER_PROMOTION_SPOTS + ' primeros).'
-    : 'Rojo: zona de descenso a Segunda (' + CAREER_PROMOTION_SPOTS + ' últimos).';
+    : 'Azul: plaza de Champions League (' + CAREER_CHAMPIONS_QUALIFY_SPOTS + ' primeros). Rojo: zona de descenso a Segunda (' + CAREER_PROMOTION_SPOTS + ' últimos).';
   var headerHtml =
     '<div class="panel center-text">' +
       '<p class="dim small">' + escapeHtml(careerDivisionName(c.division)) + ' -- Jornada ' + Math.min(league.matchdayIndex + 1, league.schedule.length) + ' de ' + league.schedule.length + '</p>' +
@@ -2368,12 +2402,18 @@ function careerFinalLeaguePosition(c) {
   var idx = sorted.findIndex(function (t) { return t.idx === 0; });
   return idx === -1 ? null : idx + 1;
 }
-// Premio de fin de Liga según la posición final, a petición explícita:
-// 1º 25M€, 2º 20M€, 3º 15M€, 4º 10M€, 5º 5M€, y desde el 6º baja 0.1M€
-// por puesto (6º 4.9M€... 16º 3.9M€ en Segunda, hasta 20º 3.5M€ en
-// Primera) -- mismos premios en las dos divisiones, no se ha pedido que
-// Segunda pague menos.
-function careerLeaguePositionBonus(position) {
+// Premio de fin de Liga según la posición final, a petición explícita.
+// Primera: 1º 25M€, 2º 20M€, 3º 15M€, 4º 10M€, 5º 5M€, y desde el 6º baja
+// 0.1M€ por puesto. Segunda paga bastante menos (división menor): 1º
+// 6.5M€, 2º 4M€, 3º 3M€, y desde el 4º baja 0.1M€ por puesto (4º 2.9M€,
+// 5º 2.8M€...).
+function careerLeaguePositionBonus(position, division) {
+  if (division === 2) {
+    if (position <= 1) return 6.5;
+    if (position === 2) return 4;
+    if (position === 3) return 3;
+    return Math.round((3 - (position - 3) * 0.1) * 10) / 10;
+  }
   if (position <= 1) return 25;
   if (position === 2) return 20;
   if (position === 3) return 15;
@@ -2394,9 +2434,15 @@ function careerMaybeAwardLeagueFinish(c) {
   league.finishBonusAwarded = true;
   var position = careerFinalLeaguePosition(c);
   if (position === null) return;
-  var bonus = careerLeaguePositionBonus(position);
+  var bonus = careerLeaguePositionBonus(position, c.division);
   c.budget = Math.round((c.budget + bonus) * 10) / 10;
   c.lastLeagueFinish = { position: position, bonus: bonus };
+  // Clasificación a la Champions (solo desde Primera): entre los
+  // CAREER_CHAMPIONS_QUALIFY_SPOTS primeros de Primera esta temporada ->
+  // se juega la próxima, "como en la vida real" (se decide un año y se
+  // juega al siguiente). Se guarda en c.qualifiedForChampionsNextSeason,
+  // aplicado de verdad (creando c.champions) en actionStartNewCareerSeason.
+  c.qualifiedForChampionsNextSeason = c.division === 1 && position <= CAREER_CHAMPIONS_QUALIFY_SPOTS;
   // Ascensos/descensos se calculan YA (para poder enseñarlos en el
   // resumen de temporada, ver careerSeasonSummaryHtml) pero no se
   // aplican hasta actionStartNewCareerSeason (careerApplyPromotionRelegation),
@@ -2695,6 +2741,14 @@ window.actionStartNewCareerSeason = function () {
   c.cup = careerNewCup();
   c.lastCupResult = null;
   c.lastLeagueFinish = null;
+  // Champions: se juega esta temporada si te clasificaste la temporada
+  // ANTERIOR (c.qualifiedForChampionsNextSeason, calculado al terminar la
+  // liga en careerMaybeAwardLeagueFinish) -- "como en la vida real", el
+  // resultado de este año decide si se juega el año que viene, nunca el
+  // mismo. Se recalcula de cero cada temporada según lo que pase en Liga.
+  c.champions = c.qualifiedForChampionsNextSeason ? careerNewChampions() : null;
+  c.qualifiedForChampionsNextSeason = false;
+  c.lastChampionsResult = null;
   render();
 };
 
@@ -2722,7 +2776,7 @@ window.actionStartNewCareerSeason = function () {
 // pantalla de tanda completa, simplificación deliberada para no complicar
 // el puente.
 var CAREER_CUP_SIZE = 16;
-var CAREER_CUP_WIN_BONUS = 0.5;
+var CAREER_CUP_WIN_BONUS = 5;
 function careerNewCup() {
   var bracket = generateTournamentBracket(CAREER_CUP_SIZE);
   var round1 = [];
@@ -2758,19 +2812,18 @@ function careerCupChampion(cup) {
 // seguir con la Liga (careerCupPending) como para el mensaje de la propia
 // pestaña Copa.
 function careerCupFinished(cup) { return cup.eliminated || !!careerCupChampion(cup); }
-// La Copa solo se juega en Primera División (a petición explícita: "la
-// copa del rey solo se desbloquea al estar en primera división") y,
-// dentro de Primera, siempre JUSTO DESPUÉS de la jornada 10 (petición
-// anterior: "se juega siempre justo después de la jornada 10, y luego
-// sigue la liga") -- las dos condiciones a la vez, no una u otra.
-// Comparte umbral con la ventana de fichajes de mitad de temporada
-// (CAREER_MIDSEASON_AT_MATCHDAY) porque las dos cosas pasan en el mismo
-// punto del calendario. Antes de llegar ahí (o mientras sigas en
-// Segunda), la pestaña Copa está bloqueada (careerCupLocked); una vez
-// desbloqueada, la Liga no deja jugar la jornada 11 hasta que la Copa
-// esté careerCupFinished (careerCupPending, comprobado en
-// renderCareerJornada y en los dos actionSkip/actionSimulateCareerMatchday).
-function careerCupLocked(c) { return c.division !== 1 || c.league.matchdayIndex < CAREER_MIDSEASON_AT_MATCHDAY; }
+// La Copa se juega en las dos divisiones (a petición explícita: "que la
+// juegas también en segunda división a partir de ahora" -- antes solo se
+// desbloqueaba en Primera), siempre JUSTO DESPUÉS de la jornada 10
+// (petición anterior: "se juega siempre justo después de la jornada 10,
+// y luego sigue la liga"). Comparte umbral con la ventana de fichajes de
+// mitad de temporada (CAREER_MIDSEASON_AT_MATCHDAY) porque las dos cosas
+// pasan en el mismo punto del calendario. Antes de llegar ahí, la
+// pestaña Copa está bloqueada (careerCupLocked); una vez desbloqueada,
+// la Liga no deja jugar la jornada 11 hasta que la Copa esté
+// careerCupFinished (careerCupPending, comprobado en renderCareerJornada
+// y en los dos actionSkip/actionSimulateCareerMatchday).
+function careerCupLocked(c) { return c.league.matchdayIndex < CAREER_MIDSEASON_AT_MATCHDAY; }
 function careerCupPending(c) { return !careerCupLocked(c) && !careerCupFinished(c.cup); }
 // Resuelve cualquier partido pendiente de la ronda actual que no sea el
 // tuyo (CPU vs CPU, igual que careerResolveOtherFixtures en Liga) y, si
@@ -2907,9 +2960,7 @@ window.actionSkipCareerCupMatch = function () {
 };
 function renderCareerCopa(c) {
   if (careerCupLocked(c)) {
-    var lockedMsg = c.division !== 1
-      ? 'La Copa del Rey solo se juega en Primera División -- ahora mismo estás en ' + careerDivisionName(c.division) + '. Asciende para desbloquearla.'
-      : ('La Copa del Rey se juega justo después de la jornada ' + CAREER_MIDSEASON_AT_MATCHDAY + ' -- llevas jugadas ' + c.league.matchdayIndex + ' de ' + CAREER_MIDSEASON_AT_MATCHDAY + ' jornadas.');
+    var lockedMsg = 'La Copa del Rey se juega justo después de la jornada ' + CAREER_MIDSEASON_AT_MATCHDAY + ' -- llevas jugadas ' + c.league.matchdayIndex + ' de ' + CAREER_MIDSEASON_AT_MATCHDAY + ' jornadas.';
     return '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Copa del Rey</h3>' +
       '<p class="dim small">' + lockedMsg + '</p>' +
@@ -2966,6 +3017,216 @@ function renderCareerCopa(c) {
   return headerHtml + actionHtml + bracketHtml;
 }
 
+// ===== Champions League =====
+// A petición explícita: "en primera añade champions si quedas entre los
+// 4 primeros puestos en primera división del año anterior, con un
+// formato como en la vida real". Mismo motor de cuadro de eliminación
+// directa que la Copa del Rey (generateTournamentBracket, roundNameForIndex,
+// bracketMatchHtml de tournament.js), pero como competición INDEPENDIENTE
+// (c.champions, no c.cup): solo se crea al empezar una temporada para la
+// que te clasificaste el año anterior (careerMaybeAwardLeagueFinish
+// guarda c.qualifiedForChampionsNextSeason, actionStartNewCareerSeason es
+// quien de verdad la crea o no) y solo existe estando en Primera. No
+// bloquea la Liga ni la Copa (a diferencia de la Copa del Rey, que sí
+// bloquea la jornada 11 hasta resolverse) -- se juega en paralelo cuando
+// se quiera, como el resto de competiciones de Modo Carrera.
+var CAREER_CHAMPIONS_SIZE = 8;
+var CAREER_CHAMPIONS_WIN_BONUS = 20;
+function careerNewChampions() {
+  var bracket = generateTournamentBracket(CAREER_CHAMPIONS_SIZE);
+  var round1 = [];
+  for (var i = 0; i < bracket.slots.length; i += 2) round1.push({ a: bracket.slots[i], b: bracket.slots[i + 1], winner: null });
+  return { rounds: [round1], size: bracket.size, eliminated: false, eliminatedRound: null, rewardClaimed: false };
+}
+function careerChampionsMyMatch(champions) {
+  var round = champions.rounds[champions.rounds.length - 1];
+  return round.find(function (m) { return (m.a.isPlayer || m.b.isPlayer) && m.winner === null; }) || null;
+}
+function careerChampionsOpponent(match) { return match.a.isPlayer ? match.b : match.a; }
+function careerChampionsChampion(champions) {
+  var round = champions.rounds[champions.rounds.length - 1];
+  return (round.length === 1 && round[0].winner) ? round[0].winner : null;
+}
+function careerChampionsFinished(champions) { return champions.eliminated || !!careerChampionsChampion(champions); }
+// Solo existe (y se puede jugar) estando en Primera con c.champions creada
+// -- si desciendes a mitad de temporada, se queda bloqueada hasta volver
+// a subir (no se destruye, igual que la Copa del Rey con la división).
+function careerChampionsLocked(c) { return c.division !== 1 || !c.champions; }
+function careerChampionsAdvanceRound(champions) {
+  var round = champions.rounds[champions.rounds.length - 1];
+  round.forEach(function (m) {
+    if (m.winner === null) m.winner = simulateCpuMatch(m.a, m.b);
+  });
+  if (round.length === 1) return;
+  var winners = round.map(function (m) { return m.winner; });
+  var nextRound = [];
+  for (var i = 0; i < winners.length; i += 2) nextRound.push({ a: winners[i], b: winners[i + 1], winner: null });
+  champions.rounds.push(nextRound);
+}
+function careerChampionsSettleRemaining(champions) {
+  while (!careerChampionsChampion(champions)) careerChampionsAdvanceRound(champions);
+}
+// Premio de la Champions: bastante más que la Copa del Rey (competición
+// europea), presupuesto + contador acumulado de toda la carrera
+// (c.championsWon, nunca se resetea, mismo patrón que cupsWon).
+function careerChampionsMaybeAwardChampion(c) {
+  var champions = c.champions;
+  if (!champions || champions.rewardClaimed) return;
+  var champion = careerChampionsChampion(champions);
+  if (!champion) return;
+  champions.rewardClaimed = true;
+  if (champion.isPlayer) {
+    c.budget = Math.round((c.budget + CAREER_CHAMPIONS_WIN_BONUS) * 10) / 10;
+    c.championsWon = (c.championsWon || 0) + 1;
+  }
+}
+window.actionSimulateCareerChampionsMatch = function () {
+  var c = G.career;
+  var champions = c.champions;
+  if (!champions) return;
+  var match = careerChampionsMyMatch(champions);
+  if (!match) return;
+  var opp = careerChampionsOpponent(match);
+  c.savedFutdraft = G.futdraft;
+  G.futdraft = { lineup: c.lineup, captainId: c.captainId, formation: c.formation, condition: 'ninguna' };
+  var sim = futDraftSimulateMatchCore(careerRivalPower(opp.name));
+  G.futdraft.live = {
+    oppSide: { name: opp.name }, modifier: sim.modifier,
+    minute: 0, pending: sim.timeline.slice(), revealed: [],
+    myGoals: 0, oppGoals: 0, finalMyGoals: sim.myGoals, finalOppGoals: sim.oppGoals,
+    myAtk: sim.myAtk, myDef: sim.myDef, effectiveOppPower: sim.effectiveOppPower,
+    inExtraTime: false, allowDraw: true, onFinish: finishCareerChampionsMatch,
+    careerChampionsMatch: match,
+    done: false
+  };
+  G.screen = 'futdraftLive';
+  render();
+  futDraftLiveTick();
+};
+function finishCareerChampionsMatch() {
+  var c = G.career;
+  var champions = c.champions;
+  var live = G.futdraft.live;
+  var match = live.careerChampionsMatch;
+  var opp = careerChampionsOpponent(match);
+  var myGoals = live.finalMyGoals, oppGoals = live.finalOppGoals;
+  var penalty = myGoals === oppGoals ? careerCupPenaltyShootout(c, opp.name) : null;
+  var playerWon = penalty ? penalty.myGoals > penalty.oppGoals : myGoals > oppGoals;
+  match.winner = playerWon ? (match.a.isPlayer ? match.a : match.b) : (match.a.isPlayer ? match.b : match.a);
+
+  var myEvents = live.revealed.filter(function (e) { return e.side === 'me'; });
+  futDraftRecordGoalEvents(c.careerStats, myEvents, 'Tu equipo');
+
+  var roundIdxAtElimination = champions.rounds.length - 1;
+  careerChampionsAdvanceRound(champions);
+  if (!playerWon) { champions.eliminated = true; champions.eliminatedRound = roundIdxAtElimination; careerChampionsSettleRemaining(champions); }
+  careerChampionsMaybeAwardChampion(c);
+  c.lastChampionsResult = { oppName: opp.name, myGoals: myGoals, oppGoals: oppGoals, playerWon: playerWon, penalty: penalty };
+
+  G.futdraft.lastMatchResult = {
+    oppName: opp.name, oppShield: teamShieldPath(opp.name), oppPower: careerRivalPower(opp.name),
+    myGoals: myGoals, oppGoals: oppGoals, playerWon: playerWon,
+    timeline: live.revealed, modifier: live.modifier, isCareer: true, isChampions: true, penalty: penalty
+  };
+  G.futdraft.live = null;
+  G.screen = 'futdraftMatchResult';
+  render();
+}
+window.actionSkipCareerChampionsMatch = function () {
+  var c = G.career;
+  var champions = c.champions;
+  if (!champions) return;
+  var match = careerChampionsMyMatch(champions);
+  if (!match) return;
+  var opp = careerChampionsOpponent(match);
+  var myPower = futDraftScoreBreakdown(c.lineup, c.captainId).total;
+  var oppPower = careerRivalPower(opp.name);
+  var goles = careerSimulateMatchGoals(myPower, oppPower);
+  var myGoals = goles[0], oppGoals = goles[1];
+  var penalty = myGoals === oppGoals ? careerCupPenaltyShootout(c, opp.name) : null;
+  var playerWon = penalty ? penalty.myGoals > penalty.oppGoals : myGoals > oppGoals;
+  match.winner = playerWon ? (match.a.isPlayer ? match.a : match.b) : (match.a.isPlayer ? match.b : match.a);
+
+  var myPlayers = c.lineup.map(function (s) { return s.player; });
+  var events = [];
+  for (var i = 0; i < myGoals; i++) events.push(futDraftGoalEvent(myPlayers));
+  futDraftRecordGoalEvents(c.careerStats, events, 'Tu equipo');
+
+  var roundIdxAtElimination = champions.rounds.length - 1;
+  careerChampionsAdvanceRound(champions);
+  if (!playerWon) { champions.eliminated = true; champions.eliminatedRound = roundIdxAtElimination; careerChampionsSettleRemaining(champions); }
+  careerChampionsMaybeAwardChampion(c);
+  c.lastChampionsResult = { oppName: opp.name, myGoals: myGoals, oppGoals: oppGoals, playerWon: playerWon, penalty: penalty };
+  render();
+};
+window.continueCareerChampionsMatch = function () {
+  var c = G.career;
+  G.futdraft = c.savedFutdraft;
+  c.savedFutdraft = null;
+  G.screen = 'careerMode';
+  actionGoToCareerCompeticionesTab('champions');
+};
+function renderCareerChampions(c) {
+  if (careerChampionsLocked(c)) {
+    var lockedMsg = c.division !== 1
+      ? 'La Champions League solo se juega en Primera División -- ahora mismo estás en ' + careerDivisionName(c.division) + '.'
+      : 'No te has clasificado para la Champions League esta temporada -- termina entre los ' + CAREER_CHAMPIONS_QUALIFY_SPOTS + ' primeros de Primera para jugarla la temporada que viene.';
+    return '<div class="panel center-text">' +
+      '<h3 style="margin-bottom:4px">Champions League</h3>' +
+      '<p class="dim small">' + lockedMsg + '</p>' +
+    '</div>';
+  }
+  var champions = c.champions;
+  var totalRounds = Math.log2(champions.size);
+  var champion = careerChampionsChampion(champions);
+  var myMatch = careerChampionsMyMatch(champions);
+  var headerHtml =
+    '<div class="panel center-text">' +
+      '<h3 style="margin-bottom:4px">Champions League</h3>' +
+      '<p class="dim small">Tú y ' + (champions.size - 1) + ' rivales, eliminación directa. Champions ganadas en la carrera: <strong style="color:var(--accent-2)">' + (c.championsWon || 0) + '</strong>.</p>' +
+      (c.lastChampionsResult
+        ? '<p class="dim small">Último resultado: Tú ' + c.lastChampionsResult.myGoals + ' - ' + c.lastChampionsResult.oppGoals + ' ' + escapeHtml(c.lastChampionsResult.oppName) + (c.lastChampionsResult.penalty ? ' (penaltis ' + c.lastChampionsResult.penalty.myGoals + '-' + c.lastChampionsResult.penalty.oppGoals + ')' : '') + ' -- ' + (c.lastChampionsResult.playerWon ? 'ganaste' : 'perdiste') + '.</p>'
+        : '') +
+    '</div>';
+  var actionHtml;
+  if (champion) {
+    actionHtml = '<div class="panel center-text"><p class="dim small">' + (champion.isPlayer ? '¡Campeón de la Champions League!' : 'Campeón: ' + escapeHtml(champion.name)) + '</p></div>';
+  } else if (champions.eliminated) {
+    actionHtml = '<div class="panel center-text"><p class="dim small">Eliminado en ' + roundNameForIndex(champions.eliminatedRound, totalRounds) + '.</p></div>';
+  } else if (myMatch) {
+    var opp = careerChampionsOpponent(myMatch);
+    actionHtml =
+      '<div class="panel center-text">' +
+        '<p class="dim small">Tu rival: <strong>' + escapeHtml(opp.name) + '</strong> (' + roundNameForIndex(champions.rounds.length - 1, totalRounds) + ')</p>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-primary" onclick="actionSimulateCareerChampionsMatch()">▶ Simular partido</button>' +
+          '<button class="btn btn-outline" onclick="actionSkipCareerChampionsMatch()">Saltar</button>' +
+        '</div>' +
+      '</div>';
+  } else {
+    actionHtml = '';
+  }
+  var bracketHtml =
+    '<div class="panel bracket-panel"><div class="bracket-tree">' +
+      champions.rounds.map(function (round, ri) {
+        var isFinal = round.length === 1;
+        var body;
+        if (isFinal) {
+          body = '<div class="bracket-final-wrap">' + bracketMatchHtml(round[0]) + '</div>';
+        } else {
+          body = '<div class="bracket-pairs">';
+          for (var i = 0; i < round.length; i += 2) body += '<div class="bracket-pair">' + bracketMatchHtml(round[i]) + bracketMatchHtml(round[i + 1]) + '</div>';
+          body += '</div>';
+        }
+        return '<div class="bracket-round-col"><div class="bracket-round-title">' + roundNameForIndex(ri, totalRounds) + '</div>' + body + '</div>';
+      }).join('') +
+      '<div class="bracket-round-col bracket-trophy-col"><div class="bracket-round-title">Campeón</div>' +
+        '<div class="bracket-trophy-wrap"><div class="bracket-trophy' + (champion ? '' : ' is-pending') + '">🏆</div>' +
+        '<div class="bracket-champion-name">' + (champion ? (champion.isPlayer ? 'Tú' : escapeHtml(champion.name)) : '?') + '</div></div></div>' +
+    '</div></div>';
+  return headerHtml + actionHtml + bracketHtml;
+}
+
 // Resumen de temporada, a petición explícita ("quiero un resumen de mi
 // temporada al acabar, donde diga mi posición en copa, en liga, que
 // jugadores cedidos se van"): se lee de c.league/c.cup/c.loanedIds
@@ -2985,14 +3246,12 @@ function careerSeasonBadgeHtml(icon, label, text, cls) {
 function careerSeasonSummaryHtml(c) {
   var position = careerFinalLeaguePosition(c);
   var finish = c.lastLeagueFinish;
-  var bonus = (finish && finish.position === position) ? finish.bonus : (position ? careerLeaguePositionBonus(position) : null);
+  var bonus = (finish && finish.position === position) ? finish.bonus : (position ? careerLeaguePositionBonus(position, c.division) : null);
   var positionText = position ? (position + 'º de ' + c.league.teamNames.length) : 'Sin datos';
   var cup = c.cup;
   var champion = careerCupChampion(cup);
   var cupBadge;
-  if (c.division !== 1) {
-    cupBadge = careerSeasonBadgeHtml('🔒', 'Copa del Rey', 'No disponible (Segunda División)', '');
-  } else if (champion && champion.isPlayer) {
+  if (champion && champion.isPlayer) {
     cupBadge = careerSeasonBadgeHtml('🏆', 'Copa del Rey', 'Campeón', 'season-badge-good');
   } else if (cup.eliminated) {
     cupBadge = careerSeasonBadgeHtml('❌', 'Copa del Rey', 'Eliminado en ' + roundNameForIndex(cup.eliminatedRound, Math.log2(cup.size)), 'season-badge-bad');
@@ -3029,6 +3288,9 @@ function careerSeasonSummaryHtml(c) {
       (bonus ? careerSeasonBadgeHtml('💰', 'Premio de Liga', '+' + bonus + ' M€', 'season-badge-gold') : '') +
       promotionBadge +
       cupBadge +
+      (c.qualifiedForChampionsNextSeason
+        ? careerSeasonBadgeHtml('⭐', 'Champions League', 'Clasificado para la próxima temporada', 'season-badge-gold')
+        : '') +
       (loanedNames.length
         ? careerSeasonBadgeHtml('🔁', 'Fin de cesión, vuelven a su club', loanedNames.map(escapeHtml).join(', '), '')
         : '') +

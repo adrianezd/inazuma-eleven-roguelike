@@ -155,9 +155,11 @@ function renderFutDraftMatchResult() {
       '</div>' +
       timelineHtml +
       (r.isCareer
-        ? (r.isCup
-            ? '<button class="btn btn-primary btn-block mt" onclick="continueCareerCupMatch()">Volver a la Copa</button>'
-            : '<button class="btn btn-primary btn-block mt" onclick="continueCareerMatchday()">Volver a Jornada</button>')
+        ? (r.isChampions
+            ? '<button class="btn btn-primary btn-block mt" onclick="continueCareerChampionsMatch()">Volver a la Champions</button>'
+            : r.isCup
+              ? '<button class="btn btn-primary btn-block mt" onclick="continueCareerCupMatch()">Volver a la Copa</button>'
+              : '<button class="btn btn-primary btn-block mt" onclick="continueCareerMatchday()">Volver a Jornada</button>')
         : r.isLiga
           ? '<button class="btn btn-primary btn-block mt" onclick="continueLigaMatchday()">Ver jornada</button>'
           : '<button class="btn btn-primary btn-block mt" onclick="continueFutDraftMatch()">' + (r.playerWon ? 'Continuar' : 'Ver resultado') + '</button>') +
