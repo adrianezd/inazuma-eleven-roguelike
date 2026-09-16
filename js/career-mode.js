@@ -2266,20 +2266,30 @@ function careerMatchupCardHtml(oppName, contextLabel, youAreHome) {
 // marcador ya en medio en vez de "VS"), enseñada justo después de jugar
 // una jornada, antes de preparar la siguiente -- ver renderCareerJornada/
 // c.jornadaAckPending.
-function careerMatchResultCardHtml(oppName, myGoals, oppGoals, winBonus) {
+function careerMatchResultCardHtml(oppName, myGoals, oppGoals, winBonus, youAreHome) {
+  var youSideHtml =
+    '<div class="matchup-side">' +
+      '<img class="matchup-shield" src="' + escapeHtml(getPlayerShieldPath()) + '" alt="">' +
+      '<div class="matchup-name">Tú</div>' +
+    '</div>';
+  var oppSideHtml =
+    '<div class="matchup-side">' +
+      '<img class="matchup-shield" src="' + escapeHtml(teamShieldPath(oppName)) + '" alt="">' +
+      '<div class="matchup-name">' + escapeHtml(oppName) + '</div>' +
+    '</div>';
+  // Mismo criterio que careerMatchupCardHtml (el escudo local a la
+  // izquierda, el visitante a la derecha) -- también en el resultado, no
+  // solo antes de jugar, a petición explícita ("antes de empezar el
+  // partido soy visitante... cuando me pone el resultado... me reordena
+  // el escudo a la izquierda, está mal"). El marcador (myGoals-oppGoals)
+  // sigue siendo siempre "tú primero", va aparte del orden visual de los
+  // escudos.
+  var sidesHtml = youAreHome === false
+    ? (oppSideHtml + '<div class="matchup-vs">' + oppGoals + ' - ' + myGoals + '</div>' + youSideHtml)
+    : (youSideHtml + '<div class="matchup-vs">' + myGoals + ' - ' + oppGoals + '</div>' + oppSideHtml);
   return '<div class="panel matchup-card">' +
     '<p class="dim small center-text">Resultado de tu partido</p>' +
-    '<div class="matchup-row">' +
-      '<div class="matchup-side">' +
-        '<img class="matchup-shield" src="' + escapeHtml(getPlayerShieldPath()) + '" alt="">' +
-        '<div class="matchup-name">Tú</div>' +
-      '</div>' +
-      '<div class="matchup-vs">' + myGoals + ' - ' + oppGoals + '</div>' +
-      '<div class="matchup-side">' +
-        '<img class="matchup-shield" src="' + escapeHtml(teamShieldPath(oppName)) + '" alt="">' +
-        '<div class="matchup-name">' + escapeHtml(oppName) + '</div>' +
-      '</div>' +
-    '</div>' +
+    '<div class="matchup-row">' + sidesHtml + '</div>' +
     (winBonus ? '<p class="dim small center-text mt">Presupuesto: <strong style="color:var(--accent-2)">+' + winBonus + ' M€</strong> por ganar.</p>' : '') +
   '</div>';
 }
@@ -2952,7 +2962,8 @@ window.actionSkipCareerMatchday = function () {
     oppName: league.teamNames[oppIdx],
     myGoals: myGoals,
     oppGoals: oppGoals,
-    winBonus: winBonus
+    winBonus: winBonus,
+    youAreHome: youAreHome
   };
   c.jornadaAckPending = true;
   careerRecordStarterAppearances(c);
@@ -3036,7 +3047,7 @@ function finishCareerMatchdayMatch() {
   futDraftRecordGoalEvents(c.careerStats, myEvents, 'Tu equipo');
   careerResolveOtherFixtures(c, league, fi);
   var winBonus = careerAwardWinBonus(c, myGoals, oppGoals);
-  c.lastMatchdayResult = { matchday: league.matchdayIndex + 1, oppName: oppName, myGoals: myGoals, oppGoals: oppGoals, winBonus: winBonus };
+  c.lastMatchdayResult = { matchday: league.matchdayIndex + 1, oppName: oppName, myGoals: myGoals, oppGoals: oppGoals, winBonus: winBonus, youAreHome: youAreHome };
   c.jornadaAckPending = true;
   careerRecordStarterAppearances(c);
   league.matchdayIndex++;
@@ -3732,7 +3743,7 @@ function renderCareerJornada(c) {
   // preparar el siguiente".
   if (!seasonOver && c.jornadaAckPending && r) {
     return (
-      careerMatchResultCardHtml(r.oppName, r.myGoals, r.oppGoals, r.winBonus) +
+      careerMatchResultCardHtml(r.oppName, r.myGoals, r.oppGoals, r.winBonus, r.youAreHome) +
       '<div class="panel center-text"><button class="btn btn-primary btn-block" onclick="actionAckCareerJornadaResult()">Siguiente ▶</button></div>' +
       careerLastRoundResultsHtml(league, r)
     );
