@@ -75,8 +75,6 @@ function render() {
   var html = '';
   switch (G.screen) {
     case 'menu': html = renderMenu(); break;
-    case 'jugarHub': html = renderJugarHub(); break;
-    case 'otrosModos': html = renderOtrosModos(); break;
     case 'careerSlots': html = renderCareerSlots(); break;
     case 'careerSetup': html = renderCareerSetup(); break;
     case 'careerMode': html = renderCareerMode(); break;
@@ -136,7 +134,30 @@ function renderMenu() {
           '<div class="stat-tile"><div class="num">' + (m.tournamentsWon || 0) + '</div><div class="label">Torneos ganados</div></div>' +
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-primary btn-block" onclick="actionGoJugarHub()">Jugar</button>' +
+          '<button class="btn btn-primary btn-block" onclick="actionStartRun()">Jugar</button>' +
+        '</div>' +
+        '<p class="dim small center-text">Normal y Difícil: el mapa ramificado de siempre.</p>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-primary btn-block" onclick="actionGoFutDraftModeSelect()">FutDraft</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-primary btn-block" onclick="actionGoCareerMode()">Modo Carrera</button>' +
+        '</div>' +
+        '<p class="dim small center-text">Los modos más jugados, a un toque.</p>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionGoLigaTierSelect()">Liga</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionStartTournament()">Modo Torneo</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionStartDraftMode(\'supervivencia\')">Modo Supervivencia</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionStartDaily()">Modo Diario' + (G.meta.dailyLastDate === todayKey() ? ' ✓' : '') + '</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionStartPenaltyMode()">Modo Penaltis</button>' +
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-block" onclick="actionGoGacha()">Fichajes</button>' +
@@ -178,63 +199,15 @@ function hardModeUnlocked() {
   return (meta.normalWins || 0) >= 3 && totalUnlocked > 10;
 }
 
-// "Jugar" ya no lanza directamente el mapa ramificado: primero se elige
-// entre "Modos clásicos" (Normal/Difícil, el mapa de siempre) y "Otros
-// modos" (Torneo/Supervivencia/Diario/Penaltis/FutDraft/Liga, que antes
-// vivían sueltos en el menú principal) -- pedido explícito para despejar
-// el menú principal.
-function actionGoJugarHub() { G.screen = 'jugarHub'; render(); }
-function renderJugarHub() {
-  return (
-    '<div class="screen">' +
-      '<div class="panel center-text">' +
-        '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
-        '<h2 class="panel-title mt">Jugar</h2>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-primary btn-block" onclick="actionStartRun()">Modos clásicos</button>' +
-        '</div>' +
-        '<p class="dim small">Normal y Difícil: el mapa ramificado de siempre.</p>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionGoOtrosModos()">Otros modos</button>' +
-        '</div>' +
-        '<p class="dim small">Torneo, Supervivencia, Diario, Penaltis, FutDraft y Liga.</p>' +
-      '</div>' +
-    '</div>'
-  );
-}
-
-function actionGoOtrosModos() { G.screen = 'otrosModos'; render(); }
-function renderOtrosModos() {
-  return (
-    '<div class="screen">' +
-      '<div class="panel center-text">' +
-        '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
-        '<h2 class="panel-title mt">Otros modos</h2>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionStartTournament()">Modo Torneo</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionStartDraftMode(\'supervivencia\')">Modo Supervivencia</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionStartDaily()">Modo Diario' + (G.meta.dailyLastDate === todayKey() ? ' ✓' : '') + '</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionStartPenaltyMode()">Modo Penaltis</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionGoFutDraftModeSelect()">FutDraft</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionGoLigaTierSelect()">Liga</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionGoCareerMode()">Modo Carrera</button>' +
-        '</div>' +
-      '</div>' +
-    '</div>'
-  );
-}
+// Menú principal aplanado: antes "Jugar" pasaba por un hub intermedio
+// (Modos clásicos / Otros modos, este último con Torneo/Supervivencia/
+// Diario/Penaltis/FutDraft/Liga/Carrera escondidos detrás de un botón
+// más) -- a petición explícita, ahora que FutDraft y Modo Carrera son
+// los modos más jugados de largo, todo vive directo en el menú
+// principal (renderMenu) sin ningún paso intermedio: "Jugar" salta
+// derecho a elegir Normal/Difícil (actionStartRun), y el resto de modos
+// son botones de primer nivel, con FutDraft/Carrera destacados arriba
+// del todo por ser los más jugados.
 
 function actionStartRun() { G.screen = 'modeSelect'; render(); }
 function actionStartRunWithMode(mode) {

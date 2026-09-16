@@ -1122,7 +1122,7 @@ function renderCareerSlots() {
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
-        '<button class="btn btn-outline btn-block" onclick="actionGoOtrosModos()">Volver</button>' +
+        '<button class="btn btn-outline btn-block" onclick="doBackToMenuNow()">Volver</button>' +
         '<h2 class="panel-title mt">Modo Carrera</h2>' +
         '<p class="dim small">Elige un hueco de partida guardada, o empieza una nueva en uno vacío. El guardado es a mano (botón Guardar dentro de la partida).</p>' +
       '</div>' +
@@ -3560,7 +3560,7 @@ function renderCareerGestion(c) {
       '<button class="btn btn-tiny" onclick="actionSaveCareerNow()">Guardar</button>' +
       '<button class="btn btn-tiny" onclick="actionGoCareerMode()">Cambiar partida</button>' +
     '</div>' +
-    '<button class="btn btn-outline btn-block mt" onclick="requestConfirmLeave(\'actionGoOtrosModos\')">Volver</button>' +
+    '<button class="btn btn-outline btn-block mt" onclick="requestConfirmLeave(\'doBackToMenuNow\')">Volver</button>' +
   '</div>';
 }
 
