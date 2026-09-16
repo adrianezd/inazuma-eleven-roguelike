@@ -305,6 +305,49 @@ a { color: var(--accent); }
 }
 .calendar-fixture-you .calendar-fixture-score { background: #06202f; color: var(--accent-2); border-color: #06202f; }
 
+/* Tarjeta "tu escudo VS el rival" antes de Simular/Saltar (Jornada, Copa
+   del Rey, Champions League), a petición explícita ("dime contra quien
+   juego... pon mi escudo VS el escudo del equipo rival en grande,
+   currátelo") -- escudos grandes a cada lado con un "VS" central en
+   grande, en vez del texto plano "Tu rival: X" que había antes. */
+.matchup-card { padding-top: 18px; padding-bottom: 18px; }
+.matchup-row { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 8px; }
+.matchup-side { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1 1 0; min-width: 0; max-width: 40%; }
+.matchup-shield {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
+}
+.matchup-name {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 0.92rem;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.matchup-vs {
+  flex: 0 0 auto;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  font-size: 1.3rem;
+  color: var(--accent-2);
+  opacity: 0.85;
+}
+/* Saltar: mismo pill que el resto de botones outline, pero con el icono
+   ⏭ ya metido en el texto (JS) y un tinte propio para que no se
+   confunda a golpe de vista con "Cancelar"/salir, a petición explícita
+   ("dejar algo más bonito el botón de saltar"). */
+.btn-skip {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.btn-skip:hover { color: var(--text); border-color: var(--text-dim); }
+
 .select-field {
   display: block;
   width: 100%;

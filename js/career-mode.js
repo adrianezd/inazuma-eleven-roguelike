@@ -2218,6 +2218,42 @@ function renderCareerMercado(c) {
 function calendarTeamShield(league, idx) { return idx === 0 ? getPlayerShieldPath() : teamShieldPath(league.teamNames[idx]); }
 function calendarTeamLabel(league, idx) { return idx === 0 ? 'Tú' : league.teamNames[idx]; }
 
+// Tarjeta "tu escudo VS el escudo del rival" en grande, a petición
+// explícita ("antes de darle a simular o saltar, dime contra quien
+// juego... pon mi escudo VS el escudo del equipo rival en grande") --
+// se enseña justo antes de los botones Simular/Saltar en Jornada, Copa
+// del Rey y Champions League (mismo componente en las 3, solo cambia el
+// texto de contexto que se le pasa: jornada+casa/fuera, o la ronda).
+function careerMatchupCardHtml(oppName, contextLabel) {
+  return '<div class="panel matchup-card">' +
+    (contextLabel ? '<p class="dim small center-text">' + contextLabel + '</p>' : '') +
+    '<div class="matchup-row">' +
+      '<div class="matchup-side">' +
+        '<img class="matchup-shield" src="' + escapeHtml(getPlayerShieldPath()) + '" alt="">' +
+        '<div class="matchup-name">Tú</div>' +
+      '</div>' +
+      '<div class="matchup-vs">VS</div>' +
+      '<div class="matchup-side">' +
+        '<img class="matchup-shield" src="' + escapeHtml(teamShieldPath(oppName)) + '" alt="">' +
+        '<div class="matchup-name">' + escapeHtml(oppName) + '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+// Encuentra tu partido de la próxima jornada de Liga sin jugarlo -- para
+// poder enseñar el rival en la tarjeta de arriba antes de pulsar nada
+// (mismo criterio de búsqueda que actionSkipCareerMatchday/
+// actionSimulateCareerMatchday, aquí solo de lectura).
+function careerNextFixtureInfo(league) {
+  if (league.matchdayIndex >= league.schedule.length) return null;
+  var fixtures = league.schedule[league.matchdayIndex];
+  var myFixtureIdx = fixtures.findIndex(function (fx) { return fx[0] === 0 || fx[1] === 0; });
+  var myFixture = fixtures[myFixtureIdx];
+  var youAreHome = myFixture[0] === 0;
+  var oppIdx = youAreHome ? myFixture[1] : myFixture[0];
+  return { oppIdx: oppIdx, oppName: league.teamNames[oppIdx], youAreHome: youAreHome };
+}
+
 // result: [golesLocal, golesVisitante] si ya se jugó (ver
 // actionPlayCareerMatchday, que rellena league.results partido a
 // partido), o null si todavía no -- en ese caso se muestra "vs" en vez
@@ -3267,11 +3303,11 @@ function renderCareerCopa(c) {
   } else if (myMatch) {
     var opp = careerCupOpponent(myMatch);
     actionHtml =
+      careerMatchupCardHtml(opp.name, roundNameForIndex(cup.rounds.length - 1, totalRounds)) +
       '<div class="panel center-text">' +
-        '<p class="dim small">Tu rival: <strong>' + escapeHtml(opp.name) + '</strong> (' + roundNameForIndex(cup.rounds.length - 1, totalRounds) + ')</p>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-primary" onclick="actionSimulateCareerCupMatch()">▶ Simular partido</button>' +
-          '<button class="btn btn-outline" onclick="actionSkipCareerCupMatch()">Saltar</button>' +
+          '<button class="btn btn-skip" onclick="actionSkipCareerCupMatch()">⏭ Saltar</button>' +
         '</div>' +
       '</div>';
   } else {
@@ -3484,11 +3520,11 @@ function renderCareerChampions(c) {
   } else if (myMatch) {
     var opp = careerChampionsOpponent(myMatch);
     actionHtml =
+      careerMatchupCardHtml(opp.name, roundNameForIndex(champions.rounds.length - 1, totalRounds)) +
       '<div class="panel center-text">' +
-        '<p class="dim small">Tu rival: <strong>' + escapeHtml(opp.name) + '</strong> (' + roundNameForIndex(champions.rounds.length - 1, totalRounds) + ')</p>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-primary" onclick="actionSimulateCareerChampionsMatch()">▶ Simular partido</button>' +
-          '<button class="btn btn-outline" onclick="actionSkipCareerChampionsMatch()">Saltar</button>' +
+          '<button class="btn btn-skip" onclick="actionSkipCareerChampionsMatch()">⏭ Saltar</button>' +
         '</div>' +
       '</div>';
   } else {
@@ -3607,26 +3643,46 @@ function renderCareerJornada(c) {
     '</div>';
   }
   var seasonOver = league.matchdayIndex >= league.schedule.length;
+  // Resultado de TODA la jornada anterior (no solo tu partido), a
+  // petición explícita ("en vez de poner esto así, pon directamente una
+  // captura del calendario diciendo como han quedado todos") -- misma
+  // fila que ya usa Calendario (calendarFixtureRowHtml), reutilizada tal
+  // cual para no duplicar ese diseño.
   var r = c.lastMatchdayResult;
-  var resultHtml = r
-    ? '<div class="panel center-text">' +
-        '<h3 style="margin-bottom:4px">Resultado de la jornada ' + r.matchday + '</h3>' +
-        '<p class="dim small">Tú <strong>' + r.myGoals + ' - ' + r.oppGoals + '</strong> ' + escapeHtml(r.oppName) + '</p>' +
-        (r.winBonus ? '<p class="dim small">Presupuesto: <strong style="color:var(--accent-2)">+' + r.winBonus + ' M€</strong> por ganar.</p>' : '') +
-        '<p class="dim small">El resto de partidos de la jornada también se han resuelto -- mira la pestaña Liga.</p>' +
-      '</div>'
-    : '';
+  var lastRoundHtml = '';
+  if (r) {
+    var playedIdx = league.matchdayIndex - 1;
+    var playedFixtures = playedIdx >= 0 ? league.schedule[playedIdx] : null;
+    var playedResults = playedIdx >= 0 ? league.results[playedIdx] : null;
+    var roundRowsHtml = playedFixtures
+      ? playedFixtures.map(function (fx, fi) { return calendarFixtureRowHtml(league, fx, playedResults[fi]); }).join('')
+      : '';
+    lastRoundHtml = '<div class="panel">' +
+      '<h3 style="margin-bottom:4px" class="center-text">Cómo ha quedado la jornada ' + r.matchday + '</h3>' +
+      (r.winBonus ? '<p class="dim small center-text">Presupuesto: <strong style="color:var(--accent-2)">+' + r.winBonus + ' M€</strong> por ganar.</p>' : '') +
+      roundRowsHtml +
+    '</div>';
+  }
+  var matchupHtml = '';
+  if (!seasonOver) {
+    var info = careerNextFixtureInfo(league);
+    if (info) {
+      var contextLabel = 'Jornada ' + (league.matchdayIndex + 1) + ' de ' + league.schedule.length + ' -- Juegas ' + (info.youAreHome ? 'en casa' : 'fuera');
+      matchupHtml = careerMatchupCardHtml(info.oppName, contextLabel);
+    }
+  }
   return (
+    matchupHtml +
     '<div class="panel center-text">' +
-      '<h3 style="margin-bottom:4px">' + (seasonOver ? 'Temporada ' + c.season + ' terminada' : ('Jornada ' + (league.matchdayIndex + 1) + ' de ' + league.schedule.length)) + '</h3>' +
+      (seasonOver ? '<h3 style="margin-bottom:4px">Temporada ' + c.season + ' terminada</h3>' : '') +
       (seasonOver
         ? '<button class="btn btn-primary btn-block mt" onclick="actionStartNewCareerSeason()">Empezar temporada ' + (c.season + 1) + '</button>'
         : '<div class="btn-row" style="justify-content:center">' +
             '<button class="btn btn-primary" onclick="actionSimulateCareerMatchday()">▶ Simular partido</button>' +
-            '<button class="btn btn-outline" onclick="actionSkipCareerMatchday()">Saltar</button>' +
+            '<button class="btn btn-skip" onclick="actionSkipCareerMatchday()">⏭ Saltar</button>' +
           '</div>') +
     '</div>' +
-    (seasonOver ? careerSeasonSummaryHtml(c) : resultHtml)
+    (seasonOver ? careerSeasonSummaryHtml(c) : lastRoundHtml)
   );
 }
 
