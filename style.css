@@ -1208,6 +1208,12 @@ a { color: var(--accent); }
   margin-bottom: 10px;
 }
 .shop-item .cost { color: var(--accent-2); font-weight: 700; white-space: nowrap; text-align: right; }
+/* Modo Jugador usa .shop-item como BOTÓN clicable (elegir club en el
+   creador de identidad y en cada decisión de carrera), a diferencia del
+   resto de usos (siempre <div> informativos) -- reset del estilo nativo
+   de <button> para que se vea igual que los shop-item de toda la vida. */
+button.shop-item { width: 100%; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+button.shop-item:hover { border-color: var(--accent); }
 
 .currency-display {
   display: inline-flex;

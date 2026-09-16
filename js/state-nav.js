@@ -78,6 +78,8 @@ function render() {
     case 'careerSlots': html = renderCareerSlots(); break;
     case 'careerSetup': html = renderCareerSetup(); break;
     case 'careerMode': html = renderCareerMode(); break;
+    case 'jugadorSetup': html = renderJugadorSetup(); break;
+    case 'jugadorMode': html = renderJugadorMode(); break;
     case 'modeSelect': html = renderModeSelect(); break;
     case 'captainSelect': html = renderCaptainSelect(); break;
     case 'map': html = renderMap(); break;
@@ -135,6 +137,9 @@ function renderMenu() {
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-primary btn-block" onclick="actionGoCareerMode()">Modo Carrera</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-primary btn-block" onclick="actionGoModoJugador()">Modo Jugador</button>' +
         '</div>' +
         '<p class="dim small center-text">Los modos más jugados, a un toque.</p>' +
         '<div class="btn-row" style="justify-content:center">' +
