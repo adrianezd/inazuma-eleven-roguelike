@@ -105,6 +105,7 @@ function render() {
     case 'careerMode': html = renderCareerMode(); break;
     case 'jugadorSetup': html = renderJugadorSetup(); break;
     case 'jugadorMode': html = renderJugadorMode(); break;
+    case 'jugadorShared': html = renderJugadorShared(); break;
     case 'modeSelect': html = renderModeSelect(); break;
     case 'captainSelect': html = renderCaptainSelect(); break;
     case 'map': html = renderMap(); break;

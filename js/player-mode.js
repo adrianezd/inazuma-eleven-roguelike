@@ -18,13 +18,32 @@ var PLAYER_MODE_SEASON_MATCHES = 20;
 // Media inicial por posición -- un debutante de 16 años, todavía lejos
 // de su techo, arranca bajo en cualquier posición.
 var PLAYER_MODE_START_OVR = { Portero: 52, Defensa: 54, Centrocampista: 55, Delantero: 56 };
-// Probabilidad de gol/asistencia POR PARTIDO según posición -- un
-// delantero marca mucho y asiste poco, un centrocampista al revés, un
-// defensa/portero de los dos muy poco.
+// Probabilidad de gol/asistencia POR PARTIDO según posición, YA con la
+// media de un crack (ovr≈95) -- se escala hacia abajo con
+// playerModeQualityMult, así que estos son techos, no lo normal.
 var PLAYER_MODE_GOAL_CHANCE = { Portero: 0.01, Defensa: 0.07, Centrocampista: 0.18, Delantero: 0.42 };
 var PLAYER_MODE_ASSIST_CHANCE = { Portero: 0.02, Defensa: 0.13, Centrocampista: 0.35, Delantero: 0.17 };
 
 function playerModeShieldClub(name) { return name ? teamShieldPath(name) : PLAYER_SHIELD; }
+
+// Escala CUADRÁTICA (no lineal) según media, a petición explícita ("no
+// vas a jugar los 40 partidos y meter 40 goles con media 50 y 16 años,
+// tiene que tener un poco de sentido"): con la escala anterior (casi
+// lineal) un debutante de 16 años con 56 de media ya metía ~20 goles en
+// un solo bloque de 2 años, una barbaridad. Elevar al cuadrado castiga
+// mucho más a las medias bajas (56 de media da ~0.29 en vez de ~0.86) y
+// deja que solo los cracks de verdad (85+) se acerquen al techo de
+// arriba.
+function playerModeQualityMult(ovr) {
+  return Math.pow(clamp(ovr / 95, 0.15, 1.15), 2.2);
+}
+// Cuánto de la temporada juegas de verdad -- a los 16 años, con una
+// media floja, no eres titular fijo ni de lejos; según subes de nivel,
+// cada vez juegas más hasta jugarlo prácticamente todo con un crack
+// hecho y derecho.
+function playerModePlayTimeFactor(ovr) {
+  return clamp(0.35 + (ovr - 50) / 70, 0.3, 1);
+}
 
 // Rango de crecimiento de MEDIA por salto de 2 años según la edad al
 // EMPEZAR el salto -- curva de carrera real: fuerte en la juventud
@@ -53,6 +72,7 @@ function playerModeFreshState(choices) {
     homeClub: choices.club,
     onLoan: false,
     crisisPenaltyPending: false,
+    tempOvrPenalty: 0, guaranteedStarter: false, reducedMinutes: false,
     edad: PLAYER_MODE_START_AGE,
     ovr: startOvr,
     pj: 0, gls: 0, ast: 0,
@@ -70,9 +90,21 @@ function playerModeFreshState(choices) {
 // jornada como Modo Carrera. Devuelve el desglose para poder enseñarlo
 // en el resumen del salto.
 function playerModeSimulateBlock(p) {
-  var matches = PLAYER_MODE_SEASON_MATCHES * 2;
-  var goalChance = (PLAYER_MODE_GOAL_CHANCE[p.posicion] || 0.1) * (0.6 + p.ovr / 99);
-  var assistChance = (PLAYER_MODE_ASSIST_CHANCE[p.posicion] || 0.1) * (0.6 + p.ovr / 99);
+  // Efectos temporales de un "Cambio de posición" aceptado/rechazado el
+  // salto anterior (ver playerModeRollDecision tipo 'posicion'): aceptar
+  // garantiza titularidad (juegas el bloque entero) a cambio de -2 de
+  // media ese mismo bloque; rechazar te deja con menos minutos (juegas
+  // bastante menos) pero sin penalización de media.
+  var effectiveOvr = clamp(p.ovr - (p.tempOvrPenalty || 0), 30, 99);
+  var playTimeFactor = p.guaranteedStarter ? 1 : (p.reducedMinutes ? playerModePlayTimeFactor(effectiveOvr) * 0.5 : playerModePlayTimeFactor(effectiveOvr));
+  p.tempOvrPenalty = 0;
+  p.guaranteedStarter = false;
+  p.reducedMinutes = false;
+
+  var matches = Math.max(4, Math.round(PLAYER_MODE_SEASON_MATCHES * 2 * playTimeFactor));
+  var qualityMult = playerModeQualityMult(effectiveOvr);
+  var goalChance = (PLAYER_MODE_GOAL_CHANCE[p.posicion] || 0.1) * qualityMult;
+  var assistChance = (PLAYER_MODE_ASSIST_CHANCE[p.posicion] || 0.1) * qualityMult;
   var gls = 0, ast = 0;
   for (var i = 0; i < matches; i++) {
     if (Math.random() < goalChance) gls++;
@@ -153,20 +185,32 @@ function playerModeRollReturnDecision(p) {
     ]
   };
 }
-// Decisión normal (sin cesión activa): 15% de las veces tu club te
-// manda cedido a sumar minutos fuera (3 clubes de nivel bajo, sin poder
-// "quedarte" -- la decisión es del club, no tuya), a petición explícita
-// ("también puedo irme cedido"). El resto es fichaje/permanencia de
-// siempre: 20% CRISIS (quedarte tiene una pega real, ver
-// p.crisisPenaltyPending en playerModeSimulateBlock), 25% OFERTA buena,
-// el resto neutro -- "también pueden ocurrir cosas malas".
+// Decisión normal (sin cesión activa): 15% cesión de salida ("también
+// puedo irme cedido"), 15% CAMBIO DE POSICIÓN (el entrenador te pide
+// cubrir otro puesto: aceptar da titularidad garantizada el próximo
+// bloque a cambio de -2 de media temporal ESE bloque, rechazar te deja
+// con bastante menos minutos -- ver playerModeSimulateBlock, misma
+// referencia visual que dio el usuario), 20% CRISIS (quedarte tiene una
+// pega real, ver p.crisisPenaltyPending), 25% OFERTA buena, el resto
+// decisión neutra de toda la vida -- "también pueden ocurrir cosas
+// malas".
 function playerModeRollDecision(p) {
   if (p.onLoan) return playerModeRollReturnDecision(p);
   var bossChance = clamp(p.ovr / 130, 0.15, 0.75);
-  if (Math.random() < 0.15) {
+  var roll0 = Math.random();
+  if (roll0 < 0.15) {
     var loanClubs = [];
     for (var i = 0; i < 3; i++) loanClubs.push(playerModeRollAltClub(p, 0, [p.club].concat(loanClubs)));
     return { type: 'prestamo', options: loanClubs.map(function (name) { return { club: name, stay: false, hint: 'Préstamo' }; }) };
+  }
+  if (roll0 < 0.30) {
+    return {
+      type: 'posicion',
+      options: [
+        { accept: true, hint: 'Titular durante el próximo periodo', hint2: '-2 OVR temporal' },
+        { accept: false, hint: 'Menos minutos' }
+      ]
+    };
   }
   var alts = [];
   alts.push(playerModeRollAltClub(p, bossChance, [p.club]));
@@ -187,6 +231,7 @@ function playerModeDecisionCopy(decision, p) {
   if (decision.type === 'oferta') return { title: 'Buenas noticias', text: 'Tu rendimiento ha llamado la atención de otros clubes. Elige dónde sigues tu carrera:' };
   if (decision.type === 'prestamo') return { title: 'Salida a préstamo', text: 'Tu club quiere que sumes minutos en otro equipo. Elige dónde seguir tu desarrollo.' };
   if (decision.type === 'regreso') return { title: 'Regreso a tu club', text: 'Vuelves a ' + p.homeClub + ' y vas a ser tenido en cuenta. Si aun así quieres salir, tienes dos ofertas.' };
+  if (decision.type === 'posicion') return { title: 'Cambio de posición', text: 'El entrenador te necesita para cubrir otro puesto.' };
   return { title: p.edad + ' años', text: 'Toca decidir dónde sigues tu carrera los próximos 2 años:' };
 }
 
@@ -277,6 +322,14 @@ window.actionPickPlayerClub = function (idx) {
   if (!decision) return;
   var option = decision.options[idx];
   if (!option) return;
+  if (decision.type === 'posicion') {
+    p.guaranteedStarter = !!option.accept;
+    p.tempOvrPenalty = option.accept ? 2 : 0;
+    p.reducedMinutes = !option.accept;
+    p.pendingDecision = null;
+    render();
+    return;
+  }
   if (decision.type === 'prestamo') {
     p.club = option.club;
     p.onLoan = true;
@@ -394,19 +447,33 @@ function renderJugadorSetup() {
 function renderJugadorDecision(p) {
   var decision = p.pendingDecision;
   var copy = playerModeDecisionCopy(decision, p);
+  var headerHtml = '<div class="panel center-text"><h3 style="margin-bottom:4px">' + escapeHtml(copy.title) + '</h3><p class="dim small">' + escapeHtml(copy.text) + '</p></div>';
+  if (decision.type === 'posicion') {
+    var cardsHtml = decision.options.map(function (opt, idx) {
+      return '<button class="jugador-decision-card" onclick="actionPickPlayerClub(' + idx + ')">' +
+        '<div class="jugador-decision-icon">' + (opt.accept ? '📋' : '🙅') + '</div>' +
+        '<strong>' + (opt.accept ? 'Aceptar' : 'Rechazar') + '</strong>' +
+        '<span class="player-tag ' + (opt.accept ? 'player-tag-offer' : 'player-tag-danger') + '">' + escapeHtml(opt.hint) + '</span>' +
+        (opt.hint2 ? '<span class="player-tag player-tag-danger">' + escapeHtml(opt.hint2) + '</span>' : '') +
+      '</button>';
+    }).join('');
+    return headerHtml + '<div class="panel"><div class="jugador-decision-grid">' + cardsHtml + '</div></div>';
+  }
   var itemsHtml = decision.options.map(function (opt, idx) {
     return '<button class="shop-item" style="width:100%;text-align:left" onclick="actionPickPlayerClub(' + idx + ')">' +
       '<img class="team-shield-inline" src="' + escapeHtml(teamShieldPath(opt.club)) + '" alt="">' +
       '<div style="flex:1"><strong>' + escapeHtml(opt.club) + '</strong><div class="dim small">' + escapeHtml(opt.hint) + '</div></div>' +
     '</button>';
   }).join('');
-  return (
-    '<div class="panel center-text"><h3 style="margin-bottom:4px">' + escapeHtml(copy.title) + '</h3><p class="dim small">' + escapeHtml(copy.text) + '</p></div>' +
-    '<div class="panel">' + itemsHtml + '</div>'
-  );
+  return headerHtml + '<div class="panel">' + itemsHtml + '</div>';
 }
 
 function renderJugadorRetired(p) {
+  var shareHtml = '<div class="panel center-text">' +
+    '<button class="btn btn-outline btn-block" onclick="actionShareJugadorCareer()">Compartir con un enlace 🔗</button>' +
+    (G.jugadorShareMessage ? '<p class="dim small">' + escapeHtml(G.jugadorShareMessage) + '</p>' : '') +
+    (G.jugadorShareUrl ? '<input class="select-field mt" type="text" readonly value="' + escapeHtml(G.jugadorShareUrl) + '" onclick="this.select()">' : '') +
+  '</div>';
   return (
     '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Retirada a los ' + p.edad + ' años</h3>' +
@@ -415,7 +482,71 @@ function renderJugadorRetired(p) {
     playerModeCardHtml(p) +
     playerModeTrophyCaseHtml(p) +
     playerModeHistoryHtml(p) +
-    '<div class="panel"><button class="btn btn-outline btn-block" onclick="doBackToMenuNow()">Volver al menú</button></div>'
+    shareHtml +
+    '<div class="panel">' +
+      '<button class="btn btn-primary btn-block" onclick="actionRestartJugadorCareer()">Crear otra carrera</button>' +
+      '<button class="btn btn-outline btn-block mt" onclick="doBackToMenuNow()">Volver al menú</button>' +
+    '</div>'
+  );
+}
+
+// Comparte la carrera terminada codificada en la propia URL (JSON ->
+// UTF-8 -> base64 en un parámetro ?jugador=), a petición explícita
+// ("cuando acabe un modo jugador, pueda compartirlo con un enlace") --
+// sin backend no hay otra forma de "guardar" y compartir algo así, pero
+// abrir ese enlace enseña la misma ficha/vitrina/trayectoria en modo
+// solo lectura (ver renderJugadorShared/case 'jugadorShared').
+function playerModeEncodeShare(p) {
+  var summary = {
+    apellido: p.apellido, dorsal: p.dorsal, posicion: p.posicion, pierna: p.pierna,
+    club: p.club, edad: p.edad, ovr: p.ovr, pj: p.pj, gls: p.gls, ast: p.ast,
+    titulosIndividuales: p.titulosIndividuales, titulosColectivos: p.titulosColectivos,
+    history: p.history
+  };
+  return btoa(unescape(encodeURIComponent(JSON.stringify(summary))));
+}
+function playerModeDecodeShare(encoded) {
+  try { return JSON.parse(decodeURIComponent(escape(atob(encoded)))); } catch (e) { return null; }
+}
+window.actionShareJugadorCareer = function () {
+  var p = G.playerCareer;
+  if (!p) return;
+  var url = location.origin + location.pathname + '?jugador=' + playerModeEncodeShare(p);
+  G.jugadorShareUrl = url;
+  G.jugadorShareMessage = 'Copia el enlace de abajo para compartirlo.';
+  if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(function () {
+      G.jugadorShareMessage = 'Enlace copiado al portapapeles.';
+      render();
+    }).catch(function () { render(); });
+  }
+  render();
+};
+window.actionRestartJugadorCareer = function () {
+  G.playerCareer = null;
+  G.jugadorShareUrl = null;
+  G.jugadorShareMessage = null;
+  actionGoJugadorSetup();
+};
+function renderJugadorShared() {
+  var p = G.jugadorSharedSummary;
+  if (!p) {
+    return '<div class="screen"><div class="panel center-text"><p class="dim small">Este enlace de Modo Jugador no es válido.</p><button class="btn btn-primary btn-block mt" onclick="doBackToMenuNow()">Volver al menú</button></div></div>';
+  }
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<h2 class="panel-title">Carrera compartida</h2>' +
+        '<p class="dim small">La carrera de ' + escapeHtml(p.apellido) + ' en Modo Jugador.</p>' +
+      '</div>' +
+      playerModeCardHtml(p) +
+      playerModeTrophyCaseHtml(p) +
+      playerModeHistoryHtml(p) +
+      '<div class="panel">' +
+        '<button class="btn btn-primary btn-block" onclick="actionGoModoJugador()">Crear la mía</button>' +
+        '<button class="btn btn-outline btn-block mt" onclick="doBackToMenuNow()">Volver al menú</button>' +
+      '</div>' +
+    '</div>'
   );
 }
 
