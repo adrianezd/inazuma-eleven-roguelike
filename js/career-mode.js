@@ -772,6 +772,11 @@ function careerFreshState(choices) {
     lastMatchdayResult: null,
     lastPromotionResult: null,
     loanedIds: [],
+    // Jugadores TUYOS cedidos a un club rival (cesión de SALIDA, ver
+    // actionLoanCareerPlayer) -- fuera de lineup/bench mientras dura,
+    // vuelven solos en actionStartNewCareerSeason. No confundir con
+    // loanedIds (cedidos ENTRANTES, de otro club al tuyo).
+    loanedOutIds: [],
     // Jugadores comprados (fichaje en propiedad) ESTA temporada: no se
     // pueden vender ni ceder hasta la que viene, a petición explícita --
     // se vacía en cada actionStartNewCareerSeason. Los cedidos entrantes
@@ -848,6 +853,7 @@ function careerSerialize(c) {
     lineup: c.lineup.map(function (s) { return { pos: s.pos, id: s.player.id }; }),
     bench: c.bench.map(function (p) { return p.id; }),
     loanedIds: c.loanedIds || [],
+    loanedOutIds: c.loanedOutIds || [],
     difficulty: c.difficulty || 'normal',
     negotiation: c.negotiation || 'duras',
     division: c.division || 2,
@@ -918,6 +924,7 @@ function careerDeserialize(data) {
     lastMatchdayResult: data.lastMatchdayResult || null,
     budget: typeof data.budget === 'number' ? data.budget : CAREER_STARTING_BUDGET,
     loanedIds: data.loanedIds || [],
+    loanedOutIds: data.loanedOutIds || [],
     calendarView: data.calendarView,
     marketFilter: data.marketFilter || null, marketTypeFilter: data.marketTypeFilter || null, marketGrowthFilter: data.marketGrowthFilter || null, marketSearch: data.marketSearch || '',
     marketSort: data.marketSort, marketSortDir: data.marketSortDir, marketPage: data.marketPage || 0,
@@ -1428,11 +1435,20 @@ window.actionSellCareerPlayer = function (id) {
 };
 
 // Cesión (de salida): el jugador se va a un equipo rival cualquiera, sin
-// cobrar nada (a diferencia de vender) -- y de momento no hay forma de
-// recuperarlo esta temporada, no hay ficha de "cedido saliente" que
-// rastrear todavía (la base). Se avisa de eso mismo en el mensaje para
-// que no sorprenda. No confundir con fichar cedido (entrante, ver
-// actionStartCareerNegotiation con mode 'loan') -- esto es lo contrario.
+// cobrar nada (a diferencia de vender) -- SIGUE SIENDO TUYO mientras
+// dura la cesión: no se puede volver a fichar en Mercado (ni por ti
+// mismo ni por nadie más, ver c.loanedOutIds en el filtro de
+// renderCareerMercado) y vuelve solo a tu plantilla (al banquillo) al
+// empezar la temporada que viene (actionStartNewCareerSeason), igual
+// que un cedido ENTRANTE se devuelve a SU club -- antes esto no se
+// rastreaba (el jugador simplemente desaparecía para siempre y
+// reaparecía fichable en Mercado como si no fuera tuyo), dos bugs
+// corregidos a petición explícita ("cuanto cedo a un jugador, el
+// jugador se devuelve a mi equipo al acabar esa temporada... si yo cedo
+// a un jugador, aparece para fichar en el mercado... eso no tiene
+// sentido, lo he cedido, me sigue perteneciendo"). No confundir con
+// fichar cedido (entrante, ver actionStartCareerNegotiation con mode
+// 'loan') -- esto es lo contrario.
 window.actionLoanCareerPlayer = function (id) {
   var c = G.career;
   if ((c.loanedIds || []).indexOf(id) !== -1) { c.plantillaMessage = 'No puedes ceder a un jugador que ya tienes cedido -- no es tuyo. Puedes devolverlo cuando quieras.'; render(); return; }
@@ -1443,7 +1459,9 @@ window.actionLoanCareerPlayer = function (id) {
   if (!p) return;
   var destTeam = choice(Math.random() < 0.4 ? RIVAL_TEAM_BOSSES : RIVAL_TEAM_NAMES);
   careerRemoveFromSquad(c, id);
-  c.plantillaMessage = 'Cedido ' + p.nombre + ' a ' + destTeam + ' (sin cobrar nada). No se puede recuperar esta temporada.';
+  c.loanedOutIds = c.loanedOutIds || [];
+  c.loanedOutIds.push(id);
+  c.plantillaMessage = 'Cedido ' + p.nombre + ' a ' + destTeam + ' (sin cobrar nada). Sigue siendo tuyo -- vuelve a tu plantilla al empezar la próxima temporada.';
   render();
 };
 
@@ -2094,7 +2112,11 @@ function renderCareerMercado(c) {
     '<button class="btn btn-outline btn-block" onclick="actionAdvanceCareerMarketDay()">Avanzar día ▶</button>' +
   '</div>';
   var incomingOffersHtml = renderCareerIncomingOffers(c);
-  var owned = c.lineup.map(function (s) { return s.player.id; }).concat(c.bench.map(function (p) { return p.id; }));
+  // Los cedidos de SALIDA (c.loanedOutIds) siguen siendo tuyos aunque no
+  // estén en lineup/bench mientras dura la cesión -- no pueden aparecer
+  // como fichables, ni por ti ni (conceptualmente) por nadie más, a
+  // petición explícita ("lo he cedido, me sigue perteneciendo").
+  var owned = c.lineup.map(function (s) { return s.player.id; }).concat(c.bench.map(function (p) { return p.id; })).concat(c.loanedOutIds || []);
   var filter = c.marketFilter || null;
   var typeFilter = c.marketTypeFilter || null;
   var growthFilter = c.marketGrowthFilter || null;
@@ -2754,7 +2776,13 @@ window.actionSimulateCareerMatchday = function () {
   var oppName = league.teamNames[oppIdx];
 
   c.savedFutdraft = G.futdraft;
-  G.futdraft = { lineup: c.lineup, captainId: c.captainId, formation: c.formation, condition: 'ninguna' };
+  // f.squad (no solo f.lineup) hace falta para que futDraftUndraftedPool
+  // (el "plantel fantasma" de goles del rival) excluya TODA tu plantilla,
+  // titulares y banquillo -- sin esto, quedaba vacío (undefined) y el
+  // rival podía "marcar" con el nombre de un jugador tuyo de verdad, a
+  // petición explícita ("no puede meter gol alguien en el equipo
+  // contrario al que estoy jugando, un jugador que yo tengo en mi equipo").
+  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna' };
   var sim = futDraftSimulateMatchCore(careerRivalPowerWithForm(oppName, league.table, oppIdx));
   G.futdraft.live = {
     oppSide: { name: oppName }, modifier: sim.modifier,
@@ -2857,6 +2885,20 @@ window.actionStartNewCareerSeason = function () {
     }).filter(Boolean);
     c.loanedIds = [];
     if (returnedNames.length) c.plantillaMessage = 'Fin de la cesión: ' + returnedNames.join(', ') + ' -- vuelven a su club.';
+  }
+  // Cesiones de SALIDA (tus jugadores en otro club, ver actionLoanCareerPlayer):
+  // igual que las de entrada, duran 1 temporada -- vuelven solos a tu
+  // banquillo al empezar la siguiente, a petición explícita ("el jugador
+  // se devuelve a mi equipo al acabar esa temporada vigente").
+  var returningOutLoans = (c.loanedOutIds || []).slice();
+  if (returningOutLoans.length) {
+    var returnedOutNames = returningOutLoans.map(function (id) {
+      var p = ROSTER.find(function (x) { return x.id === id; });
+      if (p) c.bench.push(p);
+      return p ? p.nombre : null;
+    }).filter(Boolean);
+    c.loanedOutIds = [];
+    if (returnedOutNames.length) c.plantillaMessage = 'Vuelven de la cesión: ' + returnedOutNames.join(', ') + ' -- ya están en tu banquillo.';
   }
   careerProgressAllPlayers(c);
   // Ascensos/descensos: careerComputePromotionRelegation ya calculó el
@@ -3025,7 +3067,13 @@ window.actionSimulateCareerCupMatch = function () {
   if (!match) return;
   var opp = careerCupOpponent(match);
   c.savedFutdraft = G.futdraft;
-  G.futdraft = { lineup: c.lineup, captainId: c.captainId, formation: c.formation, condition: 'ninguna' };
+  // f.squad (no solo f.lineup) hace falta para que futDraftUndraftedPool
+  // (el "plantel fantasma" de goles del rival) excluya TODA tu plantilla,
+  // titulares y banquillo -- sin esto, quedaba vacío (undefined) y el
+  // rival podía "marcar" con el nombre de un jugador tuyo de verdad, a
+  // petición explícita ("no puede meter gol alguien en el equipo
+  // contrario al que estoy jugando, un jugador que yo tengo en mi equipo").
+  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna' };
   var sim = futDraftSimulateMatchCore(careerRivalPower(opp.name));
   G.futdraft.live = {
     oppSide: { name: opp.name }, modifier: sim.modifier,
@@ -3229,7 +3277,13 @@ window.actionSimulateCareerChampionsMatch = function () {
   if (!match) return;
   var opp = careerChampionsOpponent(match);
   c.savedFutdraft = G.futdraft;
-  G.futdraft = { lineup: c.lineup, captainId: c.captainId, formation: c.formation, condition: 'ninguna' };
+  // f.squad (no solo f.lineup) hace falta para que futDraftUndraftedPool
+  // (el "plantel fantasma" de goles del rival) excluya TODA tu plantilla,
+  // titulares y banquillo -- sin esto, quedaba vacío (undefined) y el
+  // rival podía "marcar" con el nombre de un jugador tuyo de verdad, a
+  // petición explícita ("no puede meter gol alguien en el equipo
+  // contrario al que estoy jugando, un jugador que yo tengo en mi equipo").
+  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna' };
   var sim = futDraftSimulateMatchCore(careerRivalPower(opp.name));
   G.futdraft.live = {
     oppSide: { name: opp.name }, modifier: sim.modifier,
