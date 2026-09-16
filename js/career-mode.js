@@ -785,6 +785,12 @@ function careerFreshState(choices) {
     divisionTeams: divisionTeams,
     league: careerBuildLeague(division, divisionTeams),
     lastMatchdayResult: null,
+    // A petición explícita ("deja el partido anterior con el resultado...
+    // y ya le das a siguiente"): true justo después de jugar una jornada
+    // (Saltar o Simular), hasta que se pulsa "Siguiente" -- mientras esté
+    // así, Jornada enseña tu resultado + cómo ha quedado la ronda en vez
+    // de saltar directo al siguiente partido. Ver actionAckCareerJornadaResult.
+    jornadaAckPending: false,
     lastPromotionResult: null,
     loanedIds: [],
     // Jugadores TUYOS cedidos a un club rival (cesión de SALIDA, ver
@@ -875,6 +881,7 @@ function careerSerialize(c) {
     divisionTeams: c.divisionTeams,
     league: c.league,
     lastMatchdayResult: c.lastMatchdayResult,
+    jornadaAckPending: !!c.jornadaAckPending,
     calendarView: c.calendarView,
     marketFilter: c.marketFilter, marketTypeFilter: c.marketTypeFilter, marketGrowthFilter: c.marketGrowthFilter, marketSearch: c.marketSearch,
     marketSort: c.marketSort, marketSortDir: c.marketSortDir, marketPage: c.marketPage,
@@ -938,6 +945,7 @@ function careerDeserialize(data) {
     divisionTeams: data.divisionTeams || careerInitialDivisionTeams(),
     league: data.league,
     lastMatchdayResult: data.lastMatchdayResult || null,
+    jornadaAckPending: !!data.jornadaAckPending,
     budget: typeof data.budget === 'number' ? data.budget : CAREER_STARTING_BUDGET,
     loanedIds: data.loanedIds || [],
     loanedOutIds: data.loanedOutIds || [],
@@ -2253,6 +2261,49 @@ function careerMatchupCardHtml(oppName, contextLabel, youAreHome) {
     '<div class="matchup-row">' + sidesHtml + '</div>' +
   '</div>';
 }
+// Tarjeta de resultado de TU partido (mismo lenguaje visual que
+// careerMatchupCardHtml -- escudos grandes a cada lado -- pero con el
+// marcador ya en medio en vez de "VS"), enseñada justo después de jugar
+// una jornada, antes de preparar la siguiente -- ver renderCareerJornada/
+// c.jornadaAckPending.
+function careerMatchResultCardHtml(oppName, myGoals, oppGoals, winBonus) {
+  return '<div class="panel matchup-card">' +
+    '<p class="dim small center-text">Resultado de tu partido</p>' +
+    '<div class="matchup-row">' +
+      '<div class="matchup-side">' +
+        '<img class="matchup-shield" src="' + escapeHtml(getPlayerShieldPath()) + '" alt="">' +
+        '<div class="matchup-name">Tú</div>' +
+      '</div>' +
+      '<div class="matchup-vs">' + myGoals + ' - ' + oppGoals + '</div>' +
+      '<div class="matchup-side">' +
+        '<img class="matchup-shield" src="' + escapeHtml(teamShieldPath(oppName)) + '" alt="">' +
+        '<div class="matchup-name">' + escapeHtml(oppName) + '</div>' +
+      '</div>' +
+    '</div>' +
+    (winBonus ? '<p class="dim small center-text mt">Presupuesto: <strong style="color:var(--accent-2)">+' + winBonus + ' M€</strong> por ganar.</p>' : '') +
+  '</div>';
+}
+// Resultado de TODA la jornada que se acaba de jugar (no solo tu
+// partido), a petición explícita ("en vez de poner esto así, pon
+// directamente una captura del calendario diciendo como han quedado
+// todos") -- misma fila que ya usa Calendario (calendarFixtureRowHtml),
+// reutilizada tal cual para no duplicar ese diseño.
+function careerLastRoundResultsHtml(league, r) {
+  var playedIdx = league.matchdayIndex - 1;
+  var playedFixtures = playedIdx >= 0 ? league.schedule[playedIdx] : null;
+  var playedResults = playedIdx >= 0 ? league.results[playedIdx] : null;
+  var roundRowsHtml = playedFixtures
+    ? playedFixtures.map(function (fx, fi) { return calendarFixtureRowHtml(league, fx, playedResults[fi]); }).join('')
+    : '';
+  return '<div class="panel">' +
+    '<h3 style="margin-bottom:4px" class="center-text">Cómo ha quedado la jornada ' + r.matchday + '</h3>' +
+    roundRowsHtml +
+  '</div>';
+}
+window.actionAckCareerJornadaResult = function () {
+  G.career.jornadaAckPending = false;
+  render();
+};
 // Encuentra tu partido de la próxima jornada de Liga sin jugarlo -- para
 // poder enseñar el rival en la tarjeta de arriba antes de pulsar nada
 // (mismo criterio de búsqueda que actionSkipCareerMatchday/
@@ -2382,21 +2433,41 @@ window.actionGoToCareerCompeticionesTab = function (subTab) {
   c.competicionesTab = subTab;
   render();
 };
+// Todo en UNA sola fila deslizable (mismo .career-tabs-scroll de la
+// cabecera de Modo Carrera), a petición explícita ("mete un segundo
+// scrollbar con liga, copa del rey, clasificación resumida, completa,
+// forma, y máximos goleadores en el mismo scroll bar") -- antes eran 2-3
+// filas sueltas (competición / vista de Liga / botón de goleadores
+// aparte). Los botones de vista y el de goleadores cambian
+// automáticamente a la sub-pestaña Liga al tocarlos (tiene sentido: son
+// conceptos solo de Liga), así que pueden convivir con Copa/Champions en
+// la misma fila sin confundir -- puede haber más de un pill activo a la
+// vez (p.ej. "Liga" + "Resumida" los dos en azul).
 function renderCareerCompeticiones(c) {
   var hasChampions = !!c.champions;
   var sub = c.competicionesTab;
   if (sub !== 'copa' && (sub !== 'champions' || !hasChampions)) sub = 'liga';
-  var subTabsHtml = '<div class="btn-row" style="justify-content:center">' +
-    '<button class="btn btn-tiny' + (sub === 'liga' ? ' active' : '') + '" onclick="actionSetCareerCompeticionesTab(\'liga\')">Liga</button>' +
-    '<button class="btn btn-tiny' + (sub === 'copa' ? ' active' : '') + '" onclick="actionSetCareerCompeticionesTab(\'copa\')">Copa del Rey</button>' +
-    (hasChampions ? '<button class="btn btn-tiny' + (sub === 'champions' ? ' active' : '') + '" onclick="actionSetCareerCompeticionesTab(\'champions\')">Champions</button>' : '') +
+  var view = c.ligaView && CAREER_LIGA_VIEWS.some(function (v) { return v.id === c.ligaView; }) ? c.ligaView : 'resumida';
+  var items = [
+    { name: 'Liga', active: sub === 'liga', onclick: "actionSetCareerCompeticionesTab('liga')" },
+    { name: 'Copa del Rey', active: sub === 'copa', onclick: "actionSetCareerCompeticionesTab('copa')" }
+  ];
+  if (hasChampions) items.push({ name: 'Champions', active: sub === 'champions', onclick: "actionSetCareerCompeticionesTab('champions')" });
+  CAREER_LIGA_VIEWS.forEach(function (v) {
+    items.push({ name: v.name, active: sub === 'liga' && view === v.id, onclick: "actionSetCareerLigaView('" + v.id + "')" });
+  });
+  items.push({ name: 'Máximos goleadores', active: !!c.showTopScorers, onclick: 'actionToggleCareerTopScorers()' });
+  var scrollHtml = '<div class="career-tabs-scroll competiciones-scroll">' +
+    items.map(function (it) { return '<button class="btn btn-tiny' + (it.active ? ' active' : '') + '" onclick="' + it.onclick + '">' + it.name + '</button>'; }).join('') +
   '</div>';
   var bodyHtml = sub === 'copa' ? renderCareerCopa(c) : (sub === 'champions' ? renderCareerChampions(c) : renderCareerLigaSection(c));
-  return subTabsHtml + bodyHtml;
+  return scrollHtml + bodyHtml;
 }
 
 window.actionSetCareerLigaView = function (view) {
-  G.career.ligaView = view;
+  var c = G.career;
+  c.competicionesTab = 'liga';
+  c.ligaView = view;
   render();
 };
 var CAREER_LIGA_VIEWS = [
@@ -2414,9 +2485,6 @@ var CAREER_LIGA_VIEWS = [
 function renderCareerLigaSection(c) {
   var league = c.league;
   var view = c.ligaView && CAREER_LIGA_VIEWS.some(function (v) { return v.id === c.ligaView; }) ? c.ligaView : 'resumida';
-  var viewBtnsHtml = CAREER_LIGA_VIEWS.map(function (v) {
-    return '<button class="btn btn-tiny' + (view === v.id ? ' active' : '') + '" onclick="actionSetCareerLigaView(\'' + v.id + '\')">' + v.name + '</button>';
-  }).join('');
   var zoneHint = c.division === 2
     ? 'Verde: zona de ascenso a Primera (' + CAREER_PROMOTION_SPOTS + ' primeros).'
     : 'Azul: plaza de Champions League (' + CAREER_CHAMPIONS_QUALIFY_SPOTS + ' primeros). Rojo: zona de descenso a Segunda (' + CAREER_PROMOTION_SPOTS + ' últimos).';
@@ -2425,8 +2493,6 @@ function renderCareerLigaSection(c) {
       '<p class="dim small">' + escapeHtml(careerDivisionName(c.division)) + ' -- Jornada ' + Math.min(league.matchdayIndex + 1, league.schedule.length) + ' de ' + league.schedule.length + '</p>' +
       (view !== 'calendario' ? '<p class="dim small">' + zoneHint + '</p>' : '') +
       (view === 'forma' ? '<p class="dim small">Una racha de 3 victorias o derrotas seguidas da un empujón (o un bajón) de forma al siguiente partido.</p>' : '') +
-      '<div class="career-liga-view-row mt">' + viewBtnsHtml + '</div>' +
-      (view !== 'calendario' ? '<button class="btn btn-tiny mt' + (c.showTopScorers ? ' active' : '') + '" onclick="actionToggleCareerTopScorers()">Máximos goleadores y asistentes</button>' : '') +
     '</div>';
   if (view === 'calendario') return headerHtml + renderCareerCalendario(c);
   var topScorersHtml = c.showTopScorers ? renderTopScorersAssistsPanel(league.stats, 'Goleadores y asistentes de esta temporada') : '';
@@ -2478,7 +2544,9 @@ function renderCareerLigaTable(c, view) {
 }
 
 window.actionToggleCareerTopScorers = function () {
-  G.career.showTopScorers = !G.career.showTopScorers;
+  var c = G.career;
+  c.competicionesTab = 'liga';
+  c.showTopScorers = !c.showTopScorers;
   render();
 };
 
@@ -2886,6 +2954,7 @@ window.actionSkipCareerMatchday = function () {
     oppGoals: oppGoals,
     winBonus: winBonus
   };
+  c.jornadaAckPending = true;
   careerRecordStarterAppearances(c);
   league.matchdayIndex++;
   careerUpdateBestPosition(c);
@@ -2968,6 +3037,7 @@ function finishCareerMatchdayMatch() {
   careerResolveOtherFixtures(c, league, fi);
   var winBonus = careerAwardWinBonus(c, myGoals, oppGoals);
   c.lastMatchdayResult = { matchday: league.matchdayIndex + 1, oppName: oppName, myGoals: myGoals, oppGoals: oppGoals, winBonus: winBonus };
+  c.jornadaAckPending = true;
   careerRecordStarterAppearances(c);
   league.matchdayIndex++;
   careerUpdateBestPosition(c);
@@ -3057,6 +3127,7 @@ window.actionStartNewCareerSeason = function () {
   c.boughtThisSeasonIds = []; // temporada nueva: ya se pueden volver a mover
   careerGenerateIncomingOffers(c);
   c.lastMatchdayResult = null;
+  c.jornadaAckPending = false;
   c.calendarView = null;
   c.cup = careerNewCup();
   c.lastCupResult = null;
@@ -3650,25 +3721,21 @@ function renderCareerJornada(c) {
     '</div>';
   }
   var seasonOver = league.matchdayIndex >= league.schedule.length;
-  // Resultado de TODA la jornada anterior (no solo tu partido), a
-  // petición explícita ("en vez de poner esto así, pon directamente una
-  // captura del calendario diciendo como han quedado todos") -- misma
-  // fila que ya usa Calendario (calendarFixtureRowHtml), reutilizada tal
-  // cual para no duplicar ese diseño.
   var r = c.lastMatchdayResult;
-  var lastRoundHtml = '';
-  if (r) {
-    var playedIdx = league.matchdayIndex - 1;
-    var playedFixtures = playedIdx >= 0 ? league.schedule[playedIdx] : null;
-    var playedResults = playedIdx >= 0 ? league.results[playedIdx] : null;
-    var roundRowsHtml = playedFixtures
-      ? playedFixtures.map(function (fx, fi) { return calendarFixtureRowHtml(league, fx, playedResults[fi]); }).join('')
-      : '';
-    lastRoundHtml = '<div class="panel">' +
-      '<h3 style="margin-bottom:4px" class="center-text">Cómo ha quedado la jornada ' + r.matchday + '</h3>' +
-      (r.winBonus ? '<p class="dim small center-text">Presupuesto: <strong style="color:var(--accent-2)">+' + r.winBonus + ' M€</strong> por ganar.</p>' : '') +
-      roundRowsHtml +
-    '</div>';
+  // Justo después de jugar una jornada (Saltar o Simular), primero se
+  // enseña TU resultado + cómo ha quedado toda la ronda -- solo al
+  // pulsar "Siguiente" se prepara el próximo partido (escudos,
+  // Simular/Saltar), a petición explícita ("deja el partido anterior con
+  // el resultado... y ya le das a siguiente, y te carga lo de jornada x
+  // de 30, los escudos, simular o saltar"). c.jornadaAckPending es lo que
+  // distingue "acabo de jugar, toca confirmar" de "ya confirmado, toca
+  // preparar el siguiente".
+  if (!seasonOver && c.jornadaAckPending && r) {
+    return (
+      careerMatchResultCardHtml(r.oppName, r.myGoals, r.oppGoals, r.winBonus) +
+      '<div class="panel center-text"><button class="btn btn-primary btn-block" onclick="actionAckCareerJornadaResult()">Siguiente ▶</button></div>' +
+      careerLastRoundResultsHtml(league, r)
+    );
   }
   var matchupHtml = '';
   if (!seasonOver) {
@@ -3689,7 +3756,7 @@ function renderCareerJornada(c) {
             '<button class="btn btn-skip" onclick="actionSkipCareerMatchday()">⏭ Saltar</button>' +
           '</div>') +
     '</div>' +
-    (seasonOver ? careerSeasonSummaryHtml(c) : lastRoundHtml)
+    (seasonOver ? careerSeasonSummaryHtml(c) : '')
   );
 }
 
