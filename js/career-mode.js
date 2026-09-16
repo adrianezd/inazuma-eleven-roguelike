@@ -390,6 +390,42 @@ function careerGrowthSeasonCap(tier, level) {
   var levelFactor = 0.5 + 0.5 * (lvl / CAREER_TRAINING_MAX_LEVEL);
   return tier * CAREER_GROWTH_TIER_SEASON_CAP_PER_TIER * levelFactor;
 }
+// Cuántas jornadas de LIGA ha sido titular un jugador de tu plantilla
+// ESTA temporada (c.seasonAppearances, {playerId: nº de veces en
+// c.lineup cuando se resolvió una jornada) -- ver careerRecordStarterAppearances,
+// llamada desde actionSkipCareerMatchday/finishCareerMatchdayMatch. Se
+// reinicia cada temporada nueva (actionStartNewCareerSeason), como
+// lastPlayerProgressionDelta.
+function careerPlayerAppearanceRatio(c, p) {
+  var starts = (c.seasonAppearances && c.seasonAppearances[p.id]) || 0;
+  var total = (c.league && c.league.schedule && c.league.schedule.length) || 1;
+  return clamp(starts / total, 0, 1);
+}
+function careerRecordStarterAppearances(c) {
+  c.seasonAppearances = c.seasonAppearances || {};
+  c.lineup.forEach(function (s) {
+    c.seasonAppearances[s.player.id] = (c.seasonAppearances[s.player.id] || 0) + 1;
+  });
+}
+// A petición explícita ("que tus jugadores suban puntos en base a lo que
+// van jugando, y no solo el entrenamiento... lo que está ahora de lo que
+// suben, divídelo entre lo que juegan siendo titulares y lo que suban en
+// un centro de entrenamiento"): para TU plantilla (lineup+bench), la
+// mitad de la subida de siempre viene del centro de entrenamiento (como
+// hasta ahora) y la otra mitad se escala según la ratio de jornadas
+// jugadas de titular esta temporada (careerPlayerAppearanceRatio) -- un
+// titular fijo toda la temporada sigue subiendo exactamente lo mismo que
+// antes (nunca más), uno que no juega nada se queda solo con la mitad
+// "de entrenamiento". El resto del ROSTER (rivales/mercado, sin datos de
+// alineación) no se toca, sigue con la fórmula de siempre.
+var CAREER_SQUAD_GROWTH_TRAINING_SHARE = 0.5;
+function careerApplySquadGrowthSplit(c, p, delta) {
+  var ratio = careerPlayerAppearanceRatio(c, p);
+  return delta * CAREER_SQUAD_GROWTH_TRAINING_SHARE * (1 + ratio);
+}
+function careerIsSquadPlayer(c, playerId) {
+  return c.lineup.some(function (s) { return s.player.id === playerId; }) || c.bench.some(function (p) { return p.id === playerId; });
+}
 // "Media esperada" de la pestaña Entrenamiento: la parte DETERMINISTA del
 // cálculo de abajo (el tirón hacia el ancla + el crecimiento fijo del
 // jugador ya diluido según lo cerca que esté del máximo, sin el ruido al
@@ -401,7 +437,11 @@ function careerExpectedProgressionDelta(c, p) {
   var tier = careerPlayerGrowthTier(c, p);
   var tierBonus = careerGrowthTierBonus(c, p, current);
   var raw = (params.anchor - current) * params.rate + tierBonus;
-  return Math.round(Math.min(raw, careerGrowthSeasonCap(tier, c.trainingLevel)) * 2) / 2;
+  var capped = Math.min(raw, careerGrowthSeasonCap(tier, c.trainingLevel));
+  // Solo se enseña en Entrenamiento (siempre jugadores de tu plantilla),
+  // así que aquí también se aplica el reparto entrenamiento/minutos
+  // jugados -- ver careerApplySquadGrowthSplit.
+  return Math.round(careerApplySquadGrowthSplit(c, p, capped) * 2) / 2;
 }
 // "Potencial" de la pestaña Entrenamiento: un rango (bajo-alto), no un
 // único número, a petición explícita ("puede ser cualquiera de los 3
@@ -421,7 +461,7 @@ function careerPlayerPotentialRange(c, p) {
   // esto, si "current" alguna vez no cae en un múltiplo de 0.5 (no
   // debería, pero por si acaso), el tope podía colarse como número no
   // entero en pantalla (ej. "72.33").
-  var seasonCapScore = Math.round(current + careerGrowthSeasonCap(tier, c.trainingLevel));
+  var seasonCapScore = Math.round(current + careerApplySquadGrowthSplit(c, p, careerGrowthSeasonCap(tier, c.trainingLevel)));
   return {
     low: clamp(Math.round(expected - params.variance), 30, 99),
     high: clamp(Math.min(Math.round(expected + params.variance), seasonCapScore), 30, 99)
@@ -442,6 +482,13 @@ function careerProgressAllPlayers(c) {
     var noise = (Math.random() * 2 - 1) * params.variance;
     var delta = Math.round((pull + noise) * 2) / 2;
     delta = Math.min(delta, careerGrowthSeasonCap(tier, c.trainingLevel));
+    // Solo para TU plantilla: la mitad de esta subida viene del centro de
+    // entrenamiento (como siempre) y la otra mitad depende de cuánto haya
+    // jugado de titular en Liga esta temporada que termina
+    // (careerApplySquadGrowthSplit/careerRecordStarterAppearances) -- a
+    // petición explícita. El resto del ROSTER (rivales/mercado) no se
+    // toca, no hay datos de alineación suyos.
+    if (careerIsSquadPlayer(c, p.id)) delta = Math.round(careerApplySquadGrowthSplit(c, p, delta) * 2) / 2;
     c.playerProgression[p.id] = (c.playerProgression[p.id] || 0) + delta;
     c.lastPlayerProgressionDelta[p.id] = delta;
   });
@@ -748,6 +795,10 @@ function careerFreshState(choices) {
     // Crecimiento fijo por jugador (1-5, TODO ROSTER), sorteado una sola
     // vez aquí y nunca más -- ver careerInitialGrowthTiers.
     playerGrowthTier: careerInitialGrowthTiers(),
+    // Jornadas de titular esta temporada por jugador de tu plantilla, ver
+    // careerRecordStarterAppearances/careerApplySquadGrowthSplit -- vacío
+    // en una partida nueva, se reinicia cada actionStartNewCareerSeason.
+    seasonAppearances: {},
     // Centro de entrenamiento: arranca SIN construir (0), infraestructura
     // del club, nunca se resetea entre temporadas (como el presupuesto)
     // -- ver careerTrainingEffectiveParams/CAREER_TRAINING_LEVEL_COSTS.
@@ -820,7 +871,8 @@ function careerSerialize(c) {
     champions: c.champions || null,
     qualifiedForChampionsNextSeason: !!c.qualifiedForChampionsNextSeason,
     championsWon: c.championsWon || 0,
-    lastChampionsResult: c.lastChampionsResult || null
+    lastChampionsResult: c.lastChampionsResult || null,
+    seasonAppearances: c.seasonAppearances || {}
   };
 }
 function careerDeserialize(data) {
@@ -891,7 +943,8 @@ function careerDeserialize(data) {
     champions: careerCupRelinkWinners(data.champions) || null,
     qualifiedForChampionsNextSeason: !!data.qualifiedForChampionsNextSeason,
     championsWon: data.championsWon || 0,
-    lastChampionsResult: data.lastChampionsResult || null
+    lastChampionsResult: data.lastChampionsResult || null,
+    seasonAppearances: data.seasonAppearances || {}
   };
 }
 // Guarda el estado ACTUAL (G.career) en el hueco activo
@@ -1468,8 +1521,18 @@ function renderCareerPlantilla(c) {
 // para mejorar las instalaciones". La subida rápida manual por jugador
 // que había aquí se quitó del todo, a petición explícita ("subir uno de
 // media a un jugador en especial no se pueda, eso desactivado, quítalo").
+// No se puede mejorar/construir el último día de la temporada (cuando ya
+// se ha dado la recompensa final de Liga), a petición explícita: "que no
+// puedas mejorar el entrenamiento el último día de la temporada, justo
+// cuando te dan la recompensa final, cierra tu entrenamiento" -- evita
+// mejorar el centro "de gratis" justo antes de que la progresión de fin
+// de temporada (careerProgressAllPlayers, en actionStartNewCareerSeason)
+// ya vaya a usar ese nivel más alto sin haber tenido que currárselo
+// durante la temporada.
+function careerTrainingLocked(c) { return c.league.matchdayIndex >= c.league.schedule.length; }
 window.actionUpgradeTrainingCenter = function () {
   var c = G.career;
+  if (careerTrainingLocked(c)) return;
   var level = typeof c.trainingLevel === 'number' ? c.trainingLevel : 0;
   if (level >= CAREER_TRAINING_MAX_LEVEL) return;
   var cost = CAREER_TRAINING_LEVEL_COSTS[level];
@@ -1507,6 +1570,7 @@ function renderCareerEntrenamiento(c) {
   var level = typeof c.trainingLevel === 'number' ? c.trainingLevel : 0;
   var maxed = level >= CAREER_TRAINING_MAX_LEVEL;
   var nextCost = maxed ? null : CAREER_TRAINING_LEVEL_COSTS[level];
+  var locked = careerTrainingLocked(c);
   var headerHtml =
     '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Nivel de Entrenamiento</h3>' +
@@ -1517,15 +1581,19 @@ function renderCareerEntrenamiento(c) {
       (level === 0 ? '<p class="dim small">Todavía no has construido el centro de entrenamiento -- tus jugadores progresan a su ritmo natural, sin ayuda.</p>' : '') +
       '<p class="dim small">Cuanto más alto el nivel, más tienden a mejorar tus jugadores cada temporada (y menos a bajar los veteranos) -- afecta a todo el mundo, no solo a tu plantilla.</p>' +
       (c.trainingMessage ? '<p class="dim small">' + escapeHtml(c.trainingMessage) + '</p>' : '') +
-      (maxed
-        ? '<p class="dim small">Centro al máximo.</p>'
-        : '<button class="btn btn-primary btn-block mt" ' + (c.budget < nextCost ? 'disabled' : '') + ' onclick="actionUpgradeTrainingCenter()">' + (level === 0 ? 'CONSTRUIR' : 'POTENCIAR -- nivel ' + (level + 1)) + ' (' + nextCost + ' M€)</button>') +
+      (locked
+        ? '<p class="dim small">Entrenamiento cerrado -- la temporada ya ha terminado, no se puede mejorar hasta la que viene.</p>'
+        : (maxed
+          ? '<p class="dim small">Centro al máximo.</p>'
+          : '<button class="btn btn-primary btn-block mt" ' + (c.budget < nextCost ? 'disabled' : '') + ' onclick="actionUpgradeTrainingCenter()">' + (level === 0 ? 'CONSTRUIR' : 'POTENCIAR -- nivel ' + (level + 1)) + ' (' + nextCost + ' M€)</button>')) +
     '</div>';
   var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
   var rowsHtml = all.map(function (p) {
     var currentScore = careerPlayerScore(p);
     var lastDelta = (c.lastPlayerProgressionDelta || {})[p.id];
     var potential = careerPlayerPotentialRange(c, p);
+    var starts = (c.seasonAppearances || {})[p.id] || 0;
+    var totalMatchdays = (c.league && c.league.schedule && c.league.schedule.length) || 0;
     return '<div class="career-offer-card">' +
       '<div class="career-offer-head">' + avatarHtml(p) +
         '<span class="career-offer-name">' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + '</span>' +
@@ -1538,6 +1606,9 @@ function renderCareerEntrenamiento(c) {
         '<span class="dim">Progresión temporada pasada: ' + careerDeltaHtml(lastDelta) + '</span>' +
         '<span class="dim">Potencial próxima temporada: <strong>' + (potential.low === potential.high ? potential.low : (potential.low + '-' + potential.high)) + '</strong></span>' +
       '</div>' +
+      (totalMatchdays
+        ? '<p class="dim small" style="margin-top:4px">Titular esta temporada: <strong>' + starts + ' de ' + totalMatchdays + '</strong> jornadas -- juega para subir más, además del entrenamiento.</p>'
+        : '') +
     '</div>';
   }).join('');
   return headerHtml + '<div class="panel">' + rowsHtml + '</div>';
@@ -2590,6 +2661,7 @@ window.actionSkipCareerMatchday = function () {
     oppGoals: oppGoals,
     winBonus: winBonus
   };
+  careerRecordStarterAppearances(c);
   league.matchdayIndex++;
   careerUpdateBestPosition(c);
   careerMaybeOpenMidseasonWindow(c);
@@ -2664,6 +2736,7 @@ function finishCareerMatchdayMatch() {
   careerResolveOtherFixtures(c, league, fi);
   var winBonus = careerAwardWinBonus(c, myGoals, oppGoals);
   c.lastMatchdayResult = { matchday: league.matchdayIndex + 1, oppName: oppName, myGoals: myGoals, oppGoals: oppGoals, winBonus: winBonus };
+  careerRecordStarterAppearances(c);
   league.matchdayIndex++;
   careerUpdateBestPosition(c);
   careerMaybeOpenMidseasonWindow(c);
@@ -2749,6 +2822,10 @@ window.actionStartNewCareerSeason = function () {
   c.champions = c.qualifiedForChampionsNextSeason ? careerNewChampions() : null;
   c.qualifiedForChampionsNextSeason = false;
   c.lastChampionsResult = null;
+  // Minutos jugados de la temporada que empieza, de cero -- careerProgressAllPlayers
+  // (arriba, en la temporada que acaba de terminar) ya leyó los de la
+  // temporada anterior antes de este reset.
+  c.seasonAppearances = {};
   render();
 };
 
