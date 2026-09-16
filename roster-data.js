@@ -2366,4 +2366,400 @@ var ROSTER = [
   locked:false,
   sprite:'assets/sprites/r272.webp'
 },
+{
+  id:'r273', nombre:'Nev Erin', original:'Arashi Rokko',
+  posicion:'Delantero', tipo:'Viento',
+  tiro:78,pase:62,defensa:38,especial:70,
+  hissatsu:['Tornado Oscuro'],
+  desc:'Un delantero veloz que juega con gran energía incluso en los días más fríos.',
+  locked:false,cost:18,
+  sprite:'assets/sprites/r273.webp'
+},
+{
+  id:'r274', nombre:'Christian Dear', original:'Shintaro Takasugi',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:48,pase:58,defensa:67,especial:55,
+  hissatsu:['Corte Giratorio'],
+  desc:'Un defensa de Raimon al que le encantan las novedades.',
+  locked:false,cost:17,
+  sprite:'assets/sprites/r274.webp'
+},
+{
+  id:'r275', nombre:'Beau Fort', original:'Sho Kazakiri',
+  posicion:'Defensa', tipo:'Viento',
+  tiro:45,pase:61,defensa:65,especial:58,
+  hissatsu:['Ciclón'],
+  desc:'Un defensa aficionado al ciclismo que se deja llevar por el viento.',
+  locked:false,cost:17,
+  sprite:'assets/sprites/r275.webp'
+},
+{
+  id:'r276', nombre:'Alfie Fine', original:'Genki Mouri',
+  posicion:'Portero', tipo:'Bosque',
+  tiro:25,pase:42,defensa:48,especial:69,
+  hissatsu:['Campo de Fuerza Defensivo'],
+  desc:'Un portero que destaca por sus técnicas defensivas.',
+  locked:false,cost:16,
+  sprite:'assets/sprites/r276.webp'
+},
+{
+  id:'r277', nombre:'Billy Blanc', original:'Shiroshi Billy',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:51,pase:65,defensa:43,especial:57,
+  hissatsu:['Acelerón'],
+  desc:'Un jugador ligero que destaca por su movilidad.',
+  locked:false,cost:15,
+  sprite:'assets/sprites/r277.webp'
+},
+{
+  id:'r278', nombre:'Slim Lanky', original:'Ko Hosoi',
+  posicion:'Portero', tipo:'Viento',
+  tiro:22,pase:45,defensa:52,especial:66,
+  hissatsu:['Puño Explosivo'],
+  desc:'Un portero extremadamente alto y delgado.',
+  locked:false,cost:16,
+  sprite:'assets/sprites/r278.webp'
+},
+{
+  id:'r279', nombre:'Fane Club', original:'Club',
+  posicion:'Portero', tipo:'Viento',
+  tiro:20,pase:43,defensa:49,especial:63,
+  hissatsu:['Despeje a Presión'],
+  desc:'Un aspirante a estrella del fútbol que idolatra a los grandes jugadores.',
+  locked:false,cost:15,
+  sprite:'assets/sprites/r279.webp'
+},
+{
+  id:'r280', nombre:'Dan Dandy', original:'Dando Dan',
+  posicion:'Defensa', tipo:'Viento',
+  tiro:49,pase:55,defensa:64,especial:61,
+  hissatsu:['Ataque Afilado'],
+  desc:'Un atleta especializado en salto de altura capaz de elevarse como un cohete.',
+  locked:false,cost:17,
+  sprite:'assets/sprites/r280.webp'
+},
+{
+  id:'r281', nombre:'Don Keys', original:'Keys',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:69,pase:48,defensa:32,especial:58,
+  hissatsu:['Remate Giratorio'],
+  desc:'Un delantero de gran potencia ofensiva.',
+  locked:false,cost:16,
+  sprite:'assets/sprites/r281.webp'
+},
+{
+  id:'r282', nombre:'Marv Errick', original:'Errick',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:48,pase:63,defensa:45,especial:54,
+  hissatsu:['Pase Cruzado'],
+  desc:'Un jugador equilibrado que ayuda a conectar el centro del campo.',
+  locked:false,cost:15,
+  sprite:'assets/sprites/r282.webp'
+},
+{
+  id:'r283', nombre:'Tony Hacker', original:'Hacker',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:50,pase:66,defensa:42,especial:59,
+  hissatsu:['Regate Aurora'],
+  desc:'Un centrocampista hábil capaz de encontrar espacios entre los rivales.',
+  locked:false,cost:16,
+  sprite:'assets/sprites/r283.webp'
+},
+{
+  id:'r284', nombre:'Iggy Loyaller', original:'Loyaller',
+  posicion:'Delantero', tipo:'Bosque',
+  tiro:67,pase:50,defensa:35,especial:55,
+  hissatsu:['Remate Giratorio'],
+  desc:'Un delantero fiel a su equipo y siempre dispuesto a luchar.',
+  locked:false,cost:16,
+  sprite:'assets/sprites/r284.webp'
+},
+{
+  id:'r285', nombre:'Alan Mode', original:'Mode',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:46,pase:64,defensa:44,especial:56,
+  hissatsu:['Regate Engañoso'],
+  desc:'Un jugador técnico que busca superar a sus rivales con habilidad.',
+  locked:false,cost:15,
+  sprite:'assets/sprites/r285.webp'
+},
+{
+  id:'r286', nombre:'Bill Moony', original:'Moony',
+  posicion:'Delantero', tipo:'Viento',
+  tiro:64,pase:53,defensa:34,especial:60,
+  hissatsu:['Acelerón'],
+  desc:'Un delantero rápido que aprovecha su velocidad para atacar.',
+  locked:false,cost:16,
+  sprite:'assets/sprites/r286.webp'
+},
+{
+  id:'r287', nombre:"Vinny O'Gaines", original:"O'Gaines",
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:52,pase:61,defensa:47,especial:53,
+  hissatsu:['Pase Cruzado'],
+  desc:'Un centrocampista trabajador y equilibrado.',
+  locked:false,cost:15,
+  sprite:'assets/sprites/r287.webp'
+},
+{
+  id:'r288', nombre:'Joe Rassock', original:'Rassock',
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:38,pase:51,defensa:67,especial:52,
+  hissatsu:['Barrido Defensivo'],
+  desc:'Un defensa físico especializado en recuperar balones.',
+  locked:false,cost:16,
+  sprite:'assets/sprites/r288.webp'
+},
+{
+  id:'r289', nombre:'Dan Rhino', original:'Rhino',
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:42,pase:48,defensa:70,especial:55,
+  hissatsu:['Ataque Afilado'],
+  desc:'Un defensa fuerte que utiliza su físico para detener los ataques.',
+  locked:false,cost:17,
+  sprite:'assets/sprites/r289.webp'
+},
+{
+  id:'r290', nombre:'Roger Rocket', original:'Rocket',
+  posicion:'Defensa', tipo:'Viento',
+  tiro:43,pase:55,defensa:65,especial:59,
+  hissatsu:['Corte Giratorio'],
+  desc:'Un defensa rápido que puede incorporarse con velocidad.',
+  locked:false,cost:17,
+  sprite:'assets/sprites/r290.webp'
+},
+{
+  id:'r291', nombre:'Phil Rosey', original:'Rosey',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:49,pase:62,defensa:43,especial:55,
+  hissatsu:['Pase Cruzado'],
+  desc:'Un centrocampista que mantiene el juego en movimiento.',
+  locked:false,cost:15,
+  sprite:'assets/sprites/r291.webp'
+},
+{
+  id:'r292', nombre:'Ringo Stagg', original:'Stagg',
+  posicion:'Delantero', tipo:'Montaña',
+  tiro:68,pase:47,defensa:36,especial:56,
+  hissatsu:['Remate Giratorio'],
+  desc:'Un delantero potente que busca finalizar las jugadas.',
+  locked:false,cost:16,
+  sprite:'assets/sprites/r292.webp'
+},
+{
+  id:'r293', nombre:'Joe Straiter', original:'Straiter',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:40,pase:54,defensa:64,especial:51,
+  hissatsu:['Corte Giratorio'],
+  desc:'Un defensa disciplinado que mantiene su posición.',
+  locked:false,cost:15,
+  sprite:'assets/sprites/r293.webp'
+},
+{
+  id:'r294', nombre:'Barry Straw', original:'Straw',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:47,pase:60,defensa:42,especial:53,
+  hissatsu:['Acelerón'],
+  desc:'Un jugador ágil que ayuda a mover el balón rápidamente.',
+  locked:false,cost:15,
+  sprite:'assets/sprites/r294.webp'
+},
+{
+  id:'r295', nombre:'Ifan Tassy', original:'Tassy',
+  posicion:'Delantero', tipo:'Bosque',
+  tiro:63,pase:52,defensa:34,especial:57,
+  hissatsu:['Regate Aurora'],
+  desc:'Un delantero técnico con recursos para superar defensas.',
+  locked:false,cost:15,
+  sprite:'assets/sprites/r295.webp'
+},
+{
+  id:'r296', nombre:'Bill Teller', original:'Teller',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:39,pase:56,defensa:66,especial:54,
+  hissatsu:['Barrido Defensivo'],
+  desc:'Un defensa de estilo sólido y trabajador.',
+  locked:false,cost:16,
+  sprite:'assets/sprites/r296.webp'
+},
+{
+  id:'r297', nombre:'Tim Toppel', original:'Toppel',
+  posicion:'Portero', tipo:'Bosque',
+  tiro:23,pase:45,defensa:50,especial:64,
+  hissatsu:['Ultratécnica'],
+  desc:'Un portero pequeño pero capaz de sorprender a jugadores más grandes.',
+  locked:false,cost:16,
+  sprite:'assets/sprites/r297.webp'
+},
+{
+  id:'r298', nombre:'Stan Trum', original:'Trum',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:50,pase:62,defensa:44,especial:54,
+  hissatsu:['Regate Engañoso'],
+  desc:'Un centrocampista equilibrado con buen control del balón.',
+  locked:false,cost:15,
+  sprite:'assets/sprites/r298.webp'
+},
+{
+  id:'r299', nombre:'Doug Walker', original:'Walker',
+  posicion:'Portero', tipo:'Montaña',
+  tiro:21,pase:42,defensa:54,especial:67,
+  hissatsu:['Puño Explosivo'],
+  desc:'Un portero robusto que utiliza su fuerza para detener disparos.',
+  locked:false,cost:17,
+  sprite:'assets/sprites/r299.webp'
+},
+{
+  id:'r300', nombre:'Rob Anchor', original:'Anchor',
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:38,pase:49,defensa:69,especial:55,
+  hissatsu:['Bloqueo'],
+  desc:'Un defensa sólido que actúa como un ancla para su equipo.',
+  locked:false,cost:16,
+  sprite:'assets/sprites/r300.webp'
+},
+{
+  id:'r301', nombre:'Lou Beigh', original:'Beigh',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:46,pase:61,defensa:45,especial:57,
+  hissatsu:['Ciclón'],
+  desc:'Un jugador técnico que se mueve con agilidad.',
+  locked:false,cost:15,
+  sprite:'assets/sprites/r301.webp'
+},
+{
+  id:'r302', nombre:'Eggbert Heading', original:'Heading',
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:43,pase:48,defensa:67,especial:52,
+  hissatsu:['Cabeza Defensiva'],
+  desc:'Un defensa fuerte en el juego aéreo.',
+  locked:false,cost:16,
+  sprite:'assets/sprites/r302.webp'
+},
+{
+  id:'r303', nombre:'Ace Irvin', original:'Irvin',
+  posicion:'Delantero', tipo:'Viento',
+  tiro:70,pase:52,defensa:34,especial:62,
+  hissatsu:['Tornado Oscuro'],
+  desc:'Un delantero veloz que busca abrir huecos en la defensa.',
+  locked:false,cost:17,
+  sprite:'assets/sprites/r303.webp'
+},
+{
+  id:'r304', nombre:'Hal Mullet', original:'Mullet',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:48,pase:60,defensa:46,especial:53,
+  hissatsu:['Pase Cruzado'],
+  desc:'Un centrocampista versátil que ayuda tanto en ataque como en defensa.',
+  locked:false,cost:15,
+  sprite:'assets/sprites/r304.webp'
+},
+{
+  id:'r305', nombre:'Bobby Peel', original:'Peel',
+  posicion:'Defensa', tipo:'Viento',
+  tiro:41,pase:53,defensa:63,especial:55,
+  hissatsu:['Robo Rápido'],
+  desc:'Un defensa ágil especializado en robar el balón.',
+  locked:false,cost:15,
+  sprite:'assets/sprites/r305.webp'
+},
+{
+  id:'r306', nombre:'Spike Pitt', original:'Pitt',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:67,pase:48,defensa:35,especial:57,
+  hissatsu:['Carga Explosiva'],
+  desc:'Un delantero agresivo que apuesta por la potencia.',
+  locked:false,cost:16,
+  sprite:'assets/sprites/r306.webp'
+},
+{
+  id:'r307', nombre:'Dex Territy', original:'Territy',
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:40,pase:50,defensa:68,especial:54,
+  hissatsu:['Barrido Defensivo'],
+  desc:'Un defensa resistente que dificulta el avance rival.',
+  locked:false,cost:16,
+  sprite:'assets/sprites/r307.webp'
+},
+{
+  id:'r308', nombre:'Buster Chopps', original:'Chopps',
+  posicion:'Delantero', tipo:'Montaña',
+  tiro:71,pase:45,defensa:37,especial:58,
+  hissatsu:['Remate Poderoso'],
+  desc:'Un delantero que confía en su potencia física para disparar.',
+  locked:false,cost:17,
+  sprite:'assets/sprites/r308.webp'
+},
+{
+  id:'r309', nombre:'Creed Caving', original:'Caving',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:39,pase:55,defensa:65,especial:52,
+  hissatsu:['Corte Giratorio'],
+  desc:'Un defensa disciplinado que busca cortar las jugadas rivales.',
+  locked:false,cost:15,
+  sprite:'assets/sprites/r309.webp'
+},
+{
+  id:'r310', nombre:'Lon Grainger', original:'Grainger',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:51,pase:63,defensa:43,especial:56,
+  hissatsu:['Regate Aurora'],
+  desc:'Un centrocampista rápido con buen manejo del balón.',
+  locked:false,cost:16,
+  sprite:'assets/sprites/r310.webp'
+},
+{
+  id:'r311', nombre:'Vin Fleetwood', original:'Fleetwood',
+  posicion:'Delantero', tipo:'Viento',
+  tiro:66,pase:50,defensa:34,especial:60,
+  hissatsu:['Acelerón'],
+  desc:'Un delantero veloz que busca atacar los espacios.',
+  locked:false,cost:16,
+  sprite:'assets/sprites/r311.webp'
+},
+{
+  id:'r312', nombre:'Samuel Peeps', original:'Peeps',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:47,pase:64,defensa:45,especial:54,
+  hissatsu:['Pase Cruzado'],
+  desc:'Un centrocampista centrado en distribuir el balón.',
+  locked:false,cost:15,
+  sprite:'assets/sprites/r312.webp'
+},
+{
+  id:'r313', nombre:'Edward Albion', original:'Albion',
+  posicion:'Portero', tipo:'Montaña',
+  tiro:24,pase:43,defensa:53,especial:68,
+  hissatsu:['Puño Explosivo'],
+  desc:'Un portero de gran fortaleza física.',
+  locked:false,cost:17,
+  sprite:'assets/sprites/r313.webp'
+},
+{
+  id:'r314', nombre:'Chunk Gorman', original:'Gorman',
+  posicion:'Delantero', tipo:'Montaña',
+  tiro:76,pase:45,defensa:37,especial:61,
+  hissatsu:['Remate Poderoso'],
+  desc:'Un delantero corpulento al que le encanta comer grandes cantidades de arroz.',
+  locked:false,cost:18,
+  sprite:'assets/sprites/r314.webp'
+},
+{
+  id:'r315', nombre:'Ace Server', original:'Buruto Uin',
+  posicion:'Portero', tipo:'Viento',
+  tiro:24,pase:49,defensa:55,especial:72,
+  hissatsu:['Puño Explosivo'],
+  desc:'Un prodigio del tenis que destaca también bajo los palos.',
+  locked:false,cost:18,
+  sprite:'assets/sprites/r315.webp'
+},
+{
+  id:'r316', nombre:'Rush', original:'Kaito Kakki',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:54,pase:68,defensa:43,especial:64,
+  hissatsu:['Regate Aurora'],
+  desc:'Conocido como el relámpago púrpura, supera rivales gracias a su velocidad.',
+  locked:false,cost:18,
+  sprite:'assets/sprites/r316.webp'
+},
 ];
