@@ -600,10 +600,13 @@ var CAREER_STARTING_BUDGET = 2;
 // Bajados otra vez (a petición explícita, "baja la dificultad") -- eran
 // 82/92/100, luego 77/87/95. "Fácil" bajado una tercera vez aparte ("baja
 // más todavía el nivel de la dificultad fácil"), las otras dos se quedan.
+// Normal y Difícil bajados 6 puntos cada uno (Fácil se queda igual, no
+// se ha pedido tocarla), a petición explícita ("baja la dificultad de
+// modo carrera en normal y dificil, unos 5-7 puntos cada una").
 var CAREER_DIFFICULTY_TIERS = {
   facil: { name: 'Fácil', rivalLevelTarget: 65 },
-  normal: { name: 'Normal', rivalLevelTarget: 87 },
-  dificil: { name: 'Difícil', rivalLevelTarget: 95 }
+  normal: { name: 'Normal', rivalLevelTarget: 81 },
+  dificil: { name: 'Difícil', rivalLevelTarget: 89 }
 };
 var CAREER_DIFFICULTY_ORDER = ['facil', 'normal', 'dificil'];
 var CAREER_NEGOTIATION_MODES = {
