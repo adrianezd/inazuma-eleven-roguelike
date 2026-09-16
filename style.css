@@ -494,6 +494,13 @@ a { color: var(--accent); }
    referencia que dio el usuario. */
 .jugador-decision-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .jugador-decision-card {
+  /* min-width:0 es lo que de verdad arregla el desbordamiento: por
+     defecto una celda de grid no se encoge más allá del contenido más
+     ancho que tenga dentro (aquí, la insignia con el texto largo de
+     abajo), así que sin esto la fila entera se salía de la pantalla y
+     aparecía scroll horizontal en todo el sitio -- visto en una captura
+     real de móvil, "arregla esto como se ve mira". */
+  min-width: 0;
   background: var(--panel-2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -508,6 +515,11 @@ a { color: var(--accent); }
   gap: 8px;
 }
 .jugador-decision-card:hover { border-color: var(--accent); }
+/* Las insignias de dentro (.player-tag hereda white-space:nowrap, pensado
+   para etiquetas cortas como "Cedido" -- aquí el texto es una frase
+   entera, "Titular durante el próximo periodo", así que tiene que poder
+   partirse en varias líneas en vez de forzar el ancho de la tarjeta. */
+.jugador-decision-card .player-tag { white-space: normal; text-align: center; }
 .jugador-decision-icon { font-size: 2.2rem; line-height: 1; }
 
 /* Selector de posición del creador de identidad de Modo Jugador, con la
