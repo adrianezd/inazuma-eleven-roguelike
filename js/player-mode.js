@@ -266,14 +266,31 @@ window.actionGoJugadorSetup = function () {
   G.screen = 'jugadorSetup';
   render();
 };
+// El dorsal se guarda TAL CUAL mientras se escribe (ni parseInt ni
+// clamp en cada tecla), a petición explícita ("en dorsal, en móvil, no
+// puedo poner un 7... intento borrar el número que haya para escribir y
+// siempre queda el 1... queda un 16"): forzar un valor por defecto (1)
+// en cuanto el campo quedaba vacío a medio borrar hacía que el propio
+// campo "peleara" con el usuario -- borrar el "10" pasaba por un
+// instante en blanco, se forzaba a "1" antes de que diera tiempo a
+// teclear el dígito de verdad, y el "6" se escribía detrás de ese "1"
+// fantasma. Se recorta de verdad al confirmar la identidad
+// (actionConfirmJugadorSetup/playerModeFreshState) -- a propósito NO se
+// recorta con un onblur intermedio: cada render() sustituye el DOM
+// entero, así que el input de dorsal se destruye y se crea de nuevo en
+// cada tecla, y eso dispara un blur "fantasma" en el nodo viejo en
+// CUALQUIER render, no solo cuando el usuario de verdad se va del campo
+// -- con un onblur que llama a render(), eso encadenaba un render()
+// infinito (visto de verdad: la pestaña llegaba a crashear).
 window.actionSetJugadorField = function (field, value) {
   if (!G.jugadorSetupChoices) return;
-  G.jugadorSetupChoices[field] = field === 'dorsal' ? clamp(parseInt(value, 10) || 1, 1, 99) : value;
+  G.jugadorSetupChoices[field] = value;
   render();
 };
 window.actionConfirmJugadorSetup = function () {
   var ch = G.jugadorSetupChoices;
   if (!ch || !ch.apellido.trim() || !ch.club) return;
+  ch.dorsal = clamp(parseInt(ch.dorsal, 10) || 10, 1, 99);
   G.playerCareer = playerModeFreshState(ch);
   G.jugadorSetupChoices = null;
   G.screen = 'jugadorMode';
@@ -604,7 +621,7 @@ function renderJugadorMode() {
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
-        '<button class="btn btn-outline btn-block" onclick="requestConfirmLeave(\'doBackToMenuNow\')">Volver</button>' +
+        '<button class="btn btn-outline btn-block" onclick="doBackToMenuNow()">Volver</button>' +
       '</div>' +
       playerModeCardHtml(p) +
       bodyHtml +

@@ -1133,7 +1133,24 @@ window.actionSaveCareerNow = function () {
   if (!c || !G.careerActiveSlot) return;
   var ok = saveCareerToSlot(G.careerActiveSlot);
   c.saveMessage = ok ? 'Partida guardada en el hueco ' + G.careerActiveSlot + '.' : 'No se pudo guardar (almacenamiento no disponible).';
+  // Marca de tiempo del último guardado, ver actionCareerBackToMenu -- si
+  // se acaba de guardar, "Volver" no tiene por qué avisar de que se va a
+  // perder nada.
+  if (ok) G.careerLastSavedAt = Date.now();
   render();
+};
+// "Volver" de Modo Carrera, a petición explícita ("eso solo tiene que
+// ser para el modo carrera y tienes que ver, si ha guardado en el
+// último minuto no pongas nada"): el aviso de "vas a perder el
+// progreso" solo tiene sentido aquí (una partida de Carrera de verdad
+// se puede perder si no se guarda a mano) -- el resto de modos volvió a
+// salir directo, sin confirmación (ver actionBackToMenu en state-nav.js,
+// vuelto a su comportamiento de siempre). Y ni siquiera aquí hace falta
+// preguntar si ya se guardó en el último minuto.
+var CAREER_BACK_SKIP_CONFIRM_MS = 60000;
+window.actionCareerBackToMenu = function () {
+  if (G.careerLastSavedAt && (Date.now() - G.careerLastSavedAt) < CAREER_BACK_SKIP_CONFIRM_MS) { doBackToMenuNow(); return; }
+  requestConfirmLeave('doBackToMenuNow');
 };
 
 function renderCareerSlots() {
@@ -3869,7 +3886,7 @@ function renderCareerGestion(c) {
       '<button class="btn btn-tiny" onclick="actionSaveCareerNow()">Guardar</button>' +
       '<button class="btn btn-tiny" onclick="actionGoCareerMode()">Cambiar partida</button>' +
     '</div>' +
-    '<button class="btn btn-outline btn-block mt" onclick="requestConfirmLeave(\'doBackToMenuNow\')">Volver</button>' +
+    '<button class="btn btn-outline btn-block mt" onclick="actionCareerBackToMenu()">Volver</button>' +
   '</div>';
 }
 

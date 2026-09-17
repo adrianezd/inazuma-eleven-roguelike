@@ -94,7 +94,24 @@ function restoreFocusAfterRerender(info) {
     try { el.setSelectionRange(info.start, info.end); } catch (e) {}
   }
 }
+// Guarda contra render() REENTRANTE: restoreFocusAfterRerender llama a
+// el.focus() justo después de reemplazar #app.innerHTML, y eso puede
+// disparar un evento "blur" SÍNCRONO en el input que tenía el foco antes
+// (útil por si algún input llega a llevar un onblur que llame a render();
+// de hecho un intento así -- el dorsal de Modo Jugador -- llegó a
+// colgar la pestaña antes de quitarlo, ver player-mode.js) --
+// si ese blur llama a render() de nuevo mientras el render() de fuera
+// todavía está a mitad de reemplazar el DOM, el navegador rompe con
+// "Failed to set the 'innerHTML' property... the node to be removed is
+// no longer a child of this node" (visto de verdad con Playwright al
+// escribir en el dorsal). Con esta guarda, una llamada a render() que
+// llega mientras ya hay una en curso solo queda marcada
+// (pendingRerender) y se ejecuta justo después, nunca a la vez.
+var isRendering = false;
+var pendingRerender = false;
 function render() {
+  if (isRendering) { pendingRerender = true; return; }
+  isRendering = true;
   if (!appEl) appEl = document.getElementById('app');
   var focusInfo = captureFocusForRerender();
   var html = '';
@@ -150,6 +167,8 @@ function render() {
   if (G.screen === 'map') drawMapConnections();
   var howToEl = document.getElementById('como-jugar');
   if (howToEl) howToEl.hidden = G.screen !== 'menu';
+  isRendering = false;
+  if (pendingRerender) { pendingRerender = false; render(); }
 }
 
 function renderMenu() {
@@ -458,12 +477,16 @@ function renderConfirmLeaveModal() {
   );
 }
 // actionBackToMenu es el punto de entrada de ~18 botones "Volver" por
-// toda la app -- se queda con el mismo nombre para no tocar ninguno de
-// esos onclick, solo que ahora PIDE confirmación en vez de navegar al
-// momento; doBackToMenuNow es la navegación real, llamada por
-// actionConfirmLeaveYes tras confirmar.
+// toda la app (todos los modos MENOS Carrera). Volvió a navegar directo,
+// sin pedir confirmación -- a petición explícita ("por qué pone en
+// todos los volver salir sin guardar? eso solo tiene que ser para el
+// modo carrera"): el aviso de "vas a perder el progreso" solo tiene
+// sentido donde de verdad se puede perder algo guardable a mano (Modo
+// Carrera, ver actionCareerBackToMenu en career-mode.js) -- el resto de
+// modos (clásicos, FutDraft, Liga, Torneo, Modo Jugador...) no tienen
+// nada que guardar de esa forma, así que preguntar ahí solo estorbaba.
 function actionBackToMenu() {
-  requestConfirmLeave('doBackToMenuNow');
+  doBackToMenuNow();
 }
 function doBackToMenuNow() {
   G.screen = 'menu';

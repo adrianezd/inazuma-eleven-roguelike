@@ -154,7 +154,7 @@ function renderFutDraftAffinitySelect() {
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
-        '<button class="btn btn-outline btn-block" onclick="requestConfirmLeave(\'actionGoFutDraftModeSelect\')">Volver</button>' +
+        '<button class="btn btn-outline btn-block" onclick="actionGoFutDraftModeSelect()">Volver</button>' +
         '<h2 class="panel-title mt">FutDraft Afinidad</h2>' +
         '<p class="dim small">Elige un tipo elemental: todo tu draft (portero incluido) saldrá de jugadores de ese tipo.</p>' +
         btns +
