@@ -1582,7 +1582,7 @@ window.actionLoanCareerPlayer = function (id) {
   careerRemoveFromSquad(c, id);
   c.loanedOutIds = c.loanedOutIds || [];
   c.loanedOutIds.push(id);
-  c.plantillaMessage = 'Cedido ' + p.nombre + ' a ' + destTeam + ' (sin cobrar nada). Sigue siendo tuyo -- vuelve a tu plantilla al empezar la próxima temporada.';
+  c.plantillaMessage = 'Cedido ' + p.nombre + ' a ' + destTeam + ' (sin cobrar nada).';
   render();
 };
 
@@ -1908,8 +1908,25 @@ function careerNegotiationAskingValue(p, mode) {
 // (careerRemoveFromSquad + suma al presupuesto), respetando el mínimo de
 // plantilla -- no se puede aceptar si eso te dejaría por debajo de
 // CAREER_MIN_SQUAD_SIZE, tienes que vender/ceder a otro primero.
+// BUG real encontrado tras el aviso de un usuario ("cuando cedes a un
+// jugador tuyo... en realidad lo estás vendiendo y no lo recuperas al
+// final de la temporada"): esto NO reproducía tocando "Ceder" en
+// Gestionar plantilla (ya probado a fondo, con clic real + guardado +
+// recarga + temporada completa) -- el fallo estaba aquí, en aceptar una
+// OFERTA ENTRANTE de cesión (careerGenerateIncomingOffers, 25% de las
+// ofertas de rivales por tus jugadores son 'loan' en vez de 'buy').
+// careerResolveIncomingOffer trataba las dos igual (careerRemoveFromSquad
+// + dinero, sin más), así que una cesión aceptada por Mercado se
+// comportaba exactamente como una venta: el jugador desaparecía para
+// siempre, nunca se apuntaba en c.loanedOutIds y por tanto nunca volvía
+// en actionStartNewCareerSeason. Ahora si la oferta es de cesión, se
+// apunta igual que si hubieras pulsado "Ceder" tú mismo.
 function careerResolveIncomingOffer(c, offer, amount) {
   careerRemoveFromSquad(c, offer.playerId);
+  if (offer.mode === 'loan') {
+    c.loanedOutIds = c.loanedOutIds || [];
+    c.loanedOutIds.push(offer.playerId);
+  }
   c.budget = Math.round((c.budget + amount) * 10) / 10;
   c.incomingOffers = (c.incomingOffers || []).filter(function (o) { return o.id !== offer.id; });
 }
@@ -1920,8 +1937,11 @@ window.actionAcceptIncomingOffer = function (offerId) {
   if (careerOwnedSquadCount(c) <= CAREER_MIN_SQUAD_SIZE) { c.marketMessage = 'No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores tuyos en plantilla -- vende o cede a otro primero.'; render(); return; }
   var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
   var p = all.find(function (x) { return x.id === offer.playerId; });
+  var isLoan = offer.mode === 'loan';
   careerResolveIncomingOffer(c, offer, offer.amount);
-  c.marketMessage = p ? ('Aceptada la oferta por ' + p.nombre + ': ' + offer.amount + ' M€.') : 'Oferta aceptada.';
+  c.marketMessage = p
+    ? ('Aceptada la ' + (isLoan ? 'cesión' : 'oferta') + ' por ' + p.nombre + ': ' + offer.amount + ' M€.')
+    : 'Oferta aceptada.';
   render();
 };
 window.actionRejectIncomingOffer = function (offerId) {
