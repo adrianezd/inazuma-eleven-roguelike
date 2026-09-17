@@ -611,12 +611,14 @@ var CAREER_STARTING_BUDGET = 2;
 // Normal y Difícil bajados 6 puntos cada uno (Fácil se queda igual, no
 // se ha pedido tocarla), a petición explícita ("baja la dificultad de
 // modo carrera en normal y dificil, unos 5-7 puntos cada una").
+// "Muy difícil" añadido a petición explícita, por encima de "Difícil".
 var CAREER_DIFFICULTY_TIERS = {
   facil: { name: 'Fácil', rivalLevelTarget: 65 },
   normal: { name: 'Normal', rivalLevelTarget: 81 },
-  dificil: { name: 'Difícil', rivalLevelTarget: 89 }
+  dificil: { name: 'Difícil', rivalLevelTarget: 89 },
+  muy_dificil: { name: 'Muy difícil', rivalLevelTarget: 97 }
 };
-var CAREER_DIFFICULTY_ORDER = ['facil', 'normal', 'dificil'];
+var CAREER_DIFFICULTY_ORDER = ['facil', 'normal', 'dificil', 'muy_dificil'];
 var CAREER_NEGOTIATION_MODES = {
   blandas: { name: 'Blandas', moneyExponent: 3 },
   duras: { name: 'Duras', moneyExponent: 8 }
@@ -870,7 +872,14 @@ function careerFreshState(choices) {
     champions: null,
     qualifiedForChampionsNextSeason: false,
     championsWon: 0,
-    lastChampionsResult: null
+    lastChampionsResult: null,
+    // Supercopa: eliminatoria de ida y vuelta contra un rival "de mucho
+    // nivel", se crea sola en cuanto ganas la Champions esta temporada --
+    // ver careerNewSupercopa/careerChampionsMaybeAwardChampion.
+    supercopa: null,
+    supercopasWon: 0,
+    // Ligas ganadas (posición 1), para el palmarés de Estadísticas.
+    ligaTitlesWon: 0
   };
   careerGenerateIncomingOffers(state);
   return state;
@@ -926,6 +935,9 @@ function careerSerialize(c) {
     qualifiedForChampionsNextSeason: !!c.qualifiedForChampionsNextSeason,
     championsWon: c.championsWon || 0,
     lastChampionsResult: c.lastChampionsResult || null,
+    supercopa: c.supercopa || null,
+    supercopasWon: c.supercopasWon || 0,
+    ligaTitlesWon: c.ligaTitlesWon || 0,
     seasonAppearances: c.seasonAppearances || {},
     seasonHistory: c.seasonHistory || []
   };
@@ -1006,6 +1018,9 @@ function careerDeserialize(data) {
     qualifiedForChampionsNextSeason: !!data.qualifiedForChampionsNextSeason,
     championsWon: data.championsWon || 0,
     lastChampionsResult: data.lastChampionsResult || null,
+    supercopa: data.supercopa || null,
+    supercopasWon: data.supercopasWon || 0,
+    ligaTitlesWon: data.ligaTitlesWon || 0,
     seasonAppearances: data.seasonAppearances || {},
     seasonHistory: data.seasonHistory || []
   };
@@ -1162,7 +1177,7 @@ function renderCareerSetup() {
       '</div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:4px">Dificultad</h3>' +
-        '<p class="dim small">Cuánto se nivelan los rivales hacia arriba en Jornada y Copa (Fácil ' + CAREER_DIFFICULTY_TIERS.facil.rivalLevelTarget + ' · Normal ' + CAREER_DIFFICULTY_TIERS.normal.rivalLevelTarget + ' · Difícil ' + CAREER_DIFFICULTY_TIERS.dificil.rivalLevelTarget + ').</p>' +
+        '<p class="dim small">Cuánto se nivelan los rivales hacia arriba en Jornada y Copa (Fácil ' + CAREER_DIFFICULTY_TIERS.facil.rivalLevelTarget + ' · Normal ' + CAREER_DIFFICULTY_TIERS.normal.rivalLevelTarget + ' · Difícil ' + CAREER_DIFFICULTY_TIERS.dificil.rivalLevelTarget + ' · Muy difícil ' + CAREER_DIFFICULTY_TIERS.muy_dificil.rivalLevelTarget + ').</p>' +
         '<div class="btn-row mt">' + difficultyBtnsHtml + '</div>' +
       '</div>' +
       '<div class="panel">' +
@@ -2219,7 +2234,11 @@ function renderCareerIncomingOffers(c) {
     var value = careerPlayerValue(p);
     return '<div class="career-offer-card">' +
       '<div class="career-offer-head">' + careerMediaBadgeHtml(p) + avatarHtml(p) +
-        '<span class="career-offer-name">' + escapeHtml(p.nombre) + '</span>' +
+        // Posición + elemento junto al nombre, a petición explícita
+        // ("cuando te hacen una oferta por un jugador que salga la
+        // posición y el elemento que es, para no estar yendo a la
+        // plantilla para verlo").
+        '<span class="career-offer-name">' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + ' <span title="' + escapeHtml(p.tipo) + '">' + getTypeSymbol(p.tipo).replace(/22px/g, '16px') + '</span></span>' +
         '<span class="dim small">' + (o.mode === 'loan' ? 'cesión' : 'compra') + ' · caduca en ' + daysLeft + ' día' + (daysLeft === 1 ? '' : 's') + '</span>' +
       '</div>' +
       '<div class="career-offer-prices">' +
@@ -2597,14 +2616,17 @@ window.actionGoToCareerCompeticionesTab = function (subTab) {
 // vez (p.ej. "Liga" + "Resumida" los dos en azul).
 function renderCareerCompeticiones(c) {
   var hasChampions = !!c.champions;
+  var hasSupercopa = !!c.supercopa;
   var sub = c.competicionesTab;
-  if (sub !== 'copa' && (sub !== 'champions' || !hasChampions)) sub = 'liga';
+  var validSubs = ['copa', 'liga'].concat(hasChampions ? ['champions'] : []).concat(hasSupercopa ? ['supercopa'] : []);
+  if (validSubs.indexOf(sub) === -1) sub = 'liga';
   var view = c.ligaView && CAREER_LIGA_VIEWS.some(function (v) { return v.id === c.ligaView; }) ? c.ligaView : 'resumida';
   var items = [
     { name: 'Liga', active: sub === 'liga', onclick: "actionSetCareerCompeticionesTab('liga')" },
     { name: 'Copa del Rey', active: sub === 'copa', onclick: "actionSetCareerCompeticionesTab('copa')" }
   ];
   if (hasChampions) items.push({ name: 'Champions', active: sub === 'champions', onclick: "actionSetCareerCompeticionesTab('champions')" });
+  if (hasSupercopa) items.push({ name: 'Supercopa', active: sub === 'supercopa', onclick: "actionSetCareerCompeticionesTab('supercopa')" });
   CAREER_LIGA_VIEWS.forEach(function (v) {
     items.push({ name: v.name, active: sub === 'liga' && view === v.id, onclick: "actionSetCareerLigaView('" + v.id + "')" });
   });
@@ -2612,7 +2634,7 @@ function renderCareerCompeticiones(c) {
   var scrollHtml = '<div class="career-tabs-scroll competiciones-scroll">' +
     items.map(function (it) { return '<button class="btn btn-tiny' + (it.active ? ' active' : '') + '" onclick="' + it.onclick + '">' + it.name + '</button>'; }).join('') +
   '</div>';
-  var bodyHtml = sub === 'copa' ? renderCareerCopa(c) : (sub === 'champions' ? renderCareerChampions(c) : renderCareerLigaSection(c));
+  var bodyHtml = sub === 'copa' ? renderCareerCopa(c) : (sub === 'champions' ? renderCareerChampions(c) : (sub === 'supercopa' ? renderCareerSupercopa(c) : renderCareerLigaSection(c)));
   return scrollHtml + bodyHtml;
 }
 
@@ -2919,6 +2941,10 @@ function careerMaybeAwardLeagueFinish(c) {
   var bonus = careerLeaguePositionBonus(position, c.division);
   c.budget = Math.round((c.budget + bonus) * 10) / 10;
   c.lastLeagueFinish = { position: position, bonus: bonus };
+  if (position === 1) {
+    c.ligaTitlesWon = (c.ligaTitlesWon || 0) + 1;
+    careerTriggerTrophyPopup(careerDivisionName(c.division));
+  }
   // Clasificación a la Champions (solo desde Primera): entre los
   // CAREER_CHAMPIONS_QUALIFY_SPOTS primeros de Primera esta temporada ->
   // se juega la próxima, "como en la vida real" (se decide un año y se
@@ -3079,7 +3105,7 @@ function careerMaybeOpenMidseasonWindow(c) {
 window.actionSkipCareerMatchday = function () {
   var c = G.career;
   if (c.marketWindow && c.marketWindow.open) return;
-  if (careerCupPending(c)) return;
+  if (careerCupPending(c) || careerChampionsPending(c)) return;
   var league = c.league;
   if (league.matchdayIndex >= league.schedule.length) return;
   var myFixtureIdx = league.schedule[league.matchdayIndex].findIndex(function (fx) { return fx[0] === 0 || fx[1] === 0; });
@@ -3127,7 +3153,7 @@ window.actionSkipCareerMatchday = function () {
 window.actionSimulateCareerMatchday = function () {
   var c = G.career;
   if (c.marketWindow && c.marketWindow.open) return;
-  if (careerCupPending(c)) return;
+  if (careerCupPending(c) || careerChampionsPending(c)) return;
   var league = c.league;
   if (league.matchdayIndex >= league.schedule.length) return;
   var fixtures = league.schedule[league.matchdayIndex];
@@ -3293,6 +3319,10 @@ window.actionStartNewCareerSeason = function () {
   c.champions = c.qualifiedForChampionsNextSeason ? careerNewChampions() : null;
   c.qualifiedForChampionsNextSeason = false;
   c.lastChampionsResult = null;
+  // Supercopa: se crea sola en cuanto ganas la Champions esta temporada
+  // (careerChampionsMaybeAwardChampion) -- si no se llegó a jugar/acabar
+  // antes de que termine la temporada, no se arrastra a la siguiente.
+  c.supercopa = null;
   // Minutos jugados de la temporada que empieza, de cero -- careerProgressAllPlayers
   // (arriba, en la temporada que acaba de terminar) ya leyó los de la
   // temporada anterior antes de este reset.
@@ -3323,7 +3353,18 @@ window.actionStartNewCareerSeason = function () {
 // solo el marcador final, sin lanzamiento a lanzamiento) en vez de la
 // pantalla de tanda completa, simplificación deliberada para no complicar
 // el puente.
-var CAREER_CUP_SIZE = 16;
+// 32 equipos (antes 16), a petición explícita ("la copa tiene que tener
+// 32 equipos") -- son 5 rondas (32→16→8→4→2→1). Cada ronda se juega en
+// SU PROPIA jornada, repartidas a lo largo de toda la temporada como en
+// el fútbol de verdad (Copa y Liga intercaladas, no la Copa entera de
+// golpe si vas ganando), a petición explícita ("que no juegues 4
+// partidos de copa seguidos si los ganas, si no que se separe en más...
+// tiene que ser como se hace en la vida real"). Encajan dentro de las
+// 30 jornadas de Segunda (donde también se juega ahora) con margen.
+// Ver careerCupLocked, que mira en qué ronda va la Copa (cup.rounds.length)
+// para saber qué jornada le toca.
+var CAREER_CUP_SIZE = 32;
+var CAREER_CUP_ROUND_MATCHDAYS = [4, 9, 14, 19, 24];
 var CAREER_CUP_WIN_BONUS = 5;
 function careerNewCup() {
   var bracket = generateTournamentBracket(CAREER_CUP_SIZE);
@@ -3362,16 +3403,21 @@ function careerCupChampion(cup) {
 function careerCupFinished(cup) { return cup.eliminated || !!careerCupChampion(cup); }
 // La Copa se juega en las dos divisiones (a petición explícita: "que la
 // juegas también en segunda división a partir de ahora" -- antes solo se
-// desbloqueaba en Primera), siempre JUSTO DESPUÉS de la jornada 10
-// (petición anterior: "se juega siempre justo después de la jornada 10,
-// y luego sigue la liga"). Comparte umbral con la ventana de fichajes de
-// mitad de temporada (CAREER_MIDSEASON_AT_MATCHDAY) porque las dos cosas
-// pasan en el mismo punto del calendario. Antes de llegar ahí, la
-// pestaña Copa está bloqueada (careerCupLocked); una vez desbloqueada,
-// la Liga no deja jugar la jornada 11 hasta que la Copa esté
-// careerCupFinished (careerCupPending, comprobado en renderCareerJornada
-// y en los dos actionSkip/actionSimulateCareerMatchday).
-function careerCupLocked(c) { return c.league.matchdayIndex < CAREER_MIDSEASON_AT_MATCHDAY; }
+// desbloqueaba en Primera). CADA RONDA tiene su propia jornada
+// (CAREER_CUP_ROUND_MATCHDAYS, indexado por cup.rounds.length-1 = la
+// ronda en la que va ahora mismo) en vez de un único umbral para toda la
+// Copa -- a petición explícita ("que no juegues 4 partidos de copa
+// seguidos si los ganas, si no que se separe en más... como en la vida
+// real"): en cuanto resuelves tu partido de una ronda, careerCupAdvanceRound
+// arma la siguiente ronda de golpe (cup.rounds.length sube), así que
+// careerCupLocked se vuelve a bloquear sola hasta la jornada de la ronda
+// siguiente sin tener que tocar nada más -- la Liga sigue jugándose
+// mientras tanto, normal, hasta llegar a esa jornada.
+function careerCupLocked(c) {
+  var roundIdx = c.cup.rounds.length - 1;
+  var matchday = CAREER_CUP_ROUND_MATCHDAYS[roundIdx] !== undefined ? CAREER_CUP_ROUND_MATCHDAYS[roundIdx] : CAREER_CUP_ROUND_MATCHDAYS[CAREER_CUP_ROUND_MATCHDAYS.length - 1];
+  return c.league.matchdayIndex < matchday;
+}
 function careerCupPending(c) { return !careerCupLocked(c) && !careerCupFinished(c.cup); }
 // Resuelve cualquier partido pendiente de la ronda actual que no sea el
 // tuyo (CPU vs CPU, igual que careerResolveOtherFixtures en Liga) y, si
@@ -3423,6 +3469,7 @@ function careerCupMaybeAwardChampion(c) {
   if (champion.isPlayer) {
     c.budget = Math.round((c.budget + CAREER_CUP_WIN_BONUS) * 10) / 10;
     c.cupsWon = (c.cupsWon || 0) + 1;
+    careerTriggerTrophyPopup('Copa del Rey');
   }
 }
 window.actionSimulateCareerCupMatch = function () {
@@ -3515,7 +3562,9 @@ window.actionSkipCareerCupMatch = function () {
 };
 function renderCareerCopa(c) {
   if (careerCupLocked(c)) {
-    var lockedMsg = 'La Copa del Rey se juega justo después de la jornada ' + CAREER_MIDSEASON_AT_MATCHDAY + ' -- llevas jugadas ' + c.league.matchdayIndex + ' de ' + CAREER_MIDSEASON_AT_MATCHDAY + ' jornadas.';
+    var roundIdx = c.cup.rounds.length - 1;
+    var nextMatchday = CAREER_CUP_ROUND_MATCHDAYS[roundIdx] !== undefined ? CAREER_CUP_ROUND_MATCHDAYS[roundIdx] : CAREER_CUP_ROUND_MATCHDAYS[CAREER_CUP_ROUND_MATCHDAYS.length - 1];
+    var lockedMsg = 'La próxima ronda de la Copa del Rey se juega en la jornada ' + nextMatchday + ' -- llevas jugadas ' + c.league.matchdayIndex + '.';
     return '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Copa del Rey</h3>' +
       '<p class="dim small">' + lockedMsg + '</p>' +
@@ -3574,11 +3623,19 @@ function renderCareerCopa(c) {
 // (c.champions, no c.cup): solo se crea al empezar una temporada para la
 // que te clasificaste el año anterior (careerMaybeAwardLeagueFinish
 // guarda c.qualifiedForChampionsNextSeason, actionStartNewCareerSeason es
-// quien de verdad la crea o no) y solo existe estando en Primera. No
-// bloquea la Liga ni la Copa (a diferencia de la Copa del Rey, que sí
-// bloquea la jornada 11 hasta resolverse) -- se juega en paralelo cuando
-// se quiera, como el resto de competiciones de Modo Carrera.
-var CAREER_CHAMPIONS_SIZE = 8;
+// quien de verdad la crea o no) y solo existe estando en Primera.
+// Tamaño subido de 8 a 16 (octavos/cuartos/semis/final, un par de rondas
+// más), a petición explícita ("añade más partidos y equipos en la
+// champions"). Igual que la Copa, CADA RONDA tiene su propia jornada
+// (CAREER_CHAMPIONS_ROUND_MATCHDAYS) repartida a lo largo de la
+// temporada intercalada con la Liga (y sin coincidir con las jornadas de
+// la Copa) en vez de un único bloqueo -- antes no tenía NINGÚN bloqueo
+// de jornada y se podía jugar entera de golpe en cualquier momento, un
+// bug real corregido a petición explícita ("en champions hay un bug que
+// la puedes jugar en cualquier momento... tiene que ser como se hace en
+// la vida real").
+var CAREER_CHAMPIONS_SIZE = 16;
+var CAREER_CHAMPIONS_ROUND_MATCHDAYS = [7, 15, 23, 31];
 var CAREER_CHAMPIONS_WIN_BONUS = 20;
 function careerNewChampions() {
   var bracket = generateTournamentBracket(CAREER_CHAMPIONS_SIZE);
@@ -3598,8 +3655,20 @@ function careerChampionsChampion(champions) {
 function careerChampionsFinished(champions) { return champions.eliminated || !!careerChampionsChampion(champions); }
 // Solo existe (y se puede jugar) estando en Primera con c.champions creada
 // -- si desciendes a mitad de temporada, se queda bloqueada hasta volver
-// a subir (no se destruye, igual que la Copa del Rey con la división).
-function careerChampionsLocked(c) { return c.division !== 1 || !c.champions; }
+// a subir (no se destruye, igual que la Copa del Rey con la división) --
+// y, ronda a ronda, solo a partir de la jornada que le toque (mismo
+// mecanismo que careerCupLocked: en cuanto se resuelve tu partido de una
+// ronda, careerChampionsAdvanceRound arma la siguiente y esto se vuelve
+// a bloquear solo hasta la jornada que corresponda).
+function careerChampionsLocked(c) {
+  if (c.division !== 1 || !c.champions) return true;
+  var roundIdx = c.champions.rounds.length - 1;
+  var matchday = CAREER_CHAMPIONS_ROUND_MATCHDAYS[roundIdx] !== undefined ? CAREER_CHAMPIONS_ROUND_MATCHDAYS[roundIdx] : CAREER_CHAMPIONS_ROUND_MATCHDAYS[CAREER_CHAMPIONS_ROUND_MATCHDAYS.length - 1];
+  return c.league.matchdayIndex < matchday;
+}
+// Igual que careerCupPending: si ya está desbloqueada pero no resuelta,
+// la Liga no deja jugar la jornada siguiente hasta que se resuelva.
+function careerChampionsPending(c) { return !careerChampionsLocked(c) && !careerChampionsFinished(c.champions); }
 function careerChampionsAdvanceRound(champions) {
   var round = champions.rounds[champions.rounds.length - 1];
   round.forEach(function (m) {
@@ -3626,6 +3695,14 @@ function careerChampionsMaybeAwardChampion(c) {
   if (champion.isPlayer) {
     c.budget = Math.round((c.budget + CAREER_CHAMPIONS_WIN_BONUS) * 10) / 10;
     c.championsWon = (c.championsWon || 0) + 1;
+    careerTriggerTrophyPopup('Champions League');
+    // Supercopa: se crea sola en cuanto ganas la Champions esta
+    // temporada, a petición explícita ("añade una supercopa también si
+    // ganas la champions, con mucho nivel, que es con partido de ida y
+    // vuelta"). Se juega ya mismo, no bloquea la Liga (competición corta
+    // de 2 partidos, no hace falta repartirla en jornadas como Copa/
+    // Champions).
+    c.supercopa = careerNewSupercopa();
   }
 }
 window.actionSimulateCareerChampionsMatch = function () {
@@ -3723,9 +3800,13 @@ window.continueCareerChampionsMatch = function () {
 };
 function renderCareerChampions(c) {
   if (careerChampionsLocked(c)) {
+    var championsRoundIdx = c.champions ? c.champions.rounds.length - 1 : 0;
+    var nextChampionsMatchday = CAREER_CHAMPIONS_ROUND_MATCHDAYS[championsRoundIdx] !== undefined ? CAREER_CHAMPIONS_ROUND_MATCHDAYS[championsRoundIdx] : CAREER_CHAMPIONS_ROUND_MATCHDAYS[CAREER_CHAMPIONS_ROUND_MATCHDAYS.length - 1];
     var lockedMsg = c.division !== 1
       ? 'La Champions League solo se juega en Primera División -- ahora mismo estás en ' + careerDivisionName(c.division) + '.'
-      : 'No te has clasificado para la Champions League esta temporada -- termina entre los ' + CAREER_CHAMPIONS_QUALIFY_SPOTS + ' primeros de Primera para jugarla la temporada que viene.';
+      : !c.champions
+        ? 'No te has clasificado para la Champions League esta temporada -- termina entre los ' + CAREER_CHAMPIONS_QUALIFY_SPOTS + ' primeros de Primera para jugarla la temporada que viene.'
+        : 'La próxima ronda de la Champions League se juega en la jornada ' + nextChampionsMatchday + ' -- llevas jugadas ' + c.league.matchdayIndex + '.';
     return '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Champions League</h3>' +
       '<p class="dim small">' + lockedMsg + '</p>' +
@@ -3780,6 +3861,153 @@ function renderCareerChampions(c) {
         '<div class="bracket-champion-name">' + (champion ? (champion.isPlayer ? escapeHtml(careerClubDisplayName(c)) : escapeHtml(champion.name)) : '?') + '</div></div></div>' +
     '</div></div>';
   return headerHtml + actionHtml + bracketHtml;
+}
+
+// ===== Supercopa =====
+// Se crea sola en cuanto ganas la Champions esta temporada
+// (careerChampionsMaybeAwardChampion), a petición explícita ("añade una
+// supercopa también si ganas la champions, con mucho nivel, que es con
+// partido de ida y vuelta"): 2 partidos (ida y vuelta) contra el rival
+// "jefe" más fuerte del juego (por TEAM_POWER), a una potencia FIJA muy
+// alta (CAREER_SUPERCOPA_POWER) que no depende de la dificultad elegida
+// -- "con mucho nivel" tiene que notarse siempre. Si empatáis a
+// agregado, se decide a penaltis (careerCupPenaltyShootout, genérica,
+// no específica de la Copa). No bloquea la Liga -- son solo 2 partidos,
+// se juegan cuando se quiera tras ganarla.
+var CAREER_SUPERCOPA_POWER = 96;
+var CAREER_SUPERCOPA_WIN_BONUS = 15;
+function careerNewSupercopa() {
+  var opponent = RIVAL_TEAM_BOSSES.slice().sort(function (a, b) { return teamPower({ name: b }) - teamPower({ name: a }); })[0];
+  return { opponentName: opponent, legIndex: 0, legResults: [null, null], finished: false, won: false, rewardClaimed: false };
+}
+function careerSupercopaAggregate(sc) {
+  var myAgg = 0, oppAgg = 0;
+  sc.legResults.forEach(function (r) { if (r) { myAgg += r.myGoals; oppAgg += r.oppGoals; } });
+  return { myAgg: myAgg, oppAgg: oppAgg };
+}
+function careerSupercopaMaybeAwardChampion(c) {
+  var sc = c.supercopa;
+  if (!sc || !sc.finished || sc.rewardClaimed) return;
+  sc.rewardClaimed = true;
+  if (sc.won) {
+    c.budget = Math.round((c.budget + CAREER_SUPERCOPA_WIN_BONUS) * 10) / 10;
+    c.supercopasWon = (c.supercopasWon || 0) + 1;
+    careerTriggerTrophyPopup('Supercopa');
+  }
+}
+// Resuelve el resultado del leg actual (ida o vuelta) -- si era la ida,
+// pasa a la vuelta; si era la vuelta, decide el agregado (a penaltis si
+// hay empate) y da la Supercopa por terminada.
+function careerSupercopaResolveLeg(c, myGoals, oppGoals) {
+  var sc = c.supercopa;
+  sc.legResults[sc.legIndex] = { myGoals: myGoals, oppGoals: oppGoals };
+  if (sc.legIndex === 0) {
+    sc.legIndex = 1;
+  } else {
+    var agg = careerSupercopaAggregate(sc);
+    var won;
+    if (agg.myAgg !== agg.oppAgg) {
+      won = agg.myAgg > agg.oppAgg;
+    } else {
+      var penalty = careerCupPenaltyShootout(c, sc.opponentName);
+      sc.penalty = penalty;
+      won = penalty.myGoals > penalty.oppGoals;
+    }
+    sc.finished = true;
+    sc.won = won;
+    careerSupercopaMaybeAwardChampion(c);
+  }
+}
+window.actionSimulateCareerSupercopaMatch = function () {
+  var c = G.career;
+  var sc = c.supercopa;
+  if (!sc || sc.finished) return;
+  var youAreHome = sc.legIndex === 0;
+  c.savedFutdraft = G.futdraft;
+  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna' };
+  var sim = futDraftSimulateMatchCore(CAREER_SUPERCOPA_POWER);
+  G.futdraft.live = {
+    oppSide: { name: sc.opponentName }, modifier: sim.modifier,
+    minute: 0, pending: sim.timeline.slice(), revealed: [],
+    myGoals: 0, oppGoals: 0, finalMyGoals: sim.myGoals, finalOppGoals: sim.oppGoals,
+    myAtk: sim.myAtk, myDef: sim.myDef, effectiveOppPower: sim.effectiveOppPower,
+    inExtraTime: false, allowDraw: true, onFinish: finishCareerSupercopaMatch,
+    careerSupercopaYouAreHome: youAreHome,
+    done: false
+  };
+  G.screen = 'futdraftLive';
+  render();
+  futDraftLiveTick();
+};
+function finishCareerSupercopaMatch() {
+  var c = G.career;
+  var live = G.futdraft.live;
+  var myGoals = live.finalMyGoals, oppGoals = live.finalOppGoals;
+  var myEvents = live.revealed.filter(function (e) { return e.side === 'me'; });
+  futDraftRecordGoalEvents(c.careerStats, myEvents, 'Tu equipo');
+  careerSupercopaResolveLeg(c, myGoals, oppGoals);
+  G.futdraft.lastMatchResult = {
+    oppName: c.supercopa.opponentName, oppShield: teamShieldPath(c.supercopa.opponentName), oppPower: CAREER_SUPERCOPA_POWER,
+    myGoals: myGoals, oppGoals: oppGoals, playerWon: myGoals > oppGoals,
+    timeline: live.revealed, modifier: live.modifier, isCareer: true, isSupercopa: true
+  };
+  G.futdraft.live = null;
+  G.screen = 'futdraftMatchResult';
+  render();
+}
+window.continueCareerSupercopaMatch = function () {
+  var c = G.career;
+  G.futdraft = c.savedFutdraft;
+  c.savedFutdraft = null;
+  G.screen = 'careerMode';
+  actionGoToCareerCompeticionesTab('supercopa');
+};
+window.actionSkipCareerSupercopaMatch = function () {
+  var c = G.career;
+  var sc = c.supercopa;
+  if (!sc || sc.finished) return;
+  var myAtkDef = careerMyAtkDef(c);
+  var youAreHome = sc.legIndex === 0;
+  var goles = careerSimulateMyMatchGoals(myAtkDef.atk, myAtkDef.def, CAREER_SUPERCOPA_POWER, true);
+  var myGoals = goles[0], oppGoals = goles[1];
+  var myPlayers = c.lineup.map(function (s) { return s.player; });
+  var events = [];
+  for (var i = 0; i < myGoals; i++) events.push(futDraftGoalEvent(myPlayers));
+  futDraftRecordGoalEvents(c.careerStats, events, 'Tu equipo');
+  careerSupercopaResolveLeg(c, myGoals, oppGoals);
+  render();
+};
+function renderCareerSupercopa(c) {
+  var sc = c.supercopa;
+  if (!sc) {
+    return '<div class="panel center-text"><h3 style="margin-bottom:4px">Supercopa</h3><p class="dim small">Gana la Champions League esta temporada para jugarla.</p></div>';
+  }
+  var headerHtml =
+    '<div class="panel center-text">' +
+      '<h3 style="margin-bottom:4px">Supercopa</h3>' +
+      '<p class="dim small">Ida y vuelta contra <strong>' + escapeHtml(sc.opponentName) + '</strong>, con mucho nivel. Supercopas ganadas en la carrera: <strong style="color:var(--accent-2)">' + (c.supercopasWon || 0) + '</strong>.</p>' +
+    '</div>';
+  var legsHtml = '<div class="panel">' +
+    [0, 1].map(function (i) {
+      var r = sc.legResults[i];
+      var label = i === 0 ? 'Ida' : 'Vuelta';
+      return '<p class="dim small">' + label + ': ' + (r ? ('Tú ' + r.myGoals + ' - ' + r.oppGoals + ' ' + escapeHtml(sc.opponentName)) : 'Sin jugar') + '</p>';
+    }).join('') +
+    (sc.penalty ? '<p class="dim small">Penaltis: ' + sc.penalty.myGoals + ' - ' + sc.penalty.oppGoals + '</p>' : '') +
+  '</div>';
+  var actionHtml;
+  if (sc.finished) {
+    actionHtml = '<div class="panel center-text"><p class="dim small">' + (sc.won ? '¡Campeón de la Supercopa!' : 'Perdida la Supercopa contra ' + escapeHtml(sc.opponentName) + '.') + '</p></div>';
+  } else {
+    actionHtml = careerMatchupCardHtml(sc.opponentName, (sc.legIndex === 0 ? 'Ida' : 'Vuelta'), sc.legIndex === 0) +
+      '<div class="panel center-text">' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-primary" onclick="actionSimulateCareerSupercopaMatch()">▶ Simular partido</button>' +
+          '<button class="btn btn-skip" onclick="actionSkipCareerSupercopaMatch()">⏭ Saltar</button>' +
+        '</div>' +
+      '</div>';
+  }
+  return headerHtml + legsHtml + actionHtml;
 }
 
 // Resumen de temporada, a petición explícita ("quiero un resumen de mi
@@ -3873,6 +4101,19 @@ function renderCareerJornada(c) {
       '<button class="btn btn-primary btn-block mt" onclick="actionGoToCareerCompeticionesTab(\'copa\')">Ir a la Copa del Rey</button>' +
     '</div>';
   }
+  // La Champions se cuela ronda a ronda en sus propias jornadas
+  // (CAREER_CHAMPIONS_ROUND_MATCHDAYS) -- hasta que no esté resuelta la
+  // ronda en curso, la Liga no sigue, mismo patrón que la Copa del Rey.
+  // Antes no tenía ningún bloqueo de jornada (se podía jugar entera de
+  // golpe en cualquier momento), un bug real corregido a petición
+  // explícita.
+  if (careerChampionsPending(c)) {
+    return '<div class="panel center-text">' +
+      '<h3 style="margin-bottom:4px">Toca Champions League</h3>' +
+      '<p class="dim small">Antes de seguir con la jornada ' + (league.matchdayIndex + 1) + ' hay que resolver la Champions League.</p>' +
+      '<button class="btn btn-primary btn-block mt" onclick="actionGoToCareerCompeticionesTab(\'champions\')">Ir a la Champions League</button>' +
+    '</div>';
+  }
   var seasonOver = league.matchdayIndex >= league.schedule.length;
   var r = c.lastMatchdayResult;
   // Justo después de jugar una jornada (Saltar o Simular), primero se
@@ -3957,6 +4198,26 @@ function careerSeasonHistoryHtml(c) {
   return '<div class="panel center-text"><h3 style="margin-bottom:4px">Historial de la carrera</h3></div>' +
     '<div class="panel"><div class="season-summary-badges">' + rows + '</div></div>';
 }
+// Palmarés: todos los títulos ganados en la carrera en un apartado
+// propio, a petición explícita ("en estadísticas, que salgan todos tus
+// trofeos en un pequeño apartado, como un palmarés") -- mismo estilo de
+// tarjeta con icono que ya usa el resto de la app (.season-badge).
+function careerPalmaresHtml(c) {
+  var items = [
+    { count: c.ligaTitlesWon || 0, label: 'Liga' },
+    { count: c.cupsWon || 0, label: 'Copa del Rey' },
+    { count: c.championsWon || 0, label: 'Champions League' },
+    { count: c.supercopasWon || 0, label: 'Supercopa' }
+  ];
+  var total = items.reduce(function (sum, it) { return sum + it.count; }, 0);
+  var rows = items.map(function (it) {
+    return '<div class="season-badge' + (it.count > 0 ? ' season-badge-gold' : '') + '">' +
+      '<div class="season-badge-icon">🏆</div>' +
+      '<div><div class="season-badge-label">' + escapeHtml(it.label) + '</div><div class="season-badge-text">' + it.count + '</div></div>' +
+    '</div>';
+  }).join('');
+  return '<div class="panel"><h3 style="margin-bottom:8px" class="center-text">Palmarés (' + total + ')</h3><div class="season-summary-badges">' + rows + '</div></div>';
+}
 function renderCareerEstadisticas(c) {
   var bestPosText = c.bestPosition ? (c.bestPosition.position + 'º de ' + c.bestPosition.totalTeams) : 'Todavía sin datos.';
   var seasonPanel = renderTopScorersAssistsPanel(c.league.stats, 'Goleadores y asistentes de esta temporada');
@@ -3967,6 +4228,7 @@ function renderCareerEstadisticas(c) {
       '<p class="dim small">Temporada actual: <strong>' + (c.season || 1) + '</strong> · ' + escapeHtml(careerDivisionName(c.division)) + '</p>' +
       '<p class="dim small">Mejor posición en liga: <strong style="color:var(--accent-2)">' + bestPosText + '</strong></p>' +
     '</div>' +
+    careerPalmaresHtml(c) +
     (seasonPanel || '<div class="panel center-text"><p class="dim small">Todavía no hay goles registrados esta temporada.</p></div>') +
     (historicPanel || '<div class="panel center-text"><p class="dim small">Todavía no hay goles históricos registrados.</p></div>') +
     careerSeasonHistoryHtml(c)
@@ -3991,6 +4253,29 @@ function renderCareerGestion(c) {
   '</div>';
 }
 
+// Animación de trofeo al ganar cualquier título de Modo Carrera (Liga,
+// Copa del Rey, Champions League, Supercopa), a petición explícita
+// ("quiero animaciones al ganar cada trofeo también") -- mismo overlay
+// con rebote + brillo ya usado en Modo Jugador (.jugador-trophy-card/
+// jugadorTrophyPop/jugadorTrophyShine en style.css), reaprovechado tal
+// cual para no duplicar la animación.
+function careerTriggerTrophyPopup(title) {
+  G.careerTrophyPopup = { title: title };
+}
+window.actionDismissCareerTrophyPopup = function () {
+  G.careerTrophyPopup = null;
+  render();
+};
+function renderCareerTrophyPopup() {
+  return '<div class="modal-overlay" onclick="actionDismissCareerTrophyPopup()">' +
+    '<div class="jugador-trophy-card" onclick="event.stopPropagation()">' +
+      '<div class="jugador-trophy-icon">🏆</div>' +
+      '<h3 style="margin-bottom:4px">¡Campeón!</h3>' +
+      '<p class="dim small">' + escapeHtml(G.careerTrophyPopup.title) + '</p>' +
+      '<button class="btn btn-primary btn-block mt" onclick="actionDismissCareerTrophyPopup()">Seguir</button>' +
+    '</div>' +
+  '</div>';
+}
 function renderCareerMode() {
   var c = G.career;
   // Fila de pestañas ÚNICA que se desliza en horizontal (career-tabs-scroll)
@@ -4020,6 +4305,7 @@ function renderCareerMode() {
       '</div>' +
       '<div class="career-tabs-scroll">' + tabsHtml + '</div>' +
       bodyHtml +
+      (G.careerTrophyPopup ? renderCareerTrophyPopup() : '') +
     '</div>'
   );
 }
