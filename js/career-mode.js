@@ -2247,16 +2247,37 @@ function calendarTeamLabel(league, idx) { return idx === 0 ? 'Tú' : league.team
 // local-visitante), a petición explícita. Copa/Champions son sede
 // neutral (sin local/visitante de verdad), así que se llaman sin este
 // parámetro y se quedan con el orden de siempre (tú a la izquierda).
-function careerMatchupCardHtml(oppName, contextLabel, youAreHome) {
+// Posición/puntos/forma de un equipo de la Liga para la tarjeta de
+// emparejamiento, a petición explícita ("pon la posición actual en
+// liga, los puntos actuales, y la forma de cada equipo"). Solo tiene
+// sentido en Jornada (Liga, con tabla de verdad) -- Copa/Champions son
+// de eliminación directa y llaman a careerMatchupCardHtml sin `league`,
+// así que esto se queda vacío ahí sin romper nada.
+function careerMatchupTeamStatsHtml(league, idx) {
+  if (!league) return '';
+  var sorted = ligaSortedTable(league.table);
+  var rank = sorted.findIndex(function (t) { return t.idx === idx; }) + 1;
+  var row = league.table[idx];
+  return '<div class="matchup-stats">' +
+    '<div class="matchup-stats-row">' +
+      '<span class="matchup-stats-pos">' + rank + 'º</span>' +
+      '<span class="matchup-stats-pts">' + row.pts + ' pts</span>' +
+    '</div>' +
+    ligaFormHtml(row.form) +
+  '</div>';
+}
+function careerMatchupCardHtml(oppName, contextLabel, youAreHome, league, oppIdx) {
   var youSideHtml =
     '<div class="matchup-side">' +
       '<img class="matchup-shield" src="' + escapeHtml(getPlayerShieldPath()) + '" alt="">' +
       '<div class="matchup-name">Tú</div>' +
+      careerMatchupTeamStatsHtml(league, 0) +
     '</div>';
   var oppSideHtml =
     '<div class="matchup-side">' +
       '<img class="matchup-shield" src="' + escapeHtml(teamShieldPath(oppName)) + '" alt="">' +
       '<div class="matchup-name">' + escapeHtml(oppName) + '</div>' +
+      careerMatchupTeamStatsHtml(league, oppIdx) +
     '</div>';
   var sidesHtml = youAreHome === false ? (oppSideHtml + '<div class="matchup-vs">VS</div>' + youSideHtml) : (youSideHtml + '<div class="matchup-vs">VS</div>' + oppSideHtml);
   return '<div class="panel matchup-card">' +
@@ -3756,7 +3777,7 @@ function renderCareerJornada(c) {
     var info = careerNextFixtureInfo(league);
     if (info) {
       var contextLabel = 'Jornada ' + (league.matchdayIndex + 1) + ' de ' + league.schedule.length;
-      matchupHtml = careerMatchupCardHtml(info.oppName, contextLabel, info.youAreHome);
+      matchupHtml = careerMatchupCardHtml(info.oppName, contextLabel, info.youAreHome, league, info.oppIdx);
     }
   }
   return (

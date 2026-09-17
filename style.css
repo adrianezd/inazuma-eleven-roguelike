@@ -345,6 +345,36 @@ a { color: var(--accent); }
   color: var(--accent-2);
   opacity: 0.85;
 }
+/* Posición/puntos/forma de cada equipo bajo su escudo en la tarjeta de
+   emparejamiento (careerMatchupTeamStatsHtml), a petición explícita
+   ("pon la posición actual en liga, los puntos actuales, y la forma de
+   cada equipo... sin poner -- para separar, y siendo responsive") -- fila
+   compacta que envuelve sola si hace falta (flex-wrap), dentro de
+   .matchup-side, que ya se encoge de por sí en pantallas estrechas. */
+.matchup-stats { display: flex; flex-direction: column; align-items: center; gap: 5px; margin-top: 2px; width: 100%; }
+.matchup-stats-row { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+.matchup-stats-pos {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #06202f;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+.matchup-stats-pts {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.matchup-stats .liga-form { flex-wrap: wrap; justify-content: center; }
 /* Saltar: mismo pill que el resto de botones outline, pero con el icono
    ⏭ ya metido en el texto (JS) y un tinte propio para que no se
    confunda a golpe de vista con "Cancelar"/salir, a petición explícita
