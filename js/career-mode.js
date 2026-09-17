@@ -531,8 +531,16 @@ function careerPickNamesFromPool(pool, count, used) {
 // 35 nombres solo se mueven entre las dos listas por ascenso/descenso
 // (careerApplyPromotionRelegation), nunca se vuelve a sortear nada
 // nuevo.
-function careerInitialDivisionTeams() {
+// excludeName: el club real cuyo escudo hayas elegido como el tuyo (ver
+// renderCareerSetup/c.clubShieldName) nunca puede aparecer TAMBIÉN como
+// rival en la misma carrera -- a petición explícita ("si cogemos por
+// ejemplo el escudo del Kirkwood, el Kirkwood no puede parecer durante
+// ese modo carrera"). Se marca como "ya usado" desde el principio, antes
+// de repartir nada, igual que el propio careerPickNamesFromPool evita
+// que las dos divisiones se pisen equipos entre sí.
+function careerInitialDivisionTeams(excludeName) {
   var used = {};
+  if (excludeName) used[excludeName] = true;
   var div2 = careerPickNamesFromPool(RIVAL_TEAM_BOSSES, CAREER_DIVISION2_BOSS_COUNT, used)
     .concat(careerPickNamesFromPool(RIVAL_TEAM_NAMES, CAREER_DIVISION2_NORMAL_COUNT, used));
   var div1 = careerPickNamesFromPool(RIVAL_TEAM_BOSSES, CAREER_DIVISION1_BOSS_COUNT, used)
@@ -766,10 +774,20 @@ function careerFreshState(choices) {
   var starters = careerModeRoster(CAREER_MODE_STARTER_IDS);
   // Arrancas en Segunda División por defecto, a petición explícita.
   var division = 2;
-  var divisionTeams = careerInitialDivisionTeams();
+  // Nombre y escudo de TU club (elegidos en renderCareerSetup), a
+  // petición explícita ("elige nombre de club (cualquiera) y escudo de
+  // club entre los que hay desbloqueados"). clubShieldName es el club
+  // REAL cuyo escudo tomas prestado (o null = escudo por defecto de
+  // siempre); ese club real queda excluido de los rivales de esta
+  // carrera (ver careerInitialDivisionTeams).
+  var clubName = (choices.clubName || '').trim() || 'Tu Equipo';
+  var clubShieldName = choices.clubShieldName || null;
+  var divisionTeams = careerInitialDivisionTeams(clubShieldName);
   var state = {
     tab: 'equipo',
     season: 1,
+    clubName: clubName,
+    clubShieldName: clubShieldName,
     formation: CAREER_MODE_DEFAULT_FORMATION,
     // Estilo de juego (Gestionar plantilla), ver CAREER_PLAY_STYLES --
     // empieza "equilibrado" (sin efecto) hasta que se cambie a mano.
@@ -873,7 +891,8 @@ function careerSlotKey(slot) { return 'inazumaRoguelike_career_slot_' + slot; }
 function careerSerialize(c) {
   return {
     tab: c.tab, competicionesTab: c.competicionesTab || 'liga', ligaView: c.ligaView || 'resumida',
-    season: c.season || 1, formation: c.formation, playStyle: c.playStyle || 'equilibrado', captainId: c.captainId, budget: c.budget,
+    season: c.season || 1, clubName: c.clubName || 'Tu Equipo', clubShieldName: c.clubShieldName || null,
+    formation: c.formation, playStyle: c.playStyle || 'equilibrado', captainId: c.captainId, budget: c.budget,
     lineup: c.lineup.map(function (s) { return { pos: s.pos, id: s.player.id }; }),
     bench: c.bench.map(function (p) { return p.id; }),
     loanedIds: c.loanedIds || [],
@@ -931,6 +950,10 @@ function careerDeserialize(data) {
     competicionesTab: migratedCompeticionesTab || 'liga',
     ligaView: data.ligaView || 'resumida',
     season: data.season || 1,
+    // Partidas guardadas de antes de esta función (nombre/escudo de club
+    // propio) no tienen estos campos -- valores de reserva razonables.
+    clubName: data.clubName || 'Tu Equipo',
+    clubShieldName: data.clubShieldName || null,
     formation: data.formation || CAREER_MODE_DEFAULT_FORMATION,
     playStyle: CAREER_PLAY_STYLES.some(function (s) { return s.id === data.playStyle; }) ? data.playStyle : 'equilibrado',
     lineup: lineup, bench: bench,
@@ -1015,7 +1038,13 @@ function careerSlotSummary(slot) {
       season: data.season || 1,
       matchday: data.league ? Math.min(data.league.matchdayIndex + 1, data.league.schedule.length) : 1,
       totalMatchdays: data.league ? data.league.schedule.length : CAREER_DIVISION2_TEAM_COUNT - 1,
-      budget: typeof data.budget === 'number' ? data.budget : CAREER_STARTING_BUDGET
+      budget: typeof data.budget === 'number' ? data.budget : CAREER_STARTING_BUDGET,
+      // Club/escudo propio y dificultad, a petición explícita ("ves el
+      // nombre del equipo que usaste y su escudo... y también la
+      // dificultad de esa partida").
+      clubName: data.clubName || 'Tu Equipo',
+      clubShieldName: data.clubShieldName || null,
+      difficulty: CAREER_DIFFICULTY_TIERS[data.difficulty] ? data.difficulty : 'normal'
     };
   } catch (e) { return null; }
 }
@@ -1036,8 +1065,16 @@ function actionGoCareerMode() {
 // este punto.
 window.actionNewCareerInSlot = function (slot) {
   G.careerSetupSlot = slot;
-  G.careerSetupChoices = { difficulty: 'normal', budget: CAREER_STARTING_BUDGET, negotiation: 'duras' };
+  G.careerSetupChoices = { difficulty: 'normal', budget: CAREER_STARTING_BUDGET, negotiation: 'duras', clubName: '', clubShieldName: null };
   G.screen = 'careerSetup';
+  render();
+};
+window.actionSetCareerSetupClubName = function (value) {
+  G.careerSetupChoices.clubName = value;
+  render();
+};
+window.actionSetCareerSetupClubShield = function (name) {
+  G.careerSetupChoices.clubShieldName = name || null;
   render();
 };
 window.actionSetCareerSetupDifficulty = function (tier) {
@@ -1087,12 +1124,41 @@ function renderCareerSetup() {
   var budgetBtnsHtml = CAREER_STARTING_BUDGET_OPTIONS.map(function (amount) {
     return '<button class="btn btn-tiny' + (budget === amount ? ' active' : '') + '" onclick="actionSetCareerSetupBudget(' + amount + ')">' + amount + ' M€</button>';
   }).join('');
+  // Nombre/escudo de TU club, a petición explícita ("elige nombre de
+  // club (cualquiera) y escudo de club entre los que hay desbloqueados"):
+  // el escudo sale de los mismos que ya desbloqueas en la Máquina de
+  // Premios (meta.unlockedShields, igual que "Equipar" en Mi Colección),
+  // no una lista aparte -- + la opción de quedarte con el escudo por
+  // defecto de siempre. El club real cuyo escudo elijas queda excluido
+  // de los rivales de esta carrera (ver careerInitialDivisionTeams).
+  var myShields = G.meta.unlockedShields || [];
+  var clubShieldOptionsHtml =
+    '<button class="shop-item" style="width:100%;text-align:left;border-color:' + (!choices.clubShieldName ? 'var(--accent-2)' : 'var(--border)') + '" onclick="actionSetCareerSetupClubShield(null)">' +
+      '<img class="team-shield-inline" src="' + escapeHtml(PLAYER_SHIELD) + '" alt="">' +
+      '<div style="flex:1"><strong>Escudo por defecto</strong></div>' +
+      (!choices.clubShieldName ? '<span class="pill">Elegido</span>' : '') +
+    '</button>' +
+    myShields.map(function (name) {
+      var selected = choices.clubShieldName === name;
+      return '<button class="shop-item" style="width:100%;text-align:left;border-color:' + (selected ? 'var(--accent-2)' : 'var(--border)') + '" onclick="actionSetCareerSetupClubShield(\'' + escapeHtml(name).replace(/'/g, "\\'") + '\')">' +
+        '<img class="team-shield-inline" src="' + escapeHtml(teamShieldPath(name)) + '" alt="">' +
+        '<div style="flex:1"><strong>' + escapeHtml(name) + '</strong></div>' +
+        (selected ? '<span class="pill">Elegido</span>' : '') +
+      '</button>';
+    }).join('');
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionCancelCareerSetup()">Volver</button>' +
         '<h2 class="panel-title mt">Nueva partida -- Hueco ' + G.careerSetupSlot + '</h2>' +
         '<p class="dim small">Elige cómo quieres jugar esta carrera -- no se puede cambiar después de empezar.</p>' +
+      '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:4px">Tu club</h3>' +
+        '<label class="dim small">Nombre del club</label>' +
+        '<input class="select-field" type="text" maxlength="24" data-focus-key="career-setup-clubname" placeholder="Tu Equipo" value="' + escapeHtml(choices.clubName || '') + '" oninput="actionSetCareerSetupClubName(this.value)">' +
+        '<p class="dim small mt">Escudo' + (myShields.length ? '' : ' (todavía no has desbloqueado ninguno en la Máquina de Premios -- se usará el de por defecto)') + '</p>' +
+        clubShieldOptionsHtml +
       '</div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:4px">Dificultad</h3>' +
@@ -1161,7 +1227,11 @@ function renderCareerSlots() {
     rowsHtml += '<div class="panel">' +
       '<h3 style="margin-bottom:4px">Hueco ' + i + (isActive ? ' · en curso' : '') + '</h3>' +
       (summary
-        ? '<p class="dim small">Temporada ' + summary.season + ' · Jornada ' + summary.matchday + ' / ' + summary.totalMatchdays + ' · Presupuesto ' + summary.budget + ' M€</p>' +
+        ? '<div class="btn-row" style="align-items:center;margin-top:2px">' +
+            '<img class="team-shield-inline" src="' + escapeHtml(summary.clubShieldName ? teamShieldPath(summary.clubShieldName) : PLAYER_SHIELD) + '" alt="">' +
+            '<strong>' + escapeHtml(summary.clubName) + '</strong>' +
+          '</div>' +
+          '<p class="dim small">Temporada ' + summary.season + ' · Jornada ' + summary.matchday + ' / ' + summary.totalMatchdays + ' · Presupuesto ' + summary.budget + ' M€ · ' + CAREER_DIFFICULTY_TIERS[summary.difficulty].name + '</p>' +
           '<div class="btn-row">' +
             '<button class="btn btn-primary" onclick="actionLoadCareerFromSlot(' + i + ')">Cargar</button>' +
             '<button class="btn btn-outline" style="color:var(--danger);border-color:var(--danger)" onclick="actionDeleteCareerSlot(' + i + ')">Borrar</button>' +
@@ -2247,11 +2317,22 @@ function renderCareerMercado(c) {
   );
 }
 
+// Nombre/escudo de TU club en Modo Carrera, a petición explícita ("elige
+// nombre de club (cualquiera) y escudo de club entre los que hay
+// desbloqueados"): si no se eligió nada (partidas de antes de esto, o
+// c.clubShieldName a null = "escudo por defecto"), cae en el nombre/
+// escudo de siempre (getPlayerShieldPath, el mismo que usa el resto de
+// la app). c.clubShieldName es un club REAL (uno de los que ya tienes
+// desbloqueados en la Máquina de Premios) cuyo escudo tomas prestado --
+// ese club real queda excluido de los rivales de la carrera (ver
+// careerInitialDivisionTeams).
+function careerClubDisplayName(c) { return (c && c.clubName) || 'Tú'; }
+function careerClubShieldPath(c) { return (c && c.clubShieldName) ? teamShieldPath(c.clubShieldName) : getPlayerShieldPath(); }
 // Escudo real si el nombre coincide con alguno conocido (mismo criterio
-// que toda la app, ver teamShieldPath), tu propio escudo si el hueco es
-// "Tú" -- igual que las filas de la tabla de Liga.
-function calendarTeamShield(league, idx) { return idx === 0 ? getPlayerShieldPath() : teamShieldPath(league.teamNames[idx]); }
-function calendarTeamLabel(league, idx) { return idx === 0 ? 'Tú' : league.teamNames[idx]; }
+// que toda la app, ver teamShieldPath), tu propio club si el hueco es
+// el tuyo -- igual que las filas de la tabla de Liga.
+function calendarTeamShield(league, idx) { return idx === 0 ? careerClubShieldPath(G.career) : teamShieldPath(league.teamNames[idx]); }
+function calendarTeamLabel(league, idx) { return idx === 0 ? careerClubDisplayName(G.career) : league.teamNames[idx]; }
 
 // Tarjeta "tu escudo VS el escudo del rival" en grande, a petición
 // explícita ("antes de darle a simular o saltar, dime contra quien
@@ -2286,8 +2367,8 @@ function careerMatchupTeamStatsHtml(league, idx) {
 function careerMatchupCardHtml(oppName, contextLabel, youAreHome, league, oppIdx) {
   var youSideHtml =
     '<div class="matchup-side">' +
-      '<img class="matchup-shield" src="' + escapeHtml(getPlayerShieldPath()) + '" alt="">' +
-      '<div class="matchup-name">Tú</div>' +
+      '<img class="matchup-shield" src="' + escapeHtml(careerClubShieldPath(G.career)) + '" alt="">' +
+      '<div class="matchup-name">' + escapeHtml(careerClubDisplayName(G.career)) + '</div>' +
       careerMatchupTeamStatsHtml(league, 0) +
     '</div>';
   var oppSideHtml =
@@ -2310,8 +2391,8 @@ function careerMatchupCardHtml(oppName, contextLabel, youAreHome, league, oppIdx
 function careerMatchResultCardHtml(oppName, myGoals, oppGoals, winBonus, youAreHome) {
   var youSideHtml =
     '<div class="matchup-side">' +
-      '<img class="matchup-shield" src="' + escapeHtml(getPlayerShieldPath()) + '" alt="">' +
-      '<div class="matchup-name">Tú</div>' +
+      '<img class="matchup-shield" src="' + escapeHtml(careerClubShieldPath(G.career)) + '" alt="">' +
+      '<div class="matchup-name">' + escapeHtml(careerClubDisplayName(G.career)) + '</div>' +
     '</div>';
   var oppSideHtml =
     '<div class="matchup-side">' +
@@ -2578,8 +2659,8 @@ function renderCareerLigaTable(c, view) {
   }
   var rows = sorted.map(function (t, pos) {
     var isYou = t.idx === 0;
-    var label = isYou ? 'Tú' : league.teamNames[t.idx];
-    var shield = isYou ? getPlayerShieldPath() : teamShieldPath(league.teamNames[t.idx]);
+    var label = isYou ? careerClubDisplayName(c) : league.teamNames[t.idx];
+    var shield = isYou ? careerClubShieldPath(c) : teamShieldPath(league.teamNames[t.idx]);
     var rowCls = ((isYou ? 'liga-you' : '') + ' ' + careerLigaZoneRowClass(pos + 1, sorted.length, c.division)).trim();
     return '<tr class="' + rowCls + '">' +
       '<td>' + careerLigaPosBadgeHtml(pos + 1, sorted.length, c.division) + '</td>' +
@@ -3459,7 +3540,7 @@ function renderCareerCopa(c) {
       }).join('') +
       '<div class="bracket-round-col bracket-trophy-col"><div class="bracket-round-title">Campeón</div>' +
         '<div class="bracket-trophy-wrap"><div class="bracket-trophy' + (champion ? '' : ' is-pending') + '">🏆</div>' +
-        '<div class="bracket-champion-name">' + (champion ? (champion.isPlayer ? 'Tú' : escapeHtml(champion.name)) : '?') + '</div></div></div>' +
+        '<div class="bracket-champion-name">' + (champion ? (champion.isPlayer ? escapeHtml(careerClubDisplayName(c)) : escapeHtml(champion.name)) : '?') + '</div></div></div>' +
     '</div></div>';
   return headerHtml + actionHtml + bracketHtml;
 }
@@ -3676,7 +3757,7 @@ function renderCareerChampions(c) {
       }).join('') +
       '<div class="bracket-round-col bracket-trophy-col"><div class="bracket-round-title">Campeón</div>' +
         '<div class="bracket-trophy-wrap"><div class="bracket-trophy' + (champion ? '' : ' is-pending') + '">🏆</div>' +
-        '<div class="bracket-champion-name">' + (champion ? (champion.isPlayer ? 'Tú' : escapeHtml(champion.name)) : '?') + '</div></div></div>' +
+        '<div class="bracket-champion-name">' + (champion ? (champion.isPlayer ? escapeHtml(careerClubDisplayName(c)) : escapeHtml(champion.name)) : '?') + '</div></div></div>' +
     '</div></div>';
   return headerHtml + actionHtml + bracketHtml;
 }
