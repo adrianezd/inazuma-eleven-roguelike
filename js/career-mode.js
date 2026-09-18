@@ -155,6 +155,7 @@ var CAREER_TABS = [
   { id: 'plantilla', name: 'Gestionar plantilla' },
   { id: 'entrenamiento', name: 'Entrenamiento' },
   { id: 'mercado', name: 'Mercado' },
+  { id: 'patrocinadores', name: 'Patrocinadores' },
   { id: 'competiciones', name: 'Competiciones' },
   { id: 'jornada', name: 'Jornada' },
   { id: 'estadisticas', name: 'Estadísticas' },
@@ -406,6 +407,7 @@ function careerRecordStarterAppearances(c) {
   c.lineup.forEach(function (s) {
     c.seasonAppearances[s.player.id] = (c.seasonAppearances[s.player.id] || 0) + 1;
   });
+  careerApplySponsorElementPayout(c);
 }
 // A petición explícita ("que tus jugadores suban puntos en base a lo que
 // van jugando, y no solo el entrenamiento... lo que está ahora de lo que
@@ -864,6 +866,12 @@ function careerFreshState(choices) {
     // careerRecordStarterAppearances/careerApplySquadGrowthSplit -- vacío
     // en una partida nueva, se reinicia cada actionStartNewCareerSeason.
     seasonAppearances: {},
+    // Patrocinador de esta temporada (pestaña Patrocinadores): ninguno
+    // firmado todavía, ofertas nuevas se generan la primera vez que se
+    // abre la pestaña (renderCareerPatrocinadores).
+    sponsorOffers: null,
+    activeSponsor: null,
+    sponsorMessage: null,
     // Historial de carrera: una entrada por temporada ya jugada (ver
     // careerRecordSeasonHistory/renderCareerHistorial) -- ACUMULADO de
     // toda la carrera, nunca se resetea, como bestPosition/careerStats.
@@ -956,6 +964,8 @@ function careerSerialize(c) {
     supercopasWon: c.supercopasWon || 0,
     ligaTitlesWon: c.ligaTitlesWon || 0,
     seasonAppearances: c.seasonAppearances || {},
+    sponsorOffers: c.sponsorOffers || null,
+    activeSponsor: c.activeSponsor || null,
     seasonHistory: c.seasonHistory || []
   };
 }
@@ -1040,6 +1050,9 @@ function careerDeserialize(data) {
     supercopasWon: data.supercopasWon || 0,
     ligaTitlesWon: data.ligaTitlesWon || 0,
     seasonAppearances: data.seasonAppearances || {},
+    sponsorOffers: data.sponsorOffers || null,
+    activeSponsor: data.activeSponsor || null,
+    sponsorMessage: null,
     seasonHistory: data.seasonHistory || []
   };
 }
@@ -2996,35 +3009,131 @@ function careerLeaguePositionBonus(position, division) {
 // c.lastLeagueFinish queda guardado para el resumen de temporada
 // (careerSeasonSummaryHtml), que se sigue viendo hasta que se pulsa ese
 // botón (actionStartNewCareerSeason reconstruye la liga de cero).
-// Objetivos de patrocinador ("Sí, unido con lo de objetivos de temporada"):
-// clausulas fijas de temporada, evaluadas junto con el premio de posición
-// -- no hay patrocinador que elegir, es directamente el mismo contrato
-// cada temporada, pero solo paga si de verdad cumples el objetivo. Segunda
-// paga menos que Primera (misma proporción que careerLeaguePositionBonus).
-function careerSponsorObjectivesForDivision(division) {
-  var scale = division === 2 ? 0.4 : 1;
-  var objectives = [
-    { key: 'top4', label: 'Acabar entre los 4 primeros de tu división', reward: Math.round(6 * scale * 10) / 10 },
-    { key: 'cupQuarters', label: 'Llegar a cuartos de la Copa del Rey', reward: Math.round(3 * scale * 10) / 10 }
+// ===== Patrocinadores =====
+// Sustituye al viejo sistema de "objetivos de patrocinador" (clausulas
+// fijas automáticas, sin elegir nada) por una pestaña propia de verdad, a
+// petición explícita ("quiero los patrocinadores en una pestaña para
+// ello, donde firmes al empezar la temporada"). Al empezar cada
+// temporada se generan 5 ofertas (una de cada tipo, ver
+// careerGenerateSponsorOffers) y puedes firmar COMO MUCHO una -- igual
+// que un equipo real solo lleva un patrocinador principal a la vez. Cada
+// tipo paga de una forma distinta, tal cual se pidió: fijo de golpe,
+// por victoria, por título, por partido jugado, o un premio único si
+// mantienes X jugadores de un elemento concreto en el once titular
+// durante 15 jornadas de Liga seguidas o no.
+var CAREER_SPONSOR_ELEMENT_REQUIRED_COUNT = 4;
+var CAREER_SPONSOR_ELEMENT_REQUIRED_MATCHES = 15;
+function careerSponsorScale(c) { return c.division === 2 ? 0.4 : 1; }
+function careerGenerateSponsorOffers(c) {
+  var scale = careerSponsorScale(c);
+  var round1 = function (n) { return Math.round(n * 10) / 10; };
+  var fixedAmount = round1((8 + Math.random() * 10) * scale);
+  var perWin = round1((0.3 + Math.random() * 0.4) * scale);
+  var perTrophy = round1((10 + Math.random() * 8) * scale);
+  var element = choice(TYPES);
+  var elementReward = round1((12 + Math.random() * 10) * scale);
+  var perMatch = Math.round((0.08 + Math.random() * 0.12) * scale * 100) / 100;
+  return [
+    { id: 'fixed', kind: 'fixed', label: 'Pago fijo', amount: fixedAmount,
+      desc: 'Cobras ' + fixedAmount + ' M€ de golpe al firmar, sin ninguna condición.' },
+    { id: 'perWin', kind: 'perWin', label: 'Por victorias', perWin: perWin,
+      desc: 'Cobras ' + perWin + ' M€ por cada partido de Liga que ganes esta temporada.' },
+    { id: 'perTrophy', kind: 'perTrophy', label: 'Por títulos', perTrophy: perTrophy,
+      desc: 'Cobras ' + perTrophy + ' M€ por cada título que ganes esta temporada (Liga, Copa del Rey, Champions o Supercopa).' },
+    { id: 'element', kind: 'element', label: 'Patrocinador ' + element, element: element,
+      requiredCount: CAREER_SPONSOR_ELEMENT_REQUIRED_COUNT, requiredMatches: CAREER_SPONSOR_ELEMENT_REQUIRED_MATCHES, reward: elementReward,
+      desc: 'Cobras ' + elementReward + ' M€ de golpe si juegas ' + CAREER_SPONSOR_ELEMENT_REQUIRED_MATCHES + ' partidos de Liga con ' + CAREER_SPONSOR_ELEMENT_REQUIRED_COUNT + '+ jugadores de elemento ' + element + ' en el once inicial (no hace falta que sean seguidos).' },
+    { id: 'perMatch', kind: 'perMatch', label: 'Partido a partido', perMatch: perMatch,
+      desc: 'Cobras ' + perMatch + ' M€ cada partido de Liga que juegues, lo ganes o no.' }
   ];
-  objectives.push(division === 1
-    ? { key: 'avoidRelegation', label: 'Evitar el descenso a Segunda', reward: Math.round(4 * scale * 10) / 10 }
-    : { key: 'promotion', label: 'Ascender a Primera', reward: 4 });
-  return objectives;
 }
-function careerEvaluateSponsorObjectives(c, position, totalTeams) {
-  var objectives = careerSponsorObjectivesForDivision(c.division);
-  var cup = c.cup;
-  var cupReachedQuarters = !!cup && (cup.eliminated ? cup.eliminatedRound >= 2 : ((cup.rounds.length - 1) >= 2 || !!careerCupChampion(cup)));
-  var met = objectives.filter(function (obj) {
-    if (obj.key === 'top4') return position <= 4;
-    if (obj.key === 'avoidRelegation') return position <= totalTeams - CAREER_PROMOTION_SPOTS;
-    if (obj.key === 'promotion') return position <= CAREER_PROMOTION_SPOTS;
-    if (obj.key === 'cupQuarters') return cupReachedQuarters;
-    return false;
-  });
-  var totalBonus = Math.round(met.reduce(function (sum, obj) { return sum + obj.reward; }, 0) * 10) / 10;
-  return { objectives: objectives, met: met, totalBonus: totalBonus };
+window.actionSignCareerSponsor = function (offerId) {
+  var c = G.career;
+  if (c.activeSponsor) return;
+  var offer = (c.sponsorOffers || []).find(function (o) { return o.id === offerId; });
+  if (!offer) return;
+  c.activeSponsor = Object.assign({ totalEarned: 0, matchesWithElement: 0, rewardClaimed: false }, offer);
+  c.sponsorOffers = null;
+  if (offer.kind === 'fixed') {
+    c.budget = Math.round((c.budget + offer.amount) * 10) / 10;
+    c.activeSponsor.totalEarned = offer.amount;
+  }
+  c.sponsorMessage = 'Firmado: ' + offer.label + '.';
+  render();
+};
+// Por victoria/por partido: se cobra en el momento, mismo sitio que el
+// bono de victoria de Primera (careerAwardWinBonus, llamado una vez por
+// cada jornada de Liga jugada de verdad -- ni Copa, ni Champions, ni
+// Supercopa cuentan).
+function careerApplySponsorMatchPayout(c, myGoals, oppGoals) {
+  var s = c.activeSponsor;
+  if (!s) return;
+  var earned = 0;
+  if (s.kind === 'perWin' && myGoals > oppGoals) earned = s.perWin;
+  else if (s.kind === 'perMatch') earned = s.perMatch;
+  if (earned > 0) {
+    c.budget = Math.round((c.budget + earned) * 10) / 10;
+    s.totalEarned = Math.round((s.totalEarned + earned) * 100) / 100;
+  }
+}
+// Por título: se llama desde las 4 funciones que conceden un trofeo de
+// verdad (Liga/Copa/Champions/Supercopa), justo cuando lo ganas.
+function careerApplySponsorTrophyPayout(c) {
+  var s = c.activeSponsor;
+  if (!s || s.kind !== 'perTrophy') return;
+  c.budget = Math.round((c.budget + s.perTrophy) * 10) / 10;
+  s.totalEarned = Math.round((s.totalEarned + s.perTrophy) * 100) / 100;
+}
+// Por elemento: se llama junto a careerRecordStarterAppearances (mismo
+// sitio, una vez por jornada de Liga jugada de verdad) -- cuenta la
+// jornada si el once inicial de ESE partido (c.lineup, todavía sin
+// cambiar) tiene suficientes jugadores del elemento pedido, y paga el
+// premio de golpe en cuanto se llega al número de jornadas necesario.
+function careerApplySponsorElementPayout(c) {
+  var s = c.activeSponsor;
+  if (!s || s.kind !== 'element' || s.rewardClaimed) return;
+  var countInLineup = c.lineup.filter(function (slot) { return slot.player.tipo === s.element; }).length;
+  if (countInLineup >= s.requiredCount) s.matchesWithElement = (s.matchesWithElement || 0) + 1;
+  if (s.matchesWithElement >= s.requiredMatches) {
+    s.rewardClaimed = true;
+    c.budget = Math.round((c.budget + s.reward) * 10) / 10;
+    s.totalEarned = Math.round((s.totalEarned + s.reward) * 100) / 100;
+  }
+}
+function renderCareerPatrocinadores(c) {
+  var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
+  var squadValue = Math.round(all.reduce(function (sum, p) { return sum + careerPlayerValue(p); }, 0) * 10) / 10;
+  var headerHtml =
+    '<div class="panel center-text">' +
+      '<h3 style="margin-bottom:4px">Patrocinadores</h3>' +
+      '<p class="dim small">Presupuesto actual: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong>. Valor de la plantilla: <strong style="color:var(--accent-2)">' + squadValue + ' M€</strong>.</p>' +
+      (c.sponsorMessage ? '<p class="dim small">' + escapeHtml(c.sponsorMessage) + '</p>' : '') +
+    '</div>';
+  if (c.activeSponsor) {
+    var s = c.activeSponsor;
+    var progressHtml = s.kind === 'element'
+      ? '<p class="dim small">Progreso: ' + (s.matchesWithElement || 0) + ' / ' + s.requiredMatches + ' jornadas con ' + s.requiredCount + '+ jugadores ' + getTypeSymbol(s.element) + ' en el once inicial.' + (s.rewardClaimed ? ' Premio ya cobrado.' : '') + '</p>'
+      : '';
+    return headerHtml +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:4px">' + escapeHtml(s.label) + '</h3>' +
+        '<p class="dim small">' + escapeHtml(s.desc) + '</p>' +
+        progressHtml +
+        '<p class="dim small">Ganado esta temporada con este patrocinador: <strong style="color:var(--accent-2)">' + s.totalEarned + ' M€</strong>.</p>' +
+        '<p class="dim small">El contrato termina solo al empezar la próxima temporada -- entonces podrás firmar uno nuevo.</p>' +
+      '</div>';
+  }
+  var offers = c.sponsorOffers || (c.sponsorOffers = careerGenerateSponsorOffers(c));
+  var offersHtml = offers.map(function (offer) {
+    return '<div class="panel">' +
+      '<h3 style="margin-bottom:4px">' + escapeHtml(offer.label) + '</h3>' +
+      '<p class="dim small">' + escapeHtml(offer.desc) + '</p>' +
+      '<button class="btn btn-primary btn-block mt" onclick="actionSignCareerSponsor(\'' + offer.id + '\')">Firmar</button>' +
+    '</div>';
+  }).join('');
+  return headerHtml +
+    '<div class="panel center-text"><p class="dim small">Elige UN patrocinador para esta temporada -- se queda fijo hasta que empiece la siguiente.</p></div>' +
+    offersHtml;
 }
 
 // Premios de la Federación ("Premios de la propia Federación... Bota de
@@ -3060,14 +3169,13 @@ function careerMaybeAwardLeagueFinish(c) {
   if (position === null) return;
   var bonus = careerLeaguePositionBonus(position, c.division);
   c.budget = Math.round((c.budget + bonus) * 10) / 10;
-  var sponsor = careerEvaluateSponsorObjectives(c, position, league.teamNames.length);
-  if (sponsor.totalBonus > 0) c.budget = Math.round((c.budget + sponsor.totalBonus) * 10) / 10;
   var federationAwards = careerEvaluateFederationAwards(c);
   federationAwards.forEach(function (award) { c.budget = Math.round((c.budget + award.reward) * 10) / 10; });
-  c.lastLeagueFinish = { position: position, bonus: bonus, sponsor: sponsor, federationAwards: federationAwards };
+  c.lastLeagueFinish = { position: position, bonus: bonus, federationAwards: federationAwards };
   if (position === 1) {
     c.ligaTitlesWon = (c.ligaTitlesWon || 0) + 1;
     careerTriggerTrophyPopup(careerDivisionName(c.division));
+    careerApplySponsorTrophyPayout(c);
   }
   // Clasificación a la Champions (solo desde Primera): entre los
   // CAREER_CHAMPIONS_QUALIFY_SPOTS primeros de Primera esta temporada ->
@@ -3256,6 +3364,7 @@ window.actionSkipCareerMatchday = function () {
   var myGoals = youAreHome ? goles[0] : goles[1];
   var oppGoals = youAreHome ? goles[1] : goles[0];
   var winBonus = careerAwardWinBonus(c, myGoals, oppGoals);
+  careerApplySponsorMatchPayout(c, myGoals, oppGoals);
   c.lastMatchdayResult = {
     matchday: league.matchdayIndex + 1,
     oppName: league.teamNames[oppIdx],
@@ -3347,6 +3456,7 @@ function finishCareerMatchdayMatch() {
   futDraftRecordGoalEvents(c.careerStats, myEvents, 'Tu equipo');
   careerResolveOtherFixtures(c, league, fi);
   var winBonus = careerAwardWinBonus(c, myGoals, oppGoals);
+  careerApplySponsorMatchPayout(c, myGoals, oppGoals);
   c.lastMatchdayResult = { matchday: league.matchdayIndex + 1, oppName: oppName, myGoals: myGoals, oppGoals: oppGoals, winBonus: winBonus, youAreHome: youAreHome };
   c.jornadaAckPending = true;
   careerRecordStarterAppearances(c);
@@ -3393,6 +3503,12 @@ window.actionStartNewCareerSeason = function () {
   if (c.league.matchdayIndex < c.league.schedule.length) return;
   careerRecordSeasonHistory(c);
   c.season = (c.season || 1) + 1;
+  // El patrocinador dura solo 1 temporada -- toca elegir uno nuevo cada
+  // vez (renderCareerPatrocinadores genera ofertas frescas la próxima
+  // vez que se entre en la pestaña).
+  c.activeSponsor = null;
+  c.sponsorOffers = null;
+  c.sponsorMessage = null;
   // Las cesiones ENTRANTES duran 1 temporada -- al empezar la siguiente,
   // todos los cedidos que te quedaran vuelven solos a su club (no son
   // tuyos), a petición explícita ("los jugadores cedidos se van de tu
@@ -3602,6 +3718,7 @@ function careerCupMaybeAwardChampion(c) {
     c.budget = Math.round((c.budget + CAREER_CUP_WIN_BONUS) * 10) / 10;
     c.cupsWon = (c.cupsWon || 0) + 1;
     careerTriggerTrophyPopup('Copa del Rey');
+    careerApplySponsorTrophyPayout(c);
   }
 }
 window.actionSimulateCareerCupMatch = function () {
@@ -3929,6 +4046,7 @@ function careerChampionsMaybeAwardChampion(c) {
     c.budget = Math.round((c.budget + CAREER_CHAMPIONS_WIN_BONUS) * 10) / 10;
     c.championsWon = (c.championsWon || 0) + 1;
     careerTriggerTrophyPopup('Champions League');
+    careerApplySponsorTrophyPayout(c);
     // Supercopa: se crea sola en cuanto ganas la Champions esta
     // temporada, a petición explícita ("añade una supercopa también si
     // ganas la champions, con mucho nivel, que es con partido de ida y
@@ -4201,6 +4319,7 @@ function careerSupercopaMaybeAwardChampion(c) {
     c.budget = Math.round((c.budget + CAREER_SUPERCOPA_WIN_BONUS) * 10) / 10;
     c.supercopasWon = (c.supercopasWon || 0) + 1;
     careerTriggerTrophyPopup('Supercopa');
+    careerApplySponsorTrophyPayout(c);
   }
 }
 // Resuelve el resultado del leg actual (ida o vuelta) -- si era la ida,
@@ -4361,9 +4480,8 @@ function careerSeasonSummaryHtml(c) {
   // resultado (c.lastPromotionResult) al terminar la última jornada --
   // aquí solo se enseña, la aplicación real (mover nombres, cambiar
   // c.division) pasa al pulsar "Empezar temporada" (actionStartNewCareerSeason).
-  var sponsor = finish && finish.sponsor;
-  var sponsorBadges = sponsor && sponsor.met.length
-    ? sponsor.met.map(function (obj) { return careerSeasonBadgeHtml('🤝', 'Patrocinador: ' + obj.label, '+' + obj.reward + ' M€', 'season-badge-gold'); }).join('')
+  var sponsorBadges = c.activeSponsor
+    ? careerSeasonBadgeHtml('🤝', 'Patrocinador: ' + c.activeSponsor.label, '+' + c.activeSponsor.totalEarned + ' M€', 'season-badge-gold')
     : '';
   var federationAwards = finish && finish.federationAwards || [];
   var federationBadges = federationAwards.map(function (award) {
@@ -4609,6 +4727,7 @@ function renderCareerMode() {
   if (c.tab === 'plantilla') bodyHtml = renderCareerPlantilla(c);
   else if (c.tab === 'entrenamiento') bodyHtml = renderCareerEntrenamiento(c);
   else if (c.tab === 'mercado') bodyHtml = renderCareerMercado(c);
+  else if (c.tab === 'patrocinadores') bodyHtml = renderCareerPatrocinadores(c);
   else if (c.tab === 'competiciones') bodyHtml = renderCareerCompeticiones(c);
   else if (c.tab === 'jornada') bodyHtml = renderCareerJornada(c);
   else if (c.tab === 'estadisticas') bodyHtml = renderCareerEstadisticas(c);
