@@ -3229,15 +3229,23 @@ var CAREER_SPONSOR_ELEMENT_NAMES = {
 };
 var CAREER_SPONSOR_ICONS = { fixed: '💰', perWin: '🏋️', perTrophy: '🏆', element: '🧪', perMatch: '🚌' };
 function careerSponsorScale(c) { return c.division === 2 ? 0.4 : 1; }
+// Rebalanceado a petición explícita ("no tiene sentido que el que te
+// paga por toda la temporada dé más que el que te exige 4 jugadores de
+// una afinidad"): el de elemento es el más exigente de los 5 (necesita
+// tener y MANTENER una composición de plantilla concreta 15 jornadas
+// seguidas o no), así que ahora es el que más paga de media; fijo y por
+// título (todo o nada, dependen de suerte/logro puntual) quedan en
+// medio; por victoria y, sobre todo, partido a partido (el más fácil de
+// cumplir, cobras juegues como juegues) quedan los más bajos.
 function careerGenerateSponsorOffers(c) {
   var scale = careerSponsorScale(c);
   var round1 = function (n) { return Math.round(n * 10) / 10; };
   var fixedAmount = round1((9 + Math.random() * 4) * scale);
-  var perWin = round1((0.45 + Math.random() * 0.25) * scale);
-  var perTrophy = round1((35 + Math.random() * 20) * scale);
+  var perWin = round1((0.3 + Math.random() * 0.2) * scale);
+  var perTrophy = round1((45 + Math.random() * 25) * scale);
   var element = choice(TYPES);
-  var elementReward = round1((10 + Math.random() * 6) * scale);
-  var perMatch = Math.round((0.2 + Math.random() * 0.12) * scale * 100) / 100;
+  var elementReward = round1((16 + Math.random() * 8) * scale);
+  var perMatch = Math.round((0.1 + Math.random() * 0.1) * scale * 100) / 100;
   return [
     { id: 'fixed', kind: 'fixed', label: choice(CAREER_SPONSOR_NAMES.fixed), icon: CAREER_SPONSOR_ICONS.fixed, amount: fixedAmount,
       desc: fixedAmount + ' M€ de golpe al firmar.' },
@@ -3674,7 +3682,7 @@ function finishCareerMatchdayMatch() {
   G.futdraft.lastMatchResult = {
     oppName: oppName, oppShield: teamShieldPath(oppName), oppPower: careerRivalPower(oppName),
     myGoals: myGoals, oppGoals: oppGoals, playerWon: myGoals > oppGoals,
-    timeline: live.revealed, modifier: live.modifier, isCareer: true
+    timeline: live.revealed, modifier: live.modifier, isCareer: true, youAreHome: live.youAreHome
   };
   G.futdraft.live = null;
   G.screen = 'futdraftMatchResult';
@@ -3990,7 +3998,7 @@ function finishCareerCupMatch() {
   G.futdraft.lastMatchResult = {
     oppName: opp.name, oppShield: teamShieldPath(opp.name), oppPower: careerRivalPower(opp.name),
     myGoals: myGoals, oppGoals: oppGoals, playerWon: playerWon,
-    timeline: live.revealed, modifier: live.modifier, isCareer: true, isCup: true, penalty: penalty
+    timeline: live.revealed, modifier: live.modifier, isCareer: true, isCup: true, penalty: penalty, youAreHome: live.youAreHome
   };
   G.futdraft.live = null;
   G.screen = 'futdraftMatchResult';
@@ -4319,7 +4327,7 @@ function finishCareerChampionsMatch() {
     G.futdraft.lastMatchResult = {
       oppName: opp.name, oppShield: teamShieldPath(opp.name), oppPower: careerRivalPower(opp.name),
       myGoals: myGoals, oppGoals: oppGoals, playerWon: myGoals > oppGoals,
-      timeline: live.revealed, modifier: live.modifier, isCareer: true, isChampions: true, isChampionsGroup: true
+      timeline: live.revealed, modifier: live.modifier, isCareer: true, isChampions: true, isChampionsGroup: true, youAreHome: live.youAreHome
     };
     G.futdraft.live = null;
     G.screen = 'futdraftMatchResult';
@@ -4340,7 +4348,7 @@ function finishCareerChampionsMatch() {
   G.futdraft.lastMatchResult = {
     oppName: opp.name, oppShield: teamShieldPath(opp.name), oppPower: careerRivalPower(opp.name),
     myGoals: myGoals, oppGoals: oppGoals, playerWon: playerWon,
-    timeline: live.revealed, modifier: live.modifier, isCareer: true, isChampions: true, penalty: penalty
+    timeline: live.revealed, modifier: live.modifier, isCareer: true, isChampions: true, penalty: penalty, youAreHome: live.youAreHome
   };
   G.futdraft.live = null;
   G.screen = 'futdraftMatchResult';
@@ -4590,7 +4598,7 @@ function finishCareerSupercopaMatch() {
   G.futdraft.lastMatchResult = {
     oppName: c.supercopa.opponentName, oppShield: teamShieldPath(c.supercopa.opponentName), oppPower: CAREER_SUPERCOPA_POWER,
     myGoals: myGoals, oppGoals: oppGoals, playerWon: myGoals > oppGoals,
-    timeline: live.revealed, modifier: live.modifier, isCareer: true, isSupercopa: true
+    timeline: live.revealed, modifier: live.modifier, isCareer: true, isSupercopa: true, youAreHome: live.youAreHome
   };
   G.futdraft.live = null;
   G.screen = 'futdraftMatchResult';

@@ -298,9 +298,9 @@ window.futDraftSkipLive = function () {
 // (tuyo o del pool fantasma del rival) y su asistencia si la hubo. En los
 // goles rivales se añade el nombre del equipo entre paréntesis, porque el
 // nombre del jugador fantasma no dice por sí solo para quién "juega".
-function futDraftTimelineRowHtml(ev, oppName) {
+function futDraftTimelineRowHtml(ev, oppName, youShield) {
   var isOpp = ev.side !== 'me';
-  var shieldSrc = isOpp ? teamShieldPath(oppName) : getPlayerShieldPath();
+  var shieldSrc = isOpp ? teamShieldPath(oppName) : (youShield || getPlayerShieldPath());
   var text = '<strong>' + escapeHtml(ev.scorer.nombre) + '</strong>' +
     (ev.assist ? ' <span class="dim">(asist. ' + escapeHtml(ev.assist.nombre) + ')</span>' : ' <span class="dim">(gol en solitario)</span>');
   if (isOpp) text += ' <span class="dim">· ' + escapeHtml(oppName) + '</span>';

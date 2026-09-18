@@ -133,20 +133,33 @@ function renderFutDraftMatchResult() {
   var penaltyHtml = r.penalty
     ? '<p class="dim small">Empate a ' + r.myGoals + ' en el tiempo reglamentario. Penaltis: <strong>' + r.penalty.myGoals + ' - ' + r.penalty.oppGoals + '</strong></p>'
     : '';
+  // Escudo/nombre propio de Modo Carrera en vez del equipado en la web,
+  // y orden local/visitante real, igual que la pantalla en vivo
+  // (renderFutDraftLive) -- antes esta pantalla de resultado (justo
+  // después de simular) siempre volvía al escudo de la web y a "Tú" a
+  // la izquierda (aquí y en el resumen de goles/asistencias), deshaciendo
+  // lo que ya se veía bien durante el propio partido, un bug real
+  // corregido a petición explícita.
+  var isCareer = r.isCareer && G.career;
+  var youShield = isCareer ? careerClubShieldPath(G.career) : getPlayerShieldPath();
+  var youName = isCareer ? careerClubDisplayName(G.career) : 'Tú';
+  var youAreHome = r.youAreHome !== false;
   var timelineHtml = (r.timeline && r.timeline.length)
     ? '<div class="panel">' +
         '<h3 style="margin-bottom:8px">Resumen del partido</h3>' +
         '<div class="futdraft-timeline">' +
-          r.timeline.map(function (ev) { return futDraftTimelineRowHtml(ev, r.oppName); }).join('') +
+          r.timeline.map(function (ev) { return futDraftTimelineRowHtml(ev, r.oppName, youShield); }).join('') +
         '</div>' +
       '</div>'
     : '<p class="dim small center-text">Partido sin goles en el tiempo reglamentario.</p>';
+  var youSideHtml = '<div class="score-side"><img class="team-shield" src="' + escapeHtml(youShield) + '" alt=""><div class="score-name">' + escapeHtml(youName) + '</div><div class="score-num">' + r.myGoals + '</div></div>';
+  var oppSideHtml = '<div class="score-side"><img class="team-shield" src="' + escapeHtml(r.oppShield) + '" alt=""><div class="score-name">' + escapeHtml(r.oppName) + '</div><div class="score-num">' + r.oppGoals + '</div></div>';
   return (
     '<div class="screen">' +
       '<div class="match-scoreboard">' +
-        '<div class="score-side"><img class="team-shield" src="' + getPlayerShieldPath() + '" alt=""><div class="score-name">Tú</div><div class="score-num">' + r.myGoals + '</div></div>' +
+        (youAreHome ? youSideHtml : oppSideHtml) +
         '<div class="score-vs">VS</div>' +
-        '<div class="score-side"><img class="team-shield" src="' + escapeHtml(r.oppShield) + '" alt=""><div class="score-name">' + escapeHtml(r.oppName) + '</div><div class="score-num">' + r.oppGoals + '</div></div>' +
+        (youAreHome ? oppSideHtml : youSideHtml) +
       '</div>' +
       '<div class="panel center-text">' +
         '<h3 style="margin-bottom:4px">' + resultLabel + '</h3>' +
