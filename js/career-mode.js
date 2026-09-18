@@ -1926,13 +1926,25 @@ function careerAcademyLevel(c) { return typeof c.academyLevel === 'number' ? c.a
 // mínimo 1 candidato esperando para la temporada que viene, a petición
 // explícita ("por defecto ya viene un jugador ahí para la siguiente
 // temporada") -- construir/mejorar la academia sube ese mínimo.
+function careerAcademyEligiblePool(c, exclude) {
+  var teamAvg = careerTeamAvgScore(c);
+  var owned = c.lineup.map(function (s) { return s.player.id; }).concat(c.bench.map(function (p) { return p.id; })).concat(c.loanedOutIds || []).concat(exclude || []);
+  return ROSTER.filter(function (p) { return owned.indexOf(p.id) === -1 && careerPlayerGrowthTier(c, p) >= 4 && careerPlayerScore(p) <= teamAvg; });
+}
 function careerGenerateAcademyCandidates(c) {
   var count = Math.max(careerAcademyLevel(c), 1);
-  var teamAvg = careerTeamAvgScore(c);
-  var owned = c.lineup.map(function (s) { return s.player.id; }).concat(c.bench.map(function (p) { return p.id; })).concat(c.loanedOutIds || []);
-  var pool = ROSTER.filter(function (p) { return owned.indexOf(p.id) === -1 && careerPlayerGrowthTier(c, p) >= 4 && careerPlayerScore(p) <= teamAvg; });
-  pool = pool.sort(function () { return Math.random() - 0.5; });
+  var pool = careerAcademyEligiblePool(c).sort(function () { return Math.random() - 0.5; });
   return pool.slice(0, count).map(function (p) { return p.id; });
+}
+// Al mejorar la academia a mitad de temporada, los candidatos que ya
+// había se quedan tal cual -- solo se añade UNO nuevo (a petición
+// explícita: "al mejorar la cantera no cambies los jugadores que ya
+// tenías, añade uno nuevo y ya está"), sin repetir a nadie que ya
+// estuviera en la lista.
+function careerAddOneAcademyCandidate(c) {
+  c.academyCandidates = c.academyCandidates || [];
+  var pool = careerAcademyEligiblePool(c, c.academyCandidates).sort(function () { return Math.random() - 0.5; });
+  if (pool.length) c.academyCandidates.push(pool[0].id);
 }
 window.actionUpgradeAcademy = function () {
   var c = G.career;
@@ -1944,7 +1956,7 @@ window.actionUpgradeAcademy = function () {
   c.budget = Math.round((c.budget - cost) * 10) / 10;
   c.academyLevel = level + 1;
   c.academyMessage = level === 0 ? 'Academia construida.' : ('Academia mejorada a nivel ' + c.academyLevel + '.');
-  c.academyCandidates = careerGenerateAcademyCandidates(c);
+  careerAddOneAcademyCandidate(c);
   render();
 };
 window.actionPromoteAcademyPlayer = function (id) {
