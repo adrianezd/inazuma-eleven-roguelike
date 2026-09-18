@@ -2387,7 +2387,7 @@ var ROSTER = [
 {
   id:'r275', nombre:'Beau Fort', original:'Sho Kazakiri',
   posicion:'Defensa', tipo:'Viento',
-  tiro:45,pase:61,defensa:65,especial:58,
+  tiro:45,pase:65,defensa:69,especial:58,
   hissatsu:['Ciclón'],
   desc:'Un defensa aficionado al ciclismo que se deja llevar por el viento.',
   locked:false,cost:17,
@@ -2396,8 +2396,8 @@ var ROSTER = [
 {
   id:'r276', nombre:'Alfie Fine', original:'Genki Mouri',
   posicion:'Portero', tipo:'Bosque',
-  tiro:25,pase:42,defensa:48,especial:69,
-  hissatsu:['Campo de Fuerza Defensivo'],
+  tiro:25,pase:42,defensa:68,especial:69,
+  hissatsu:['Campo de Fuerza'],
   desc:'Un portero que destaca por sus técnicas defensivas.',
   locked:false,cost:16,
   sprite:'assets/sprites/r276.webp'
@@ -2423,7 +2423,7 @@ var ROSTER = [
 {
   id:'r279', nombre:'Fane Club', original:'Club',
   posicion:'Portero', tipo:'Viento',
-  tiro:20,pase:43,defensa:49,especial:63,
+  tiro:20,pase:43,defensa:60,especial:63,
   hissatsu:['Despeje a Presión'],
   desc:'Un aspirante a estrella del fútbol que idolatra a los grandes jugadores.',
   locked:false,cost:15,
@@ -2441,8 +2441,8 @@ var ROSTER = [
 {
   id:'r281', nombre:'Don Keys', original:'Keys',
   posicion:'Delantero', tipo:'Fuego',
-  tiro:69,pase:48,defensa:32,especial:58,
-  hissatsu:['Remate Giratorio'],
+  tiro:69,pase:58,defensa:32,especial:58,
+  hissatsu:['Tiro Giratorio'],
   desc:'Un delantero de gran potencia ofensiva.',
   locked:false,cost:16,
   sprite:'assets/sprites/r281.webp'
