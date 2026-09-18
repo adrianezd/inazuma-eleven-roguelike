@@ -175,6 +175,29 @@ var CAREER_MODE_STARTER_IDS = ['r41', 'r170', 'r67', 'r264', 'r267', 'r263', 'r2
 // original que se queda.
 var CAREER_MODE_BENCH_IDS = ['r270', 'r271', 'r272', 'r66', 'r57'];
 var CAREER_MODE_DEFAULT_FORMATION = '433';
+// Modo "Plantilla aleatoria" (selector en renderCareerSetup, a petición
+// explícita: "un modo aleatorio, con un equipo de 16 aleatorio donde
+// todos sean de 82 hacia abajo"): 16 jugadores del ROSTER con nota base
+// <= este tope, sorteados al confirmar la carrera -- garantiza al menos
+// un portero entre los titulares (si hay alguno disponible bajo el
+// tope) para no dejar la portería vacía, el resto se reparte al azar
+// entre titular/banquillo. assignFutDraftFormation ya sabe encajar
+// cualquier reparto de posiciones en la formación 4-3-3 por defecto sin
+// romperse, así que no hace falta forzar más equilibrio que ese.
+var CAREER_RANDOM_SQUAD_MAX_SCORE = 82;
+function careerRandomSquadIds() {
+  var pool = ROSTER.filter(function (p) { return careerPlayerScore(p) <= CAREER_RANDOM_SQUAD_MAX_SCORE; });
+  var keepers = pool.filter(function (p) { return p.posicion === 'Portero'; }).sort(function () { return Math.random() - 0.5; });
+  var others = pool.filter(function (p) { return p.posicion !== 'Portero'; }).sort(function () { return Math.random() - 0.5; });
+  var squad = keepers.slice(0, 2).concat(others).slice(0, 16);
+  if (squad.length < 16) squad = squad.concat(ROSTER.filter(function (p) { return squad.indexOf(p) === -1; })).slice(0, 16);
+  squad = squad.sort(function () { return Math.random() - 0.5; });
+  var keeperInSquad = squad.find(function (p) { return p.posicion === 'Portero'; });
+  var rest = squad.filter(function (p) { return p !== keeperInSquad; });
+  var starters = (keeperInSquad ? [keeperInSquad] : []).concat(rest.slice(0, keeperInSquad ? 10 : 11));
+  var bench = rest.slice(keeperInSquad ? 10 : 11);
+  return { starterIds: starters.map(function (p) { return p.id; }), benchIds: bench.map(function (p) { return p.id; }) };
+}
 // Dos divisiones, a petición explícita: empiezas en Segunda (16 equipos:
 // tú + 4 jefes + 11 "malos" de RIVAL_TEAM_NAMES) y, si asciendes, juegas
 // en Primera (20 equipos: tú + 16 jefes + 3 "normales" -- 17 jefes + 3
@@ -788,7 +811,12 @@ function careerGenerateIncomingOffers(c) {
 // careerFreshState() a secas).
 function careerFreshState(choices) {
   choices = choices || {};
-  var starters = careerModeRoster(CAREER_MODE_STARTER_IDS);
+  // Plantilla inicial: por defecto (siempre los mismos 16 elegidos a
+  // mano) o aleatoria (careerRandomSquadIds, sorteada una vez aquí al
+  // confirmar la carrera y ya fija para siempre, igual que el resto de
+  // elecciones de creación).
+  var squadIds = choices.squadMode === 'random' ? careerRandomSquadIds() : { starterIds: CAREER_MODE_STARTER_IDS, benchIds: CAREER_MODE_BENCH_IDS };
+  var starters = careerModeRoster(squadIds.starterIds);
   // Arrancas en Segunda División por defecto, a petición explícita.
   var division = 2;
   // Nombre y escudo de TU club (elegidos en renderCareerSetup), a
@@ -810,7 +838,7 @@ function careerFreshState(choices) {
     // empieza "equilibrado" (sin efecto) hasta que se cambie a mano.
     playStyle: 'equilibrado',
     lineup: futDraftBuildLineup(starters, CAREER_MODE_DEFAULT_FORMATION),
-    bench: careerModeRoster(CAREER_MODE_BENCH_IDS),
+    bench: careerModeRoster(squadIds.benchIds),
     captainId: null,
     pickingCaptain: false,
     swapSelectedId: null,
@@ -861,7 +889,7 @@ function careerFreshState(choices) {
     lastPlayerProgressionDelta: {},
     // Crecimiento fijo por jugador (1-5, TODO ROSTER), sorteado una sola
     // vez aquí y nunca más -- ver careerInitialGrowthTiers.
-    playerGrowthTier: careerInitialGrowthTiers(CAREER_MODE_STARTER_IDS.concat(CAREER_MODE_BENCH_IDS)),
+    playerGrowthTier: careerInitialGrowthTiers(squadIds.starterIds.concat(squadIds.benchIds)),
     // Jornadas de titular esta temporada por jugador de tu plantilla, ver
     // careerRecordStarterAppearances/careerApplySquadGrowthSplit -- vacío
     // en una partida nueva, se reinicia cada actionStartNewCareerSeason.
@@ -1123,8 +1151,17 @@ function actionGoCareerMode() {
 // este punto.
 window.actionNewCareerInSlot = function (slot) {
   G.careerSetupSlot = slot;
-  G.careerSetupChoices = { difficulty: 'normal', budget: CAREER_STARTING_BUDGET, negotiation: 'duras', clubName: '', clubShieldName: null, hideProdigy: false, shieldsExpanded: false };
+  G.careerSetupChoices = { difficulty: 'normal', budget: CAREER_STARTING_BUDGET, negotiation: 'duras', clubName: '', clubShieldName: null, hideProdigy: false, shieldsExpanded: false, squadMode: 'default' };
   G.screen = 'careerSetup';
+  render();
+};
+// Plantilla inicial: "por defecto" (los mismos 16 de siempre) o
+// "aleatoria" (careerRandomSquadIds, sorteada al confirmar), a petición
+// explícita ("un equipo por defecto que es el que hay ahora, y un modo
+// aleatorio... todo esto con desplegable junto al resto de opciones").
+window.actionSetCareerSetupSquadMode = function (mode) {
+  if (mode !== 'default' && mode !== 'random') return;
+  G.careerSetupChoices.squadMode = mode;
   render();
 };
 window.actionSetCareerSetupClubName = function (value) {
@@ -1201,6 +1238,13 @@ function renderCareerSetup() {
   var hideProdigyBtnsHtml =
     '<button class="btn btn-tiny' + (!hideProdigy ? ' active' : '') + '" onclick="actionSetCareerSetupHideProdigy(false)">Visible</button>' +
     '<button class="btn btn-tiny' + (hideProdigy ? ' active' : '') + '" onclick="actionSetCareerSetupHideProdigy(true)">Oculto</button>';
+  // Plantilla inicial: desplegable, a petición explícita ("un equipo por
+  // defecto que es el que hay ahora, y un modo aleatorio... todo esto
+  // con desplegable junto al resto de opciones").
+  var squadMode = choices.squadMode === 'random' ? 'random' : 'default';
+  var squadModeOptionsHtml =
+    '<option value="default"' + (squadMode === 'default' ? ' selected' : '') + '>Por defecto (la plantilla de siempre)</option>' +
+    '<option value="random"' + (squadMode === 'random' ? ' selected' : '') + '>Aleatoria (16 jugadores de 82 o menos)</option>';
   // Nombre/escudo de TU club, a petición explícita ("elige nombre de
   // club (cualquiera) y escudo de club entre los que hay desbloqueados"):
   // el escudo sale de los mismos que ya desbloqueas en la Máquina de
@@ -1244,6 +1288,11 @@ function renderCareerSetup() {
         '<h3 style="margin-bottom:4px">Jugadores Prodigio</h3>' +
         '<p class="dim small">Visible: se ve qué jugadores son Prodigio (nivel de crecimiento máximo) con su flecha especial. Oculto: se disfrazan como un jugador normal de crecimiento alto, no sabrás quién es Prodigio hasta ver cómo progresa.</p>' +
         '<div class="btn-row mt">' + hideProdigyBtnsHtml + '</div>' +
+      '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:4px">Plantilla inicial</h3>' +
+        '<p class="dim small">Por defecto: los mismos 16 jugadores de siempre. Aleatoria: 16 jugadores al azar, todos de 82 de nota o menos.</p>' +
+        '<select class="select-field mt" onchange="actionSetCareerSetupSquadMode(this.value)">' + squadModeOptionsHtml + '</select>' +
       '</div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:4px">Dificultad</h3>' +
