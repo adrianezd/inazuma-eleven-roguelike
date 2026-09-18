@@ -151,13 +151,13 @@
 // ("guardar y cambiar partida, pertenecen a gestión de partida, un
 // nuevo modo también a la misma altura que liga, mi plantilla...").
 var CAREER_TABS = [
+  { id: 'jornada', name: 'Jornada' },
   { id: 'equipo', name: 'Mi equipo' },
   { id: 'plantilla', name: 'Gestionar plantilla' },
   { id: 'entrenamiento', name: 'Entrenamiento' },
   { id: 'mercado', name: 'Mercado' },
   { id: 'patrocinadores', name: 'Patrocinadores' },
   { id: 'competiciones', name: 'Competiciones' },
-  { id: 'jornada', name: 'Jornada' },
   { id: 'estadisticas', name: 'Estadísticas' },
   { id: 'gestion', name: 'Gestión de partida' }
 ];
@@ -2692,17 +2692,26 @@ window.actionGoToCareerCompeticionesTab = function (subTab) {
 // la misma fila sin confundir -- puede haber más de un pill activo a la
 // vez (p.ej. "Liga" + "Resumida" los dos en azul).
 function renderCareerCompeticiones(c) {
-  var hasChampions = !!c.champions;
   var hasSupercopa = !!c.supercopa;
   var sub = c.competicionesTab;
-  var validSubs = ['copa', 'liga'].concat(hasChampions ? ['champions'] : []).concat(hasSupercopa ? ['supercopa'] : []);
+  // Copa del Rey y Champions son siempre accesibles (aunque no se puedan
+  // jugar todavía) -- a petición explícita ("tengo que poder ver la copa
+  // del rey aunque no pueda jugarla hasta la jornada x... igual con la
+  // champions"). renderCareerChampions ya sabe enseñar un aviso de "no
+  // clasificado esta temporada" cuando c.champions todavía no existe, así
+  // que no hace falta esconder el botón -- antes SÍ se escondía
+  // (`if (hasChampions)`), dejando ese aviso inalcanzable. La Supercopa
+  // sigue condicionada: es un torneo corto de 2 partidos que solo existe
+  // tras ganar la Champions esa temporada, no una competición de fondo
+  // que siga la carrera.
+  var validSubs = ['copa', 'liga', 'champions'].concat(hasSupercopa ? ['supercopa'] : []);
   if (validSubs.indexOf(sub) === -1) sub = 'liga';
   var view = c.ligaView && CAREER_LIGA_VIEWS.some(function (v) { return v.id === c.ligaView; }) ? c.ligaView : 'resumida';
   var items = [
     { name: 'Liga', active: sub === 'liga', onclick: "actionSetCareerCompeticionesTab('liga')" },
-    { name: 'Copa del Rey', active: sub === 'copa', onclick: "actionSetCareerCompeticionesTab('copa')" }
+    { name: 'Copa del Rey', active: sub === 'copa', onclick: "actionSetCareerCompeticionesTab('copa')" },
+    { name: 'Champions', active: sub === 'champions', onclick: "actionSetCareerCompeticionesTab('champions')" }
   ];
-  if (hasChampions) items.push({ name: 'Champions', active: sub === 'champions', onclick: "actionSetCareerCompeticionesTab('champions')" });
   if (hasSupercopa) items.push({ name: 'Supercopa', active: sub === 'supercopa', onclick: "actionSetCareerCompeticionesTab('supercopa')" });
   CAREER_LIGA_VIEWS.forEach(function (v) {
     items.push({ name: v.name, active: sub === 'liga' && view === v.id, onclick: "actionSetCareerLigaView('" + v.id + "')" });
@@ -4521,6 +4530,30 @@ function careerSeasonSummaryHtml(c) {
 
 function renderCareerJornada(c) {
   var league = c.league;
+  var seasonOver = league.matchdayIndex >= league.schedule.length;
+  var r = c.lastMatchdayResult;
+  // Justo después de jugar una jornada (Saltar o Simular), primero se
+  // enseña TU resultado + cómo ha quedado toda la ronda -- solo al
+  // pulsar "Siguiente" se prepara el próximo partido (escudos,
+  // Simular/Saltar), a petición explícita ("deja el partido anterior con
+  // el resultado... y ya le das a siguiente, y te carga lo de jornada x
+  // de 30, los escudos, simular o saltar"). c.jornadaAckPending es lo que
+  // distingue "acabo de jugar, toca confirmar" de "ya confirmado, toca
+  // preparar el siguiente". Comprobado ANTES que la ventana de fichajes/
+  // Copa/Champions pendientes (que pueden engancharse justo en la
+  // siguiente jornada, p.ej. jornada 10) -- a petición explícita ("cuando
+  // juego un partido y la siguiente jornada hay mercado o copa, ni
+  // siquiera veo el resultado de ese partido, quiero verlo y luego ya
+  // que me lleve"): así el resultado se ve siempre primero, y solo al
+  // pulsar "Siguiente" aparece el aviso de mercado/Copa/Champions que
+  // toque.
+  if (!seasonOver && c.jornadaAckPending && r) {
+    return (
+      careerMatchResultCardHtml(r.oppName, r.myGoals, r.oppGoals, r.winBonus, r.youAreHome) +
+      '<div class="panel center-text"><button class="btn btn-primary btn-block" onclick="actionAckCareerJornadaResult()">Siguiente ▶</button></div>' +
+      careerLastRoundResultsHtml(league, r)
+    );
+  }
   var w = c.marketWindow;
   if (w && w.open) {
     return '<div class="panel center-text">' +
@@ -4551,23 +4584,6 @@ function renderCareerJornada(c) {
       '<p class="dim small">Antes de seguir con la jornada ' + (league.matchdayIndex + 1) + ' hay que resolver la Champions League.</p>' +
       '<button class="btn btn-primary btn-block mt" onclick="actionGoToCareerCompeticionesTab(\'champions\')">Ir a la Champions League</button>' +
     '</div>';
-  }
-  var seasonOver = league.matchdayIndex >= league.schedule.length;
-  var r = c.lastMatchdayResult;
-  // Justo después de jugar una jornada (Saltar o Simular), primero se
-  // enseña TU resultado + cómo ha quedado toda la ronda -- solo al
-  // pulsar "Siguiente" se prepara el próximo partido (escudos,
-  // Simular/Saltar), a petición explícita ("deja el partido anterior con
-  // el resultado... y ya le das a siguiente, y te carga lo de jornada x
-  // de 30, los escudos, simular o saltar"). c.jornadaAckPending es lo que
-  // distingue "acabo de jugar, toca confirmar" de "ya confirmado, toca
-  // preparar el siguiente".
-  if (!seasonOver && c.jornadaAckPending && r) {
-    return (
-      careerMatchResultCardHtml(r.oppName, r.myGoals, r.oppGoals, r.winBonus, r.youAreHome) +
-      '<div class="panel center-text"><button class="btn btn-primary btn-block" onclick="actionAckCareerJornadaResult()">Siguiente ▶</button></div>' +
-      careerLastRoundResultsHtml(league, r)
-    );
   }
   var matchupHtml = '';
   if (!seasonOver) {
