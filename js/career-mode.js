@@ -3757,45 +3757,145 @@ function renderCareerCopa(c) {
 // que te clasificaste el año anterior (careerMaybeAwardLeagueFinish
 // guarda c.qualifiedForChampionsNextSeason, actionStartNewCareerSeason es
 // quien de verdad la crea o no) y solo existe estando en Primera.
-// Tamaño subido de 8 a 16 (octavos/cuartos/semis/final, un par de rondas
-// más), a petición explícita ("añade más partidos y equipos en la
-// champions"). Igual que la Copa, CADA RONDA tiene su propia jornada
-// (CAREER_CHAMPIONS_ROUND_MATCHDAYS) repartida a lo largo de la
-// temporada intercalada con la Liga (y sin coincidir con las jornadas de
-// la Copa) en vez de un único bloqueo -- antes no tenía NINGÚN bloqueo
-// de jornada y se podía jugar entera de golpe en cualquier momento, un
-// bug real corregido a petición explícita ("en champions hay un bug que
-// la puedes jugar en cualquier momento... tiene que ser como se hace en
-// la vida real").
-var CAREER_CHAMPIONS_SIZE = 16;
-var CAREER_CHAMPIONS_ROUND_MATCHDAYS = [7, 15, 23, 31];
+// Rediseñado a "fase de grupos de 32 equipos y luego rondas
+// eliminatorias, como en la vida real" (antes era un cuadro de
+// eliminación directa de 16 desde el principio). 32 equipos (tú + 31
+// rivales) repartidos en 8 grupos de 4 (`generateTournamentBracket`
+// coloca a "Tú" en una casilla al azar de las 32, igual que en la Copa/
+// el Torneo de Modo Jugador); tu grupo juega liguilla a una vuelta (3
+// jornadas -- ida y vuelta real, de 6 jornadas, alargaría demasiado la
+// temporada) y los otros 7 grupos se resuelven solos jornada a jornada
+// en paralelo (`careerChampionsResolveGroupRoundOthers`, mismo patrón
+// que careerResolveOtherFixtures en Liga). Quedan primero o segundo de
+// grupo -> pasas a octavos (16 equipos, cuadro de eliminación directa
+// de toda la vida, igual que antes); si no, quedas eliminado ahí mismo
+// (`champions.eliminatedInGroup`). CADA jornada de grupo o ronda
+// eliminatoria tiene su propia jornada de Liga asignada
+// (CAREER_CHAMPIONS_ROUND_MATCHDAYS, 7 entradas: 3 de grupos + 4 de
+// octavos/cuartos/semis/final), mismo mecanismo de auto-bloqueo que la
+// Copa del Rey (careerChampionsLocked mira en qué punto va,
+// careerChampionsRoundIndex).
+var CAREER_CHAMPIONS_SIZE = 32;
+var CAREER_CHAMPIONS_GROUP_SIZE = 4;
+var CAREER_CHAMPIONS_GROUP_ROUNDS = 3;
+var CAREER_CHAMPIONS_KNOCKOUT_SIZE = 16;
+// Calendario fijo de una liguilla de 4 equipos a una vuelta (3 jornadas,
+// 2 partidos cada una) -- mismos índices relativos dentro de cada grupo,
+// no hace falta un algoritmo de círculo para un grupo tan pequeño.
+var CAREER_CHAMPIONS_GROUP_FIXTURE_PATTERN = [[[0, 1], [2, 3]], [[0, 2], [1, 3]], [[0, 3], [1, 2]]];
+var CAREER_CHAMPIONS_ROUND_MATCHDAYS = [5, 10, 15, 20, 26, 30, 34];
 var CAREER_CHAMPIONS_WIN_BONUS = 20;
 function careerNewChampions() {
   var bracket = generateTournamentBracket(CAREER_CHAMPIONS_SIZE);
+  var teams = bracket.slots.map(function (s) { return { isPlayer: s.isPlayer, name: s.name, tier: s.tier, pts: 0, gf: 0, ga: 0, played: 0 }; });
+  var groups = [];
+  for (var i = 0; i < teams.length; i += CAREER_CHAMPIONS_GROUP_SIZE) groups.push(teams.slice(i, i + CAREER_CHAMPIONS_GROUP_SIZE));
+  var myGroupIndex = groups.findIndex(function (g) { return g.some(function (t) { return t.isPlayer; }); });
+  return {
+    phase: 'group', size: CAREER_CHAMPIONS_SIZE,
+    groups: groups, myGroupIndex: myGroupIndex, groupRoundIndex: 0,
+    rounds: [], eliminated: false, eliminatedRound: null, eliminatedInGroup: false,
+    rewardClaimed: false
+  };
+}
+function careerChampionsGroupStanding(group) {
+  return group.slice().sort(function (a, b) { return (b.pts - a.pts) || ((b.gf - b.ga) - (a.gf - a.ga)) || (b.gf - a.gf); });
+}
+function careerChampionsMyGroupMatch(champions) {
+  if (champions.phase !== 'group') return null;
+  var group = champions.groups[champions.myGroupIndex];
+  var pattern = CAREER_CHAMPIONS_GROUP_FIXTURE_PATTERN[champions.groupRoundIndex];
+  if (!pattern) return null;
+  var pair = pattern.find(function (p) { return group[p[0]].isPlayer || group[p[1]].isPlayer; });
+  if (!pair) return null;
+  return { a: group[pair[0]], b: group[pair[1]] };
+}
+function careerChampionsRecordGroupResult(team, gf, ga) {
+  team.played++; team.gf += gf; team.ga += ga;
+  team.pts += gf > ga ? 3 : (gf === ga ? 1 : 0);
+}
+// Resuelve TODOS los partidos de la ronda de grupos actual que no sean
+// el tuyo (el otro partido de tu propio grupo, y los 2 de cada uno de
+// los otros 7 grupos) -- se llama justo después de aplicar tu resultado,
+// antes de pasar a la siguiente jornada de grupo.
+function careerChampionsResolveGroupRoundOthers(champions) {
+  var pattern = CAREER_CHAMPIONS_GROUP_FIXTURE_PATTERN[champions.groupRoundIndex];
+  champions.groups.forEach(function (group) {
+    pattern.forEach(function (pair) {
+      var a = group[pair[0]], b = group[pair[1]];
+      if (a.isPlayer || b.isPlayer) return; // tu partido, ya resuelto aparte
+      var goles = simulateCpuMatchGoals(a, b);
+      careerChampionsRecordGroupResult(a, goles[0], goles[1]);
+      careerChampionsRecordGroupResult(b, goles[1], goles[0]);
+    });
+  });
+}
+function careerChampionsPlayMyGroupMatch(c, myGoals, oppGoals) {
+  var champions = c.champions;
+  var match = careerChampionsMyGroupMatch(champions);
+  var me = match.a.isPlayer ? match.a : match.b;
+  var opp = match.a.isPlayer ? match.b : match.a;
+  careerChampionsRecordGroupResult(me, myGoals, oppGoals);
+  careerChampionsRecordGroupResult(opp, oppGoals, myGoals);
+  careerChampionsResolveGroupRoundOthers(champions);
+  champions.groupRoundIndex++;
+  if (champions.groupRoundIndex >= CAREER_CHAMPIONS_GROUP_ROUNDS) careerChampionsFinishGroupStage(c);
+}
+// Fin de la liguilla: 1º y 2º de cada uno de los 8 grupos (16 en total)
+// pasan a un cuadro de octavos de eliminación directa, emparejados al
+// azar (como el sorteo real de octavos). Si no quedaste entre los 2
+// primeros de tu grupo, quedas eliminado aquí mismo -- el resto del
+// cuadro (sin ti) se resuelve solo para poder enseñarlo completo.
+function careerChampionsFinishGroupStage(c) {
+  var champions = c.champions;
+  var qualifiers = [];
+  champions.groups.forEach(function (group) {
+    var standing = careerChampionsGroupStanding(group);
+    qualifiers.push(standing[0], standing[1]);
+  });
+  var myQualified = qualifiers.some(function (t) { return t.isPlayer; });
+  qualifiers = qualifiers.sort(function () { return Math.random() - 0.5; });
   var round1 = [];
-  for (var i = 0; i < bracket.slots.length; i += 2) round1.push({ a: bracket.slots[i], b: bracket.slots[i + 1], winner: null });
-  return { rounds: [round1], size: bracket.size, eliminated: false, eliminatedRound: null, rewardClaimed: false };
+  for (var i = 0; i < qualifiers.length; i += 2) round1.push({ a: qualifiers[i], b: qualifiers[i + 1], winner: null });
+  champions.rounds = [round1];
+  champions.phase = 'knockout';
+  if (!myQualified) {
+    champions.eliminated = true;
+    champions.eliminatedInGroup = true;
+    careerChampionsSettleRemaining(champions);
+  }
 }
 function careerChampionsMyMatch(champions) {
+  if (champions.phase !== 'knockout' || !champions.rounds.length) return null;
   var round = champions.rounds[champions.rounds.length - 1];
   return round.find(function (m) { return (m.a.isPlayer || m.b.isPlayer) && m.winner === null; }) || null;
 }
 function careerChampionsOpponent(match) { return match.a.isPlayer ? match.b : match.a; }
 function careerChampionsChampion(champions) {
+  if (!champions.rounds.length) return null;
   var round = champions.rounds[champions.rounds.length - 1];
   return (round.length === 1 && round[0].winner) ? round[0].winner : null;
 }
 function careerChampionsFinished(champions) { return champions.eliminated || !!careerChampionsChampion(champions); }
+// Índice combinado dentro de CAREER_CHAMPIONS_ROUND_MATCHDAYS: 0-2 =
+// jornadas de grupo, 3-6 = octavos/cuartos/semis/final.
+function careerChampionsRoundIndex(c) {
+  var champions = c.champions;
+  if (!champions) return 0;
+  if (champions.phase === 'group') return champions.groupRoundIndex;
+  return CAREER_CHAMPIONS_GROUP_ROUNDS + (champions.rounds.length - 1);
+}
 // Solo existe (y se puede jugar) estando en Primera con c.champions creada
 // -- si desciendes a mitad de temporada, se queda bloqueada hasta volver
 // a subir (no se destruye, igual que la Copa del Rey con la división) --
 // y, ronda a ronda, solo a partir de la jornada que le toque (mismo
 // mecanismo que careerCupLocked: en cuanto se resuelve tu partido de una
-// ronda, careerChampionsAdvanceRound arma la siguiente y esto se vuelve
-// a bloquear solo hasta la jornada que corresponda).
+// ronda, careerChampionsAdvanceRound/careerChampionsPlayMyGroupMatch
+// arma la siguiente y esto se vuelve a bloquear solo hasta la jornada
+// que corresponda).
 function careerChampionsLocked(c) {
   if (c.division !== 1 || !c.champions) return true;
-  var roundIdx = c.champions.rounds.length - 1;
+  var roundIdx = careerChampionsRoundIndex(c);
   var matchday = CAREER_CHAMPIONS_ROUND_MATCHDAYS[roundIdx] !== undefined ? CAREER_CHAMPIONS_ROUND_MATCHDAYS[roundIdx] : CAREER_CHAMPIONS_ROUND_MATCHDAYS[CAREER_CHAMPIONS_ROUND_MATCHDAYS.length - 1];
   return c.league.matchdayIndex < matchday;
 }
@@ -3842,7 +3942,7 @@ window.actionSimulateCareerChampionsMatch = function () {
   var c = G.career;
   var champions = c.champions;
   if (!champions) return;
-  var match = careerChampionsMyMatch(champions);
+  var match = champions.phase === 'group' ? careerChampionsMyGroupMatch(champions) : careerChampionsMyMatch(champions);
   if (!match) return;
   var opp = careerChampionsOpponent(match);
   c.savedFutdraft = G.futdraft;
@@ -3860,8 +3960,11 @@ window.actionSimulateCareerChampionsMatch = function () {
     minute: 0, pending: sim.timeline.slice(), revealed: [],
     myGoals: 0, oppGoals: 0, finalMyGoals: sim.myGoals, finalOppGoals: sim.oppGoals,
     myAtk: sim.myAtk, myDef: sim.myDef, effectiveOppPower: sim.effectiveOppPower,
+    // En fase de grupos el empate cuenta como resultado válido (1 punto
+    // cada uno, sin penaltis) -- en eliminatorias sigue haciendo falta
+    // desempatar sí o sí, ver finishCareerChampionsMatch.
     inExtraTime: false, allowDraw: true, onFinish: finishCareerChampionsMatch,
-    careerChampionsMatch: match,
+    careerChampionsMatch: match, careerChampionsPhase: champions.phase,
     isCareer: true, youAreHome: true,
     done: false
   };
@@ -3876,12 +3979,27 @@ function finishCareerChampionsMatch() {
   var match = live.careerChampionsMatch;
   var opp = careerChampionsOpponent(match);
   var myGoals = live.finalMyGoals, oppGoals = live.finalOppGoals;
-  var penalty = myGoals === oppGoals ? careerCupPenaltyShootout(c, opp.name) : null;
-  var playerWon = penalty ? penalty.myGoals > penalty.oppGoals : myGoals > oppGoals;
-  match.winner = playerWon ? (match.a.isPlayer ? match.a : match.b) : (match.a.isPlayer ? match.b : match.a);
 
   var myEvents = live.revealed.filter(function (e) { return e.side === 'me'; });
   futDraftRecordGoalEvents(c.careerStats, myEvents, 'Tu equipo');
+
+  if (live.careerChampionsPhase === 'group') {
+    careerChampionsPlayMyGroupMatch(c, myGoals, oppGoals);
+    c.lastChampionsResult = { oppName: opp.name, myGoals: myGoals, oppGoals: oppGoals, playerWon: myGoals > oppGoals, isGroup: true };
+    G.futdraft.lastMatchResult = {
+      oppName: opp.name, oppShield: teamShieldPath(opp.name), oppPower: careerRivalPower(opp.name),
+      myGoals: myGoals, oppGoals: oppGoals, playerWon: myGoals > oppGoals,
+      timeline: live.revealed, modifier: live.modifier, isCareer: true, isChampions: true, isChampionsGroup: true
+    };
+    G.futdraft.live = null;
+    G.screen = 'futdraftMatchResult';
+    render();
+    return;
+  }
+
+  var penalty = myGoals === oppGoals ? careerCupPenaltyShootout(c, opp.name) : null;
+  var playerWon = penalty ? penalty.myGoals > penalty.oppGoals : myGoals > oppGoals;
+  match.winner = playerWon ? (match.a.isPlayer ? match.a : match.b) : (match.a.isPlayer ? match.b : match.a);
 
   var roundIdxAtElimination = champions.rounds.length - 1;
   careerChampionsAdvanceRound(champions);
@@ -3902,21 +4020,29 @@ window.actionSkipCareerChampionsMatch = function () {
   var c = G.career;
   var champions = c.champions;
   if (!champions) return;
-  var match = careerChampionsMyMatch(champions);
+  var match = champions.phase === 'group' ? careerChampionsMyGroupMatch(champions) : careerChampionsMyMatch(champions);
   if (!match) return;
   var opp = careerChampionsOpponent(match);
   var myAtkDef = careerMyAtkDef(c);
   var oppPower = careerRivalPower(opp.name);
   var goles = careerSimulateMyMatchGoals(myAtkDef.atk, myAtkDef.def, oppPower, true);
   var myGoals = goles[0], oppGoals = goles[1];
-  var penalty = myGoals === oppGoals ? careerCupPenaltyShootout(c, opp.name) : null;
-  var playerWon = penalty ? penalty.myGoals > penalty.oppGoals : myGoals > oppGoals;
-  match.winner = playerWon ? (match.a.isPlayer ? match.a : match.b) : (match.a.isPlayer ? match.b : match.a);
 
   var myPlayers = c.lineup.map(function (s) { return s.player; });
   var events = [];
   for (var i = 0; i < myGoals; i++) events.push(futDraftGoalEvent(myPlayers));
   futDraftRecordGoalEvents(c.careerStats, events, 'Tu equipo');
+
+  if (champions.phase === 'group') {
+    careerChampionsPlayMyGroupMatch(c, myGoals, oppGoals);
+    c.lastChampionsResult = { oppName: opp.name, myGoals: myGoals, oppGoals: oppGoals, playerWon: myGoals > oppGoals, isGroup: true };
+    render();
+    return;
+  }
+
+  var penalty = myGoals === oppGoals ? careerCupPenaltyShootout(c, opp.name) : null;
+  var playerWon = penalty ? penalty.myGoals > penalty.oppGoals : myGoals > oppGoals;
+  match.winner = playerWon ? (match.a.isPlayer ? match.a : match.b) : (match.a.isPlayer ? match.b : match.a);
 
   var roundIdxAtElimination = champions.rounds.length - 1;
   careerChampionsAdvanceRound(champions);
@@ -3932,37 +4058,85 @@ window.continueCareerChampionsMatch = function () {
   G.screen = 'careerMode';
   actionGoToCareerCompeticionesTab('champions');
 };
+function careerChampionsStageLabel(c) {
+  var champions = c.champions;
+  if (!champions) return '';
+  if (champions.phase === 'group') return 'fase de grupos, jornada ' + (champions.groupRoundIndex + 1) + '/' + CAREER_CHAMPIONS_GROUP_ROUNDS;
+  return roundNameForIndex(champions.rounds.length - 1, Math.log2(CAREER_CHAMPIONS_KNOCKOUT_SIZE));
+}
 function renderCareerChampions(c) {
   if (careerChampionsLocked(c)) {
-    var championsRoundIdx = c.champions ? c.champions.rounds.length - 1 : 0;
+    var championsRoundIdx = c.champions ? careerChampionsRoundIndex(c) : 0;
     var nextChampionsMatchday = CAREER_CHAMPIONS_ROUND_MATCHDAYS[championsRoundIdx] !== undefined ? CAREER_CHAMPIONS_ROUND_MATCHDAYS[championsRoundIdx] : CAREER_CHAMPIONS_ROUND_MATCHDAYS[CAREER_CHAMPIONS_ROUND_MATCHDAYS.length - 1];
     var lockedMsg = c.division !== 1
       ? 'La Champions League solo se juega en Primera División -- ahora mismo estás en ' + careerDivisionName(c.division) + '.'
       : !c.champions
         ? 'No te has clasificado para la Champions League esta temporada -- termina entre los ' + CAREER_CHAMPIONS_QUALIFY_SPOTS + ' primeros de Primera para jugarla la temporada que viene.'
-        : 'La próxima ronda de la Champions League se juega en la jornada ' + nextChampionsMatchday + ' -- llevas jugadas ' + c.league.matchdayIndex + '.';
+        : 'La próxima jornada de la Champions League (' + careerChampionsStageLabel(c) + ') se juega en la jornada ' + nextChampionsMatchday + ' -- llevas jugadas ' + c.league.matchdayIndex + '.';
     return '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Champions League</h3>' +
       '<p class="dim small">' + lockedMsg + '</p>' +
     '</div>';
   }
   var champions = c.champions;
-  var totalRounds = Math.log2(champions.size);
-  var champion = careerChampionsChampion(champions);
-  var myMatch = careerChampionsMyMatch(champions);
   var headerHtml =
     '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Champions League</h3>' +
-      '<p class="dim small">Tú y ' + (champions.size - 1) + ' rivales, eliminación directa. Champions ganadas en la carrera: <strong style="color:var(--accent-2)">' + (c.championsWon || 0) + '</strong>.</p>' +
+      '<p class="dim small">32 equipos, 8 grupos de 4 y luego octavos de eliminación directa, como en la vida real. Champions ganadas en la carrera: <strong style="color:var(--accent-2)">' + (c.championsWon || 0) + '</strong>.</p>' +
       (c.lastChampionsResult
-        ? '<p class="dim small">Último resultado: Tú ' + c.lastChampionsResult.myGoals + ' - ' + c.lastChampionsResult.oppGoals + ' ' + escapeHtml(c.lastChampionsResult.oppName) + (c.lastChampionsResult.penalty ? ' (penaltis ' + c.lastChampionsResult.penalty.myGoals + '-' + c.lastChampionsResult.penalty.oppGoals + ')' : '') + ' -- ' + (c.lastChampionsResult.playerWon ? 'ganaste' : 'perdiste') + '.</p>'
+        ? '<p class="dim small">Último resultado: Tú ' + c.lastChampionsResult.myGoals + ' - ' + c.lastChampionsResult.oppGoals + ' ' + escapeHtml(c.lastChampionsResult.oppName) + (c.lastChampionsResult.penalty ? ' (penaltis ' + c.lastChampionsResult.penalty.myGoals + '-' + c.lastChampionsResult.penalty.oppGoals + ')' : '') + ' -- ' + (c.lastChampionsResult.playerWon ? 'ganaste' : (c.lastChampionsResult.isGroup && c.lastChampionsResult.myGoals === c.lastChampionsResult.oppGoals ? 'empate' : 'perdiste')) + '.</p>'
         : '') +
     '</div>';
+
+  // Fase de grupos: tabla de tu grupo (mismo estilo que la tabla de Liga)
+  // + tu partido de esta jornada de grupo si toca.
+  if (champions.phase === 'group') {
+    var group = champions.groups[champions.myGroupIndex];
+    var standing = careerChampionsGroupStanding(group);
+    var tableHtml = '<div class="panel">' +
+      '<h3 style="margin-bottom:4px">Tu grupo -- jornada ' + Math.min(champions.groupRoundIndex + 1, CAREER_CHAMPIONS_GROUP_ROUNDS) + '/' + CAREER_CHAMPIONS_GROUP_ROUNDS + '</h3>' +
+      '<table class="career-liga-table"><thead><tr><th>#</th><th></th><th>Equipo</th><th>J</th><th>DG</th><th>PTS</th></tr></thead><tbody>' +
+      standing.map(function (t, i) {
+        var shield = t.isPlayer ? careerClubShieldPath(c) : teamShieldPath(t.name);
+        var label = t.isPlayer ? careerClubDisplayName(c) : t.name;
+        return '<tr class="' + (t.isPlayer ? 'liga-you' : '') + '">' +
+          '<td>' + (i + 1) + '</td>' +
+          '<td><img class="liga-row-shield" src="' + escapeHtml(shield) + '" alt=""></td>' +
+          '<td>' + escapeHtml(label) + '</td>' +
+          '<td>' + t.played + '</td>' +
+          '<td>' + ((t.gf - t.ga) >= 0 ? '+' : '') + (t.gf - t.ga) + '</td>' +
+          '<td><strong>' + t.pts + '</strong></td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody></table>' +
+      '<p class="dim small mt">Pasan a octavos el 1º y el 2º de cada uno de los 8 grupos.</p>' +
+    '</div>';
+    var myGroupMatch = careerChampionsMyGroupMatch(champions);
+    var groupActionHtml = '';
+    if (myGroupMatch) {
+      var groupOpp = careerChampionsOpponent(myGroupMatch);
+      groupActionHtml =
+        careerMatchupCardHtml(groupOpp.name, 'Fase de grupos') +
+        '<div class="panel center-text">' +
+          '<div class="btn-row" style="justify-content:center">' +
+            '<button class="btn btn-primary" onclick="actionSimulateCareerChampionsMatch()">▶ Simular partido</button>' +
+            '<button class="btn btn-skip" onclick="actionSkipCareerChampionsMatch()">⏭ Saltar</button>' +
+          '</div>' +
+        '</div>';
+    }
+    return headerHtml + tableHtml + groupActionHtml;
+  }
+
+  // Fase eliminatoria: mismo cuadro de toda la vida (octavos en adelante,
+  // 16 clasificados de los grupos).
+  var totalRounds = Math.log2(CAREER_CHAMPIONS_KNOCKOUT_SIZE);
+  var champion = careerChampionsChampion(champions);
+  var myMatch = careerChampionsMyMatch(champions);
   var actionHtml;
   if (champion) {
     actionHtml = '<div class="panel center-text"><p class="dim small">' + (champion.isPlayer ? '¡Campeón de la Champions League!' : 'Campeón: ' + escapeHtml(champion.name)) + '</p></div>';
   } else if (champions.eliminated) {
-    actionHtml = '<div class="panel center-text"><p class="dim small">Eliminado en ' + roundNameForIndex(champions.eliminatedRound, totalRounds) + '.</p></div>';
+    actionHtml = '<div class="panel center-text"><p class="dim small">' + (champions.eliminatedInGroup ? 'Eliminado en la fase de grupos.' : 'Eliminado en ' + roundNameForIndex(champions.eliminatedRound, totalRounds) + '.') + '</p></div>';
   } else if (myMatch) {
     var opp = careerChampionsOpponent(myMatch);
     actionHtml =
