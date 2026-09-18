@@ -863,3 +863,146 @@ function actionFutDraftBracketSizeStep(delta) {
   render();
 }
 
+// ===== FutDraft 2 jugadores (pasa y juega) =====
+// Modo local para dos personas en el MISMO móvil, a petición explícita
+// ("modo multijugador local... dos personas en móviles distintos... el
+// mismo futdraft y cada vez van cogiendo un personaje del mismo draft, y
+// al final se enfrentan los equipos entre sí"). La app es 100% estática
+// sin servidor propio, así que sincronizar dos móviles de verdad
+// necesitaría un backend externo (Firebase o similar) -- el usuario
+// prefirió pasar y jugar en un solo móvil en su lugar, sin código de
+// sala ni nada que instalar. Reutiliza TODO el motor de FutDraft ya
+// existente (formaciones, futDraftCurrentNeededPos, futDraftBuildLineup,
+// futDraftTeamScore, futDraftExpectedGoals/futDraftBuildTimeline) para
+// dos plantillas REALES en vez de una real + un rival de potencia fija.
+window.actionStartFutDraftVs = function () {
+  var formationId = choice(FUTDRAFT_FORMATIONS.map(function (f) { return f.id; }));
+  G.futdraftVs = { formationId: formationId, turn: 'A', squadA: [], squadB: [] };
+  G.futdraftVsRevealed = false;
+  G.futdraftVsOptions = futDraftVsGenerateOptions();
+  G.screen = 'futdraftVsPick';
+  render();
+};
+function futDraftVsCurrentSquad() {
+  var s = G.futdraftVs;
+  return s.turn === 'A' ? s.squadA : s.squadB;
+}
+// Misma restricción de posición que el modo Clásico de toda la vida
+// (futDraftCurrentNeededPos), pero excluyendo a quien SEA que ya haya
+// elegido cualquiera de los dos jugadores -- es un draft compartido de
+// verdad, si Jugador A se lleva a alguien ya no está disponible para B.
+function futDraftVsGenerateOptions() {
+  var s = G.futdraftVs;
+  var squad = futDraftVsCurrentSquad();
+  var excludedIds = s.squadA.concat(s.squadB).map(function (p) { return p.id; });
+  var formation = FUTDRAFT_FORMATIONS.find(function (f) { return f.id === s.formationId; });
+  var currentPos = futDraftCurrentNeededPos(formation, squad);
+  var pool = ROSTER.filter(function (p) { return excludedIds.indexOf(p.id) === -1 && p.posicion === currentPos; });
+  var shuffled = pool.slice().sort(function () { return Math.random() - 0.5; });
+  return shuffled.slice(0, 3).map(rosterInstance);
+}
+window.actionRevealFutDraftVsTurn = function () {
+  G.futdraftVsRevealed = true;
+  render();
+};
+window.actionPickFutDraftVsPlayer = function (instanceId) {
+  var s = G.futdraftVs;
+  var picked = G.futdraftVsOptions.find(function (p) { return p.instanceId === instanceId; });
+  if (!picked) return;
+  var squad = futDraftVsCurrentSquad();
+  squad.push(picked);
+  if (s.squadA.length >= FUTDRAFT_SQUAD_SIZE && s.squadB.length >= FUTDRAFT_SQUAD_SIZE) {
+    futDraftVsFinishDraft();
+    return;
+  }
+  var nextTurn = s.turn === 'A' ? 'B' : 'A';
+  if (nextTurn === 'A' && s.squadA.length >= FUTDRAFT_SQUAD_SIZE) nextTurn = 'B';
+  if (nextTurn === 'B' && s.squadB.length >= FUTDRAFT_SQUAD_SIZE) nextTurn = 'A';
+  s.turn = nextTurn;
+  G.futdraftVsRevealed = false;
+  G.futdraftVsOptions = futDraftVsGenerateOptions();
+  render();
+};
+// Termina el draft (los dos con 11) y simula el partido entre las dos
+// plantillas REALES -- mismo motor de gol/asistencia ponderado por
+// puesto (futDraftBuildTimeline) que el resto de FutDraft, pero sin
+// "plantel fantasma": aquí los dos bandos tienen jugadores de verdad.
+// El empate se queda como empate (nada de penaltis) -- es un duelo
+// rápido de echar una partida, no una eliminatoria.
+function futDraftVsFinishDraft() {
+  var s = G.futdraftVs;
+  var formation = FUTDRAFT_FORMATIONS.find(function (f) { return f.id === s.formationId; });
+  s.lineupA = futDraftBuildLineup(s.squadA, s.formationId);
+  s.lineupB = futDraftBuildLineup(s.squadB, s.formationId);
+  var scoreA = futDraftTeamScore(s.lineupA, null);
+  var scoreB = futDraftTeamScore(s.lineupB, null);
+  var atkA = scoreA * formation.atk, defA = scoreA * formation.def;
+  var atkB = scoreB * formation.atk, defB = scoreB * formation.def;
+  var golA = futDraftRandomGoals(futDraftExpectedGoals(atkA, defB));
+  var golB = futDraftRandomGoals(futDraftExpectedGoals(atkB, defA));
+  var playersA = s.lineupA.map(function (x) { return x.player; });
+  var playersB = s.lineupB.map(function (x) { return x.player; });
+  var timeline = futDraftBuildTimeline(golA, golB, playersA, playersB);
+  s.result = { golA: golA, golB: golB, timeline: timeline, scoreA: scoreA, scoreB: scoreB };
+  G.screen = 'futdraftVsResult';
+  render();
+}
+function renderFutDraftVsPick() {
+  var s = G.futdraftVs;
+  var squad = futDraftVsCurrentSquad();
+  if (!G.futdraftVsRevealed) {
+    return '<div class="screen"><div class="panel center-text">' +
+      '<h2 class="panel-title mb0">Turno de Jugador ' + s.turn + '</h2>' +
+      '<p class="dim small">Pasa el móvil a Jugador ' + s.turn + ' antes de seguir, para que el otro no vea el draft.</p>' +
+      '<button class="btn btn-primary btn-block mt" onclick="actionRevealFutDraftVsTurn()">Listo, mostrar draft</button>' +
+    '</div></div>';
+  }
+  var formation = FUTDRAFT_FORMATIONS.find(function (f) { return f.id === s.formationId; });
+  var currentPos = futDraftCurrentNeededPos(formation, squad);
+  var optionsHtml = G.futdraftVsOptions.map(function (c) {
+    return playerCardHtml(c, "actionPickFutDraftVsPlayer('" + c.instanceId + "')", false, false, true);
+  }).join('');
+  return (
+    '<div class="screen">' +
+      '<div class="panel"><h2 class="panel-title mb0">FutDraft &middot; 2 jugadores</h2>' +
+        '<p class="dim small">Jugador ' + s.turn + ': elige tu ' + currentPos + ' (' + (squad.length + 1) + ' de ' + FUTDRAFT_SQUAD_SIZE + ').</p></div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:8px">Tu plantilla</h3>' +
+        renderFutDraftPitch(squad, s.formationId, true) +
+      '</div>' +
+      '<div class="panel"><h3 style="margin-bottom:8px">Elige uno</h3><div class="card-grid">' + optionsHtml + '</div></div>' +
+    '</div>'
+  );
+}
+function futDraftVsTimelineRowHtml(ev) {
+  var isB = ev.side === 'opp';
+  var text = '<strong>' + escapeHtml(ev.scorer.nombre) + '</strong>' +
+    (ev.assist ? ' <span class="dim">(asist. ' + escapeHtml(ev.assist.nombre) + ')</span>' : ' <span class="dim">(gol en solitario)</span>') +
+    ' <span class="dim">· Jugador ' + (isB ? 'B' : 'A') + '</span>';
+  var rowClass = 'futdraft-timeline-row' + (isB ? ' futdraft-timeline-row-opp' : '');
+  return '<div class="' + rowClass + '"><span class="futdraft-timeline-minute">' + ev.minute + '\'</span>' + avatarHtml(ev.scorer) + '<span>' + text + '</span></div>';
+}
+function renderFutDraftVsResult() {
+  var s = G.futdraftVs;
+  var r = s.result;
+  var resultLabel = r.golA === r.golB ? 'Empate' : (r.golA > r.golB ? '🏆 ¡Gana Jugador A!' : '🏆 ¡Gana Jugador B!');
+  var timelineHtml = r.timeline.length
+    ? '<div class="panel"><h3 style="margin-bottom:8px">Resumen del partido</h3><div class="futdraft-timeline">' +
+        r.timeline.map(futDraftVsTimelineRowHtml).join('') +
+      '</div></div>'
+    : '<p class="dim small center-text">Partido sin goles.</p>';
+  return (
+    '<div class="screen">' +
+      '<div class="match-scoreboard">' +
+        '<div class="score-side"><div style="font-size:1.6rem;margin-bottom:4px">🅰️</div><div class="score-name">Jugador A (' + r.scoreA + ')</div><div class="score-num">' + r.golA + '</div></div>' +
+        '<div class="score-vs">VS</div>' +
+        '<div class="score-side"><div style="font-size:1.6rem;margin-bottom:4px">🅱️</div><div class="score-name">Jugador B (' + r.scoreB + ')</div><div class="score-num">' + r.golB + '</div></div>' +
+      '</div>' +
+      '<div class="panel center-text"><h3 style="margin-bottom:4px">' + resultLabel + '</h3></div>' +
+      timelineHtml +
+      '<button class="btn btn-primary btn-block mt" onclick="actionStartFutDraftVs()">Jugar otra vez</button>' +
+      '<button class="btn btn-outline btn-block mt" onclick="actionBackToMenu()">Volver al menú</button>' +
+    '</div>'
+  );
+}
+
