@@ -379,7 +379,7 @@ function renderPlayerTurn() {
   var canAttackWithSpecial = selectedPlayer && (selectedPlayer.posicion === 'Delantero' || selectedPlayer.posicion === 'Centrocampista');
   var canSpecial = pStatus.ready && selected && !alreadyUsed && canAttackWithSpecial;
   var specialHint = (selectedPlayer && !canAttackWithSpecial) ? 'Su técnica es defensiva, no de ataque' :
-    (alreadyUsed ? 'Ya usada esta partida' : (pStatus.ready ? (selectedPlayer.tipoTecnica === 'regate' ? '¡Lista! Regate asegurado' : '¡Lista!') : ('Disponible en ' + pStatus.turnsLeft + ' turno' + (pStatus.turnsLeft === 1 ? '' : 's'))));
+    (alreadyUsed ? 'Ya usada esta partida' : (pStatus.ready ? (selectedPlayer && selectedPlayer.tipoTecnica === 'regate' ?'¡Lista! Regate asegurado' : '¡Lista!') : ('Disponible en ' + pStatus.turnsLeft + ' turno' + (pStatus.turnsLeft === 1 ? '' : 's'))));
 
   var matchupHtml = '';
   if (selectedPlayer) {
