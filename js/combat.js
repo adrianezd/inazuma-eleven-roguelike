@@ -379,7 +379,7 @@ function renderPlayerTurn() {
   var canAttackWithSpecial = selectedPlayer && (selectedPlayer.posicion === 'Delantero' || selectedPlayer.posicion === 'Centrocampista');
   var canSpecial = pStatus.ready && selected && !alreadyUsed && canAttackWithSpecial;
   var specialHint = (selectedPlayer && !canAttackWithSpecial) ? 'Su técnica es defensiva, no de ataque' :
-    (alreadyUsed ? 'Ya usada esta partida' : (pStatus.ready ? '¡Lista!' : ('Disponible en ' + pStatus.turnsLeft + ' turno' + (pStatus.turnsLeft === 1 ? '' : 's'))));
+    (alreadyUsed ? 'Ya usada esta partida' : (pStatus.ready ? (selectedPlayer.tipoTecnica === 'regate' ? '¡Lista! Regate asegurado' : '¡Lista!') : ('Disponible en ' + pStatus.turnsLeft + ' turno' + (pStatus.turnsLeft === 1 ? '' : 's'))));
 
   var matchupHtml = '';
   if (selectedPlayer) {
@@ -456,9 +456,29 @@ function playAction(action) {
     else resolveAlternativoRegate(attackerRaw);
     return;
   }
+  // Especial de una técnica de tipo REGATE (roster-data.js, tipoTecnica): no
+  // es un remate a puerta, es un regate asegurado. Sube la cadena de regate
+  // como un Regatear con éxito pero SIN tirar el dado de robo, y el turno
+  // sigue (se puede rematar o seguir regateando).
+  if (action === 'especial' && m.regateChain && attackerRaw.tipoTecnica === 'regate') {
+    resolveEspecialRegateAsegurado(attackerRaw);
+    return;
+  }
   var defenderRaw = pickDefender(m.oppSquad, action);
   resolveAttack(attackerRaw, defenderRaw, action, true);
   advanceTurn();
+}
+function resolveEspecialRegateAsegurado(attackerRaw) {
+  var m = G.match;
+  alternativoGrowChain(m.regateChain, attackerRaw);
+  m.playerUsedSpecialByPlayer[attackerRaw.instanceId] = true;
+  m.playerLastSpecialAt = m.playerAtkCount;
+  m.playerCooldownNeeded = rand(2, 3);
+  var moveName = attackerRaw.hissatsu ? attackerRaw.hissatsu[0] : 'su técnica';
+  m.lastEvent = escapeHtml(attackerRaw.nombre) + ' usa ' + escapeHtml(moveName) + ': ¡regate asegurado!';
+  m.lastEventClass = '';
+  m.log.push(m.lastEvent);
+  render();
 }
 
 // Decide la jugada rival SIN resolverla todavía, para poder ofrecerle al
