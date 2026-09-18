@@ -881,6 +881,13 @@ function careerFreshState(choices) {
     // -- ver careerTrainingEffectiveParams/CAREER_TRAINING_LEVEL_COSTS.
     trainingLevel: 0,
     trainingMessage: null,
+    // Academia/cantera: mismo patrón que el centro de entrenamiento,
+    // infraestructura que nunca se resetea -- los candidatos sí se
+    // renuevan cada temporada (actionStartNewCareerSeason), ver
+    // careerGenerateAcademyCandidates.
+    academyLevel: 0,
+    academyCandidates: [],
+    academyMessage: null,
     // Copa del Rey: cuadro nuevo cada temporada (careerNewCup), no
     // bloqueado por la ventana de fichajes ni por el calendario de Liga
     // -- se puede jugar cuando se quiera. cupsWon es ACUMULADO de toda la
@@ -953,6 +960,8 @@ function careerSerialize(c) {
     lastPlayerProgressionDelta: c.lastPlayerProgressionDelta || {},
     playerGrowthTier: c.playerGrowthTier || careerInitialGrowthTiers(),
     trainingLevel: typeof c.trainingLevel === 'number' ? c.trainingLevel : 0,
+    academyLevel: typeof c.academyLevel === 'number' ? c.academyLevel : 0,
+    academyCandidates: c.academyCandidates || [],
     cup: c.cup, cupsWon: c.cupsWon || 0, lastCupResult: c.lastCupResult || null,
     lastLeagueFinish: c.lastLeagueFinish || null,
     lastPromotionResult: c.lastPromotionResult || null,
@@ -1036,6 +1045,9 @@ function careerDeserialize(data) {
     // trainingLevel >= 1 de verdad (nunca 0), así que se conserva tal
     // cual -- 0 aquí solo es de reserva para un guardado sin el campo.
     trainingLevel: typeof data.trainingLevel === 'number' ? data.trainingLevel : 0,
+    academyLevel: typeof data.academyLevel === 'number' ? data.academyLevel : 0,
+    academyCandidates: data.academyCandidates || [],
+    academyMessage: null,
     trainingMessage: null,
     cup: careerCupRelinkWinners(data.cup) || careerNewCup(),
     cupsWon: data.cupsWon || 0,
@@ -1840,7 +1852,88 @@ function renderCareerEntrenamiento(c) {
         : '') +
     '</div>';
   }).join('');
-  return headerHtml + '<div class="panel">' + rowsHtml + '</div>';
+  return headerHtml + '<div class="panel">' + rowsHtml + '</div>' + renderCareerAcademia(c);
+}
+
+// ===== Cantera / Academia =====
+// Alternativa a fichar siempre en el Mercado, a petición explícita
+// ("promocionar jóvenes desde una academia propia en vez de fichar
+// siempre del mercado"). Construyes/mejoras una academia (mismo patrón
+// de niveles y coste creciente que el centro de entrenamiento) y cada
+// temporada te da unos cuantos candidatos gratis -- jugadores del ROSTER
+// que todavía no tienes, con crecimiento Alto/Muy alto/Prodigio
+// (careerPlayerGrowthTier >= 4), es decir de verdad prometedores. Se
+// promocionan de golpe a tu banquillo sin coste ninguno, la alternativa
+// real a pagar su valor en el Mercado. El número de candidatos por
+// temporada es el propio nivel de la academia (nivel 3 = 3 candidatos).
+var CAREER_ACADEMY_MAX_LEVEL = 5;
+var CAREER_ACADEMY_LEVEL_COSTS = [4, 8, 13, 20, 30];
+function careerAcademyLevel(c) { return typeof c.academyLevel === 'number' ? c.academyLevel : 0; }
+function careerGenerateAcademyCandidates(c) {
+  var level = careerAcademyLevel(c);
+  if (level <= 0) return [];
+  var owned = c.lineup.map(function (s) { return s.player.id; }).concat(c.bench.map(function (p) { return p.id; })).concat(c.loanedOutIds || []);
+  var pool = ROSTER.filter(function (p) { return owned.indexOf(p.id) === -1 && careerPlayerGrowthTier(c, p) >= 4; });
+  pool = pool.sort(function () { return Math.random() - 0.5; });
+  return pool.slice(0, level).map(function (p) { return p.id; });
+}
+window.actionUpgradeAcademy = function () {
+  var c = G.career;
+  if (careerTrainingLocked(c)) return;
+  var level = careerAcademyLevel(c);
+  if (level >= CAREER_ACADEMY_MAX_LEVEL) return;
+  var cost = CAREER_ACADEMY_LEVEL_COSTS[level];
+  if (c.budget < cost) { c.academyMessage = 'No tienes presupuesto para ' + (level === 0 ? 'construir' : 'mejorar') + ' la academia (' + cost + ' M€).'; render(); return; }
+  c.budget = Math.round((c.budget - cost) * 10) / 10;
+  c.academyLevel = level + 1;
+  c.academyMessage = level === 0 ? 'Academia construida.' : ('Academia mejorada a nivel ' + c.academyLevel + '.');
+  c.academyCandidates = careerGenerateAcademyCandidates(c);
+  render();
+};
+window.actionPromoteAcademyPlayer = function (id) {
+  var c = G.career;
+  var candidates = c.academyCandidates || [];
+  if (candidates.indexOf(id) === -1) return;
+  if ((c.lineup.length + c.bench.length) >= CAREER_MAX_SQUAD_SIZE) { c.academyMessage = 'Plantilla al máximo (' + CAREER_MAX_SQUAD_SIZE + '). Vende o cede a alguien antes de promocionar.'; render(); return; }
+  var p = ROSTER.find(function (x) { return x.id === id; });
+  if (!p) return;
+  c.bench.push(p);
+  c.academyCandidates = candidates.filter(function (x) { return x !== id; });
+  c.academyMessage = 'Promocionado desde la cantera: ' + p.nombre + '.';
+  render();
+};
+function renderCareerAcademia(c) {
+  var level = careerAcademyLevel(c);
+  var maxed = level >= CAREER_ACADEMY_MAX_LEVEL;
+  var nextCost = maxed ? null : CAREER_ACADEMY_LEVEL_COSTS[level];
+  var locked = careerTrainingLocked(c);
+  var candidates = (c.academyCandidates || []).map(function (id) { return ROSTER.find(function (x) { return x.id === id; }); }).filter(Boolean);
+  var candidatesHtml = candidates.length
+    ? candidates.map(function (p) {
+        return '<div class="career-offer-card">' +
+          '<div class="career-offer-head">' + avatarHtml(p) +
+            '<span class="career-offer-name">' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + '</span>' +
+            '<span style="margin-left:auto">' + careerGrowthArrowHtml(careerPlayerGrowthTier(c, p), c.hideProdigy) + '</span>' +
+          '</div>' +
+          '<button class="btn btn-primary btn-block mt btn-tiny" onclick="actionPromoteAcademyPlayer(\'' + p.id + '\')">Promocionar gratis</button>' +
+        '</div>';
+      }).join('')
+    : (level > 0 ? '<p class="dim small">Sin candidatos este año, vuelve a mirar la próxima temporada.</p>' : '');
+  return '<div class="panel">' +
+    '<h3 style="margin-bottom:4px" class="center-text">Cantera</h3>' +
+    '<p class="dim small center-text">Cada temporada da candidatos gratis para tu banquillo, según el nivel.</p>' +
+    '<div class="career-training-level-row">' +
+      careerStarsHtml(level, CAREER_ACADEMY_MAX_LEVEL, 'career-star-lg') +
+      '<span class="career-training-level-num">' + level + '/' + CAREER_ACADEMY_MAX_LEVEL + '</span>' +
+    '</div>' +
+    (c.academyMessage ? '<p class="dim small">' + escapeHtml(c.academyMessage) + '</p>' : '') +
+    (locked
+      ? '<p class="dim small">Cerrada hasta la próxima temporada.</p>'
+      : (maxed
+        ? '<p class="dim small">Academia al máximo.</p>'
+        : '<button class="btn btn-primary btn-block mt" ' + (c.budget < nextCost ? 'disabled' : '') + ' onclick="actionUpgradeAcademy()">' + (level === 0 ? 'CONSTRUIR' : 'MEJORAR, nivel ' + (level + 1)) + ' (' + nextCost + ' M€)</button>')) +
+    candidatesHtml +
+  '</div>';
 }
 
 window.actionSetCareerMarketFilter = function (pos) {
@@ -3532,6 +3625,12 @@ window.actionStartNewCareerSeason = function () {
   c.activeSponsor = null;
   c.sponsorOffers = null;
   c.sponsorMessage = null;
+  // Candidatos nuevos de la cantera cada temporada (careerGenerateAcademyCandidates),
+  // según el nivel de la academia -- los del año pasado que no se
+  // promocionaron se pierden, mismo criterio que las ofertas de
+  // patrocinador.
+  c.academyCandidates = careerGenerateAcademyCandidates(c);
+  c.academyMessage = null;
   // Las cesiones ENTRANTES duran 1 temporada -- al empezar la siguiente,
   // todos los cedidos que te quedaran vuelven solos a su club (no son
   // tuyos), a petición explícita ("los jugadores cedidos se van de tu

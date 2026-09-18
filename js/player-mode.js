@@ -15,6 +15,13 @@
 var PLAYER_MODE_START_AGE = 16;
 var PLAYER_MODE_RETIRE_AGE = 36;
 var PLAYER_MODE_SEASON_MATCHES = 20;
+// Lesiones (a petición explícita: "un salto de 2 años puede truncarse
+// antes de tiempo"): cada salto tiene una probabilidad de lesión de
+// verdad, no solo de texto -- ver playerModeSimulateBlock, que resta
+// partidos y un poco de crecimiento cuando toca.
+var PLAYER_MODE_INJURY_CHANCE = 0.18;
+var PLAYER_MODE_INJURY_MIN_SEVERITY = 0.2;
+var PLAYER_MODE_INJURY_MAX_SEVERITY = 0.55;
 // Media inicial por posición -- un debutante de 16 años, todavía lejos
 // de su techo, arranca bajo en cualquier posición.
 var PLAYER_MODE_START_OVR = { Portero: 52, Defensa: 54, Centrocampista: 55, Delantero: 56 };
@@ -73,6 +80,14 @@ function playerModeFreshState(choices) {
     onLoan: false,
     crisisPenaltyPending: false,
     tempOvrPenalty: 0, guaranteedStarter: false, reducedMinutes: false,
+    // Relación con la afición/prensa: sube o baja con las ruedas de
+    // prensa (playerModeRollDecision tipo 'prensa') y afecta un poco a
+    // la chance de título colectivo (playerModeSimulateBlock), a
+    // petición explícita ("relación con la afición/prensa, como las
+    // decisiones de club pero social").
+    reputation: 50,
+    pressPenaltyPending: false,
+    pressMessage: null,
     edad: PLAYER_MODE_START_AGE,
     ovr: startOvr,
     pj: 0, gls: 0, ast: 0,
@@ -107,6 +122,19 @@ function playerModeSimulateBlock(p) {
   p.reducedMinutes = false;
 
   var matches = Math.max(4, Math.round(PLAYER_MODE_SEASON_MATCHES * 2 * playTimeFactor));
+  // Lesión real: probabilidad por salto, corta el bloque antes de tiempo
+  // de verdad (menos partidos jugados) y se nota un poco en el
+  // crecimiento (menos ritmo de competición), no es solo un aviso de
+  // texto.
+  var injury = null;
+  var injuryGrowthPenalty = 0;
+  if (Math.random() < PLAYER_MODE_INJURY_CHANCE) {
+    var severity = PLAYER_MODE_INJURY_MIN_SEVERITY + Math.random() * (PLAYER_MODE_INJURY_MAX_SEVERITY - PLAYER_MODE_INJURY_MIN_SEVERITY);
+    var missedMatches = Math.max(1, Math.round(matches * severity));
+    matches = Math.max(2, matches - missedMatches);
+    injuryGrowthPenalty = Math.round(severity * 4);
+    injury = { missedMatches: missedMatches, severity: severity };
+  }
   var qualityMult = playerModeQualityMult(effectiveOvr);
   var goalChance = (PLAYER_MODE_GOAL_CHANCE[p.posicion] || 0.1) * qualityMult;
   var assistChance = (PLAYER_MODE_ASSIST_CHANCE[p.posicion] || 0.1) * qualityMult;
@@ -124,7 +152,7 @@ function playerModeSimulateBlock(p) {
   var perfBonus = clamp(Math.round((actualProduction - expectedProduction) / 3), -2, 4);
   var growth = clamp(rand(range[0], range[1]) + perfBonus, -10, 12);
   var ovrBefore = p.ovr;
-  var ovrAfter = clamp(ovrBefore + growth - ovrPenalty, 35, 99);
+  var ovrAfter = clamp(ovrBefore + growth - ovrPenalty - injuryGrowthPenalty, 35, 99);
 
   // Título colectivo: depende de lo fuerte que sea tu club (TEAM_POWER) --
   // un club "jefe" pelea títulos de verdad, uno normal solo de vez en
@@ -135,11 +163,19 @@ function playerModeSimulateBlock(p) {
   var clubPower = teamPower({ name: p.club });
   var titleChance = clamp(clubPower / 260, 0.05, 0.4);
   if (p.crisisPenaltyPending) titleChance *= 0.5;
+  // Reputación con la afición/prensa: sube o baja el ambiente del
+  // vestuario un poco, y una rueda de prensa mal resuelta (pressPenaltyPending,
+  // ver playerModeRollDecision/actionPickPlayerClub tipo 'prensa') pesa
+  // como una crisis menor.
+  if (p.pressPenaltyPending) titleChance *= 0.7;
+  var reputation = typeof p.reputation === 'number' ? p.reputation : 50;
+  titleChance = clamp(titleChance + (reputation - 50) / 500, 0.02, 0.5);
   var colectivo = [];
   if (Math.random() < titleChance) {
     colectivo.push(choice(['Campeón de Liga', 'Campeón de Copa', 'Campeón continental']) + ' con ' + p.club);
   }
   p.crisisPenaltyPending = false;
+  p.pressPenaltyPending = false;
   // Título individual: solo si el rendimiento de verdad ha sido bueno
   // (por encima de lo esperado para tu posición) -- no es automático solo
   // por tener buena media.
@@ -150,7 +186,7 @@ function playerModeSimulateBlock(p) {
       : choice(['Bota de Oro de la categoría', 'Mejor jugador de la temporada']));
   }
 
-  return { matches: matches, gls: gls, ast: ast, ovrBefore: ovrBefore, ovrAfter: ovrAfter, growth: growth, colectivo: colectivo, individual: individual };
+  return { matches: matches, gls: gls, ast: ast, ovrBefore: ovrBefore, ovrAfter: ovrAfter, growth: growth, colectivo: colectivo, individual: individual, injury: injury };
 }
 
 // Prepara la decisión de qué club toca a continuación -- no siempre son
@@ -217,6 +253,16 @@ function playerModeRollDecision(p) {
       ]
     };
   }
+  if (roll0 < 0.45) {
+    return {
+      type: 'prensa',
+      options: [
+        { press: 'prudente', hint: 'Mensaje prudente', hint2: '+3 reputación' },
+        { press: 'ambicioso', hint: 'Promete grandes cosas', hint2: 'Reputación a cara o cruz' },
+        { press: 'critica', hint: 'Critica a la directiva', hint2: 'Arriesgado' }
+      ]
+    };
+  }
   var alts = [];
   alts.push(playerModeRollAltClub(p, bossChance, [p.club]));
   alts.push(playerModeRollAltClub(p, bossChance, [p.club, alts[0]]));
@@ -237,6 +283,7 @@ function playerModeDecisionCopy(decision, p) {
   if (decision.type === 'prestamo') return { title: 'Salida a préstamo', text: 'Tu club quiere que sumes minutos en otro equipo. Elige dónde seguir tu desarrollo.' };
   if (decision.type === 'regreso') return { title: 'Regreso a tu club', text: 'Vuelves a ' + p.homeClub + ' y vas a ser tenido en cuenta. Si aun así quieres salir, tienes dos ofertas.' };
   if (decision.type === 'posicion') return { title: 'Cambio de posición', text: 'El entrenador te necesita para cubrir otro puesto.' };
+  if (decision.type === 'prensa') return { title: 'Rueda de prensa', text: 'La prensa te pregunta cómo ves la temporada que empieza. ¿Qué dices?' };
   return { title: p.edad + ' años', text: 'Toca decidir dónde sigues tu carrera los próximos 2 años:' };
 }
 
@@ -320,7 +367,8 @@ window.actionAdvancePlayerCareer = function () {
     edadDesde: p.edad, edadHasta: p.edad + 1, club: p.club,
     ovrBefore: block.ovrBefore, ovrAfter: block.ovrAfter,
     matches: block.matches, gls: block.gls, ast: block.ast,
-    colectivo: block.colectivo, individual: block.individual
+    colectivo: block.colectivo, individual: block.individual,
+    injury: block.injury
   });
   p.edad += 2;
   if (p.edad >= PLAYER_MODE_RETIRE_AGE) {
@@ -358,6 +406,33 @@ window.actionPickPlayerClub = function (idx) {
     render();
     return;
   }
+  if (decision.type === 'prensa') {
+    p.reputation = typeof p.reputation === 'number' ? p.reputation : 50;
+    if (option.press === 'prudente') {
+      p.reputation = clamp(p.reputation + 3, 0, 100);
+      p.pressMessage = 'La afición valora tu prudencia (+3 reputación).';
+    } else if (option.press === 'ambicioso') {
+      if (Math.random() < 0.5) {
+        p.reputation = clamp(p.reputation + 10, 0, 100);
+        p.pressMessage = 'Tu ambición ilusiona a la afición (+10 reputación).';
+      } else {
+        p.reputation = clamp(p.reputation - 8, 0, 100);
+        p.pressMessage = 'Prometiste demasiado y no convence (-8 reputación).';
+      }
+    } else {
+      if (Math.random() < 0.5) {
+        p.reputation = clamp(p.reputation + 6, 0, 100);
+        p.pressMessage = 'La afición aplaude tu sinceridad (+6 reputación).';
+      } else {
+        p.reputation = clamp(p.reputation - 5, 0, 100);
+        p.pressPenaltyPending = true;
+        p.pressMessage = 'La directiva se molesta con tus declaraciones (-5 reputación, próxima etapa más difícil).';
+      }
+    }
+    p.pendingDecision = null;
+    render();
+    return;
+  }
   if (decision.type === 'prestamo') {
     p.club = option.club;
     p.onLoan = true;
@@ -385,6 +460,16 @@ function playerModeOvrTierClass(ovr) {
   if (ovr >= 60) return 'jugador-ovr-silver';
   return 'jugador-ovr-bronze';
 }
+// Etiqueta + color de la reputación con la afición (ver playerModeFreshState/
+// playerModeRollDecision tipo 'prensa'), mismo criterio de tramos que
+// playerModeOvrTierClass pero en texto en vez de insignia.
+function playerModeReputationLabel(reputation) {
+  if (reputation >= 80) return { text: 'Ídolo de la afición', color: 'var(--accent-2)' };
+  if (reputation >= 60) return { text: 'Querido por la afición', color: 'var(--success)' };
+  if (reputation >= 40) return { text: 'Reputación normal', color: 'var(--text-dim)' };
+  if (reputation >= 20) return { text: 'Cuestionado por la afición', color: '#e08a1e' };
+  return { text: 'Odiado por la afición', color: 'var(--danger)' };
+}
 function playerModeCardHtml(p) {
   return '<div class="panel matchup-card">' +
     '<div class="matchup-row">' +
@@ -403,6 +488,11 @@ function playerModeCardHtml(p) {
       (typeof positionIconPath === 'function' ? '<img src="' + positionIconPath(p.posicion) + '" alt="" style="width:16px;height:16px">' : '') +
       escapeHtml(p.posicion) + ', ' + p.edad + ' años' +
     '</p>' +
+    (function () {
+      var rep = typeof p.reputation === 'number' ? p.reputation : 50;
+      var label = playerModeReputationLabel(rep);
+      return '<p class="center-text small" style="color:' + label.color + '">📣 ' + escapeHtml(label.text) + ' (' + rep + '/100)</p>';
+    })() +
     '<div class="stats-summary" style="grid-template-columns:repeat(4,1fr)">' +
       '<div class="stat-tile"><div class="num">' + p.ovr + '</div><div class="label">Media</div></div>' +
       '<div class="stat-tile"><div class="num">' + p.pj + '</div><div class="label">PJ</div></div>' +
@@ -432,6 +522,7 @@ function playerModeHistoryHtml(p) {
         '<div class="season-badge-label">' + h.edadDesde + '-' + h.edadHasta + ' años, ' + escapeHtml(h.club) + '</div>' +
         '<div class="season-badge-text">Media ' + h.ovrAfter + ' (' + deltaHtml + '), ' + h.matches + ' PJ, ' + h.gls + ' G, ' + h.ast + ' A</div>' +
         (titles.length ? '<div class="dim small">🏆 ' + titles.map(escapeHtml).join(' · ') + '</div>' : '') +
+        (h.injury ? '<div class="dim small" style="color:var(--danger)">🩹 Lesión, ' + h.injury.missedMatches + ' partidos perdidos</div>' : '') +
       '</div>' +
     '</div>';
   }).join('');
@@ -494,6 +585,20 @@ function renderJugadorDecision(p) {
   var decision = p.pendingDecision;
   var copy = playerModeDecisionCopy(decision, p);
   var headerHtml = '<div class="panel center-text"><h3 style="margin-bottom:4px">' + escapeHtml(copy.title) + '</h3><p class="dim small">' + escapeHtml(copy.text) + '</p></div>';
+  // Aviso de lesión de la etapa que acabas de terminar (ver
+  // playerModeSimulateBlock/PLAYER_MODE_INJURY_CHANCE, "un salto de 2
+  // años puede truncarse antes de tiempo"), mientras siga siendo la
+  // última etapa jugada.
+  var lastBlock = p.history[p.history.length - 1];
+  if (lastBlock && lastBlock.injury) {
+    headerHtml = '<div class="panel center-text" style="border-left:4px solid var(--danger)">' +
+      '<h3 style="margin-bottom:4px">🩹 Lesión</h3>' +
+      '<p class="dim small">Te perdiste ' + lastBlock.injury.missedMatches + ' partidos de la etapa anterior por lesión.</p>' +
+    '</div>' + headerHtml;
+  }
+  if (p.pressMessage) {
+    headerHtml = '<div class="panel center-text"><p class="dim small">' + escapeHtml(p.pressMessage) + '</p></div>' + headerHtml;
+  }
   if (decision.type === 'posicion') {
     var cardsHtml = decision.options.map(function (opt, idx) {
       return '<button class="jugador-decision-card" onclick="actionPickPlayerClub(' + idx + ')">' +
@@ -504,6 +609,17 @@ function renderJugadorDecision(p) {
       '</button>';
     }).join('');
     return headerHtml + '<div class="panel"><div class="jugador-decision-grid">' + cardsHtml + '</div></div>';
+  }
+  if (decision.type === 'prensa') {
+    var pressIcons = { prudente: '🛡️', ambicioso: '🔥', critica: '🗯️' };
+    var pressCardsHtml = decision.options.map(function (opt, idx) {
+      return '<button class="jugador-decision-card" onclick="actionPickPlayerClub(' + idx + ')">' +
+        '<div class="jugador-decision-icon">' + pressIcons[opt.press] + '</div>' +
+        '<strong>' + escapeHtml(opt.hint) + '</strong>' +
+        (opt.hint2 ? '<span class="player-tag player-tag-danger">' + escapeHtml(opt.hint2) + '</span>' : '') +
+      '</button>';
+    }).join('');
+    return headerHtml + '<div class="panel"><div class="jugador-decision-grid">' + pressCardsHtml + '</div></div>';
   }
   var itemsHtml = decision.options.map(function (opt, idx) {
     return '<button class="shop-item" style="width:100%;text-align:left" onclick="actionPickPlayerClub(' + idx + ')">' +
