@@ -624,7 +624,7 @@ var CAREER_NEGOTIATION_MODES = {
   duras: { name: 'Duras', moneyExponent: 8 }
 };
 var CAREER_NEGOTIATION_ORDER = ['blandas', 'duras'];
-var CAREER_STARTING_BUDGET_OPTIONS = [1, 2, 5, 10];
+var CAREER_STARTING_BUDGET_OPTIONS = [1, 2, 5, 10, 100];
 
 // ===== Crecimiento por jugador (rasgo fijo de la carrera) =====
 // A petición explícita ("no todos los jugadores suban igual... crecimiento
@@ -695,11 +695,22 @@ function careerPlayerGrowthTier(c, p) {
 // ("puedes hacerlo con flechas de colores para decir lo que es cada
 // uno"). Reutilizada en Entrenamiento, Gestionar plantilla y el filtro
 // de Mercado.
-function careerGrowthArrowHtml(tier) {
-  var arrow = CAREER_GROWTH_TIER_ARROWS[tier] || CAREER_GROWTH_TIER_ARROWS[3];
-  var color = CAREER_GROWTH_TIER_COLORS[tier] || CAREER_GROWTH_TIER_COLORS[3];
-  var label = CAREER_GROWTH_TIER_LABELS[tier] || CAREER_GROWTH_TIER_LABELS[3];
-  return '<span class="career-growth-arrow" style="color:' + color + '" title="Crecimiento: ' + label + ' (+' + tier + ' de base cada temporada)">' + arrow + '</span>';
+// `hideProdigy` (c.hideProdigy, elegido en la creación de la carrera --
+// "haz un modo donde no puedas ver si son prodigio o no") disfraza el
+// nivel 6 de un nivel 5 normal SOLO a efectos visuales -- la progresión
+// real de esos jugadores (careerProgressAllPlayers) sigue usando el
+// nivel de verdad, esto solo cambia lo que se enseña en pantalla.
+function careerGrowthArrowHtml(tier, hideProdigy) {
+  var displayTier = (hideProdigy && tier === 6) ? 5 : tier;
+  var arrow = CAREER_GROWTH_TIER_ARROWS[displayTier] || CAREER_GROWTH_TIER_ARROWS[3];
+  var color = CAREER_GROWTH_TIER_COLORS[displayTier] || CAREER_GROWTH_TIER_COLORS[3];
+  var label = CAREER_GROWTH_TIER_LABELS[displayTier] || CAREER_GROWTH_TIER_LABELS[3];
+  return '<span class="career-growth-arrow" style="color:' + color + '" title="Crecimiento: ' + label + ' (+' + displayTier + ' de base cada temporada)">' + arrow + '</span>';
+}
+function careerGrowthLabel(c, p) {
+  var tier = careerPlayerGrowthTier(c, p);
+  var displayTier = (c && c.hideProdigy && tier === 6) ? 5 : tier;
+  return CAREER_GROWTH_TIER_LABELS[displayTier];
 }
 
 // Ventana de fichajes, a petición explícita, igual en TODAS las
@@ -806,6 +817,9 @@ function careerFreshState(choices) {
     // las leen de G.career en cada partido/oferta, no solo aquí).
     difficulty: CAREER_DIFFICULTY_TIERS[choices.difficulty] ? choices.difficulty : 'normal',
     negotiation: CAREER_NEGOTIATION_MODES[choices.negotiation] ? choices.negotiation : 'duras',
+    // "haz un modo donde no puedas ver si son prodigio o no": fijo toda
+    // la partida igual que dificultad/negociación, ver careerGrowthArrowHtml.
+    hideProdigy: !!choices.hideProdigy,
     division: division,
     divisionTeams: divisionTeams,
     league: careerBuildLeague(division, divisionTeams),
@@ -910,6 +924,7 @@ function careerSerialize(c) {
     loanedOutIds: c.loanedOutIds || [],
     difficulty: c.difficulty || 'normal',
     negotiation: c.negotiation || 'duras',
+    hideProdigy: !!c.hideProdigy,
     division: c.division || 2,
     divisionTeams: c.divisionTeams,
     league: c.league,
@@ -981,6 +996,7 @@ function careerDeserialize(data) {
     // ahí).
     difficulty: CAREER_DIFFICULTY_TIERS[data.difficulty] ? data.difficulty : 'normal',
     negotiation: CAREER_NEGOTIATION_MODES[data.negotiation] ? data.negotiation : 'duras',
+    hideProdigy: !!data.hideProdigy,
     division: data.division || 1,
     divisionTeams: data.divisionTeams || careerInitialDivisionTeams(),
     league: data.league,
@@ -1082,7 +1098,7 @@ function actionGoCareerMode() {
 // este punto.
 window.actionNewCareerInSlot = function (slot) {
   G.careerSetupSlot = slot;
-  G.careerSetupChoices = { difficulty: 'normal', budget: CAREER_STARTING_BUDGET, negotiation: 'duras', clubName: '', clubShieldName: null };
+  G.careerSetupChoices = { difficulty: 'normal', budget: CAREER_STARTING_BUDGET, negotiation: 'duras', clubName: '', clubShieldName: null, hideProdigy: false, shieldsExpanded: false };
   G.screen = 'careerSetup';
   render();
 };
@@ -1092,6 +1108,21 @@ window.actionSetCareerSetupClubName = function (value) {
 };
 window.actionSetCareerSetupClubShield = function (name) {
   G.careerSetupChoices.clubShieldName = name || null;
+  render();
+};
+// Desplegable de escudos ("los escudos que puedas esconderlos o
+// mostrarlos con un desplegable, antes de elegir uno"): empieza cerrado,
+// solo enseña la lista larga si el usuario la pide.
+window.actionToggleCareerSetupShields = function () {
+  G.careerSetupChoices.shieldsExpanded = !G.careerSetupChoices.shieldsExpanded;
+  render();
+};
+// "haz un modo donde no puedas ver si son prodigio o no": elegido antes
+// de crear la carrera, se guarda en c.hideProdigy (careerFreshState) y
+// disfraza el nivel 6 de un nivel 5 normal en toda la UI (careerGrowthArrowHtml/
+// careerGrowthLabel/careerGrowthFilterBtnsHtml) sin tocar la progresión real.
+window.actionSetCareerSetupHideProdigy = function (hide) {
+  G.careerSetupChoices.hideProdigy = !!hide;
   render();
 };
 window.actionSetCareerSetupDifficulty = function (tier) {
@@ -1141,6 +1172,10 @@ function renderCareerSetup() {
   var budgetBtnsHtml = CAREER_STARTING_BUDGET_OPTIONS.map(function (amount) {
     return '<button class="btn btn-tiny' + (budget === amount ? ' active' : '') + '" onclick="actionSetCareerSetupBudget(' + amount + ')">' + amount + ' M€</button>';
   }).join('');
+  var hideProdigy = !!choices.hideProdigy;
+  var hideProdigyBtnsHtml =
+    '<button class="btn btn-tiny' + (!hideProdigy ? ' active' : '') + '" onclick="actionSetCareerSetupHideProdigy(false)">Visible</button>' +
+    '<button class="btn btn-tiny' + (hideProdigy ? ' active' : '') + '" onclick="actionSetCareerSetupHideProdigy(true)">Oculto</button>';
   // Nombre/escudo de TU club, a petición explícita ("elige nombre de
   // club (cualquiera) y escudo de club entre los que hay desbloqueados"):
   // el escudo sale de los mismos que ya desbloqueas en la Máquina de
@@ -1175,7 +1210,15 @@ function renderCareerSetup() {
         '<label class="dim small">Nombre del club</label>' +
         '<input class="select-field" type="text" maxlength="24" data-focus-key="career-setup-clubname" placeholder="Tu Equipo" value="' + escapeHtml(choices.clubName || '') + '" oninput="actionSetCareerSetupClubName(this.value)">' +
         '<p class="dim small mt">Escudo' + (myShields.length ? '' : ' (todavía no has desbloqueado ninguno en la Máquina de Premios -- se usará el de por defecto)') + '</p>' +
-        clubShieldOptionsHtml +
+        (myShields.length
+          ? '<button class="btn btn-outline btn-block btn-tiny" onclick="actionToggleCareerSetupShields()">' + (choices.shieldsExpanded ? 'Ocultar escudos ▲' : 'Mostrar escudos ▼') + (choices.clubShieldName ? ' -- elegido: ' + escapeHtml(choices.clubShieldName) : ' -- por defecto') + '</button>'
+          : '') +
+        (choices.shieldsExpanded || !myShields.length ? clubShieldOptionsHtml : '') +
+      '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:4px">Jugadores Prodigio</h3>' +
+        '<p class="dim small">Visible: se ve qué jugadores son Prodigio (nivel de crecimiento máximo) con su flecha especial. Oculto: se disfrazan como un jugador normal de crecimiento alto, no sabrás quién es Prodigio hasta ver cómo progresa.</p>' +
+        '<div class="btn-row mt">' + hideProdigyBtnsHtml + '</div>' +
       '</div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:4px">Dificultad</h3>' +
@@ -1667,7 +1710,7 @@ function renderCareerPlantilla(c) {
       (isBought ? ' <span class="player-tag player-tag-new" title="Fichado esta temporada: no se puede mover hasta la que viene">Nuevo</span>' : '') +
       (hasOffer ? ' <span class="player-tag player-tag-offer" title="Tienes una oferta por él, mira Mercado">Oferta</span>' : '');
     return '<div class="futdraft-timeline-row">' + careerMediaBadgeHtml(p) + avatarHtml(p) +
-      '<span>' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + ' ' + careerGrowthArrowHtml(careerPlayerGrowthTier(c, p)) + tagsHtml + '</span>' +
+      '<span>' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + ' ' + careerGrowthArrowHtml(careerPlayerGrowthTier(c, p), c.hideProdigy) + tagsHtml + '</span>' +
       '<strong style="margin-left:auto;white-space:nowrap;color:var(--accent-2)">' + careerPlayerValue(p) + ' M€</strong>' +
       actionsHtml +
     '</div>';
@@ -1773,7 +1816,7 @@ function renderCareerEntrenamiento(c) {
         '<span style="margin-left:auto" title="' + escapeHtml(p.tipo) + '">' + getTypeSymbol(p.tipo).replace(/22px/g, '18px') + '</span>' +
       '</div>' +
       '<div class="career-training-valoracion">' + careerPlayerStarRatingHtml(currentScore) + '<span class="dim small">' + Math.round(currentScore) + '</span>' +
-        '<span class="dim small" style="margin-left:auto">Crecimiento: ' + careerGrowthArrowHtml(careerPlayerGrowthTier(c, p)) + ' ' + CAREER_GROWTH_TIER_LABELS[careerPlayerGrowthTier(c, p)] + '</span>' +
+        '<span class="dim small" style="margin-left:auto">Crecimiento: ' + careerGrowthArrowHtml(careerPlayerGrowthTier(c, p), c.hideProdigy) + ' ' + careerGrowthLabel(c, p) + '</span>' +
       '</div>' +
       '<div class="career-offer-prices">' +
         '<span class="dim">Progresión temporada pasada: ' + careerDeltaHtml(lastDelta) + '</span>' +
@@ -1813,8 +1856,9 @@ window.actionSetCareerMarketGrowthFilter = function (tier) {
 // Mismo patrón que careerPositionFilterBtnsHtml/careerTypeFilterBtnsHtml,
 // con la flecha de color de cada nivel (careerGrowthArrowHtml) en vez de
 // un icono.
-function careerGrowthFilterBtnsHtml(filter, actionName) {
-  return [null, 1, 2, 3, 4, 5, 6].map(function (tier) {
+function careerGrowthFilterBtnsHtml(filter, actionName, hideProdigy) {
+  var tiers = hideProdigy ? [null, 1, 2, 3, 4, 5] : [null, 1, 2, 3, 4, 5, 6];
+  return tiers.map(function (tier) {
     var active = filter === tier;
     var arg = tier === null ? 'null' : tier;
     var label = tier === null ? 'Todos' : careerGrowthArrowHtml(tier);
@@ -2330,7 +2374,7 @@ function renderCareerMercado(c) {
 
   var filterBtnsHtml = careerPositionFilterBtnsHtml(filter, 'actionSetCareerMarketFilter');
   var typeFilterBtnsHtml = careerTypeFilterBtnsHtml(typeFilter, 'actionSetCareerMarketTypeFilter');
-  var growthFilterBtnsHtml = careerGrowthFilterBtnsHtml(growthFilter, 'actionSetCareerMarketGrowthFilter');
+  var growthFilterBtnsHtml = careerGrowthFilterBtnsHtml(growthFilter, 'actionSetCareerMarketGrowthFilter', c.hideProdigy);
   var sortOptionsHtml = CAREER_MARKET_SORT_FIELDS.map(function (f) {
     return '<option value="' + f.id + '"' + (f.id === sortField.id ? ' selected' : '') + '>' + f.name + '</option>';
   }).join('');
@@ -2339,7 +2383,7 @@ function renderCareerMercado(c) {
   var rowsHtml = pageItems.map(function (p) {
     var value = careerPlayerValue(p);
     return '<div class="futdraft-timeline-row">' + careerMediaBadgeHtml(p) + avatarHtml(p) +
-      '<span>' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + ' <span title="' + escapeHtml(p.tipo) + '">' + getTypeSymbol(p.tipo) + '</span> ' + careerGrowthArrowHtml(careerPlayerGrowthTier(c, p)) + '</span>' +
+      '<span>' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + ' <span title="' + escapeHtml(p.tipo) + '">' + getTypeSymbol(p.tipo) + '</span> ' + careerGrowthArrowHtml(careerPlayerGrowthTier(c, p), c.hideProdigy) + '</span>' +
       '<strong style="margin-left:auto;white-space:nowrap;color:var(--accent-2)">' + value + ' M€</strong>' +
       '<button class="btn btn-tiny" style="margin-left:6px" ' + (squadFull ? 'disabled' : '') + ' onclick="actionStartCareerNegotiation(\'' + p.id + '\', \'buy\')">Negociar</button>' +
       '<button class="btn btn-tiny" ' + (squadFull || loansFull ? 'disabled' : '') + ' onclick="actionStartCareerNegotiation(\'' + p.id + '\', \'loan\')" title="Cesión de 1 temporada por 1/3 del valor">Cesión</button>' +
