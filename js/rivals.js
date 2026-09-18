@@ -132,7 +132,9 @@ var TEAM_SHIELD_FILES = {
   'Barcelona Orb': 'barcelona-orb.webp',
   'Chispas Perfectas': 'chispas-perfectas.webp',
   'Artemisa de Mr.YI': 'artemisa.webp',
-  'Twinford': 'twinford.webp'
+  'Twinford': 'twinford.webp',
+  'Northbright': 'northbright.webp',
+  'Campeones Raimon': 'Campeones-Raimon.webp'
 };
 // team1.png es el escudo del propio jugador ("Tu equipo"), no un relleno
 // genérico para rivales sin escudo -- por eso vive fuera de TEAM_SHIELD_FILES.

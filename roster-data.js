@@ -64,7 +64,7 @@ var RIVAL_TEAM_NAMES = [
   'Cala Pirata', 'Sallys', 'Leones del desierto',
   'Academia Universal', 'Instituto Plenilunio',
   'Raimon Inakuni', 'Mary Times', 'Mar de Luna', 'Farm', 'Fauxshore',
-  'Los arions', 'Mar de Árboles', 'Fertilia', 'Magmavis', 'Colina Verde', 'Barcelona Orb', 'Twinford'
+  'Los arions', 'Mar de Árboles', 'Fertilia', 'Magmavis', 'Colina Verde', 'Barcelona Orb', 'Twinford', 'Northbright', 'Campeones Raimon'
 ];
 
 var RIVAL_TEAM_BOSSES = [
@@ -98,7 +98,7 @@ var TEAM_POWER = {
   'Academia Universal': 56, 'Instituto Plenilunio': 55,
   'Raimon Inakuni': 45, 'Mary Times': 36, 'Mar de Luna': 43, 'Farm': 42, 'Fauxshore': 39,
   'Los arions': 47, 'Mar de Árboles': 47, 'Otaku': 33,
-  'Colina Verde': 65, 'Barcelona Orb': 70, 'Twinford': 55,
+  'Colina Verde': 65, 'Barcelona Orb': 70, 'Twinford': 55, 'Northbright': 64, 'Campeones Raimon': 73,
   // En las dos listas a la vez (versátiles, gama media-alta)
   'Royal Academy': 70, 'Zeus': 75, 'Instituto Alius': 75,
   'Fertilia': 70, 'Magmavis': 75,
