@@ -941,6 +941,7 @@ function careerFreshState(choices) {
     ligaTitlesWon: 0
   };
   careerGenerateIncomingOffers(state);
+  state.academyCandidates = careerGenerateAcademyCandidates(state);
   return state;
 }
 
@@ -1908,23 +1909,30 @@ function renderCareerEntrenamiento(c) {
 // Alternativa a fichar siempre en el Mercado, a petición explícita
 // ("promocionar jóvenes desde una academia propia en vez de fichar
 // siempre del mercado"). Construyes/mejoras una academia (mismo patrón
-// de niveles y coste creciente que el centro de entrenamiento) y cada
+// de niveles pero más barata que el centro de entrenamiento, a petición
+// explícita: "tiene que valer menos mejorar la cantera") y cada
 // temporada te da unos cuantos candidatos gratis -- jugadores del ROSTER
-// que todavía no tienes, con crecimiento Alto/Muy alto/Prodigio
-// (careerPlayerGrowthTier >= 4), es decir de verdad prometedores. Se
-// promocionan de golpe a tu banquillo sin coste ninguno, la alternativa
-// real a pagar su valor en el Mercado. El número de candidatos por
-// temporada es el propio nivel de la academia (nivel 3 = 3 candidatos).
+// que todavía no tienes (ni en plantilla ni cedidos fuera), con
+// crecimiento Alto/Muy alto/Prodigio (careerPlayerGrowthTier >= 4) y
+// nota igual o por debajo de la media actual de tu equipo (a petición
+// explícita: "tienen que tener como máximo la media actual del equipo o
+// menos") -- son canteranos de verdad, no cracks gratis para saltarte el
+// Mercado. El número de candidatos por temporada es el propio nivel de
+// la academia (nivel 3 = 3 candidatos).
 var CAREER_ACADEMY_MAX_LEVEL = 5;
-var CAREER_ACADEMY_LEVEL_COSTS = [4, 8, 13, 20, 30];
+var CAREER_ACADEMY_LEVEL_COSTS = [1, 3, 5, 8, 12];
 function careerAcademyLevel(c) { return typeof c.academyLevel === 'number' ? c.academyLevel : 0; }
+// Aunque no se haya construido todavía (nivel 0), siempre hay como
+// mínimo 1 candidato esperando para la temporada que viene, a petición
+// explícita ("por defecto ya viene un jugador ahí para la siguiente
+// temporada") -- construir/mejorar la academia sube ese mínimo.
 function careerGenerateAcademyCandidates(c) {
-  var level = careerAcademyLevel(c);
-  if (level <= 0) return [];
+  var count = Math.max(careerAcademyLevel(c), 1);
+  var teamAvg = careerTeamAvgScore(c);
   var owned = c.lineup.map(function (s) { return s.player.id; }).concat(c.bench.map(function (p) { return p.id; })).concat(c.loanedOutIds || []);
-  var pool = ROSTER.filter(function (p) { return owned.indexOf(p.id) === -1 && careerPlayerGrowthTier(c, p) >= 4; });
+  var pool = ROSTER.filter(function (p) { return owned.indexOf(p.id) === -1 && careerPlayerGrowthTier(c, p) >= 4 && careerPlayerScore(p) <= teamAvg; });
   pool = pool.sort(function () { return Math.random() - 0.5; });
-  return pool.slice(0, level).map(function (p) { return p.id; });
+  return pool.slice(0, count).map(function (p) { return p.id; });
 }
 window.actionUpgradeAcademy = function () {
   var c = G.career;
@@ -2002,7 +2010,7 @@ function renderCareerAcademia(c) {
           '<button class="btn btn-primary btn-block mt" onclick="actionPromoteAcademyPlayer(\'' + p.id + '\')">Promocionar</button>' +
         '</div>';
       }).join('') + '</div>'
-    : (level > 0 ? '<p class="dim small center-text">Sin candidatos este año, vuelve a mirar la próxima temporada.</p>' : '');
+    : '<p class="dim small center-text">Sin candidatos este año, vuelve a mirar la próxima temporada.</p>';
   return headerHtml + candidatesHtml;
 }
 
