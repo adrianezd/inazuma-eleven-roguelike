@@ -1951,38 +1951,59 @@ window.actionPromoteAcademyPlayer = function (id) {
   c.academyMessage = 'Promocionado desde la cantera: ' + p.nombre + '.';
   render();
 };
+// Cantera con más cuidado estético, a petición explícita ("pon mucho más
+// estético y bonito lo de la cantera en el entrenamiento"): cabecera
+// tipo tarjeta con icono grande (mismo lenguaje visual que .sponsor-card,
+// pero en verde/crecimiento en vez de dorado) y una tarjeta con retrato
+// real por candidato (avatarHtml, elemento, posición, flecha de
+// crecimiento y estrellas de valoración) en vez de la fila de texto
+// plano de antes.
 function renderCareerAcademia(c) {
   var level = careerAcademyLevel(c);
   var maxed = level >= CAREER_ACADEMY_MAX_LEVEL;
   var nextCost = maxed ? null : CAREER_ACADEMY_LEVEL_COSTS[level];
   var locked = careerTrainingLocked(c);
   var candidates = (c.academyCandidates || []).map(function (id) { return ROSTER.find(function (x) { return x.id === id; }); }).filter(Boolean);
+  var headerHtml =
+    '<div class="academy-card">' +
+      '<div class="academy-card-head">' +
+        '<span class="academy-card-icon">🌱</span>' +
+        '<div>' +
+          '<div class="academy-card-title">Cantera</div>' +
+          '<p class="dim small" style="margin:2px 0 0">Cada temporada regala candidatos para tu banquillo, según el nivel.</p>' +
+        '</div>' +
+      '</div>' +
+      '<div class="career-training-level-row">' +
+        careerStarsHtml(level, CAREER_ACADEMY_MAX_LEVEL, 'career-star-lg') +
+        '<span class="career-training-level-num">' + level + '/' + CAREER_ACADEMY_MAX_LEVEL + '</span>' +
+      '</div>' +
+      (c.academyMessage ? '<p class="dim small">' + escapeHtml(c.academyMessage) + '</p>' : '') +
+      (locked
+        ? '<p class="dim small">Cerrada hasta la próxima temporada.</p>'
+        : (maxed
+          ? '<p class="dim small">Academia al máximo.</p>'
+          : '<button class="btn btn-primary btn-block mt" ' + (c.budget < nextCost ? 'disabled' : '') + ' onclick="actionUpgradeAcademy()">' + (level === 0 ? '🏗️ CONSTRUIR' : '⬆️ MEJORAR, nivel ' + (level + 1)) + ' (' + nextCost + ' M€)</button>')) +
+    '</div>';
   var candidatesHtml = candidates.length
-    ? candidates.map(function (p) {
-        return '<div class="career-offer-card">' +
-          '<div class="career-offer-head">' + avatarHtml(p) +
-            '<span class="career-offer-name">' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + '</span>' +
-            '<span style="margin-left:auto">' + careerGrowthArrowHtml(careerPlayerGrowthTier(c, p), c.hideProdigy) + '</span>' +
+    ? '<div class="academy-candidates-grid">' + candidates.map(function (p) {
+        var score = careerPlayerScore(p);
+        return '<div class="academy-candidate-card">' +
+          '<div class="academy-candidate-free">GRATIS</div>' +
+          '<div class="academy-candidate-head">' + avatarHtml(p) +
+            '<div class="academy-candidate-name-wrap">' +
+              '<span class="academy-candidate-name">' + escapeHtml(p.nombre) + '</span>' +
+              '<span class="dim small">' + positionIconHtml(p.posicion, 14) + ' ' + escapeHtml(p.posicion) + ' · ' + getTypeSymbol(p.tipo) + '</span>' +
+            '</div>' +
           '</div>' +
-          '<button class="btn btn-primary btn-block mt btn-tiny" onclick="actionPromoteAcademyPlayer(\'' + p.id + '\')">Promocionar gratis</button>' +
+          '<div class="academy-candidate-stats">' +
+            careerPlayerStarRatingHtml(score) + '<span class="dim small">' + Math.round(score) + '</span>' +
+            '<span style="margin-left:auto">' + careerGrowthArrowHtml(careerPlayerGrowthTier(c, p), c.hideProdigy) + ' ' + careerGrowthLabel(c, p) + '</span>' +
+          '</div>' +
+          '<button class="btn btn-primary btn-block mt" onclick="actionPromoteAcademyPlayer(\'' + p.id + '\')">Promocionar</button>' +
         '</div>';
-      }).join('')
-    : (level > 0 ? '<p class="dim small">Sin candidatos este año, vuelve a mirar la próxima temporada.</p>' : '');
-  return '<div class="panel">' +
-    '<h3 style="margin-bottom:4px" class="center-text">Cantera</h3>' +
-    '<p class="dim small center-text">Cada temporada da candidatos gratis para tu banquillo, según el nivel.</p>' +
-    '<div class="career-training-level-row">' +
-      careerStarsHtml(level, CAREER_ACADEMY_MAX_LEVEL, 'career-star-lg') +
-      '<span class="career-training-level-num">' + level + '/' + CAREER_ACADEMY_MAX_LEVEL + '</span>' +
-    '</div>' +
-    (c.academyMessage ? '<p class="dim small">' + escapeHtml(c.academyMessage) + '</p>' : '') +
-    (locked
-      ? '<p class="dim small">Cerrada hasta la próxima temporada.</p>'
-      : (maxed
-        ? '<p class="dim small">Academia al máximo.</p>'
-        : '<button class="btn btn-primary btn-block mt" ' + (c.budget < nextCost ? 'disabled' : '') + ' onclick="actionUpgradeAcademy()">' + (level === 0 ? 'CONSTRUIR' : 'MEJORAR, nivel ' + (level + 1)) + ' (' + nextCost + ' M€)</button>')) +
-    candidatesHtml +
-  '</div>';
+      }).join('') + '</div>'
+    : (level > 0 ? '<p class="dim small center-text">Sin candidatos este año, vuelve a mirar la próxima temporada.</p>' : '');
+  return headerHtml + candidatesHtml;
 }
 
 window.actionSetCareerMarketFilter = function (pos) {

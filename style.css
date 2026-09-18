@@ -1224,6 +1224,50 @@ a { color: var(--accent); }
 .sponsor-progress-track { height: 8px; border-radius: 4px; background: var(--border); overflow: hidden; margin-top: 8px; }
 .sponsor-progress-fill { height: 100%; background: var(--success); }
 
+/* ===== Cantera (Entrenamiento): tarjeta con icono grande a juego con
+   .sponsor-card pero en verde/crecimiento, y una tarjeta con retrato de
+   verdad por candidato en vez de una fila de texto, a petición explícita
+   ("pon mucho más estético y bonito lo de la cantera en el
+   entrenamiento"). ===== */
+.academy-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--success);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.academy-card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+.academy-card-icon { font-size: 2rem; line-height: 1; flex-shrink: 0; }
+.academy-card-title { font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 1.2rem; text-transform: uppercase; color: var(--success); }
+.academy-candidates-grid { display: flex; flex-direction: column; gap: 10px; }
+.academy-candidate-card {
+  position: relative;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  overflow: hidden;
+}
+.academy-candidate-free {
+  position: absolute;
+  top: 10px;
+  right: -30px;
+  background: var(--success);
+  color: #05210f;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  padding: 3px 32px;
+  transform: rotate(35deg);
+}
+.academy-candidate-head { display: flex; align-items: center; gap: 10px; padding-right: 40px; }
+.academy-candidate-head .avatar { width: 44px; height: 44px; flex-shrink: 0; }
+.academy-candidate-name-wrap { display: flex; flex-direction: column; gap: 1px; }
+.academy-candidate-name { font-weight: 700; }
+.academy-candidate-stats { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+
 /* ===== Tabla de la Liga ===== */
 .liga-table {
   width: 100%;
