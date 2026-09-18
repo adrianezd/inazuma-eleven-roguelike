@@ -668,12 +668,14 @@ function careerRollGrowthTier() {
 // equipo desde el primer día.
 var CAREER_PRODIGY_COUNT = 2;
 var CAREER_PRODIGY_SQUAD_COUNT = 1;
+var CAREER_PRODIGY_MAX_SCORE = 84;
 function careerInitialGrowthTiers(squadIds) {
   var tiers = {};
   ROSTER.forEach(function (p) { tiers[p.id] = careerRollGrowthTier(); });
   squadIds = squadIds || [];
-  var squadPool = ROSTER.filter(function (p) { return squadIds.indexOf(p.id) !== -1; });
-  var marketPool = ROSTER.filter(function (p) { return squadIds.indexOf(p.id) === -1; });
+  var isProdigyEligible = function (p) { return careerPlayerScore(p) <= CAREER_PRODIGY_MAX_SCORE; };
+  var squadPool = ROSTER.filter(function (p) { return squadIds.indexOf(p.id) !== -1 && isProdigyEligible(p); });
+  var marketPool = ROSTER.filter(function (p) { return squadIds.indexOf(p.id) === -1 && isProdigyEligible(p); });
   for (var i = 0; i < CAREER_PRODIGY_COUNT && marketPool.length; i++) {
     var idx = Math.floor(Math.random() * marketPool.length);
     tiers[marketPool[idx].id] = 6;
@@ -1892,13 +1894,22 @@ function careerMarketSignableCap(teamAvg) {
 // arriba) o "blandas" (3, el original) al crear la carrera --
 // c.negotiation, ver CAREER_NEGOTIATION_MODES/renderCareerSetup.
 var CAREER_NEGOTIATION_MONEY_EXPONENT = 8;
+// A partir de CAREER_INTERESTED_GAP (6) puntos por encima de tu media,
+// a petición explícita ("que cuando vas a iniciar la negociación...
+// diga: es probable que no se quiera unir a tu equipo. Realmente tienes
+// un 5% de fichar a este tipo de gente, y siempre ofreciendo el dinero
+// que valen o más"): 5% FIJO de ficharlo, pase lo que pase con el
+// dinero -- ni siquiera pagar de más lo sube, a diferencia del resto de
+// jugadores (fórmula normal de dinero+prestigio, sin cambios).
+var CAREER_ELITE_SIGN_CHANCE = 0.05;
 function careerNegotiationAccepts(offer, value, playerScore, teamAvgScore) {
+  var gap = playerScore - teamAvgScore;
+  if (gap > CAREER_INTERESTED_GAP) return Math.random() < CAREER_ELITE_SIGN_CHANCE;
   var c = G.career;
   var mode = c && CAREER_NEGOTIATION_MODES[c.negotiation];
   var exponent = mode ? mode.moneyExponent : CAREER_NEGOTIATION_MONEY_EXPONENT;
   var moneyFactor = offer >= value ? 1 : Math.pow(offer / value, exponent);
-  var gap = Math.max(0, playerScore - teamAvgScore);
-  var prestigeFactor = clamp(1 - gap * 0.08, 0.05, 1);
+  var prestigeFactor = clamp(1 - Math.max(0, gap) * 0.08, 0.05, 1);
   return Math.random() < moneyFactor * prestigeFactor;
 }
 
@@ -2093,7 +2104,7 @@ function renderCareerNegotiation(c) {
   var teamAvg = careerTeamAvgScore(c);
   var gap = Math.round(careerPlayerScore(p) - teamAvg);
   var prestigeHint = gap > CAREER_INTERESTED_GAP
-    ? '<p class="dim small">Tu plantilla tiene una media de ' + Math.round(teamAvg) + '; ' + escapeHtml(p.nombre) + ' tiene ' + Math.round(careerPlayerScore(p)) + '. Puede que no quiera bajar de nivel, aunque pagues bien.</p>'
+    ? '<p class="dim small" style="color:var(--danger)">Es probable que no se quiera unir a tu equipo (media ' + Math.round(teamAvg) + ' la tuya, ' + Math.round(careerPlayerScore(p)) + ' la suya) -- aunque ofrezcas su valor o más.</p>'
     : '';
   var w = c.marketWindow;
   var offersUsed = (w && w.offersToday[neg.playerId]) || 0;
@@ -2287,12 +2298,13 @@ function renderCareerMercado(c) {
   var typeFilter = c.marketTypeFilter || null;
   var growthFilter = c.marketGrowthFilter || null;
   var search = (c.marketSearch || '').trim().toLowerCase();
-  var teamAvg = careerTeamAvgScore(c);
-  var signableCap = careerMarketSignableCap(teamAvg);
+  // Ya no se esconden los jugadores por encima de tu techo de media, a
+  // petición explícita ("quiero que salgan en el mercado todos los
+  // jugadores para poder fichar") -- antes careerMarketSignableCap los
+  // filtraba del todo, ahora solo sirve como aviso (careerNegotiationAccepts
+  // ya los hace casi imposibles de fichar de verdad, ver CAREER_ELITE_SIGN_CHANCE).
   var available = ROSTER.filter(function (p) {
     if (owned.indexOf(p.id) !== -1) return false;
-    var score = careerPlayerScore(p);
-    if (score >= signableCap) return false;
     if (filter && p.posicion !== filter) return false;
     if (typeFilter && p.tipo !== typeFilter) return false;
     if (growthFilter && careerPlayerGrowthTier(c, p) !== growthFilter) return false;
@@ -3075,14 +3087,21 @@ function careerResolveOtherFixtures(c, league, skipFixtureIdx) {
   });
 }
 
-// Bonus de presupuesto por ganar TU partido de la jornada (50k/100k/150k
-// al azar, a petición explícita) -- nunca por empatar ni perder. Se llama
-// una sola vez por jornada, tanto desde "Saltar" como al terminar de ver
-// tu partido con "Simular" (ver finishCareerMatchdayMatch).
+// Bonus de presupuesto por ganar TU partido de la jornada -- nunca por
+// empatar ni perder. Se llama una sola vez por jornada, tanto desde
+// "Saltar" como al terminar de ver tu partido con "Simular" (ver
+// finishCareerMatchdayMatch). En Primera es más (0.15-0.5 M€ seguido, a
+// petición explícita: "en primera división, por cada partido ganado
+// suba, te puedan dar, de 0.15 a 0.5M aleatoriamente") -- en Segunda se
+// queda como estaba (50k/100k/150k al azar).
 var CAREER_WIN_BONUSES = [0.05, 0.1, 0.15];
+var CAREER_WIN_BONUS_PRIMERA_MIN = 0.15;
+var CAREER_WIN_BONUS_PRIMERA_MAX = 0.5;
 function careerAwardWinBonus(c, myGoals, oppGoals) {
   if (myGoals <= oppGoals) return 0;
-  var bonus = choice(CAREER_WIN_BONUSES);
+  var bonus = c.division === 1
+    ? Math.round((CAREER_WIN_BONUS_PRIMERA_MIN + Math.random() * (CAREER_WIN_BONUS_PRIMERA_MAX - CAREER_WIN_BONUS_PRIMERA_MIN)) * 100) / 100
+    : choice(CAREER_WIN_BONUSES);
   c.budget = Math.round((c.budget + bonus) * 10) / 10;
   return bonus;
 }
@@ -3180,6 +3199,7 @@ window.actionSimulateCareerMatchday = function () {
     myAtk: sim.myAtk, myDef: sim.myDef, effectiveOppPower: sim.effectiveOppPower,
     inExtraTime: false, allowDraw: true, onFinish: finishCareerMatchdayMatch,
     careerFixture: { idx: myFixtureIdx, youAreHome: youAreHome, oppIdx: oppIdx },
+    isCareer: true, youAreHome: youAreHome,
     done: false
   };
   G.screen = 'futdraftLive';
@@ -3499,6 +3519,7 @@ window.actionSimulateCareerCupMatch = function () {
     // resumida (careerCupPenaltyShootout).
     inExtraTime: false, allowDraw: true, onFinish: finishCareerCupMatch,
     careerCupMatch: match,
+    isCareer: true, youAreHome: true,
     done: false
   };
   G.screen = 'futdraftLive';
@@ -3729,6 +3750,7 @@ window.actionSimulateCareerChampionsMatch = function () {
     myAtk: sim.myAtk, myDef: sim.myDef, effectiveOppPower: sim.effectiveOppPower,
     inExtraTime: false, allowDraw: true, onFinish: finishCareerChampionsMatch,
     careerChampionsMatch: match,
+    isCareer: true, youAreHome: true,
     done: false
   };
   G.screen = 'futdraftLive';
@@ -3924,7 +3946,8 @@ window.actionSimulateCareerSupercopaMatch = function () {
   if (!sc || sc.finished) return;
   var youAreHome = sc.legIndex === 0;
   c.savedFutdraft = G.futdraft;
-  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna' };
+  var careerStyleMods = careerPlayStyleModifiers(c);
+  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna', styleAtkMult: careerStyleMods.atk, styleDefMult: careerStyleMods.def };
   var sim = futDraftSimulateMatchCore(CAREER_SUPERCOPA_POWER);
   G.futdraft.live = {
     oppSide: { name: sc.opponentName }, modifier: sim.modifier,
@@ -3933,6 +3956,7 @@ window.actionSimulateCareerSupercopaMatch = function () {
     myAtk: sim.myAtk, myDef: sim.myDef, effectiveOppPower: sim.effectiveOppPower,
     inExtraTime: false, allowDraw: true, onFinish: finishCareerSupercopaMatch,
     careerSupercopaYouAreHome: youAreHome,
+    isCareer: true, youAreHome: youAreHome,
     done: false
   };
   G.screen = 'futdraftLive';

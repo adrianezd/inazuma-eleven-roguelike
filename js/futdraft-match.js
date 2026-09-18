@@ -317,12 +317,28 @@ function renderFutDraftLive() {
   var logHtml = live.revealed.slice().reverse().map(function (ev) {
     return futDraftTimelineRowHtml(ev, oppName);
   }).join('');
+  // En Modo Carrera, "tu" escudo/nombre son los que hayas elegido al
+  // crear la partida (careerClubShieldPath/careerClubDisplayName), no el
+  // escudo equipado en la web -- antes se usaba SIEMPRE getPlayerShieldPath()
+  // aquí sin más, un bug real ("elijo un escudo... cuando le doy a
+  // simular partido, me pone otro... el de la web, no el del modo
+  // carrera"). Y el orden de los lados sigue si juegas en casa o fuera
+  // (live.youAreHome, puesto por los 4 puentes de career-mode.js) --
+  // antes siempre salías a la izquierda aunque fueras visitante ("mientras
+  // se está simulando el partido siempre soy local"), otro bug real,
+  // corregidos los dos a la vez.
+  var isCareer = live.isCareer && G.career;
+  var youShield = isCareer ? careerClubShieldPath(G.career) : getPlayerShieldPath();
+  var youName = isCareer ? careerClubDisplayName(G.career) : 'Tú';
+  var youAreHome = live.youAreHome !== false;
+  var youSideHtml = '<div class="score-side"><img class="team-shield" src="' + escapeHtml(youShield) + '" alt=""><div class="score-name">' + escapeHtml(youName) + '</div><div class="score-num">' + live.myGoals + '</div></div>';
+  var oppSideHtml = '<div class="score-side"><img class="team-shield" src="' + escapeHtml(teamShieldPath(oppName)) + '" alt=""><div class="score-name">' + escapeHtml(oppName) + '</div><div class="score-num">' + live.oppGoals + '</div></div>';
   return (
     '<div class="screen">' +
       '<div class="match-scoreboard">' +
-        '<div class="score-side"><img class="team-shield" src="' + getPlayerShieldPath() + '" alt=""><div class="score-name">Tú</div><div class="score-num">' + live.myGoals + '</div></div>' +
+        (youAreHome ? youSideHtml : oppSideHtml) +
         '<div class="score-vs">VS</div>' +
-        '<div class="score-side"><img class="team-shield" src="' + escapeHtml(teamShieldPath(oppName)) + '" alt=""><div class="score-name">' + escapeHtml(oppName) + '</div><div class="score-num">' + live.oppGoals + '</div></div>' +
+        (youAreHome ? oppSideHtml : youSideHtml) +
       '</div>' +
       '<div class="turn-indicator">' + (live.inExtraTime ? 'Prórroga — minuto ' + live.minute + '\' de 120\'' : 'Minuto ' + live.minute + '\' de 90\'') + '</div>' +
       (live.inExtraTime && live.minute <= 91 ? '<p class="dim small center-text">Empate al término del tiempo reglamentario: se juega la prórroga.</p>' : '') +
