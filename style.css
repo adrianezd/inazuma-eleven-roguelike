@@ -1204,6 +1204,26 @@ a { color: var(--accent); }
 .season-badge-gold .season-badge-text { color: var(--accent-2); }
 .season-loan-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 
+/* ===== Patrocinadores: tarjeta con icono propio en vez de un panel
+   genérico de texto, a petición explícita ("estéticamente más chulos").
+   Mismo lenguaje visual que .season-badge (borde de color a la
+   izquierda) pero en tarjeta completa, no en fila. ===== */
+.sponsor-offers-grid { display: flex; flex-direction: column; gap: 10px; }
+.sponsor-card {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent-2);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+}
+.sponsor-card-active { border-left-color: var(--success); }
+.sponsor-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.sponsor-card-icon { font-size: 1.6rem; line-height: 1; flex-shrink: 0; }
+.sponsor-card-name { font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 1.05rem; }
+.sponsor-card-desc { font-size: 0.85rem; color: var(--text-dim); }
+.sponsor-progress-track { height: 8px; border-radius: 4px; background: var(--border); overflow: hidden; margin-top: 8px; }
+.sponsor-progress-fill { height: 100%; background: var(--success); }
+
 /* ===== Tabla de la Liga ===== */
 .liga-table {
   width: 100%;

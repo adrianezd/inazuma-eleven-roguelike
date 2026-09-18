@@ -1215,16 +1215,16 @@ function renderCareerSetup() {
     '<div class="screen">' +
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionCancelCareerSetup()">Volver</button>' +
-        '<h2 class="panel-title mt">Nueva partida -- Hueco ' + G.careerSetupSlot + '</h2>' +
-        '<p class="dim small">Elige cómo quieres jugar esta carrera -- no se puede cambiar después de empezar.</p>' +
+        '<h2 class="panel-title mt">Nueva partida, hueco ' + G.careerSetupSlot + '</h2>' +
+        '<p class="dim small">Elige cómo quieres jugar esta carrera. No se puede cambiar después.</p>' +
       '</div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:4px">Tu club</h3>' +
         '<label class="dim small">Nombre del club</label>' +
         '<input class="select-field" type="text" maxlength="24" data-focus-key="career-setup-clubname" placeholder="Tu Equipo" value="' + escapeHtml(choices.clubName || '') + '" oninput="actionSetCareerSetupClubName(this.value)">' +
-        '<p class="dim small mt">Escudo' + (myShields.length ? '' : ' (todavía no has desbloqueado ninguno en la Máquina de Premios -- se usará el de por defecto)') + '</p>' +
+        '<p class="dim small mt">Escudo' + (myShields.length ? '' : ' (aún no has desbloqueado ninguno, se usará el de por defecto)') + '</p>' +
         (myShields.length
-          ? '<button class="btn btn-outline btn-block btn-tiny" onclick="actionToggleCareerSetupShields()">' + (choices.shieldsExpanded ? 'Ocultar escudos ▲' : 'Mostrar escudos ▼') + (choices.clubShieldName ? ' -- elegido: ' + escapeHtml(choices.clubShieldName) : ' -- por defecto') + '</button>'
+          ? '<button class="btn btn-outline btn-block btn-tiny" onclick="actionToggleCareerSetupShields()">' + (choices.shieldsExpanded ? 'Ocultar escudos ▲' : 'Mostrar escudos ▼') + (choices.clubShieldName ? ', elegido: ' + escapeHtml(choices.clubShieldName) : ', por defecto') + '</button>'
           : '') +
         (choices.shieldsExpanded || !myShields.length ? clubShieldOptionsHtml : '') +
       '</div>' +
@@ -1615,8 +1615,8 @@ function careerOwnedSquadCount(c) {
 var CAREER_QUICK_SELL_FACTOR = 0.85;
 window.actionSellCareerPlayer = function (id) {
   var c = G.career;
-  if ((c.loanedIds || []).indexOf(id) !== -1) { c.plantillaMessage = 'No puedes vender a un jugador cedido -- no es tuyo. Puedes devolverlo cuando quieras.'; render(); return; }
-  if ((c.boughtThisSeasonIds || []).indexOf(id) !== -1) { c.plantillaMessage = 'No puedes vender a un jugador fichado esta misma temporada -- espera a la que viene.'; render(); return; }
+  if ((c.loanedIds || []).indexOf(id) !== -1) { c.plantillaMessage = 'No puedes vender a un jugador cedido, no es tuyo. Puedes devolverlo cuando quieras.'; render(); return; }
+  if ((c.boughtThisSeasonIds || []).indexOf(id) !== -1) { c.plantillaMessage = 'No puedes vender a un jugador fichado esta temporada. Espera a la que viene.'; render(); return; }
   if (careerOwnedSquadCount(c) <= CAREER_MIN_SQUAD_SIZE) { c.plantillaMessage = 'No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores tuyos en plantilla (los cedidos no cuentan).'; render(); return; }
   var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
   var p = all.find(function (x) { return x.id === id; });
@@ -1651,8 +1651,8 @@ window.actionSellCareerPlayer = function (id) {
 var CAREER_LOAN_OUT_FEE_RATE = 0.08;
 window.actionLoanCareerPlayer = function (id) {
   var c = G.career;
-  if ((c.loanedIds || []).indexOf(id) !== -1) { c.plantillaMessage = 'No puedes ceder a un jugador que ya tienes cedido -- no es tuyo. Puedes devolverlo cuando quieras.'; render(); return; }
-  if ((c.boughtThisSeasonIds || []).indexOf(id) !== -1) { c.plantillaMessage = 'No puedes ceder a un jugador fichado esta misma temporada -- espera a la que viene.'; render(); return; }
+  if ((c.loanedIds || []).indexOf(id) !== -1) { c.plantillaMessage = 'No puedes ceder a un jugador que ya tienes cedido, no es tuyo. Puedes devolverlo cuando quieras.'; render(); return; }
+  if ((c.boughtThisSeasonIds || []).indexOf(id) !== -1) { c.plantillaMessage = 'No puedes ceder a un jugador fichado esta temporada. Espera a la que viene.'; render(); return; }
   if (careerOwnedSquadCount(c) <= CAREER_MIN_SQUAD_SIZE) { c.plantillaMessage = 'No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores tuyos en plantilla (los cedidos no cuentan).'; render(); return; }
   var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
   var p = all.find(function (x) { return x.id === id; });
@@ -1663,7 +1663,7 @@ window.actionLoanCareerPlayer = function (id) {
   c.loanedOutIds = c.loanedOutIds || [];
   c.loanedOutIds.push(id);
   c.budget = Math.round((c.budget + loanFee) * 10) / 10;
-  c.plantillaMessage = 'Cedido ' + p.nombre + ' a ' + destTeam + ' -- cobras un fee de cesión de ' + loanFee + ' M€.';
+  c.plantillaMessage = 'Cedido ' + p.nombre + ' a ' + destTeam + '. Cobras un fee de cesión de ' + loanFee + ' M€.';
   render();
 };
 
@@ -1811,10 +1811,10 @@ function renderCareerEntrenamiento(c) {
       '</div>' +
       (c.trainingMessage ? '<p class="dim small">' + escapeHtml(c.trainingMessage) + '</p>' : '') +
       (locked
-        ? '<p class="dim small">Entrenamiento cerrado -- la temporada ya ha terminado, no se puede mejorar hasta la que viene.</p>'
+        ? '<p class="dim small">Entrenamiento cerrado hasta la próxima temporada.</p>'
         : (maxed
           ? '<p class="dim small">Centro al máximo.</p>'
-          : '<button class="btn btn-primary btn-block mt" ' + (c.budget < nextCost ? 'disabled' : '') + ' onclick="actionUpgradeTrainingCenter()">' + (level === 0 ? 'CONSTRUIR' : 'POTENCIAR -- nivel ' + (level + 1)) + ' (' + nextCost + ' M€)</button>')) +
+          : '<button class="btn btn-primary btn-block mt" ' + (c.budget < nextCost ? 'disabled' : '') + ' onclick="actionUpgradeTrainingCenter()">' + (level === 0 ? 'CONSTRUIR' : 'POTENCIAR, nivel ' + (level + 1)) + ' (' + nextCost + ' M€)</button>')) +
     '</div>';
   var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
   var rowsHtml = all.map(function (p) {
@@ -2025,7 +2025,7 @@ window.actionAcceptIncomingOffer = function (offerId) {
   var c = G.career;
   var offer = (c.incomingOffers || []).find(function (o) { return o.id === offerId; });
   if (!offer) return;
-  if (careerOwnedSquadCount(c) <= CAREER_MIN_SQUAD_SIZE) { c.marketMessage = 'No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores tuyos en plantilla -- vende o cede a otro primero.'; render(); return; }
+  if (careerOwnedSquadCount(c) <= CAREER_MIN_SQUAD_SIZE) { c.marketMessage = 'No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores tuyos en plantilla. Vende o cede a otro primero.'; render(); return; }
   var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
   var p = all.find(function (x) { return x.id === offer.playerId; });
   var isLoan = offer.mode === 'loan';
@@ -2169,7 +2169,7 @@ function renderCareerNegotiation(c) {
   var teamAvg = careerTeamAvgScore(c);
   var gap = Math.round(careerPlayerScore(p) - teamAvg);
   var prestigeHint = gap > CAREER_INTERESTED_GAP
-    ? '<p class="dim small" style="color:var(--danger)">Es probable que no se quiera unir a tu equipo (media ' + Math.round(teamAvg) + ' la tuya, ' + Math.round(careerPlayerScore(p)) + ' la suya) -- aunque ofrezcas su valor o más.</p>'
+    ? '<p class="dim small" style="color:var(--danger)">Es probable que no se quiera unir a tu equipo (media ' + Math.round(teamAvg) + ' la tuya, ' + Math.round(careerPlayerScore(p)) + ' la suya), aunque ofrezcas su valor o más.</p>'
     : '';
   var w = c.marketWindow;
   var offersUsed = (w && w.offersToday[neg.playerId]) || 0;
@@ -2249,7 +2249,7 @@ function renderCareerCounterNegotiation(c) {
   if (cn.lastResult === 'accepted' || cn.lastResult === 'exhausted') {
     var finalMsg = cn.lastResult === 'accepted'
       ? '<p class="dim small" style="color:var(--accent-2)">¡Trato cerrado! ' + escapeHtml(p.nombre) + ' se va por ' + cn.counter + ' M€.</p>'
-      : '<p class="dim small" style="color:var(--danger)">Sin acuerdo tras ' + CAREER_MAX_COUNTER_ATTEMPTS + ' intentos -- la oferta por ' + escapeHtml(p.nombre) + ' ha terminado.</p>';
+      : '<p class="dim small" style="color:var(--danger)">Sin acuerdo tras ' + CAREER_MAX_COUNTER_ATTEMPTS + ' intentos. La oferta por ' + escapeHtml(p.nombre) + ' ha terminado.</p>';
     return (
       '<div class="panel center-text">' +
         '<h3 style="margin-bottom:8px">Negociar la oferta por ' + escapeHtml(p.nombre) + '</h3>' +
@@ -2263,7 +2263,7 @@ function renderCareerCounterNegotiation(c) {
   if (!offer) { c.counterNegotiation = null; return renderCareerMercado(c); }
   var attemptsLeft = CAREER_MAX_COUNTER_ATTEMPTS - (cn.attempts || 0);
   var resultHtml =
-    (cn.lastResult === 'rejected' ? '<p class="dim small" style="color:var(--danger)">El club no acepta ' + cn.counter + ' M€ por ' + escapeHtml(p.nombre) + ' -- te queda ' + attemptsLeft + ' intento' + (attemptsLeft === 1 ? '' : 's') + '.</p>' : '') +
+    (cn.lastResult === 'rejected' ? '<p class="dim small" style="color:var(--danger)">El club no acepta ' + cn.counter + ' M€ por ' + escapeHtml(p.nombre) + '. Te queda ' + attemptsLeft + ' intento' + (attemptsLeft === 1 ? '' : 's') + '.</p>' : '') +
     (cn.lastResult === 'plantillaMinima' ? '<p class="dim small" style="color:var(--danger)">No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores en plantilla.</p>' : '') +
     '<div class="stepper-row">' +
       '<button class="btn stepper-arrow" onclick="actionAdjustCounterOffer(-0.1)">◀</button>' +
@@ -2302,7 +2302,7 @@ function renderCareerIncomingOffers(c) {
   if (!offers.length) return '';
   var w = c.marketWindow;
   var atMinSquad = careerOwnedSquadCount(c) <= CAREER_MIN_SQUAD_SIZE;
-  var blockedTitle = 'No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores tuyos en plantilla -- vende o cede a otro primero.';
+  var blockedTitle = 'No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores tuyos en plantilla. Vende o cede a otro primero.';
   var rowsHtml = offers.map(function (o) {
     var p = ROSTER.find(function (x) { return x.id === o.playerId; });
     if (!p) return '';
@@ -2417,7 +2417,7 @@ function renderCareerMercado(c) {
       '<p class="dim small">Presupuesto disponible: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong> · Cedidos: <strong>' + careerLoanCount(c) + ' / ' + CAREER_MAX_LOANS_IN + '</strong></p>' +
       '<p class="dim small">' + available.length + ' jugador' + (available.length === 1 ? '' : 'es') + ' con este filtro.</p>' +
       (squadFull ? '<p class="dim small" style="color:var(--danger)">Plantilla al máximo (' + CAREER_MAX_SQUAD_SIZE + '). Vende o cede a alguien antes de fichar.</p>' : '') +
-      (loansFull ? '<p class="dim small" style="color:var(--danger)">Ya tienes ' + CAREER_MAX_LOANS_IN + ' cesiones, el máximo -- devuelve a alguna antes de fichar cedido a otro.</p>' : '') +
+      (loansFull ? '<p class="dim small" style="color:var(--danger)">Ya tienes ' + CAREER_MAX_LOANS_IN + ' cesiones, el máximo. Devuelve a alguna antes de fichar otra.</p>' : '') +
       (c.marketMessage ? '<p class="dim small">' + escapeHtml(c.marketMessage) + '</p>' : '') +
       '<input class="select-field" type="text" placeholder="Buscar por nombre…" data-focus-key="career-market-search" value="' + escapeHtml(c.marketSearch || '') + '" oninput="actionSetCareerMarketSearch(this.value)">' +
       '<div class="btn-row mt">' + filterBtnsHtml + '</div>' +
@@ -2750,7 +2750,7 @@ function renderCareerLigaSection(c) {
     : 'Azul: plaza de Champions League (' + CAREER_CHAMPIONS_QUALIFY_SPOTS + ' primeros). Rojo: zona de descenso a Segunda (' + CAREER_PROMOTION_SPOTS + ' últimos).';
   var headerHtml =
     '<div class="panel center-text">' +
-      '<p class="dim small">' + escapeHtml(careerDivisionName(c.division)) + ' -- Jornada ' + Math.min(league.matchdayIndex + 1, league.schedule.length) + ' de ' + league.schedule.length + '</p>' +
+      '<p class="dim small">' + escapeHtml(careerDivisionName(c.division)) + ', jornada ' + Math.min(league.matchdayIndex + 1, league.schedule.length) + ' de ' + league.schedule.length + '</p>' +
       (view !== 'calendario' ? '<p class="dim small">' + zoneHint + '</p>' : '') +
       (view === 'forma' ? '<p class="dim small">Una racha de 3 victorias o derrotas seguidas da un empujón (o un bajón) de forma al siguiente partido.</p>' : '') +
     '</div>';
@@ -3019,41 +3019,54 @@ function careerLeaguePositionBonus(position, division) {
 // (careerSeasonSummaryHtml), que se sigue viendo hasta que se pulsa ese
 // botón (actionStartNewCareerSeason reconstruye la liga de cero).
 // ===== Patrocinadores =====
-// Sustituye al viejo sistema de "objetivos de patrocinador" (clausulas
-// fijas automáticas, sin elegir nada) por una pestaña propia de verdad, a
-// petición explícita ("quiero los patrocinadores en una pestaña para
-// ello, donde firmes al empezar la temporada"). Al empezar cada
-// temporada se generan 5 ofertas (una de cada tipo, ver
-// careerGenerateSponsorOffers) y puedes firmar COMO MUCHO una -- igual
-// que un equipo real solo lleva un patrocinador principal a la vez. Cada
-// tipo paga de una forma distinta, tal cual se pidió: fijo de golpe,
-// por victoria, por título, por partido jugado, o un premio único si
-// mantienes X jugadores de un elemento concreto en el once titular
-// durante 15 jornadas de Liga seguidas o no.
+// Pestaña propia (sustituye al viejo sistema automático de "objetivos de
+// patrocinador"). 5 ofertas al empezar cada temporada, firmas como mucho
+// una. Nombres graciosos + icono propio por tipo, a petición explícita
+// ("estéticamente más chulos, con nombres graciosos"). Balanceadas para
+// que el ingreso ESPERADO en toda la temporada sea parecido entre las 5
+// (unos ~10 M€ en Primera), contando cuánto se cobra de verdad en una
+// temporada típica -- perWin con ~18 victorias, perTrophy con ~0.2
+// títulos de media (paga mucho de golpe porque es raro que toque),
+// element con ~75% de posibilidades de cumplirse, perMatch con las 38
+// jornadas de la Liga. División 2 cobra bastante menos que División 1
+// (careerSponsorScale), igual que el resto de premios de la carrera.
 var CAREER_SPONSOR_ELEMENT_REQUIRED_COUNT = 4;
 var CAREER_SPONSOR_ELEMENT_REQUIRED_MATCHES = 15;
+var CAREER_SPONSOR_NAMES = {
+  fixed: ['Churrería El Golazo', 'Bocadillos Media Parte', 'Neumáticos Rayo Azul', 'Colchones El Meta'],
+  perWin: ['Energéticas Trueno FC', 'Suplementos Victoria Total', 'Gimnasio Músculo de Acero', 'Zapatillas Rayo Veloz'],
+  perTrophy: ['Joyería Copa de Oro', 'Relojería El Campeón', 'Champán Final Feliz', 'Trofeos Dorado & Cía'],
+  perMatch: ['Taxis Media Parte', 'Pizzería El Once Inicial', 'Autobuses Gradas Llenas', 'Palomitas Estadio Lleno']
+};
+var CAREER_SPONSOR_ELEMENT_NAMES = {
+  Fuego: ['Salsas Picantes Volcán', 'Barbacoas Brasa Eterna'],
+  Bosque: ['Herbolario Hoja Sagrada', 'Viveros Raíz Verde'],
+  Viento: ['Aerolíneas Ráfaga', 'Ventiladores Huracán'],
+  Montaña: ['Cementos Peña Alta', 'Mochilas Cumbre Firme']
+};
+var CAREER_SPONSOR_ICONS = { fixed: '💰', perWin: '🏋️', perTrophy: '🏆', element: '🧪', perMatch: '🚌' };
 function careerSponsorScale(c) { return c.division === 2 ? 0.4 : 1; }
 function careerGenerateSponsorOffers(c) {
   var scale = careerSponsorScale(c);
   var round1 = function (n) { return Math.round(n * 10) / 10; };
-  var fixedAmount = round1((8 + Math.random() * 10) * scale);
-  var perWin = round1((0.3 + Math.random() * 0.4) * scale);
-  var perTrophy = round1((10 + Math.random() * 8) * scale);
+  var fixedAmount = round1((9 + Math.random() * 4) * scale);
+  var perWin = round1((0.45 + Math.random() * 0.25) * scale);
+  var perTrophy = round1((35 + Math.random() * 20) * scale);
   var element = choice(TYPES);
-  var elementReward = round1((12 + Math.random() * 10) * scale);
-  var perMatch = Math.round((0.08 + Math.random() * 0.12) * scale * 100) / 100;
+  var elementReward = round1((10 + Math.random() * 6) * scale);
+  var perMatch = Math.round((0.2 + Math.random() * 0.12) * scale * 100) / 100;
   return [
-    { id: 'fixed', kind: 'fixed', label: 'Pago fijo', amount: fixedAmount,
-      desc: 'Cobras ' + fixedAmount + ' M€ de golpe al firmar, sin ninguna condición.' },
-    { id: 'perWin', kind: 'perWin', label: 'Por victorias', perWin: perWin,
-      desc: 'Cobras ' + perWin + ' M€ por cada partido de Liga que ganes esta temporada.' },
-    { id: 'perTrophy', kind: 'perTrophy', label: 'Por títulos', perTrophy: perTrophy,
-      desc: 'Cobras ' + perTrophy + ' M€ por cada título que ganes esta temporada (Liga, Copa del Rey, Champions o Supercopa).' },
-    { id: 'element', kind: 'element', label: 'Patrocinador ' + element, element: element,
+    { id: 'fixed', kind: 'fixed', label: choice(CAREER_SPONSOR_NAMES.fixed), icon: CAREER_SPONSOR_ICONS.fixed, amount: fixedAmount,
+      desc: fixedAmount + ' M€ de golpe al firmar.' },
+    { id: 'perWin', kind: 'perWin', label: choice(CAREER_SPONSOR_NAMES.perWin), icon: CAREER_SPONSOR_ICONS.perWin, perWin: perWin,
+      desc: perWin + ' M€ por cada victoria de Liga.' },
+    { id: 'perTrophy', kind: 'perTrophy', label: choice(CAREER_SPONSOR_NAMES.perTrophy), icon: CAREER_SPONSOR_ICONS.perTrophy, perTrophy: perTrophy,
+      desc: perTrophy + ' M€ por cada título que ganes (Liga, Copa, Champions o Supercopa).' },
+    { id: 'element', kind: 'element', label: choice(CAREER_SPONSOR_ELEMENT_NAMES[element]), icon: CAREER_SPONSOR_ICONS.element, element: element,
       requiredCount: CAREER_SPONSOR_ELEMENT_REQUIRED_COUNT, requiredMatches: CAREER_SPONSOR_ELEMENT_REQUIRED_MATCHES, reward: elementReward,
-      desc: 'Cobras ' + elementReward + ' M€ de golpe si juegas ' + CAREER_SPONSOR_ELEMENT_REQUIRED_MATCHES + ' partidos de Liga con ' + CAREER_SPONSOR_ELEMENT_REQUIRED_COUNT + '+ jugadores de elemento ' + element + ' en el once inicial (no hace falta que sean seguidos).' },
-    { id: 'perMatch', kind: 'perMatch', label: 'Partido a partido', perMatch: perMatch,
-      desc: 'Cobras ' + perMatch + ' M€ cada partido de Liga que juegues, lo ganes o no.' }
+      desc: elementReward + ' M€ de golpe si juegas ' + CAREER_SPONSOR_ELEMENT_REQUIRED_MATCHES + ' jornadas con ' + CAREER_SPONSOR_ELEMENT_REQUIRED_COUNT + '+ jugadores ' + element + ' en el once inicial.' },
+    { id: 'perMatch', kind: 'perMatch', label: choice(CAREER_SPONSOR_NAMES.perMatch), icon: CAREER_SPONSOR_ICONS.perMatch, perMatch: perMatch,
+      desc: perMatch + ' M€ cada jornada de Liga que juegues, ganes o no.' }
   ];
 }
 window.actionSignCareerSponsor = function (offerId) {
@@ -3115,34 +3128,35 @@ function renderCareerPatrocinadores(c) {
   var headerHtml =
     '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Patrocinadores</h3>' +
-      '<p class="dim small">Presupuesto actual: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong>. Valor de la plantilla: <strong style="color:var(--accent-2)">' + squadValue + ' M€</strong>.</p>' +
+      '<p class="dim small">Presupuesto: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong> · Plantilla: <strong style="color:var(--accent-2)">' + squadValue + ' M€</strong></p>' +
       (c.sponsorMessage ? '<p class="dim small">' + escapeHtml(c.sponsorMessage) + '</p>' : '') +
     '</div>';
   if (c.activeSponsor) {
     var s = c.activeSponsor;
     var progressHtml = s.kind === 'element'
-      ? '<p class="dim small">Progreso: ' + (s.matchesWithElement || 0) + ' / ' + s.requiredMatches + ' jornadas con ' + s.requiredCount + '+ jugadores ' + getTypeSymbol(s.element) + ' en el once inicial.' + (s.rewardClaimed ? ' Premio ya cobrado.' : '') + '</p>'
+      ? '<div class="sponsor-progress-track"><div class="sponsor-progress-fill" style="width:' + Math.round(clamp((s.matchesWithElement || 0) / s.requiredMatches, 0, 1) * 100) + '%"></div></div>' +
+        '<p class="dim small">' + (s.matchesWithElement || 0) + ' / ' + s.requiredMatches + ' jornadas' + (s.rewardClaimed ? ' · premio cobrado' : '') + '</p>'
       : '';
     return headerHtml +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:4px">' + escapeHtml(s.label) + '</h3>' +
-        '<p class="dim small">' + escapeHtml(s.desc) + '</p>' +
+      '<div class="sponsor-card sponsor-card-active">' +
+        '<div class="sponsor-card-head"><span class="sponsor-card-icon">' + s.icon + '</span><span class="sponsor-card-name">' + escapeHtml(s.label) + '</span></div>' +
+        '<p class="sponsor-card-desc">' + escapeHtml(s.desc) + '</p>' +
         progressHtml +
-        '<p class="dim small">Ganado esta temporada con este patrocinador: <strong style="color:var(--accent-2)">' + s.totalEarned + ' M€</strong>.</p>' +
-        '<p class="dim small">El contrato termina solo al empezar la próxima temporada -- entonces podrás firmar uno nuevo.</p>' +
+        '<p class="dim small">Ganado esta temporada: <strong style="color:var(--accent-2)">' + s.totalEarned + ' M€</strong></p>' +
+        '<p class="dim small">Se renueva al empezar la próxima temporada.</p>' +
       '</div>';
   }
   var offers = c.sponsorOffers || (c.sponsorOffers = careerGenerateSponsorOffers(c));
   var offersHtml = offers.map(function (offer) {
-    return '<div class="panel">' +
-      '<h3 style="margin-bottom:4px">' + escapeHtml(offer.label) + '</h3>' +
-      '<p class="dim small">' + escapeHtml(offer.desc) + '</p>' +
+    return '<div class="sponsor-card">' +
+      '<div class="sponsor-card-head"><span class="sponsor-card-icon">' + offer.icon + '</span><span class="sponsor-card-name">' + escapeHtml(offer.label) + '</span></div>' +
+      '<p class="sponsor-card-desc">' + escapeHtml(offer.desc) + '</p>' +
       '<button class="btn btn-primary btn-block mt" onclick="actionSignCareerSponsor(\'' + offer.id + '\')">Firmar</button>' +
     '</div>';
   }).join('');
   return headerHtml +
-    '<div class="panel center-text"><p class="dim small">Elige UN patrocinador para esta temporada -- se queda fijo hasta que empiece la siguiente.</p></div>' +
-    offersHtml;
+    '<div class="panel center-text"><p class="dim small">Elige un patrocinador para la temporada.</p></div>' +
+    '<div class="sponsor-offers-grid">' + offersHtml + '</div>';
 }
 
 // Premios de la Federación ("Premios de la propia Federación... Bota de
@@ -3531,7 +3545,7 @@ window.actionStartNewCareerSeason = function () {
       return p ? p.nombre : null;
     }).filter(Boolean);
     c.loanedIds = [];
-    if (returnedNames.length) c.plantillaMessage = 'Fin de la cesión: ' + returnedNames.join(', ') + ' -- vuelven a su club.';
+    if (returnedNames.length) c.plantillaMessage = 'Fin de la cesión: ' + returnedNames.join(', ') + ', vuelven a su club.';
   }
   // Cesiones de SALIDA (tus jugadores en otro club, ver actionLoanCareerPlayer):
   // igual que las de entrada, duran 1 temporada -- vuelven solos a tu
@@ -3545,7 +3559,7 @@ window.actionStartNewCareerSeason = function () {
       return p ? p.nombre : null;
     }).filter(Boolean);
     c.loanedOutIds = [];
-    if (returnedOutNames.length) c.plantillaMessage = 'Vuelven de la cesión: ' + returnedOutNames.join(', ') + ' -- ya están en tu banquillo.';
+    if (returnedOutNames.length) c.plantillaMessage = 'Vuelven de la cesión: ' + returnedOutNames.join(', ') + ', ya están en tu banquillo.';
   }
   careerProgressAllPlayers(c);
   // Ascensos/descensos: careerComputePromotionRelegation ya calculó el
@@ -3823,7 +3837,7 @@ function renderCareerCopa(c) {
   if (careerCupLocked(c)) {
     var roundIdx = c.cup.rounds.length - 1;
     var nextMatchday = CAREER_CUP_ROUND_MATCHDAYS[roundIdx] !== undefined ? CAREER_CUP_ROUND_MATCHDAYS[roundIdx] : CAREER_CUP_ROUND_MATCHDAYS[CAREER_CUP_ROUND_MATCHDAYS.length - 1];
-    var lockedMsg = 'La próxima ronda de la Copa del Rey se juega en la jornada ' + nextMatchday + ' -- llevas jugadas ' + c.league.matchdayIndex + '.';
+    var lockedMsg = 'La próxima ronda de la Copa del Rey se juega en la jornada ' + nextMatchday + '. Llevas jugadas ' + c.league.matchdayIndex + '.';
     return '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Copa del Rey</h3>' +
       '<p class="dim small">' + lockedMsg + '</p>' +
@@ -4196,10 +4210,10 @@ function renderCareerChampions(c) {
     var championsRoundIdx = c.champions ? careerChampionsRoundIndex(c) : 0;
     var nextChampionsMatchday = CAREER_CHAMPIONS_ROUND_MATCHDAYS[championsRoundIdx] !== undefined ? CAREER_CHAMPIONS_ROUND_MATCHDAYS[championsRoundIdx] : CAREER_CHAMPIONS_ROUND_MATCHDAYS[CAREER_CHAMPIONS_ROUND_MATCHDAYS.length - 1];
     var lockedMsg = c.division !== 1
-      ? 'La Champions League solo se juega en Primera División -- ahora mismo estás en ' + careerDivisionName(c.division) + '.'
+      ? 'La Champions League solo se juega en Primera División. Ahora mismo estás en ' + careerDivisionName(c.division) + '.'
       : !c.champions
-        ? 'No te has clasificado para la Champions League esta temporada -- termina entre los ' + CAREER_CHAMPIONS_QUALIFY_SPOTS + ' primeros de Primera para jugarla la temporada que viene.'
-        : 'La próxima jornada de la Champions League (' + careerChampionsStageLabel(c) + ') se juega en la jornada ' + nextChampionsMatchday + ' -- llevas jugadas ' + c.league.matchdayIndex + '.';
+        ? 'No te has clasificado para la Champions League esta temporada. Termina entre los ' + CAREER_CHAMPIONS_QUALIFY_SPOTS + ' primeros de Primera para jugarla la que viene.'
+        : 'La próxima jornada de la Champions League (' + careerChampionsStageLabel(c) + ') se juega en la jornada ' + nextChampionsMatchday + '. Llevas jugadas ' + c.league.matchdayIndex + '.';
     return '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Champions League</h3>' +
       '<p class="dim small">' + lockedMsg + '</p>' +
@@ -4211,7 +4225,7 @@ function renderCareerChampions(c) {
       '<h3 style="margin-bottom:4px">Champions League</h3>' +
       '<p class="dim small">32 equipos, 8 grupos de 4 y luego octavos de eliminación directa, como en la vida real. Champions ganadas en la carrera: <strong style="color:var(--accent-2)">' + (c.championsWon || 0) + '</strong>.</p>' +
       (c.lastChampionsResult
-        ? '<p class="dim small">Último resultado: Tú ' + c.lastChampionsResult.myGoals + ' - ' + c.lastChampionsResult.oppGoals + ' ' + escapeHtml(c.lastChampionsResult.oppName) + (c.lastChampionsResult.penalty ? ' (penaltis ' + c.lastChampionsResult.penalty.myGoals + '-' + c.lastChampionsResult.penalty.oppGoals + ')' : '') + ' -- ' + (c.lastChampionsResult.playerWon ? 'ganaste' : (c.lastChampionsResult.isGroup && c.lastChampionsResult.myGoals === c.lastChampionsResult.oppGoals ? 'empate' : 'perdiste')) + '.</p>'
+        ? '<p class="dim small">Último resultado: Tú ' + c.lastChampionsResult.myGoals + ' - ' + c.lastChampionsResult.oppGoals + ' ' + escapeHtml(c.lastChampionsResult.oppName) + (c.lastChampionsResult.penalty ? ' (penaltis ' + c.lastChampionsResult.penalty.myGoals + '-' + c.lastChampionsResult.penalty.oppGoals + ')' : '') + ', ' + (c.lastChampionsResult.playerWon ? 'ganaste' : (c.lastChampionsResult.isGroup && c.lastChampionsResult.myGoals === c.lastChampionsResult.oppGoals ? 'empate' : 'perdiste')) + '.</p>'
         : '') +
     '</div>';
 
@@ -4221,7 +4235,7 @@ function renderCareerChampions(c) {
     var group = champions.groups[champions.myGroupIndex];
     var standing = careerChampionsGroupStanding(group);
     var tableHtml = '<div class="panel">' +
-      '<h3 style="margin-bottom:4px">Tu grupo -- jornada ' + Math.min(champions.groupRoundIndex + 1, CAREER_CHAMPIONS_GROUP_ROUNDS) + '/' + CAREER_CHAMPIONS_GROUP_ROUNDS + '</h3>' +
+      '<h3 style="margin-bottom:4px">Tu grupo, jornada ' + Math.min(champions.groupRoundIndex + 1, CAREER_CHAMPIONS_GROUP_ROUNDS) + '/' + CAREER_CHAMPIONS_GROUP_ROUNDS + '</h3>' +
       '<table class="career-liga-table"><thead><tr><th>#</th><th></th><th>Equipo</th><th>J</th><th>DG</th><th>PTS</th></tr></thead><tbody>' +
       standing.map(function (t, i) {
         var shield = t.isPlayer ? careerClubShieldPath(c) : teamShieldPath(t.name);
@@ -4558,7 +4572,7 @@ function renderCareerJornada(c) {
   if (w && w.open) {
     return '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Ventana de fichajes abierta</h3>' +
-      '<p class="dim small">Día ' + w.dayIndex + ' de ' + w.totalDays + ' (' + (w.phase === 'preseason' ? 'pretemporada' : 'mercado de invierno') + '). No se puede jugar hasta que cierre -- ve a la pestaña Mercado para negociar o avanzar el día.</p>' +
+      '<p class="dim small">Día ' + w.dayIndex + ' de ' + w.totalDays + ' (' + (w.phase === 'preseason' ? 'pretemporada' : 'mercado de invierno') + '). Ve a Mercado para negociar o avanzar el día.</p>' +
     '</div>';
   }
   // La Copa del Rey se cuela justo después de la jornada 10 -- hasta que
@@ -4632,7 +4646,7 @@ function careerSeasonHistoryRowHtml(entry) {
   return '<div class="season-badge' + (rowCls ? ' ' + rowCls : '') + '">' +
     '<div class="season-badge-icon">📅</div>' +
     '<div>' +
-      '<div class="season-badge-label">Temporada ' + entry.season + ' -- ' + escapeHtml(careerDivisionName(entry.division)) + '</div>' +
+      '<div class="season-badge-label">Temporada ' + entry.season + ', ' + escapeHtml(careerDivisionName(entry.division)) + '</div>' +
       '<div class="season-badge-text">' + positionText + moveIcon + (entry.bonus ? ' · +' + entry.bonus + ' M€' : '') + '</div>' +
       '<div class="dim small">Copa del Rey ' + cupIcon + championsIcon + '</div>' +
     '</div>' +
