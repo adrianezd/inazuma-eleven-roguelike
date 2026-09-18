@@ -305,7 +305,7 @@ function renderSurvivalCashout() {
     '<div class="screen">' +
       '<div class="panel center-text">' +
         '<h2 class="panel-title mt">¿Sigues o te retiras?</h2>' +
-        '<p class="dim small">Llevas ' + run.matchesWon + ' partidos ganados y <strong style="color:var(--accent-2)">' + run.spiritEarned + '</strong> Puntos de Espíritu acumulados en esta partida. Si sigues y acabas perdiendo, te los quedas igual -- esto es solo para poder parar cuando quieras sin arriesgarte a nada más.</p>' +
+        '<p class="dim small">Llevas ' + run.matchesWon + ' partidos ganados y <strong style="color:var(--accent-2)">' + run.spiritEarned + '</strong> Puntos de Espíritu acumulados en esta partida. Si sigues y acabas perdiendo, te los quedas igual, esto es solo para poder parar cuando quieras sin arriesgarte a nada más.</p>' +
         '<div class="btn-row" style="justify-content:center"><button class="btn btn-primary btn-block" onclick="actionContinueSurvival()">Seguir jugando</button></div>' +
         '<div class="btn-row" style="justify-content:center"><button class="btn btn-outline btn-block" onclick="actionCashOutSurvival()">Retirarte con tus puntos</button></div>' +
       '</div>' +

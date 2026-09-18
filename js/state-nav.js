@@ -284,7 +284,7 @@ function renderModeSelect() {
         (unlocked
           ? '<p class="dim small">Los rivales meten algún gol más y paran algo más. El mapa tiene 4 jefes en vez de 3 (el último, muy difícil), y en los eventos especiales puede aparecer un jefe por sorpresa.</p>'
           : '<p class="dim small">Se desbloquea ganando el Modo Normal 3 veces y teniendo más de 10 personajes desbloqueados. Progreso: ' + (meta.normalWins || 0) + '/3 victorias, ' + totalUnlocked + '/11 personajes.</p>') +
-        '<p class="dim small">Tiro y Regate: puedes encadenar regates en el mismo turno -- cada uno sube tu probabilidad de gol (cada vez menos, según tu Regate) y la de perder el balón (cada vez más), hasta que decides tirar o te lo roban. Defensa y Especial funcionan igual que siempre.</p>' +
+        '<p class="dim small">Tiro y Regate: puedes encadenar regates en el mismo turno. Cada uno sube tu probabilidad de gol (cada vez menos, según tu Regate) y la de perder el balón (cada vez más), hasta que decides tirar o te lo roban. Defensa y Especial funcionan igual que siempre.</p>' +
       '</div>' +
     '</div>'
   );

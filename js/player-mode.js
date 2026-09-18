@@ -92,10 +92,15 @@ function playerModeFreshState(choices) {
 function playerModeSimulateBlock(p) {
   // Efectos temporales de un "Cambio de posición" aceptado/rechazado el
   // salto anterior (ver playerModeRollDecision tipo 'posicion'): aceptar
-  // garantiza titularidad (juegas el bloque entero) a cambio de -2 de
-  // media ese mismo bloque; rechazar te deja con menos minutos (juegas
-  // bastante menos) pero sin penalización de media.
-  var effectiveOvr = clamp(p.ovr - (p.tempOvrPenalty || 0), 30, 99);
+  // garantiza titularidad (juegas el bloque entero) a cambio de que tu
+  // media baje de verdad esos 2 años (ovrPenalty, aplicado más abajo
+  // directo a ovrAfter, antes solo afectaba a la calidad interna de la
+  // simulación sin bajar nunca la media de verdad, un bug real: "si
+  // elijo bajar -2 puntos, baja de mi valoración, ahora no lo hace").
+  // Rechazar te deja con bastante menos minutos (la mitad de partidos)
+  // pero sin penalización de media.
+  var ovrPenalty = p.tempOvrPenalty || 0;
+  var effectiveOvr = clamp(p.ovr - ovrPenalty, 30, 99);
   var playTimeFactor = p.guaranteedStarter ? 1 : (p.reducedMinutes ? playerModePlayTimeFactor(effectiveOvr) * 0.5 : playerModePlayTimeFactor(effectiveOvr));
   p.tempOvrPenalty = 0;
   p.guaranteedStarter = false;
@@ -119,7 +124,7 @@ function playerModeSimulateBlock(p) {
   var perfBonus = clamp(Math.round((actualProduction - expectedProduction) / 3), -2, 4);
   var growth = clamp(rand(range[0], range[1]) + perfBonus, -10, 12);
   var ovrBefore = p.ovr;
-  var ovrAfter = clamp(ovrBefore + growth, 35, 99);
+  var ovrAfter = clamp(ovrBefore + growth - ovrPenalty, 35, 99);
 
   // Título colectivo: depende de lo fuerte que sea tu club (TEAM_POWER) --
   // un club "jefe" pelea títulos de verdad, uno normal solo de vez en
@@ -385,7 +390,7 @@ function playerModeCardHtml(p) {
     '<div class="matchup-row">' +
       '<div class="matchup-side">' +
         '<img class="matchup-shield" src="' + escapeHtml(playerModeShieldClub(p.club)) + '" alt="">' +
-        '<div class="matchup-name">' + escapeHtml(p.club) + (p.onLoan ? ' <span class="player-tag player-tag-loan" title="Cedido -- perteneces a otro club">Cedido</span>' : '') + '</div>' +
+        '<div class="matchup-name">' + escapeHtml(p.club) + (p.onLoan ? ' <span class="player-tag player-tag-loan" title="Cedido, perteneces a otro club">Cedido</span>' : '') + '</div>' +
       '</div>' +
     '</div>' +
     (p.onLoan ? '<p class="dim small center-text">Perteneces a <strong>' + escapeHtml(p.homeClub) + '</strong>.</p>' : '') +
@@ -396,7 +401,7 @@ function playerModeCardHtml(p) {
     '</p>' +
     '<p class="center-text dim small" style="display:flex;align-items:center;justify-content:center;gap:6px">' +
       (typeof positionIconPath === 'function' ? '<img src="' + positionIconPath(p.posicion) + '" alt="" style="width:16px;height:16px">' : '') +
-      escapeHtml(p.posicion) + ' -- ' + p.edad + ' años' +
+      escapeHtml(p.posicion) + ', ' + p.edad + ' años' +
     '</p>' +
     '<div class="stats-summary" style="grid-template-columns:repeat(4,1fr)">' +
       '<div class="stat-tile"><div class="num">' + p.ovr + '</div><div class="label">Media</div></div>' +
@@ -409,7 +414,7 @@ function playerModeCardHtml(p) {
 
 function playerModeTrophyCaseHtml(p) {
   var all = p.titulosColectivos.concat(p.titulosIndividuales);
-  if (!all.length) return '<div class="panel center-text"><p class="dim small">Vitrina vacía -- todavía sin títulos.</p></div>';
+  if (!all.length) return '<div class="panel center-text"><p class="dim small">Vitrina vacía, todavía sin títulos.</p></div>';
   var rows = all.map(function (t) {
     return '<div class="season-badge season-badge-gold"><div class="season-badge-icon">🏆</div><div class="season-badge-text">' + escapeHtml(t) + '</div></div>';
   }).join('');
@@ -424,8 +429,8 @@ function playerModeHistoryHtml(p) {
     return '<div class="season-badge">' +
       '<img class="matchup-shield" style="width:36px;height:36px" src="' + escapeHtml(playerModeShieldClub(h.club)) + '" alt="">' +
       '<div>' +
-        '<div class="season-badge-label">' + h.edadDesde + '-' + h.edadHasta + ' años -- ' + escapeHtml(h.club) + '</div>' +
-        '<div class="season-badge-text">Media ' + h.ovrAfter + ' (' + deltaHtml + ') -- ' + h.matches + ' PJ, ' + h.gls + ' G, ' + h.ast + ' A</div>' +
+        '<div class="season-badge-label">' + h.edadDesde + '-' + h.edadHasta + ' años, ' + escapeHtml(h.club) + '</div>' +
+        '<div class="season-badge-text">Media ' + h.ovrAfter + ' (' + deltaHtml + '), ' + h.matches + ' PJ, ' + h.gls + ' G, ' + h.ast + ' A</div>' +
         (titles.length ? '<div class="dim small">🏆 ' + titles.map(escapeHtml).join(' · ') + '</div>' : '') +
       '</div>' +
     '</div>';
@@ -518,7 +523,7 @@ function renderJugadorRetired(p) {
   return (
     '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Retirada a los ' + p.edad + ' años</h3>' +
-      '<p class="dim small">Termina la carrera de ' + escapeHtml(p.apellido) + ' -- gracias por jugar.</p>' +
+      '<p class="dim small">Termina la carrera de ' + escapeHtml(p.apellido) + '. Gracias por jugar.</p>' +
     '</div>' +
     playerModeCardHtml(p) +
     playerModeTrophyCaseHtml(p) +
