@@ -1587,6 +1587,12 @@ window.actionSellCareerPlayer = function (id) {
 // sentido, lo he cedido, me sigue perteneciendo"). No confundir con
 // fichar cedido (entrante, ver actionStartCareerNegotiation con mode
 // 'loan') -- esto es lo contrario.
+// Cesiones de salida ahora sí cobran un fee (antes eran gratis, "sin
+// cobrar nada") -- a petición explícita, idea de "cobrar un fee de cesión"
+// para meter más formas de ganar dinero. Un porcentaje pequeño del valor
+// del jugador, nada comparable a venderlo (que sigue siendo la opción
+// grande), ya que el jugador vuelve solo al año que viene.
+var CAREER_LOAN_OUT_FEE_RATE = 0.08;
 window.actionLoanCareerPlayer = function (id) {
   var c = G.career;
   if ((c.loanedIds || []).indexOf(id) !== -1) { c.plantillaMessage = 'No puedes ceder a un jugador que ya tienes cedido -- no es tuyo. Puedes devolverlo cuando quieras.'; render(); return; }
@@ -1596,10 +1602,12 @@ window.actionLoanCareerPlayer = function (id) {
   var p = all.find(function (x) { return x.id === id; });
   if (!p) return;
   var destTeam = choice(Math.random() < 0.4 ? RIVAL_TEAM_BOSSES : RIVAL_TEAM_NAMES);
+  var loanFee = Math.max(0.1, Math.round(careerPlayerValue(p) * CAREER_LOAN_OUT_FEE_RATE * 10) / 10);
   careerRemoveFromSquad(c, id);
   c.loanedOutIds = c.loanedOutIds || [];
   c.loanedOutIds.push(id);
-  c.plantillaMessage = 'Cedido ' + p.nombre + ' a ' + destTeam + ' (sin cobrar nada).';
+  c.budget = Math.round((c.budget + loanFee) * 10) / 10;
+  c.plantillaMessage = 'Cedido ' + p.nombre + ' a ' + destTeam + ' -- cobras un fee de cesión de ' + loanFee + ' M€.';
   render();
 };
 
@@ -2944,6 +2952,62 @@ function careerLeaguePositionBonus(position, division) {
 // c.lastLeagueFinish queda guardado para el resumen de temporada
 // (careerSeasonSummaryHtml), que se sigue viendo hasta que se pulsa ese
 // botón (actionStartNewCareerSeason reconstruye la liga de cero).
+// Objetivos de patrocinador ("Sí, unido con lo de objetivos de temporada"):
+// clausulas fijas de temporada, evaluadas junto con el premio de posición
+// -- no hay patrocinador que elegir, es directamente el mismo contrato
+// cada temporada, pero solo paga si de verdad cumples el objetivo. Segunda
+// paga menos que Primera (misma proporción que careerLeaguePositionBonus).
+function careerSponsorObjectivesForDivision(division) {
+  var scale = division === 2 ? 0.4 : 1;
+  var objectives = [
+    { key: 'top4', label: 'Acabar entre los 4 primeros de tu división', reward: Math.round(6 * scale * 10) / 10 },
+    { key: 'cupQuarters', label: 'Llegar a cuartos de la Copa del Rey', reward: Math.round(3 * scale * 10) / 10 }
+  ];
+  objectives.push(division === 1
+    ? { key: 'avoidRelegation', label: 'Evitar el descenso a Segunda', reward: Math.round(4 * scale * 10) / 10 }
+    : { key: 'promotion', label: 'Ascender a Primera', reward: 4 });
+  return objectives;
+}
+function careerEvaluateSponsorObjectives(c, position, totalTeams) {
+  var objectives = careerSponsorObjectivesForDivision(c.division);
+  var cup = c.cup;
+  var cupReachedQuarters = !!cup && (cup.eliminated ? cup.eliminatedRound >= 2 : ((cup.rounds.length - 1) >= 2 || !!careerCupChampion(cup)));
+  var met = objectives.filter(function (obj) {
+    if (obj.key === 'top4') return position <= 4;
+    if (obj.key === 'avoidRelegation') return position <= totalTeams - CAREER_PROMOTION_SPOTS;
+    if (obj.key === 'promotion') return position <= CAREER_PROMOTION_SPOTS;
+    if (obj.key === 'cupQuarters') return cupReachedQuarters;
+    return false;
+  });
+  var totalBonus = Math.round(met.reduce(function (sum, obj) { return sum + obj.reward; }, 0) * 10) / 10;
+  return { objectives: objectives, met: met, totalBonus: totalBonus };
+}
+
+// Premios de la Federación ("Premios de la propia Federación... Bota de
+// Oro, mejor jugador joven, etc."): al final de temporada, si un jugador
+// TUYO es el máximo goleador o asistente de TODA la liga (entre todos los
+// goles/asistencias registrados con futDraftRecordGoalEvents, propios y
+// rivales), gana un premio individual con recompensa en dinero.
+var CAREER_FEDERATION_AWARDS = [
+  { key: 'topScorer', bucket: 'scorers', title: 'Bota de Oro', reward: 5 },
+  { key: 'topAssist', bucket: 'assists', title: 'Máximo Asistente', reward: 3 }
+];
+function careerEvaluateFederationAwards(c) {
+  var stats = c.league.stats;
+  var won = [];
+  CAREER_FEDERATION_AWARDS.forEach(function (award) {
+    var bucket = stats[award.bucket] || {};
+    var entries = Object.keys(bucket).map(function (id) { return bucket[id]; });
+    if (!entries.length) return;
+    var best = entries.reduce(function (a, b) { return b.count > a.count ? b : a; });
+    var mine = entries.filter(function (e) { return e.team === 'Tu equipo'; });
+    var myBest = mine.reduce(function (a, b) { return (!a || b.count > a.count) ? b : a; }, null);
+    if (myBest && myBest.count === best.count && myBest.count > 0) {
+      won.push({ title: award.title, playerName: myBest.nombre, count: myBest.count, reward: award.reward });
+    }
+  });
+  return won;
+}
 function careerMaybeAwardLeagueFinish(c) {
   var league = c.league;
   if (league.matchdayIndex < league.schedule.length || league.finishBonusAwarded) return;
@@ -2952,7 +3016,11 @@ function careerMaybeAwardLeagueFinish(c) {
   if (position === null) return;
   var bonus = careerLeaguePositionBonus(position, c.division);
   c.budget = Math.round((c.budget + bonus) * 10) / 10;
-  c.lastLeagueFinish = { position: position, bonus: bonus };
+  var sponsor = careerEvaluateSponsorObjectives(c, position, league.teamNames.length);
+  if (sponsor.totalBonus > 0) c.budget = Math.round((c.budget + sponsor.totalBonus) * 10) / 10;
+  var federationAwards = careerEvaluateFederationAwards(c);
+  federationAwards.forEach(function (award) { c.budget = Math.round((c.budget + award.reward) * 10) / 10; });
+  c.lastLeagueFinish = { position: position, bonus: bonus, sponsor: sponsor, federationAwards: federationAwards };
   if (position === 1) {
     c.ligaTitlesWon = (c.ligaTitlesWon || 0) + 1;
     careerTriggerTrophyPopup(careerDivisionName(c.division));
@@ -4075,6 +4143,14 @@ function careerSeasonSummaryHtml(c) {
   // resultado (c.lastPromotionResult) al terminar la última jornada --
   // aquí solo se enseña, la aplicación real (mover nombres, cambiar
   // c.division) pasa al pulsar "Empezar temporada" (actionStartNewCareerSeason).
+  var sponsor = finish && finish.sponsor;
+  var sponsorBadges = sponsor && sponsor.met.length
+    ? sponsor.met.map(function (obj) { return careerSeasonBadgeHtml('🤝', 'Patrocinador: ' + obj.label, '+' + obj.reward + ' M€', 'season-badge-gold'); }).join('')
+    : '';
+  var federationAwards = finish && finish.federationAwards || [];
+  var federationBadges = federationAwards.map(function (award) {
+    return careerSeasonBadgeHtml('🏅', award.title, escapeHtml(award.playerName) + ' (' + award.count + ') · +' + award.reward + ' M€', 'season-badge-gold');
+  }).join('');
   var pr = c.lastPromotionResult;
   var promotionBadge = '';
   if (pr) {
@@ -4093,6 +4169,8 @@ function careerSeasonSummaryHtml(c) {
     '<div class="season-summary-badges">' +
       careerSeasonBadgeHtml('📊', 'Posición final', positionText, '') +
       (bonus ? careerSeasonBadgeHtml('💰', 'Premio de Liga', '+' + bonus + ' M€', 'season-badge-gold') : '') +
+      sponsorBadges +
+      federationBadges +
       promotionBadge +
       cupBadge +
       (c.qualifiedForChampionsNextSeason
