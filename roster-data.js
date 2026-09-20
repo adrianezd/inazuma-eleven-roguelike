@@ -2766,4 +2766,32 @@ var ROSTER = [
   locked:false,cost:18,
   sprite:'assets/sprites/r316.webp'
 },
+{
+  id:'r317', nombre:'Joe Chugger', original:'Joe Chugger',
+  posicion:'Defensa', tipo:'Fuego',
+  tiro:54,pase:68,defensa:69,especial:64,
+  hissatsu:['Baile de Llamas'],tipoTecnica:'defensa',
+  desc:'Si no se toma un café antes del partido, no logra concentrarse.',
+  locked:false,cost:18,
+  sprite:'assets/sprites/r317.webp'
+},
+{
+  id:'r318', nombre:'Mat Halled', original:'Mat Halled',
+  posicion:'Defensa', tipo:'Fuego',
+  tiro:48,pase:68,defensa:73,especial:70,
+  hissatsu:['Cortafuegos'],tipoTecnica:'defensa',
+  desc:'Su cinta parece que le da poder.',
+  locked:false,cost:18,
+  sprite:'assets/sprites/r318.png'
+},
+{
+  id:'r319', nombre:'Monarch Rome', original:'Monarch Rome',
+  posicion:'Defensa', tipo:'Viento',
+  tiro:45,pase:72,defensa:72,especial:69,
+  hissatsu:['Proyectil de Ozono'],tipoTecnica:'defensa',
+  desc:'Siempre está en calma.',
+  locked:false,cost:18,
+  sprite:'assets/sprites/r319.webp'
+},
+
 ];
