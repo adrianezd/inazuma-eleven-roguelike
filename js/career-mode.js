@@ -386,8 +386,12 @@ var CAREER_GROWTH_ROOM_FLOOR = 0.3;
 function careerGrowthRoomFactor(current) {
   return clamp((99 - current) / CAREER_GROWTH_ROOM_SPAN, CAREER_GROWTH_ROOM_FLOOR, 1);
 }
+// Los Prodigio (nivel 6) suben todavía más rápido que un Muy alto: cuentan
+// como 9 tanto en el bonus anual como en el tope de subida por temporada.
+var CAREER_PRODIGY_GROWTH_POWER = 9;
+function careerGrowthTierPower(tier) { return tier === 6 ? CAREER_PRODIGY_GROWTH_POWER : tier; }
 function careerGrowthTierBonus(c, p, current) {
-  var tier = careerPlayerGrowthTier(c, p);
+  var tier = careerGrowthTierPower(careerPlayerGrowthTier(c, p));
   return tier * CAREER_GROWTH_TIER_SCALE * careerGrowthRoomFactor(current);
 }
 // Tope DURO de subida en una sola temporada según el crecimiento fijo
@@ -412,7 +416,7 @@ var CAREER_GROWTH_TIER_SEASON_CAP_PER_TIER = 2;
 function careerGrowthSeasonCap(tier, level) {
   var lvl = typeof level === 'number' ? level : 0;
   var levelFactor = 0.5 + 0.5 * (lvl / CAREER_TRAINING_MAX_LEVEL);
-  return tier * CAREER_GROWTH_TIER_SEASON_CAP_PER_TIER * levelFactor;
+  return careerGrowthTierPower(tier) * CAREER_GROWTH_TIER_SEASON_CAP_PER_TIER * levelFactor;
 }
 // Cuántas jornadas de LIGA ha sido titular un jugador de tu plantilla
 // ESTA temporada (c.seasonAppearances, {playerId: nº de veces en
@@ -641,7 +645,7 @@ var CAREER_DIFFICULTY_TIERS = {
   facil: { name: 'Fácil', rivalLevelTarget: 65 },
   normal: { name: 'Normal', rivalLevelTarget: 81 },
   dificil: { name: 'Difícil', rivalLevelTarget: 89 },
-  muy_dificil: { name: 'Muy difícil', rivalLevelTarget: 97 }
+  muy_dificil: { name: 'Muy difícil', rivalLevelTarget: 93 }
 };
 var CAREER_DIFFICULTY_ORDER = ['facil', 'normal', 'dificil', 'muy_dificil'];
 var CAREER_NEGOTIATION_MODES = {
