@@ -249,7 +249,7 @@ function futDraftLiveTick() {
     if (ev.side === 'me') live.myGoals++; else live.oppGoals++;
     live.revealed.push(ev);
   }
-  render();
+  futDraftLiveRefresh(live);
   if (live.minute >= cap) {
     // En la Liga el empate es un resultado válido (allowDraw): no hay
     // prórroga ni penaltis, se queda como está y suma su punto a cada uno.
@@ -311,12 +311,43 @@ function futDraftTimelineRowHtml(ev, oppName, youShield) {
   return '<div class="' + rowClass + '"><span class="futdraft-timeline-minute">' + ev.minute + '\'</span><img class="futdraft-timeline-shield" src="' + escapeHtml(shieldSrc) + '" alt="">' + avatarHtml(ev.scorer) + '<span>' + text + '</span></div>';
 }
 
+// Texto del indicador de minuto y filas del resumen, compartidos entre el
+// pintado completo y la actualización en sitio (futDraftLiveRefresh).
+function futDraftLiveIndicatorText(live) {
+  return live.inExtraTime ? 'Prórroga — minuto ' + live.minute + '\' de 120\'' : 'Minuto ' + live.minute + '\' de 90\'';
+}
+function futDraftLiveLogHtml(live) {
+  var oppName = live.oppSide.name;
+  return live.revealed.slice().reverse().map(function (ev) {
+    return futDraftTimelineRowHtml(ev, oppName);
+  }).join('');
+}
+// Cada tick del partido en vivo (cada ~150 ms) antes repintaba TODA la
+// pantalla con render(), y al recrear todos los escudos y avatares se veía
+// un parpadeo constante ("que no parpadee al simular partido"). Ahora solo
+// se cambian in situ el marcador, el minuto y la lista de goles; render()
+// completo solo si cambia la estructura (empieza la prórroga) o si la
+// pantalla aún no está pintada.
+function futDraftLiveRefresh(live) {
+  var root = document.querySelector('.screen[data-live]');
+  var nums = root ? root.querySelectorAll('.score-num') : [];
+  var indicator = root ? root.querySelector('.turn-indicator') : null;
+  var timeline = root ? root.querySelector('.futdraft-timeline') : null;
+  var note = String(!!(live.inExtraTime && live.minute <= 91));
+  if (!root || nums.length < 2 || !indicator || !timeline || root.getAttribute('data-extra') !== String(!!live.inExtraTime) || root.getAttribute('data-note') !== note) { render(); return; }
+  var youAreHome = live.youAreHome !== false;
+  nums[0].textContent = youAreHome ? live.myGoals : live.oppGoals;
+  nums[1].textContent = youAreHome ? live.oppGoals : live.myGoals;
+  indicator.textContent = futDraftLiveIndicatorText(live);
+  if (timeline.getAttribute('data-count') !== String(live.revealed.length)) {
+    timeline.innerHTML = futDraftLiveLogHtml(live) || '<p class="dim small center-text">Aún no ha pasado nada…</p>';
+    timeline.setAttribute('data-count', String(live.revealed.length));
+  }
+}
 function renderFutDraftLive() {
   var live = G.futdraft.live;
   var oppName = live.oppSide.name;
-  var logHtml = live.revealed.slice().reverse().map(function (ev) {
-    return futDraftTimelineRowHtml(ev, oppName);
-  }).join('');
+  var logHtml = futDraftLiveLogHtml(live);
   // En Modo Carrera, "tu" escudo/nombre son los que hayas elegido al
   // crear la partida (careerClubShieldPath/careerClubDisplayName), no el
   // escudo equipado en la web -- antes se usaba SIEMPRE getPlayerShieldPath()
@@ -334,17 +365,17 @@ function renderFutDraftLive() {
   var youSideHtml = '<div class="score-side"><img class="team-shield" src="' + escapeHtml(youShield) + '" alt=""><div class="score-name">' + escapeHtml(youName) + '</div><div class="score-num">' + live.myGoals + '</div></div>';
   var oppSideHtml = '<div class="score-side"><img class="team-shield" src="' + escapeHtml(teamShieldPath(oppName)) + '" alt=""><div class="score-name">' + escapeHtml(oppName) + '</div><div class="score-num">' + live.oppGoals + '</div></div>';
   return (
-    '<div class="screen">' +
+    '<div class="screen" data-live="1" data-extra="' + String(!!live.inExtraTime) + '" data-note="' + String(!!(live.inExtraTime && live.minute <= 91)) + '">' +
       '<div class="match-scoreboard">' +
         (youAreHome ? youSideHtml : oppSideHtml) +
         '<div class="score-vs">VS</div>' +
         (youAreHome ? oppSideHtml : youSideHtml) +
       '</div>' +
-      '<div class="turn-indicator">' + (live.inExtraTime ? 'Prórroga — minuto ' + live.minute + '\' de 120\'' : 'Minuto ' + live.minute + '\' de 90\'') + '</div>' +
+      '<div class="turn-indicator">' + futDraftLiveIndicatorText(live) + '</div>' +
       (live.inExtraTime && live.minute <= 91 ? '<p class="dim small center-text">Empate al término del tiempo reglamentario: se juega la prórroga.</p>' : '') +
       (live.modifier && live.modifier !== 'ninguno' ? '<p class="dim small center-text">🌦️ ' + FUTDRAFT_MODIFIERS_BY_ID[live.modifier].name + ': ' + FUTDRAFT_MODIFIERS_BY_ID[live.modifier].desc + '</p>' : '') +
       '<div class="panel">' +
-        '<div class="futdraft-timeline">' + (logHtml || '<p class="dim small center-text">Aún no ha pasado nada…</p>') + '</div>' +
+        '<div class="futdraft-timeline" data-count="' + live.revealed.length + '">' + (logHtml || '<p class="dim small center-text">Aún no ha pasado nada…</p>') + '</div>' +
       '</div>' +
       '<button class="btn btn-outline btn-block" onclick="futDraftSkipLive()">Saltar simulación</button>' +
     '</div>'

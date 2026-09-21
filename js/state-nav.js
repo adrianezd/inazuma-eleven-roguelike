@@ -155,6 +155,7 @@ function render() {
     case 'futdraftPenalty': html = renderFutDraftPenalty(); break;
     case 'futdraftMatchResult': html = renderFutDraftMatchResult(); break;
     case 'futdraftSummary': html = renderFutDraftSummary(); break;
+    case 'futdraftVsSetup': html = renderFutDraftVsSetup(); break;
     case 'futdraftVsPick': html = renderFutDraftVsPick(); break;
     case 'futdraftVsResult': html = renderFutDraftVsResult(); break;
     case 'ligaTierSelect': html = renderLigaTierSelect(); break;
@@ -196,7 +197,7 @@ function renderMenu() {
           '<button class="btn btn-block" onclick="actionGoLigaTierSelect()">Liga</button>' +
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionStartFutDraftVs()">FutDraft 2 jugadores</button>' +
+          '<button class="btn btn-block" onclick="actionGoFutDraftVsSetup()">FutDraft 2 jugadores</button>' +
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-block" onclick="actionStartTournament()">Modo Torneo</button>' +

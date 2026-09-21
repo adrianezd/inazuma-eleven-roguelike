@@ -272,10 +272,13 @@ function careerModeRoster(ids) {
 // crudo (tiro/pase/defensa/especial) que también se pueden ordenar en
 // Mercado se quedan como están en roster-data.js, no hay un desglose de
 // "qué stat subió" (fuera de alcance).
+// Tope de media en Modo Carrera: 120 (antes 99), con la subida muy frenada a
+// partir de 95 (ver careerGrowthRoomFactor).
+var CAREER_SCORE_MAX = 120;
 function careerPlayerScore(p) {
   var c = G.career;
   var delta = (c && c.playerProgression && c.playerProgression[p.id]) || 0;
-  return clamp(futDraftPlayerScore(p) + delta, 30, 99);
+  return clamp(futDraftPlayerScore(p) + delta, 30, CAREER_SCORE_MAX);
 }
 
 // Mismo cálculo que futDraftScoreBreakdown (capitán/sinergia/fuera de
@@ -308,7 +311,7 @@ function careerScoreBreakdown(lineup, captainId) {
     if (typeCounts[t] >= FUTDRAFT_SYNERGY_THRESHOLD) synergyBonus += FUTDRAFT_SYNERGY_BONUS;
   });
   var misplacedPenalty = misplaced * FUTDRAFT_OUT_OF_POSITION_PENALTY;
-  var total = Math.round(clamp(base + captainBonus + synergyBonus - misplacedPenalty, 0, 100));
+  var total = Math.round(clamp(base + captainBonus + synergyBonus - misplacedPenalty, 0, CAREER_SCORE_MAX));
   return { base: Math.round(base), captainBonus: captainBonus, synergyBonus: synergyBonus, misplaced: misplaced, misplacedPenalty: misplacedPenalty, total: total };
 }
 
@@ -384,6 +387,10 @@ var CAREER_GROWTH_TIER_SCALE = 1.3;
 var CAREER_GROWTH_ROOM_SPAN = 35;
 var CAREER_GROWTH_ROOM_FLOOR = 0.3;
 function careerGrowthRoomFactor(current) {
+  // Hasta 95 igual que siempre; de 95 a 120 el crecimiento cae hasta casi
+  // nada (0.3 en 95 -> ~0.03 en 120), a petición explícita ("suben mucho
+  // mucho más lento a partir de 95").
+  if (current > 95) return clamp(CAREER_GROWTH_ROOM_FLOOR * (1 - (current - 95) / 27), 0.03, CAREER_GROWTH_ROOM_FLOOR);
   return clamp((99 - current) / CAREER_GROWTH_ROOM_SPAN, CAREER_GROWTH_ROOM_FLOOR, 1);
 }
 // Los Prodigio (nivel 6) suben todavía más rápido que un Muy alto: cuentan
@@ -492,8 +499,8 @@ function careerPlayerPotentialRange(c, p) {
   // entero en pantalla (ej. "72.33").
   var seasonCapScore = Math.round(current + careerApplySquadGrowthSplit(c, p, careerGrowthSeasonCap(tier, c.trainingLevel)));
   return {
-    low: clamp(Math.round(expected - params.variance), 30, 99),
-    high: clamp(Math.min(Math.round(expected + params.variance), seasonCapScore), 30, 99)
+    low: clamp(Math.round(expected - params.variance), 30, CAREER_SCORE_MAX),
+    high: clamp(Math.min(Math.round(expected + params.variance), seasonCapScore), 30, CAREER_SCORE_MAX)
   };
 }
 function careerProgressAllPlayers(c) {
@@ -642,10 +649,10 @@ var CAREER_STARTING_BUDGET = 2;
 // modo carrera en normal y dificil, unos 5-7 puntos cada una").
 // "Muy difícil" añadido a petición explícita, por encima de "Difícil".
 var CAREER_DIFFICULTY_TIERS = {
-  facil: { name: 'Fácil', rivalLevelTarget: 65 },
-  normal: { name: 'Normal', rivalLevelTarget: 81 },
-  dificil: { name: 'Difícil', rivalLevelTarget: 89 },
-  muy_dificil: { name: 'Muy difícil', rivalLevelTarget: 93 }
+  facil: { name: 'Fácil', rivalLevelTarget: 63 },
+  normal: { name: 'Normal', rivalLevelTarget: 79 },
+  dificil: { name: 'Difícil', rivalLevelTarget: 87 },
+  muy_dificil: { name: 'Muy difícil', rivalLevelTarget: 91 }
 };
 var CAREER_DIFFICULTY_ORDER = ['facil', 'normal', 'dificil', 'muy_dificil'];
 var CAREER_NEGOTIATION_MODES = {
@@ -1532,7 +1539,7 @@ function renderCareerEquipo(c) {
   }).join(' ');
   return (
     '<div class="panel center-text">' +
-      '<p class="dim small">Puntuación de equipo: <strong style="color:var(--accent-2)">' + breakdown.total + '</strong> / 100</p>' +
+      '<p class="dim small">Puntuación de equipo: <strong style="color:var(--accent-2)">' + breakdown.total + '</strong> / ' + CAREER_SCORE_MAX + '</p>' +
       '<p class="dim small">' + captainHint + '</p>' +
       '<button class="btn btn-tiny' + (c.pickingCaptain ? ' active' : '') + '" onclick="toggleCareerCaptainMode()">' + (c.pickingCaptain ? 'Toca a un titular para hacerlo capitán…' : 'Elegir capitán 👑') + '</button>' +
     '</div>' +
@@ -1714,7 +1721,7 @@ window.actionSellCareerPlayer = function (id) {
 // para meter más formas de ganar dinero. Un porcentaje pequeño del valor
 // del jugador, nada comparable a venderlo (que sigue siendo la opción
 // grande), ya que el jugador vuelve solo al año que viene.
-var CAREER_LOAN_OUT_FEE_RATE = 0.08;
+var CAREER_LOAN_OUT_FEE_RATE = 0.05;
 window.actionLoanCareerPlayer = function (id) {
   var c = G.career;
   if ((c.loanedIds || []).indexOf(id) !== -1) { c.plantillaMessage = 'No puedes ceder a un jugador que ya tienes cedido, no es tuyo. Puedes devolverlo cuando quieras.'; render(); return; }
@@ -2307,6 +2314,27 @@ window.actionCancelCareerNegotiation = function () {
   G.career.negotiation = null;
   render();
 };
+// Cantidad de la oferta/contraoferta: además de las flechas ◀▶ se puede
+// escribir a mano (a petición explícita). Se guarda en el modelo mientras se
+// teclea SIN volver a pintar (render() destruiría el input a cada tecla y
+// se llevaría por delante el botón de enviar antes de que llegue el clic);
+// al salir del campo solo se normaliza el valor mostrado.
+function careerMoneyInputHtml(value, kind) {
+  return '<span class="stepper-value stepper-value-input"><input class="stepper-input" type="text" inputmode="decimal" autocomplete="off" value="' + value + '" aria-label="Cantidad en millones" ' +
+    'oninput="actionTypeCareerMoney(this.value, \'' + kind + '\', false, this)" ' +
+    'onchange="actionTypeCareerMoney(this.value, \'' + kind + '\', true, this)"> M€</span>';
+}
+window.actionTypeCareerMoney = function (raw, kind, commit, input) {
+  var target = kind === 'counter' ? G.career.counterNegotiation : G.career.negotiation;
+  if (!target) return;
+  var key = kind === 'counter' ? 'counter' : 'offer';
+  var n = parseFloat(String(raw).replace(',', '.'));
+  if (isFinite(n) && n > 0) { target[key] = Math.round(n * 10) / 10; target.lastResult = null; }
+  if (commit) {
+    if (!(isFinite(n) && n > 0)) target[key] = Math.max(0.1, target[key]);
+    if (input) input.value = target[key];
+  }
+};
 window.actionAdjustCareerOffer = function (delta) {
   var neg = G.career.negotiation;
   if (!neg) return;
@@ -2380,7 +2408,7 @@ function renderCareerNegotiation(c) {
       '<p class="dim small">Ofertas a este jugador hoy: ' + offersUsed + ' / ' + CAREER_MAX_OFFERS_PER_PLAYER_PER_DAY + '. Fichajes hoy: ' + (w ? w.signingsToday : 0) + ' / ' + CAREER_MAX_SIGNINGS_PER_DAY + '.</p>' +
       '<div class="stepper-row">' +
         '<button class="btn stepper-arrow" onclick="actionAdjustCareerOffer(-0.1)">◀</button>' +
-        '<span class="stepper-value">' + neg.offer + ' M€</span>' +
+        careerMoneyInputHtml(neg.offer, 'offer') +
         '<button class="btn stepper-arrow" onclick="actionAdjustCareerOffer(0.1)">▶</button>' +
       '</div>' +
       '<div class="btn-row" style="justify-content:center">' +
@@ -2454,7 +2482,7 @@ function renderCareerCounterNegotiation(c) {
     (cn.lastResult === 'plantillaMinima' ? '<p class="dim small" style="color:var(--danger)">No puedes bajar de ' + CAREER_MIN_SQUAD_SIZE + ' jugadores en plantilla.</p>' : '') +
     '<div class="stepper-row">' +
       '<button class="btn stepper-arrow" onclick="actionAdjustCounterOffer(-0.1)">◀</button>' +
-      '<span class="stepper-value">' + cn.counter + ' M€</span>' +
+      careerMoneyInputHtml(cn.counter, 'counter') +
       '<button class="btn stepper-arrow" onclick="actionAdjustCounterOffer(0.1)">▶</button>' +
     '</div>' +
     '<div class="btn-row" style="justify-content:center">' +
@@ -3184,7 +3212,14 @@ function careerFinalLeaguePosition(c) {
 // 0.1M€ por puesto. Segunda paga bastante menos (división menor): 1º
 // 6.5M€, 2º 4M€, 3º 3M€, y desde el 4º baja 0.1M€ por puesto (4º 2.9M€,
 // 5º 2.8M€...).
+// Ingresos de competición/patrocinio recortados un 40% (a petición explícita:
+// "que se gane menos dinero en cada temporada"): premio de Liga, victorias,
+// Copa/Champions/Supercopa, Federación y patrocinadores.
+var CAREER_INCOME_SCALE = 0.6;
 function careerLeaguePositionBonus(position, division) {
+  return Math.round(careerLeaguePositionBonusBase(position, division) * CAREER_INCOME_SCALE * 10) / 10;
+}
+function careerLeaguePositionBonusBase(position, division) {
   if (division === 2) {
     if (position <= 1) return 6.5;
     if (position === 2) return 4;
@@ -3232,7 +3267,7 @@ var CAREER_SPONSOR_ELEMENT_NAMES = {
   Montaña: ['Cementos Peña Alta', 'Mochilas Cumbre Firme']
 };
 var CAREER_SPONSOR_ICONS = { fixed: '💰', perWin: '🏋️', perTrophy: '🏆', element: '🧪', perMatch: '🚌' };
-function careerSponsorScale(c) { return c.division === 2 ? 0.4 : 1; }
+function careerSponsorScale(c) { return (c.division === 2 ? 0.4 : 1) * CAREER_INCOME_SCALE; }
 // Rebalanceado a petición explícita ("no tiene sentido que el que te
 // paga por toda la temporada dé más que el que te exige 4 jugadores de
 // una afinidad"): el de elemento es el más exigente de los 5 (necesita
@@ -3360,8 +3395,8 @@ function renderCareerPatrocinadores(c) {
 // goles/asistencias registrados con futDraftRecordGoalEvents, propios y
 // rivales), gana un premio individual con recompensa en dinero.
 var CAREER_FEDERATION_AWARDS = [
-  { key: 'topScorer', bucket: 'scorers', title: 'Bota de Oro', reward: 5 },
-  { key: 'topAssist', bucket: 'assists', title: 'Máximo Asistente', reward: 3 }
+  { key: 'topScorer', bucket: 'scorers', title: 'Bota de Oro', reward: 3 },
+  { key: 'topAssist', bucket: 'assists', title: 'Máximo Asistente', reward: 2 }
 ];
 function careerEvaluateFederationAwards(c) {
   var stats = c.league.stats;
@@ -3540,7 +3575,8 @@ function careerAwardWinBonus(c, myGoals, oppGoals) {
   var bonus = c.division === 1
     ? Math.round((CAREER_WIN_BONUS_PRIMERA_MIN + Math.random() * (CAREER_WIN_BONUS_PRIMERA_MAX - CAREER_WIN_BONUS_PRIMERA_MIN)) * 100) / 100
     : choice(CAREER_WIN_BONUSES);
-  c.budget = Math.round((c.budget + bonus) * 10) / 10;
+  bonus = Math.round(bonus * CAREER_INCOME_SCALE * 100) / 100;
+  c.budget = Math.round((c.budget + bonus) * 100) / 100;
   return bonus;
 }
 
@@ -3837,7 +3873,7 @@ window.actionStartNewCareerSeason = function () {
 // para saber qué jornada le toca.
 var CAREER_CUP_SIZE = 32;
 var CAREER_CUP_ROUND_MATCHDAYS = [4, 9, 14, 19, 24];
-var CAREER_CUP_WIN_BONUS = 5;
+var CAREER_CUP_WIN_BONUS = 3;
 function careerNewCup() {
   var bracket = generateTournamentBracket(CAREER_CUP_SIZE);
   var round1 = [];
@@ -4125,7 +4161,7 @@ var CAREER_CHAMPIONS_KNOCKOUT_SIZE = 16;
 // no hace falta un algoritmo de círculo para un grupo tan pequeño.
 var CAREER_CHAMPIONS_GROUP_FIXTURE_PATTERN = [[[0, 1], [2, 3]], [[0, 2], [1, 3]], [[0, 3], [1, 2]]];
 var CAREER_CHAMPIONS_ROUND_MATCHDAYS = [5, 10, 15, 20, 26, 30, 34];
-var CAREER_CHAMPIONS_WIN_BONUS = 20;
+var CAREER_CHAMPIONS_WIN_BONUS = 12;
 function careerNewChampions() {
   var bracket = generateTournamentBracket(CAREER_CHAMPIONS_SIZE);
   var teams = bracket.slots.map(function (s) { return { isPlayer: s.isPlayer, name: s.name, tier: s.tier, pts: 0, gf: 0, ga: 0, played: 0 }; });
@@ -4525,7 +4561,7 @@ function renderCareerChampions(c) {
 // no específica de la Copa). No bloquea la Liga -- son solo 2 partidos,
 // se juegan cuando se quiera tras ganarla.
 var CAREER_SUPERCOPA_POWER = 96;
-var CAREER_SUPERCOPA_WIN_BONUS = 15;
+var CAREER_SUPERCOPA_WIN_BONUS = 9;
 function careerNewSupercopa() {
   var opponent = RIVAL_TEAM_BOSSES.slice().sort(function (a, b) { return teamPower({ name: b }) - teamPower({ name: a }); })[0];
   return { opponentName: opponent, legIndex: 0, legResults: [null, null], finished: false, won: false, rewardClaimed: false };
