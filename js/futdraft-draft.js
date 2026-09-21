@@ -716,7 +716,7 @@ function renderFutDraftTeam() {
   if (hasBench) {
     var benchItemsHtml = f.bench.map(function (p) {
       var cls = 'pitch-player futdraft-swappable' + (f.swapSelectedId === p.id ? ' selected' : '');
-      return '<div class="' + cls + '" onclick="selectFutDraftPlayer(\'' + p.id + '\')">' + pitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
+      return '<div class="' + cls + '" onclick="selectFutDraftPlayer(\'' + p.id + '\')">' + (capId === p.id ? '<span class="futdraft-captain-badge" title="Capitán">👑</span>' : '') + pitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
     }).join('');
     benchHtml =
       '<div class="panel">' +
@@ -1003,6 +1003,7 @@ function futDraftVsStartPrep() {
   s.benchB = s.squadB.slice(FUTDRAFT_SQUAD_SIZE);
   s.prepTurn = 'A';
   s.swapSelectedId = null;
+  s.captainA = null; s.captainB = null; s.pickingCaptain = false;
   G.screen = 'futdraftVsPrep';
   render();
 }
@@ -1016,8 +1017,23 @@ window.actionSetFutDraftVsFormation = function (id) {
   s.swapSelectedId = null;
   render();
 };
+function futDraftVsCaptain(side) { return side === 'A' ? G.futdraftVs.captainA : G.futdraftVs.captainB; }
+function futDraftVsSetCaptain(side, id) { if (side === 'A') G.futdraftVs.captainA = id; else G.futdraftVs.captainB = id; }
+window.actionToggleFutDraftVsCaptain = function () {
+  var s = G.futdraftVs;
+  s.pickingCaptain = !s.pickingCaptain;
+  s.swapSelectedId = null;
+  render();
+};
 window.actionSelectFutDraftVsPlayer = function (id) {
   var s = G.futdraftVs, side = s.prepTurn;
+  if (s.pickingCaptain) {
+    var isStarter = futDraftVsLineup(side).some(function (x) { return x.player.id === id; });
+    if (isStarter) futDraftVsSetCaptain(side, futDraftVsCaptain(side) === id ? null : id);
+    s.pickingCaptain = false;
+    render();
+    return;
+  }
   if (s.swapSelectedId === id) { s.swapSelectedId = null; render(); return; }
   if (!s.swapSelectedId) { s.swapSelectedId = id; render(); return; }
   var otherId = s.swapSelectedId;
@@ -1033,12 +1049,14 @@ window.actionSelectFutDraftVsPlayer = function (id) {
   } else if (iB !== -1 && bA !== -1) {
     var o2 = lineup[iB].player; lineup[iB].player = bench[bA]; bench[bA] = o2;
   }
+  var capId = futDraftVsCaptain(side);
+  if (capId && !lineup.some(function (x) { return x.player.id === capId; })) futDraftVsSetCaptain(side, null);
   s.swapSelectedId = null;
   render();
 };
 window.actionConfirmFutDraftVsPrep = function () {
   var s = G.futdraftVs;
-  s.swapSelectedId = null;
+  s.swapSelectedId = null; s.pickingCaptain = false;
   if (s.prepTurn === 'A') { s.prepTurn = 'B'; render(); return; }
   G.screen = 'futdraftVsReady';
   render();
@@ -1047,7 +1065,7 @@ window.actionPlayFutDraftVsMatch = function () { futDraftVsFinishDraft(); };
 function renderFutDraftVsReady() {
   var s = G.futdraftVs;
   function side(k) {
-    return '<div class="score-side"><img class="team-shield" src="' + escapeHtml(futDraftVsShield(k)) + '" alt=""><div class="score-name">' + escapeHtml(futDraftVsTeamName(k)) + '</div><div class="dim small">' + futDraftTeamScore(futDraftVsLineup(k), null) + ' / 100</div></div>';
+    return '<div class="score-side"><img class="team-shield" src="' + escapeHtml(futDraftVsShield(k)) + '" alt=""><div class="score-name">' + escapeHtml(futDraftVsTeamName(k)) + '</div><div class="dim small">' + futDraftTeamScore(futDraftVsLineup(k), futDraftVsCaptain(k) || null) + ' / 100</div></div>';
   }
   return '<div class="screen">' +
     '<div class="panel center-text"><h2 class="panel-title mb0">Equipos listos</h2><p class="dim small">Los dos habéis dejado el equipo preparado.</p></div>' +
@@ -1059,8 +1077,8 @@ function futDraftVsFinishDraft() {
   var s = G.futdraftVs;
   var fA = FUTDRAFT_FORMATIONS.find(function (f) { return f.id === s.formationBy.A; });
   var fB = FUTDRAFT_FORMATIONS.find(function (f) { return f.id === s.formationBy.B; });
-  var scoreA = futDraftTeamScore(s.lineupA, null);
-  var scoreB = futDraftTeamScore(s.lineupB, null);
+  var scoreA = futDraftTeamScore(s.lineupA, s.captainA || null);
+  var scoreB = futDraftTeamScore(s.lineupB, s.captainB || null);
   var atkA = scoreA * fA.atk, defA = scoreA * fA.def;
   var atkB = scoreB * fB.atk, defB = scoreB * fB.def;
   var golA = futDraftRandomGoals(futDraftExpectedGoals(atkA, defB));
@@ -1068,17 +1086,52 @@ function futDraftVsFinishDraft() {
   var playersA = s.lineupA.map(function (x) { return x.player; });
   var playersB = s.lineupB.map(function (x) { return x.player; });
   var timeline = futDraftBuildTimeline(golA, golB, playersA, playersB);
-  s.result = { golA: golA, golB: golB, timeline: timeline, scoreA: scoreA, scoreB: scoreB };
+  // Empate a los 90': prórroga (91-120) y, si sigue empatado, tanda de
+  // penaltis, como en el resto de modos.
+  var extraTime = false, penalties = null;
+  if (golA === golB) {
+    extraTime = true;
+    var etA = futDraftExtraTimeGoals(atkA, defB), etB = futDraftExtraTimeGoals(atkB, defA);
+    timeline = timeline.concat(futDraftBuildTimeline(etA, etB, playersA, playersB, 91, 120));
+    golA += etA; golB += etB;
+    if (golA === golB) penalties = futDraftVsShootout(scoreA, scoreB, playersA, playersB);
+  }
+  var winner = golA > golB ? 'A' : (golB > golA ? 'B' : (penalties ? (penalties.a > penalties.b ? 'A' : 'B') : null));
+  s.result = { golA: golA, golB: golB, timeline: timeline, scoreA: scoreA, scoreB: scoreB, extraTime: extraTime, penalties: penalties, winner: winner };
   // El partido se revela minuto a minuto (como cualquier partido simulado)
-  // y al llegar al 90' pasa solo a la pantalla de resultado.
-  s.live = { minute: 0, pending: timeline.slice(), revealed: [], gA: 0, gB: 0, done: false, token: (s.live ? s.live.token : 0) + 1 };
+  // y al terminar pasa solo a la pantalla de resultado.
+  s.live = { minute: 0, pending: timeline.slice(), revealed: [], gA: 0, gB: 0, done: false, penShown: [], token: (s.live ? s.live.token : 0) + 1 };
   G.screen = 'futdraftVsLive';
   render();
   futDraftVsLiveTick(s.live.token);
 }
+// Tanda de penaltis: 5 tiros cada uno y muerte súbita; la probabilidad de
+// acierto sale de la puntuación de cada equipo (mismo criterio que el resto
+// de modos, futDraftPenaltyShotChance).
+function futDraftVsShootout(scoreA, scoreB, playersA, playersB) {
+  var chA = futDraftPenaltyShotChance(scoreA - scoreB), chB = futDraftPenaltyShotChance(scoreB - scoreA);
+  var attempts = [], a = 0, b = 0, round = 1;
+  while (true) {
+    var okA = Math.random() < chA; if (okA) a++;
+    attempts.push({ side: 'A', round: round, player: futDraftGoalEvent(playersA).scorer, scored: okA });
+    var okB = Math.random() < chB; if (okB) b++;
+    attempts.push({ side: 'B', round: round, player: futDraftGoalEvent(playersB).scorer, scored: okB });
+    if (round >= 5 && a !== b) break;
+    if (round > 30) { if (Math.random() < 0.5) a++; else b++; break; }
+    round++;
+  }
+  return { a: a, b: b, attempts: attempts };
+}
 window.actionReplayFutDraftVsMatch = function () { futDraftVsFinishDraft(); };
 function futDraftVsLiveLogHtml(live) {
   return live.revealed.slice().reverse().map(futDraftVsTimelineRowHtml).join('') || '<p class="dim small center-text">Aún no ha pasado nada…</p>';
+}
+function futDraftVsPenRowHtml(at) {
+  return '<div class="futdraft-timeline-row' + (at.side === 'B' ? ' futdraft-timeline-row-opp' : '') + '"><span class="futdraft-timeline-minute">' + at.round + 'ª</span><img class="futdraft-timeline-shield" src="' + escapeHtml(futDraftVsShield(at.side)) + '" alt="">' + avatarHtml(at.player) + '<span><strong>' + escapeHtml(at.player.nombre) + '</strong> ' + (at.scored ? '⚽ marca' : '❌ falla') + '</span></div>';
+}
+function futDraftVsIndicatorText(live) {
+  if (live.penShown.length || live.inPen) return 'Tanda de penaltis';
+  return live.minute > 90 ? 'Prórroga — minuto ' + live.minute + "' de 120'" : 'Minuto ' + live.minute + "' de 90'";
 }
 function futDraftVsLiveRefresh(live) {
   var root = document.querySelector('.screen[data-vslive]');
@@ -1086,26 +1139,57 @@ function futDraftVsLiveRefresh(live) {
   var nums = root.querySelectorAll('.score-num');
   nums[0].textContent = live.gA;
   nums[1].textContent = live.gB;
-  root.querySelector('.turn-indicator').textContent = 'Minuto ' + live.minute + "' de 90'";
+  root.querySelector('.turn-indicator').textContent = futDraftVsIndicatorText(live);
   var tl = root.querySelector('.futdraft-timeline');
   if (tl.getAttribute('data-count') !== String(live.revealed.length)) {
     tl.innerHTML = futDraftVsLiveLogHtml(live);
     tl.setAttribute('data-count', String(live.revealed.length));
   }
+  var pen = root.querySelector('.vs-pen');
+  var pr = G.futdraftVs.result.penalties;
+  if (pr && live.penShown.length) {
+    var pa = 0, pb = 0;
+    live.penShown.forEach(function (at) { if (at.scored) { if (at.side === 'A') pa++; else pb++; } });
+    pen.hidden = false;
+    pen.innerHTML = '<h3 style="margin-bottom:6px">Penaltis: ' + pa + ' - ' + pb + '</h3><div class="futdraft-timeline">' + live.penShown.slice().reverse().map(futDraftVsPenRowHtml).join('') + '</div>';
+  }
+}
+function futDraftVsGoResult(live) {
+  var s = G.futdraftVs;
+  if (G.screen === 'futdraftVsLive' && s.live === live) { G.screen = 'futdraftVsResult'; render(); }
 }
 function futDraftVsLiveTick(token) {
   var s = G.futdraftVs;
   if (G.screen !== 'futdraftVsLive' || !s || !s.live || s.live.done || s.live.token !== token) return;
-  var live = s.live;
-  live.minute = Math.min(90, live.minute + rand(3, 7));
+  var live = s.live, r = s.result;
+  var cap = r.extraTime ? 120 : 90;
+  if (live.inPen) {
+    // Tanda de penaltis: un lanzamiento cada ~450 ms.
+    if (live.penShown.length < r.penalties.attempts.length) {
+      live.penShown.push(r.penalties.attempts[live.penShown.length]);
+      futDraftVsLiveRefresh(live);
+      setTimeout(function () { futDraftVsLiveTick(token); }, 450);
+      return;
+    }
+    live.done = true;
+    setTimeout(function () { futDraftVsGoResult(live); }, 900);
+    return;
+  }
+  live.minute = Math.min(cap, live.minute + rand(3, 7));
   while (live.pending.length && live.pending[0].minute <= live.minute) {
     var ev = live.pending.shift();
     if (ev.side === 'opp') live.gB++; else live.gA++;
     live.revealed.push(ev);
   }
   futDraftVsLiveRefresh(live);
-  if (live.minute >= 90) { live.done = true; setTimeout(function () { if (G.screen === 'futdraftVsLive' && s.live === live) { G.screen = 'futdraftVsResult'; render(); } }, 600); return; }
-  setTimeout(function () { futDraftVsLiveTick(token); }, 150);
+  if (live.minute >= cap) {
+    if (r.penalties) { live.inPen = true; setTimeout(function () { futDraftVsLiveTick(token); }, 800); return; }
+    live.done = true;
+    setTimeout(function () { futDraftVsGoResult(live); }, 600);
+    return;
+  }
+  // Al pasar del 90' con empate, breve pausa dramática antes de la prórroga.
+  setTimeout(function () { futDraftVsLiveTick(token); }, live.minute === 90 ? 500 : 150);
 }
 window.actionSkipFutDraftVsLive = function () {
   var s = G.futdraftVs;
@@ -1120,8 +1204,9 @@ function renderFutDraftVsLive() {
   }
   return '<div class="screen" data-vslive="1">' +
     '<div class="match-scoreboard">' + side('A', live.gA) + '<div class="score-vs">VS</div>' + side('B', live.gB) + '</div>' +
-    '<div class="turn-indicator">Minuto ' + live.minute + "' de 90'" + '</div>' +
+    '<div class="turn-indicator">' + futDraftVsIndicatorText(live) + '</div>' +
     '<div class="panel"><div class="futdraft-timeline" data-count="' + live.revealed.length + '">' + futDraftVsLiveLogHtml(live) + '</div></div>' +
+    '<div class="panel vs-pen" hidden></div>' +
     '<button class="btn btn-outline btn-block" onclick="actionSkipFutDraftVsLive()">Saltar simulación</button>' +
   '</div>';
 }
@@ -1157,7 +1242,8 @@ function renderFutDraftVsPrep() {
   var lineup = futDraftVsLineup(side), bench = futDraftVsBench(side);
   var fid = s.formationBy[side];
   var formation = FUTDRAFT_FORMATIONS.find(function (x) { return x.id === fid; });
-  var total = futDraftTeamScore(lineup, null);
+  var capId = futDraftVsCaptain(side);
+  var total = futDraftTeamScore(lineup, capId || null);
   function slotHtml(p, outPos) {
     var cls = 'pitch-player futdraft-swappable' + (s.swapSelectedId === p.id ? ' selected' : '') + (outPos ? ' futdraft-out-of-position' : '');
     var suffix = outPos ? ' <span class="dim">(' + p.posicion + ')</span>' : '';
@@ -1176,6 +1262,7 @@ function renderFutDraftVsPrep() {
         '<img class="team-shield" style="width:56px;height:56px" src="' + escapeHtml(futDraftVsShield(side)) + '" alt="">' +
         '<h2 class="panel-title mb0">Prepara a ' + escapeHtml(name) + '</h2>' +
         '<p class="dim small">Toca a dos jugadores para cambiarlos (titulares entre sí o titular por suplente) y elige formación. Puntuación: <strong style="color:var(--accent-2)">' + total + '</strong> / 100</p>' +
+        '<button class="btn btn-tiny' + (s.pickingCaptain ? ' active' : '') + '" onclick="actionToggleFutDraftVsCaptain()">' + (s.pickingCaptain ? 'Toca a un titular para hacerlo capitán…' : (capId ? 'Cambiar capitán 👑' : 'Elegir capitán 👑')) + '</button>' +
       '</div>' +
       '<div class="panel"><h3 style="margin-bottom:8px">Formación</h3><div class="view-toggle view-toggle-wrap">' + formationBtns + '</div>' +
         '<div class="pitch pitch-11">' + rowsHtml + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div></div>' +
@@ -1196,7 +1283,7 @@ function renderFutDraftVsResult() {
   var s = G.futdraftVs;
   var r = s.result;
   var nameA = futDraftVsTeamName('A'), nameB = futDraftVsTeamName('B');
-  var resultLabel = r.golA === r.golB ? 'Empate' : ('🏆 ¡Gana ' + escapeHtml(r.golA > r.golB ? nameA : nameB) + '!');
+  var resultLabel = !r.winner ? 'Empate' : ('🏆 ¡Gana ' + escapeHtml(r.winner === 'A' ? nameA : nameB) + '!') + (r.penalties ? '<div class="dim small">En los penaltis (' + r.penalties.a + '-' + r.penalties.b + ')</div>' : (r.extraTime ? '<div class="dim small">Tras la prórroga</div>' : ''));
   var timelineHtml = r.timeline.length
     ? '<div class="panel"><h3 style="margin-bottom:8px">Resumen del partido</h3><div class="futdraft-timeline">' +
         r.timeline.map(futDraftVsTimelineRowHtml).join('') +
@@ -1211,6 +1298,7 @@ function renderFutDraftVsResult() {
       '</div>' +
       '<div class="panel center-text"><h3 style="margin-bottom:4px">' + resultLabel + '</h3></div>' +
       timelineHtml +
+      (r.penalties ? '<div class="panel"><h3 style="margin-bottom:8px">Tanda de penaltis (' + r.penalties.a + ' - ' + r.penalties.b + ')</h3><div class="futdraft-timeline">' + r.penalties.attempts.map(futDraftVsPenRowHtml).join('') + '</div></div>' : '') +
       '<button class="btn btn-primary btn-block mt" onclick="actionReplayFutDraftVsMatch()">Volver a jugar con estos equipos</button>' +
       '<button class="btn btn-outline btn-block mt" onclick="actionStartFutDraftVsDraft()">Nuevo draft (mismos nombres y escudos)</button>' +
       '<button class="btn btn-outline btn-block mt" onclick="actionGoFutDraftVsSetup()">Cambiar nombres y escudos</button>' +

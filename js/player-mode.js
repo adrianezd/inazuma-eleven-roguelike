@@ -93,6 +93,18 @@ function playerModeFreshState(choices) {
     pj: 0, gls: 0, ast: 0,
     titulosIndividuales: [],
     titulosColectivos: [],
+    // Historial de premios (individuales y de selección) con la edad y el
+    // club en el que se ganaron, ver playerModeAwardsHtml.
+    awards: [],
+    // Selección nacional: status 'none' (aún no te llaman), 'called'
+    // (convocado, suma partidos/goles/títulos cada bloque) o 'declined'.
+    national: { status: 'none', caps: 0, goals: 0, titles: 0 },
+    // Efectos de eventos con decisiones (playerModeApplyEventFx) que se
+    // aplican UNA vez en el siguiente bloque y se vacían: growth (puntos
+    // de media), inj (prob. de lesión extra), goal (multiplicador de
+    // producción), title (prob. extra de título colectivo).
+    mods: { growth: 0, inj: 0, goal: 1, title: 0 },
+    eventMessage: null,
     history: [],
     pendingDecision: null,
     retired: false
@@ -120,6 +132,8 @@ function playerModeSimulateBlock(p) {
   p.tempOvrPenalty = 0;
   p.guaranteedStarter = false;
   p.reducedMinutes = false;
+  var mods = p.mods || { growth: 0, inj: 0, goal: 1, title: 0 };
+  p.mods = { growth: 0, inj: 0, goal: 1, title: 0 };
 
   var matches = Math.max(4, Math.round(PLAYER_MODE_SEASON_MATCHES * 2 * playTimeFactor));
   // Lesión real: probabilidad por salto, corta el bloque antes de tiempo
@@ -128,7 +142,7 @@ function playerModeSimulateBlock(p) {
   // texto.
   var injury = null;
   var injuryGrowthPenalty = 0;
-  if (Math.random() < PLAYER_MODE_INJURY_CHANCE) {
+  if (Math.random() < clamp(PLAYER_MODE_INJURY_CHANCE + (mods.inj || 0), 0.02, 0.6)) {
     var severity = PLAYER_MODE_INJURY_MIN_SEVERITY + Math.random() * (PLAYER_MODE_INJURY_MAX_SEVERITY - PLAYER_MODE_INJURY_MIN_SEVERITY);
     var missedMatches = Math.max(1, Math.round(matches * severity));
     matches = Math.max(2, matches - missedMatches);
@@ -136,8 +150,8 @@ function playerModeSimulateBlock(p) {
     injury = { missedMatches: missedMatches, severity: severity };
   }
   var qualityMult = playerModeQualityMult(effectiveOvr);
-  var goalChance = (PLAYER_MODE_GOAL_CHANCE[p.posicion] || 0.1) * qualityMult;
-  var assistChance = (PLAYER_MODE_ASSIST_CHANCE[p.posicion] || 0.1) * qualityMult;
+  var goalChance = (PLAYER_MODE_GOAL_CHANCE[p.posicion] || 0.1) * qualityMult * (mods.goal || 1);
+  var assistChance = (PLAYER_MODE_ASSIST_CHANCE[p.posicion] || 0.1) * qualityMult * (mods.goal || 1);
   var gls = 0, ast = 0;
   for (var i = 0; i < matches; i++) {
     if (Math.random() < goalChance) gls++;
@@ -150,7 +164,7 @@ function playerModeSimulateBlock(p) {
   var expectedProduction = matches * (goalChance + assistChance);
   var actualProduction = gls + ast;
   var perfBonus = clamp(Math.round((actualProduction - expectedProduction) / 3), -2, 4);
-  var growth = clamp(rand(range[0], range[1]) + perfBonus, -10, 12);
+  var growth = clamp(rand(range[0], range[1]) + perfBonus + (mods.growth || 0), -10, 12);
   var ovrBefore = p.ovr;
   var ovrAfter = clamp(ovrBefore + growth - ovrPenalty - injuryGrowthPenalty, 35, 99);
 
@@ -169,7 +183,7 @@ function playerModeSimulateBlock(p) {
   // como una crisis menor.
   if (p.pressPenaltyPending) titleChance *= 0.7;
   var reputation = typeof p.reputation === 'number' ? p.reputation : 50;
-  titleChance = clamp(titleChance + (reputation - 50) / 500, 0.02, 0.5);
+  titleChance = clamp(titleChance + (reputation - 50) / 500 + (mods.title || 0), 0.02, 0.5);
   var colectivo = [];
   if (Math.random() < titleChance) {
     colectivo.push(choice(['Campeón de Liga', 'Campeón de Copa', 'Campeón continental']) + ' con ' + p.club);
@@ -186,7 +200,27 @@ function playerModeSimulateBlock(p) {
       : choice(['Bota de Oro de la categoría', 'Mejor jugador de la temporada']));
   }
 
-  return { matches: matches, gls: gls, ast: ast, ovrBefore: ovrBefore, ovrAfter: ovrAfter, growth: growth, colectivo: colectivo, individual: individual, injury: injury };
+  // Premios extra según el rendimiento (además de los de arriba).
+  if (ovrAfter >= 85 && actualProduction > expectedProduction * 1.25 && Math.random() < 0.4) individual.push('Balón de Oro');
+  if (p.posicion === 'Portero' && actualProduction >= expectedProduction && Math.random() < 0.3) individual.push('Guante de Oro');
+  if (actualProduction > expectedProduction * 1.15 && Math.random() < 0.4) individual.push('Once ideal de la temporada');
+  // Selección nacional: si estás convocado, suma partidos y goles y
+  // puede ganar un torneo con ella (más chance cuanto mejor sea tu media).
+  var nat = p.national || (p.national = { status: 'none', caps: 0, goals: 0, titles: 0 });
+  var natBlock = null;
+  if (nat.status === 'called') {
+    var caps = rand(4, 12);
+    var natGoals = 0;
+    for (var k = 0; k < caps; k++) if (Math.random() < goalChance) natGoals++;
+    nat.caps += caps; nat.goals += natGoals;
+    natBlock = { caps: caps, goals: natGoals };
+    if (Math.random() < clamp((ovrAfter - 60) / 170 + 0.03, 0.03, 0.28)) {
+      colectivo.push(choice(['Campeón del Mundial', 'Campeón continental']) + ' con la selección');
+      nat.titles++;
+      natBlock.title = true;
+    }
+  }
+  return { matches: matches, gls: gls, ast: ast, ovrBefore: ovrBefore, ovrAfter: ovrAfter, growth: growth, colectivo: colectivo, individual: individual, injury: injury, national: natBlock };
 }
 
 // Prepara la decisión de qué club toca a continuación -- no siempre son
@@ -238,6 +272,9 @@ function playerModeRollReturnDecision(p) {
 function playerModeRollDecision(p) {
   if (p.onLoan) return playerModeRollReturnDecision(p);
   var bossChance = clamp(p.ovr / 130, 0.15, 0.75);
+  var nat = p.national;
+  if (nat && nat.status === 'none' && p.ovr >= 68 && Math.random() < 0.55) return playerModeRollCallUp(p);
+  if (Math.random() < 0.3) return playerModeRollEvent(p);
   var roll0 = Math.random();
   if (roll0 < 0.15) {
     var loanClubs = [];
@@ -277,7 +314,108 @@ function playerModeRollDecision(p) {
     ]
   };
 }
+// ===== Eventos con decisiones (fichaje, lesión, polémica...) =====
+// Cada evento tiene 2-3 opciones con efectos (fx): rep (reputación), growth
+// (puntos de media el próximo bloque), inj (prob. de lesión extra), goal
+// (multiplicador de producción), title (prob. extra de título), starter /
+// reduced (titularidad garantizada / menos minutos), msg (texto que se
+// enseña luego). Con `chance` el efecto es a cara o cruz: si falla se usa
+// `elseFx`. Se aplican en playerModeApplyEventFx y sus modificadores
+// (p.mods) se consumen en el siguiente playerModeSimulateBlock.
+var PLAYER_MODE_EVENTS = [
+  {
+    id: 'polemica', icon: '📸', title: 'Polémica en redes',
+    text: 'Se filtra una foto tuya de fiesta la víspera de un partido importante y la prensa se te echa encima.',
+    options: [
+      { icon: '🙏', label: 'Pedir perdón en público', hint: '+2 reputación', fx: { rep: 2, msg: 'Pediste perdón y el asunto se olvidó rápido.' } },
+      { icon: '🤐', label: 'No decir nada', hint: 'A cara o cruz', fx: { chance: 0.5, rep: 0, msg: 'El silencio funcionó: nadie volvió a hablar del tema.', elseFx: { rep: -8, title: -0.03, msg: 'El silencio se leyó como desprecio (-8 reputación, peor ambiente).' } } },
+      { icon: '🔥', label: 'Contraatacar a la prensa', hint: '-6 reputación, +motivación', fx: { rep: -6, goal: 1.1, msg: 'Te sientes reivindicado: juegas con rabia (-6 reputación, más producción).' } }
+    ]
+  },
+  {
+    id: 'lesion', icon: '🩹', title: 'Decisión médica',
+    text: 'Arrastras molestias de tu última lesión. El cuerpo médico te da dos caminos.',
+    cond: function (p) { var b = p.history[p.history.length - 1]; return !!(b && b.injury); },
+    options: [
+      { icon: '🏥', label: 'Operarte ya', hint: 'Menos minutos, pero recuperación total', fx: { reduced: true, growth: 2, inj: -0.1, msg: 'Te operas: minutos reducidos pero vuelves como nuevo.' } },
+      { icon: '💪', label: 'Rehabilitar sin operar', hint: 'Juegas, pero riesgo de recaída', fx: { growth: -2, inj: 0.15, msg: 'Rehabilitas sin pasar por quirófano: juegas, pero con riesgo de recaída.' } }
+    ]
+  },
+  {
+    id: 'entreno', icon: '🏋️', title: 'Plan de trabajo',
+    text: 'Tu preparador te propone enfocar los próximos dos años de una forma distinta.',
+    options: [
+      { icon: '💪', label: 'Trabajo físico', hint: '+2 media, más riesgo de lesión', fx: { growth: 2, inj: 0.1, msg: 'Trabajo físico intenso: ganas nivel pero te expones más.' } },
+      { icon: '🎯', label: 'Trabajo técnico', hint: '+1 media, más goles y asistencias', fx: { growth: 1, goal: 1.2, msg: 'Pules la técnica: más presencia en el marcador.' } },
+      { icon: '🧘', label: 'Descanso y recuperación', hint: 'Menos riesgo de lesión', fx: { inj: -0.1, rep: 1, msg: 'Cuidas el cuerpo: te lesionas menos.' } }
+    ]
+  },
+  {
+    id: 'contrato', icon: '✍️', title: 'Renovación de contrato',
+    text: 'Tu club te propone renovar. Puedes aceptar, o apretar para pedir más.',
+    options: [
+      { icon: '🤝', label: 'Renovar sin discutir', hint: '+6 reputación, titular seguro', fx: { rep: 6, starter: true, msg: 'Renuevas y el club te da la titularidad.' } },
+      { icon: '💰', label: 'Pedir más dinero', hint: 'A cara o cruz', fx: { chance: 0.5, rep: 8, title: 0.02, msg: 'El club cede y la afición te ve como líder (+8 reputación).', elseFx: { rep: -6, reduced: true, msg: 'El club se enfada y te aparta un tiempo (-6 reputación, menos minutos).' } } }
+    ]
+  },
+  {
+    id: 'mentor', icon: '🧓', title: 'Un veterano se ofrece de mentor',
+    text: 'Una leyenda del vestuario quiere guiarte. Puedes escucharle o preferir ir por tu cuenta.',
+    cond: function (p) { return p.edad < 25; },
+    options: [
+      { icon: '📖', label: 'Aceptar su consejo', hint: '+3 media', fx: { growth: 3, msg: 'Aprendes mucho del veterano.' } },
+      { icon: '🦁', label: 'Ir por tu cuenta', hint: '+2 reputación, más producción', fx: { rep: 2, goal: 1.1, msg: 'Apuestas por tu propio camino.' } }
+    ]
+  },
+  {
+    id: 'patrocinio', icon: '👟', title: 'Contrato publicitario',
+    text: 'Una marca de botas quiere que seas su cara visible.',
+    options: [
+      { icon: '📺', label: 'Aceptar', hint: '+4 reputación, -1 media (distracción)', fx: { rep: 4, growth: -1, msg: 'Eres imagen de marca, pero tienes más compromisos.' } },
+      { icon: '🚫', label: 'Rechazar y centrarte', hint: '+1 media', fx: { growth: 1, msg: 'Te centras solo en el fútbol.' } }
+    ]
+  },
+  {
+    id: 'capitania', icon: '©️', title: 'Brazalete de capitán',
+    text: 'El entrenador te propone ser capitán del equipo.',
+    cond: function (p) { return p.edad >= 22 && (p.reputation || 50) >= 45; },
+    options: [
+      { icon: '🎖️', label: 'Aceptar la capitanía', hint: '+5 reputación, más opciones de título', fx: { rep: 5, title: 0.04, msg: 'Eres el capitán: el vestuario rema a una.' } },
+      { icon: '🙅', label: 'Prefiero no tener presión', hint: 'Sin cambios', fx: { msg: 'Rechazas el brazalete y sigues a lo tuyo.' } }
+    ]
+  }
+];
+function playerModeRollEvent(p) {
+  var pool = PLAYER_MODE_EVENTS.filter(function (e) { return !e.cond || e.cond(p); });
+  var ev = choice(pool);
+  return { type: 'evento', eventId: ev.id, title: ev.title, text: ev.text, icon: ev.icon, options: ev.options.map(function (o) { return { icon: o.icon, label: o.label, hint: o.hint, fx: o.fx }; }) };
+}
+function playerModeApplyEventFx(p, fx) {
+  var eff = fx;
+  if (typeof fx.chance === 'number' && Math.random() >= fx.chance) eff = fx.elseFx || {};
+  p.mods = p.mods || { growth: 0, inj: 0, goal: 1, title: 0 };
+  if (eff.rep) p.reputation = clamp((typeof p.reputation === 'number' ? p.reputation : 50) + eff.rep, 0, 100);
+  if (eff.growth) p.mods.growth += eff.growth;
+  if (eff.inj) p.mods.inj += eff.inj;
+  if (eff.goal) p.mods.goal *= eff.goal;
+  if (eff.title) p.mods.title += eff.title;
+  if (eff.starter) p.guaranteedStarter = true;
+  if (eff.reduced) p.reducedMinutes = true;
+  p.eventMessage = eff.msg || null;
+}
+// Convocatoria con la selección: una sola vez, cuando tu media lo permite.
+function playerModeRollCallUp(p) {
+  return {
+    type: 'seleccion', title: 'Convocatoria con la selección', icon: '🌍',
+    text: 'El seleccionador cuenta contigo. Jugar con tu país suma partidos, goles y la opción de ganar títulos con la selección.',
+    options: [
+      { icon: '🇺🇳', label: 'Aceptar la convocatoria', hint: 'Partidos, goles y torneos con la selección', call: true },
+      { icon: '🏠', label: 'Centrarme en mi club', hint: '+1 media, sin selección', call: false }
+    ]
+  };
+}
 function playerModeDecisionCopy(decision, p) {
+  if (decision.type === 'evento' || decision.type === 'seleccion') return { title: decision.title, text: decision.text };
   if (decision.type === 'crisis') return { title: 'Crisis en el club', text: 'El equipo atraviesa una mala etapa y otro club viene a buscarte.' };
   if (decision.type === 'oferta') return { title: 'Buenas noticias', text: 'Tu rendimiento ha llamado la atención de otros clubes. Elige dónde sigues tu carrera:' };
   if (decision.type === 'prestamo') return { title: 'Salida a préstamo', text: 'Tu club quiere que sumes minutos en otro equipo. Elige dónde seguir tu desarrollo.' };
@@ -368,13 +506,15 @@ window.actionAdvancePlayerCareer = function () {
   p.ast += block.ast;
   p.ovr = block.ovrAfter;
   block.colectivo.forEach(function (t) { p.titulosColectivos.push(t); });
-  block.individual.forEach(function (t) { p.titulosIndividuales.push(t); });
+  block.individual.forEach(function (t) { p.titulosIndividuales.push(t); (p.awards = p.awards || []).push({ edad: p.edad, title: t, club: p.club }); });
+  block.colectivo.forEach(function (t) { if (/selección/.test(t)) (p.awards = p.awards || []).push({ edad: p.edad, title: t, club: 'Selección' }); });
+  p.eventMessage = null;
   p.history.push({
     edadDesde: p.edad, edadHasta: p.edad + 1, club: p.club,
     ovrBefore: block.ovrBefore, ovrAfter: block.ovrAfter,
     matches: block.matches, gls: block.gls, ast: block.ast,
     colectivo: block.colectivo, individual: block.individual,
-    injury: block.injury
+    injury: block.injury, national: block.national
   });
   p.edad += 2;
   if (p.edad >= PLAYER_MODE_RETIRE_AGE) {
@@ -404,6 +544,29 @@ window.actionPickPlayerClub = function (idx) {
   if (!decision) return;
   var option = decision.options[idx];
   if (!option) return;
+  if (decision.type === 'evento') {
+    playerModeApplyEventFx(p, option.fx || {});
+    p.pendingDecision = null;
+    render();
+    return;
+  }
+  if (decision.type === 'seleccion') {
+    p.national = p.national || { status: 'none', caps: 0, goals: 0, titles: 0 };
+    if (option.call) {
+      p.national.status = 'called';
+      p.awards = p.awards || [];
+      p.awards.push({ edad: p.edad, title: 'Primera convocatoria con la selección', club: 'Selección' });
+      p.eventMessage = 'Eres internacional: a partir de ahora juegas también con tu selección.';
+    } else {
+      p.national.status = 'declined';
+      p.mods = p.mods || { growth: 0, inj: 0, goal: 1, title: 0 };
+      p.mods.growth += 1;
+      p.eventMessage = 'Renuncias a la selección para centrarte en tu club.';
+    }
+    p.pendingDecision = null;
+    render();
+    return;
+  }
   if (decision.type === 'posicion') {
     p.guaranteedStarter = !!option.accept;
     p.tempOvrPenalty = option.accept ? 2 : 0;
@@ -517,6 +680,26 @@ function playerModeTrophyCaseHtml(p) {
   return '<div class="panel"><h3 style="margin-bottom:8px" class="center-text">Vitrina de trofeos (' + all.length + ')</h3><div class="season-summary-badges">' + rows + '</div></div>';
 }
 
+function playerModeAwardsHtml(p) {
+  var awards = p.awards || [];
+  if (!awards.length) return '';
+  var rows = awards.slice().reverse().map(function (a) {
+    return '<div class="season-badge"><div class="season-badge-icon">' + (/Bal[oó]n|Mundial/.test(a.title) ? '🥇' : '🏅') + '</div><div>' +
+      '<div class="season-badge-label">' + a.edad + ' años · ' + escapeHtml(a.club) + '</div>' +
+      '<div class="season-badge-text">' + escapeHtml(a.title) + '</div></div></div>';
+  }).join('');
+  return '<div class="panel"><h3 style="margin-bottom:8px" class="center-text">Historial de premios (' + awards.length + ')</h3><div class="season-summary-badges">' + rows + '</div></div>';
+}
+function playerModeNationalHtml(p) {
+  var n = p.national;
+  if (!n || n.status !== 'called') return '';
+  return '<div class="panel"><h3 style="margin-bottom:8px" class="center-text">🌍 Selección nacional</h3>' +
+    '<div class="stats-summary" style="grid-template-columns:repeat(3,1fr)">' +
+      '<div class="stat-tile"><div class="num">' + n.caps + '</div><div class="label">Partidos</div></div>' +
+      '<div class="stat-tile"><div class="num">' + n.goals + '</div><div class="label">Goles</div></div>' +
+      '<div class="stat-tile"><div class="num">' + n.titles + '</div><div class="label">Títulos</div></div>' +
+    '</div></div>';
+}
 function playerModeHistoryHtml(p) {
   if (!p.history.length) return '';
   var rows = p.history.slice().reverse().map(function (h) {
@@ -605,6 +788,17 @@ function renderJugadorDecision(p) {
   if (p.pressMessage) {
     headerHtml = '<div class="panel center-text"><p class="dim small">' + escapeHtml(p.pressMessage) + '</p></div>' + headerHtml;
   }
+  if (decision.type === 'evento' || decision.type === 'seleccion') {
+    var evCardsHtml = decision.options.map(function (opt, idx) {
+      return '<button class="jugador-decision-card" onclick="actionPickPlayerClub(' + idx + ')">' +
+        '<div class="jugador-decision-icon">' + opt.icon + '</div>' +
+        '<strong>' + escapeHtml(opt.label) + '</strong>' +
+        '<span class="player-tag player-tag-offer">' + escapeHtml(opt.hint) + '</span>' +
+      '</button>';
+    }).join('');
+    return '<div class="panel center-text"><div style="font-size:2rem">' + decision.icon + '</div><h3 style="margin-bottom:4px">' + escapeHtml(decision.title) + '</h3><p class="dim small">' + escapeHtml(decision.text) + '</p></div>' +
+      '<div class="panel"><div class="jugador-decision-grid">' + evCardsHtml + '</div></div>';
+  }
   if (decision.type === 'posicion') {
     var cardsHtml = decision.options.map(function (opt, idx) {
       return '<button class="jugador-decision-card" onclick="actionPickPlayerClub(' + idx + ')">' +
@@ -649,6 +843,8 @@ function renderJugadorRetired(p) {
     '</div>' +
     playerModeCardHtml(p) +
     playerModeTrophyCaseHtml(p) +
+    playerModeAwardsHtml(p) +
+    playerModeNationalHtml(p) +
     playerModeHistoryHtml(p) +
     shareHtml +
     '<div class="panel">' +
@@ -669,6 +865,7 @@ function playerModeEncodeShare(p) {
     apellido: p.apellido, dorsal: p.dorsal, posicion: p.posicion, pierna: p.pierna,
     club: p.club, edad: p.edad, ovr: p.ovr, pj: p.pj, gls: p.gls, ast: p.ast,
     titulosIndividuales: p.titulosIndividuales, titulosColectivos: p.titulosColectivos,
+    awards: p.awards || [], national: p.national || null,
     history: p.history
   };
   return btoa(unescape(encodeURIComponent(JSON.stringify(summary))));
@@ -709,6 +906,8 @@ function renderJugadorShared() {
       '</div>' +
       playerModeCardHtml(p) +
       playerModeTrophyCaseHtml(p) +
+      playerModeAwardsHtml(p) +
+      playerModeNationalHtml(p) +
       playerModeHistoryHtml(p) +
       '<div class="panel">' +
         '<button class="btn btn-primary btn-block" onclick="actionGoModoJugador()">Crear la mía</button>' +
@@ -751,8 +950,11 @@ function renderJugadorMode() {
         '<button class="btn btn-outline btn-block" onclick="doBackToMenuNow()">Volver</button>' +
       '</div>' +
       playerModeCardHtml(p) +
+      (p.eventMessage && !p.pendingDecision ? '<div class="panel center-text"><p class="dim small">' + escapeHtml(p.eventMessage) + '</p></div>' : '') +
       bodyHtml +
       playerModeTrophyCaseHtml(p) +
+      playerModeAwardsHtml(p) +
+      playerModeNationalHtml(p) +
       playerModeHistoryHtml(p) +
       (G.jugadorTrophyPopup ? renderJugadorTrophyPopup() : '') +
     '</div>'
