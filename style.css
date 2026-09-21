@@ -1628,3 +1628,39 @@ button.shop-item:hover { border-color: var(--accent); }
   0%, 100% { opacity: 0.8; }
   50% { opacity: 1; }
 }
+
+/* ===== Pulido móvil (revisión general) =====
+   - Cuadrículas con minmax(0,1fr): sin esto una carta con un nombre de
+     técnica largo agrandaba su columna y desbordaba el ancho en 360 px.
+   - Campos de texto a 16px: por debajo, Safari de iPhone hace zoom al
+     tocarlos y deja la página descentrada.
+   - Botones pequeños (pills, flechas) con tamaño táctil decente y texto legible.
+   - Espacio inferior para que la barra flotante de Safari no tape los
+     últimos botones de cada pantalla. */
+.card-grid { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 560px) { .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.player-card { min-width: 0; overflow-wrap: anywhere; }
+.shop-item { flex-wrap: wrap; }
+.shop-item > * { min-width: 0; }
+.btn { max-width: 100%; }
+.action-btn { white-space: normal; text-align: center; padding-left: 10px; padding-right: 10px; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+input, select, textarea, .select-field { font-size: 16px; }
+.btn-tiny { font-size: 0.82rem; min-height: 38px; }
+.small { font-size: 0.9rem; line-height: 1.4; }
+body { padding-bottom: calc(var(--safe-b) + 72px); }
+.career-tabs-scroll { scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.career-tabs-scroll .btn { scroll-snap-align: start; }
+@media (max-width: 420px) {
+  .panel { padding: 14px; border-radius: 14px; }
+  .btn { padding-left: 14px; padding-right: 14px; }
+  .btn-row { gap: 8px; }
+}
+
+/* Filas de jugador con botones (Mercado y Gestionar plantilla): en móvil
+   no cabían nombre + precio + "Negociar/Cesión" en una sola línea y los
+   botones se salían del panel. Ahora la fila pasa a otra línea cuando hace
+   falta y el nombre ocupa el hueco libre en vez de partirse en 3 líneas. */
+.futdraft-timeline-row { flex-wrap: wrap; row-gap: 6px; }
+.futdraft-timeline-row > span:not([class]) { flex: 1 1 130px; min-width: 0; }
+.futdraft-timeline-row > .btn-tiny { flex-shrink: 0; }

@@ -3088,36 +3088,117 @@ var ROSTER = [
 
 // Raimon (Ares) (datos aproximados: nombre real, resto estimado)
 {
-  id:'r356', nombre:'Sonny Wright', original:'Sonny Wright',
+  id:'r356', nombre:'Sonny Wright', original:'Asuto Inamori',
   posicion:'Delantero', tipo:'Fuego',
-  tiro:67,pase:62,defensa:45,especial:71,
-  hissatsu:['Chut Granada'],tipoTecnica:'tiro',
-  desc:'Protagonista de la isla de Inakuni, llega para cambiar el Raimon.',
+  tiro:70,pase:64,defensa:45,especial:73,
+  hissatsu:['Ave goleadora','Entrada relampagueante'],tipoTecnica:'tiro',
+  desc:'Protagonista de la isla de Inakuni; capitán en la final del Fútbol Frontier.',
   locked:false,cost:18
 },
 {
-  id:'r357', nombre:'Maxime Dassier', original:'Maxime Dassier',
-  posicion:'Centrocampista', tipo:'Viento',
-  tiro:63,pase:73,defensa:62,especial:72,
-  hissatsu:['Giro de Mono'],tipoTecnica:'regate',
-  desc:'Capitán del Inakuni Raimon durante el torneo.',
-  locked:false,cost:18
-},
-{
-  id:'r358', nombre:'Basile Hardy', original:'Basile Hardy',
+  id:'r357', nombre:'Maxime Dassier', original:'Tatsumi Michinari',
   posicion:'Centrocampista', tipo:'Bosque',
-  tiro:64,pase:72,defensa:58,especial:63,
-  hissatsu:['Danza del viento'],tipoTecnica:'regate',
-  desc:'Compañero del Inakuni Raimon, siempre buscando nuevas técnicas.',
+  tiro:66,pase:74,defensa:62,especial:72,
+  hissatsu:['Ofensiva danzarina','Victoria tricolor'],tipoTecnica:'tiro',
+  desc:'Capitán del Raimon Isla Remota durante el torneo.',
   locked:false,cost:18
 },
 {
-  id:'r359', nombre:'Cliff Parker', original:'Cliff Parker',
+  id:'r358', nombre:'Basile Hardy', original:'Sasuke Kozoumaru',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:76,pase:68,defensa:52,especial:66,
+  hissatsu:['Tornado de fuego','Daruma de fuego'],tipoTecnica:'tiro',
+  desc:'Delantero del Raimon Isla Remota, obsesionado con su Tornado de fuego.',
+  locked:false,cost:18
+},
+{
+  id:'r359', nombre:'Cliff Parker', original:'Takashi Iwato',
   posicion:'Defensa', tipo:'Montaña',
-  tiro:50,pase:63,defensa:69,especial:62,
-  hissatsu:['Cabeza Defensiva'],tipoTecnica:'defensa',
-  desc:'Entrena sin descanso para desarrollar nuevas técnicas.',
+  tiro:48,pase:60,defensa:74,especial:64,
+  hissatsu:['El muro'],tipoTecnica:'defensa',
+  desc:'El Gólem de la isla: un muro imposible de pasar.',
   locked:false,cost:18
 },
 
+// Raimon (Ares) (datos aproximados: nombre real, resto estimado)
+{
+  id:'r360', nombre:'Elliot Ember', original:'Ryouhei Haizaki',
+  posicion:'Delantero', tipo:'Bosque',
+  tiro:80,pase:72,defensa:40,especial:68,
+  hissatsu:['Chilena de pingüino','Triángulo Letal'],tipoTecnica:'tiro',
+  desc:'Estrella de Polaris que se une al Raimon Isla Remota contra el Plenilunio.',
+  locked:false,cost:18
+},
+{
+  id:'r361', nombre:'Heath Moore', original:'Yuuma Nosaka',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:66,pase:73,defensa:56,especial:65,
+  hissatsu:['Danza del viento'],tipoTecnica:'regate',
+  desc:'Centrocampista incansable del Inakuni Raimon.',
+  locked:false,cost:18
+},
+{
+  id:'r362', nombre:'Valentin Eisner', original:'Kirina Hiura',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:70,pase:68,defensa:58,especial:70,
+  hissatsu:['Flecha de hielo','Lanza polar','Tiro meteórico'],tipoTecnica:'tiro',
+  desc:'Centrocampista del Raimon Isla Remota con técnicas de hielo.',
+  locked:false,cost:18
+},
+{
+  id:'r363', nombre:'Nino Nango', original:'Hanta Hattori',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:68,pase:70,defensa:58,especial:68,
+  hissatsu:['Sapo ninja','Jaula gravitatoria'],tipoTecnica:'tiro',
+  desc:'Centrocampista ágil del Raimon Isla Remota.',
+  locked:false,cost:18
+},
+{
+  id:'r364', nombre:'César Montalbán', original:'Hiro Okuiri',
+  posicion:'Centrocampista', tipo:'Montaña',
+  tiro:58,pase:72,defensa:68,especial:66,
+  hissatsu:['Laberinto','Jaula gravitatoria'],tipoTecnica:'regate',
+  desc:'Centrocampista que desorienta rivales con el Laberinto.',
+  locked:false,cost:18
+},
+{
+  id:'r365', nombre:'Adriano Donati', original:'Tetsunosuke Goujin',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:72,pase:62,defensa:44,especial:68,
+  hissatsu:['Cabezazo fiero','Granizado de fuego'],tipoTecnica:'tiro',
+  desc:'Delantero del Raimon Isla Remota, letal de cabeza.',
+  locked:false,cost:18
+},
+{
+  id:'r366', nombre:'Trevor Cook', original:'Yuuichirou Mansaku',
+  posicion:'Defensa', tipo:'Viento',
+  tiro:52,pase:64,defensa:68,especial:68,
+  hissatsu:['Viento centelleante'],tipoTecnica:'regate',
+  desc:'Defensa veloz del Raimon Isla Remota.',
+  locked:false,cost:18
+},
+{
+  id:'r367', nombre:'Kiko Calavento', original:'Masakatsu Hiyori',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:54,pase:64,defensa:70,especial:68,
+  hissatsu:['Torbellino interceptor','Jaula gravitatoria','Ofensiva danzarina'],tipoTecnica:'defensa',
+  desc:'Defensa del Raimon Isla Remota que recupera el balón con su Torbellino.',
+  locked:false,cost:18
+},
+{
+  id:'r368', nombre:'Sandra Fischer', original:'Sandra Fischer',
+  posicion:'Portero', tipo:'Viento',
+  tiro:30,pase:52,defensa:68,especial:72,
+  hissatsu:['Mano oceánica','Velo de sirena'],tipoTecnica:'portero',
+  desc:'Portera del Raimon Isla Remota.',
+  locked:false,cost:18
+},
+{
+  id:'r369', nombre:'Rolland Bowlby', original:'Rolland Bowlby',
+  posicion:'Portero', tipo:'Fuego',
+  tiro:28,pase:46,defensa:66,especial:66,
+  hissatsu:['Parada ardiente'],tipoTecnica:'portero',
+  desc:'Portero del Raimon Isla Remota en el manga de Atsushi Oba.',
+  locked:false,cost:18
+},
 ];

@@ -3261,11 +3261,12 @@ function careerLeaguePositionBonusBase(position, division) {
 // Cada temporada la directiva marca una posición MÁXIMA en la Liga según lo
 // fuerte que sea tu equipo frente al resto (careerBoardComputeTarget: tu
 // puesto esperado + un margen de 2). Tienes una "confianza" de 0 a 100
-// (empieza en 70): a mitad de temporada hay una revisión (si vas peor que el
+// (empieza en 100): a mitad de temporada hay una revisión (si vas peor que el
 // objetivo + 2 baja un poco) y al acabar la Liga se evalúa el puesto final.
 // Cumplir sube la confianza, quedarte cerca la baja algo y fallar por mucho
-// la hunde. Si llega a 0 te despiden y la carrera termina (c.fired).
-var CAREER_BOARD_START_CONFIDENCE = 70;
+// la hunde un poco más. Es difícil que te echen a propósito: fallando TODO cada
+// temporada (peor caso, -23) hacen falta 5 temporadas para llegar a 0 (c.fired).
+var CAREER_BOARD_START_CONFIDENCE = 100;
 var CAREER_BOARD_TARGET_MARGIN = 2;
 function careerBoardComputeTarget(c) {
   var league = c.league;
@@ -3287,7 +3288,7 @@ function careerBoardMidseasonReview(c) {
   if (c.league.matchdayIndex !== half || board.midWarning) return;
   var position = careerCurrentLeaguePosition(c);
   if (position !== null && position > board.targetPosition + 2) {
-    board.confidence = Math.max(0, board.confidence - 8);
+    board.confidence = Math.max(0, board.confidence - 3);
     board.midWarning = true;
     if (board.confidence <= 0) careerBoardFire(c, position);
   }
@@ -3305,9 +3306,9 @@ function careerBoardSeasonReview(c, position) {
   var board = careerEnsureBoard(c);
   var before = board.confidence;
   var diff = position - board.targetPosition;
-  var delta = diff <= 0 ? 12 : (diff <= 2 ? -6 : (diff <= 5 ? -20 : -35));
+  var delta = diff <= 0 ? 10 : (diff <= 2 ? -3 : (diff <= 5 ? -8 : -15));
   var n = c.league.teamNames.length;
-  if (c.division === 1 && position > n - CAREER_PROMOTION_SPOTS) delta -= 15;
+  if (c.division === 1 && position > n - CAREER_PROMOTION_SPOTS) delta -= 5;
   board.confidence = clamp(before + delta, 0, 100);
   c.lastBoardReview = { position: position, target: board.targetPosition, delta: delta, before: before, after: board.confidence, fired: board.confidence <= 0 };
   if (board.confidence <= 0) careerBoardFire(c, position);

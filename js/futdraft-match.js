@@ -459,8 +459,21 @@ function futDraftPenaltyTick() {
   if (ev.scored) { if (ev.side === 'me') p.playerGoals++; else p.rivalGoals++; }
   p.revealed.push(ev);
   if (!p.pending.length) p.done = true;
-  render();
+  futDraftPenaltyRefresh(p);
   if (!p.done) setTimeout(futDraftPenaltyTick, 450);
+}
+// Igual que futDraftLiveRefresh: solo se cambian marcador y lista de
+// lanzamientos en sitio (antes render() completo en cada lanzamiento hacía
+// parpadear escudos y avatares); repintado completo al terminar la tanda
+// (aparece el botón Continuar) o si la pantalla aún no está pintada.
+function futDraftPenaltyRefresh(p) {
+  var root = document.querySelector('.screen[data-pen]');
+  var nums = root ? root.querySelectorAll('.score-num') : [];
+  var timeline = root ? root.querySelector('.futdraft-timeline') : null;
+  if (!root || nums.length < 2 || !timeline || p.done || root.getAttribute('data-done') === 'true') { render(); return; }
+  nums[0].textContent = p.playerGoals;
+  nums[1].textContent = p.rivalGoals;
+  timeline.innerHTML = p.revealed.slice().reverse().map(function (ev) { return futDraftPenaltyRowHtml(ev, p.oppShield); }).join('');
 }
 
 window.futDraftSkipPenalty = function () {
@@ -518,7 +531,7 @@ function renderFutDraftPenalty() {
   }).join('');
   var playerWon = p.done && p.playerGoals > p.rivalGoals;
   return (
-    '<div class="screen">' +
+    '<div class="screen" data-pen="1" data-done="' + String(!!p.done) + '">' +
       '<div class="panel center-text">' +
         '<h2 class="panel-title mt mb0">Penaltis</h2>' +
         '<p class="dim small">Empate en el tiempo reglamentario contra ' + escapeHtml(p.oppName) + '. Tanda simulada a ' + PENALTY_MODE_ROUNDS + ', con muerte súbita si hay empate.</p>' +
