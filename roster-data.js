@@ -3157,7 +3157,7 @@ var ROSTER = [
   id:'r364', nombre:'César Montalbán', original:'Hiro Okuiri',
   posicion:'Centrocampista', tipo:'Montaña',
   tiro:58,pase:72,defensa:68,especial:66,
-  hissatsu:['Laberinto','Jaula gravitatoria'],tipoTecnica:'regate',
+  hissatsu:['Laberinto'],tipoTecnica:'regate',
   desc:'Centrocampista que desorienta rivales con el Laberinto.',
   locked:false,cost:18
 },
@@ -3181,7 +3181,7 @@ var ROSTER = [
   id:'r367', nombre:'Kiko Calavento', original:'Masakatsu Hiyori',
   posicion:'Defensa', tipo:'Bosque',
   tiro:54,pase:64,defensa:70,especial:68,
-  hissatsu:['Torbellino interceptor','Jaula gravitatoria','Ofensiva danzarina'],tipoTecnica:'defensa',
+  hissatsu:['Torbellino interceptor','Jaula gravitatoria'],tipoTecnica:'defensa',
   desc:'Defensa del Raimon Isla Remota que recupera el balón con su Torbellino.',
   locked:false,cost:18
 },
