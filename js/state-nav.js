@@ -159,6 +159,7 @@ function render() {
     case 'futdraftVsSetup': html = renderFutDraftVsSetup(); break;
     case 'futdraftVsPick': html = renderFutDraftVsPick(); break;
     case 'futdraftVsPrep': html = renderFutDraftVsPrep(); break;
+    case 'futdraftVsReady': html = renderFutDraftVsReady(); break;
     case 'futdraftVsResult': html = renderFutDraftVsResult(); break;
     case 'ligaTierSelect': html = renderLigaTierSelect(); break;
     case 'ligaPoolSelect': html = renderLigaPoolSelect(); break;

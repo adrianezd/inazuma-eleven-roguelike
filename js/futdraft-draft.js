@@ -1040,8 +1040,21 @@ window.actionConfirmFutDraftVsPrep = function () {
   var s = G.futdraftVs;
   s.swapSelectedId = null;
   if (s.prepTurn === 'A') { s.prepTurn = 'B'; render(); return; }
-  futDraftVsFinishDraft();
+  G.screen = 'futdraftVsReady';
+  render();
 };
+window.actionPlayFutDraftVsMatch = function () { futDraftVsFinishDraft(); };
+function renderFutDraftVsReady() {
+  var s = G.futdraftVs;
+  function side(k) {
+    return '<div class="score-side"><img class="team-shield" src="' + escapeHtml(futDraftVsShield(k)) + '" alt=""><div class="score-name">' + escapeHtml(futDraftVsTeamName(k)) + '</div><div class="dim small">' + futDraftTeamScore(futDraftVsLineup(k), null) + ' / 100</div></div>';
+  }
+  return '<div class="screen">' +
+    '<div class="panel center-text"><h2 class="panel-title mb0">Equipos listos</h2><p class="dim small">Los dos habéis dejado el equipo preparado.</p></div>' +
+    '<div class="match-scoreboard">' + side('A') + '<div class="score-vs">VS</div>' + side('B') + '</div>' +
+    '<button class="btn btn-primary btn-block mt" onclick="actionPlayFutDraftVsMatch()">Jugar</button>' +
+  '</div>';
+}
 function futDraftVsFinishDraft() {
   var s = G.futdraftVs;
   var fA = FUTDRAFT_FORMATIONS.find(function (f) { return f.id === s.formationBy.A; });
@@ -1114,7 +1127,7 @@ function renderFutDraftVsPrep() {
       '<div class="panel"><h3 style="margin-bottom:8px">Formación</h3><div class="view-toggle view-toggle-wrap">' + formationBtns + '</div>' +
         '<div class="pitch pitch-11">' + rowsHtml + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div></div>' +
       '<div class="panel"><h3 style="margin-bottom:4px">Banquillo</h3><div class="pitch-row" style="justify-content:center">' + bench.map(function (p) { return slotHtml(p, false); }).join('') + '</div></div>' +
-      '<button class="btn btn-primary btn-block mt" onclick="actionConfirmFutDraftVsPrep()">' + (last ? 'Equipo listo: ¡jugar el partido!' : 'Equipo listo (le toca al Jugador 2)') + '</button>' +
+      '<button class="btn btn-primary btn-block mt" onclick="actionConfirmFutDraftVsPrep()">' + (last ? 'Equipo listo' : 'Equipo listo (le toca al Jugador 2)') + '</button>' +
     '</div>'
   );
 }
