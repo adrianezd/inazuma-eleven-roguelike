@@ -1551,7 +1551,7 @@ function renderCareerEquipo(c) {
   }).join(' ');
   return (
     '<div class="panel center-text">' +
-      '<p class="dim small">Puntuación de equipo: <strong style="color:var(--accent-2)">' + breakdown.total + '</strong> / ' + CAREER_SCORE_MAX + '</p>' +
+      '<p class="dim small">Puntuación de equipo: <strong style="color:var(--accent-2)">' + breakdown.total + '</strong> / 100</p>' +
       '<p class="dim small">' + captainHint + '</p>' +
       '<button class="btn btn-tiny' + (c.pickingCaptain ? ' active' : '') + '" onclick="toggleCareerCaptainMode()">' + (c.pickingCaptain ? 'Toca a un titular para hacerlo capitán…' : 'Elegir capitán 👑') + '</button>' +
     '</div>' +
