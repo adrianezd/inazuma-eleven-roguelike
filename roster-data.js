@@ -2794,4 +2794,296 @@ var ROSTER = [
   sprite:'assets/sprites/r319.webp'
 },
 
+// Claustro Sagrado (datos aproximados: nombre real, resto estimado)
+{
+  id:'r320', nombre:'Crane Kik', original:'Crane Kik',
+  posicion:'Centrocampista', tipo:'Montaña',
+  tiro:56,pase:67,defensa:59,especial:66,
+  hissatsu:['Giro de Mono'],tipoTecnica:'regate',
+  desc:'Capitán del Claustro Sagrado, busca la paz interior a través del fútbol.',
+  locked:false,cost:18
+},
+{
+  id:'r321', nombre:'Tyke Wando', original:'Tyke Wando',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:67,pase:65,defensa:33,especial:69,
+  hissatsu:['Remate Giratorio'],tipoTecnica:'tiro',
+  desc:'Mano derecha del capitán, muy hábil con las artes marciales.',
+  locked:false,cost:18
+},
+{
+  id:'r322', nombre:'Dirk Artz', original:'Dirk Artz',
+  posicion:'Delantero', tipo:'Viento',
+  tiro:65,pase:66,defensa:36,especial:68,
+  hissatsu:['Cañonazo'],tipoTecnica:'tiro',
+  desc:'Delantero del Claustro Sagrado, hermano pequeño de Marshall.',
+  locked:false,cost:18
+},
+{
+  id:'r323', nombre:'Marshall Artz', original:'Marshall Artz',
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:41,pase:63,defensa:70,especial:65,
+  hissatsu:['Torre Inexpugnable'],tipoTecnica:'defensa',
+  desc:'Defensa disciplinado del Claustro Sagrado, hermano mayor de Dirk.',
+  locked:false,cost:18
+},
+{
+  id:'r324', nombre:'Brendan Water', original:'Brendan Water',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:44,pase:68,defensa:71,especial:61,
+  hissatsu:['Cabeza Defensiva'],tipoTecnica:'defensa',
+  desc:'Sereno y constante, no pierde la calma ni bajo presión.',
+  locked:false,cost:18
+},
+{
+  id:'r325', nombre:'Bri Spark', original:'Bri Spark',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:63,pase:58,defensa:31,especial:62,
+  hissatsu:['Tiro Sónico'],tipoTecnica:'tiro',
+  desc:'Rápido y con mucho carácter, siempre busca el remate.',
+  locked:false,cost:18
+},
+{
+  id:'r326', nombre:'Don Ation', original:'Don Ation',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:64,pase:71,defensa:62,especial:67,
+  hissatsu:['Tiro Sónico'],tipoTecnica:'tiro',
+  desc:'Centrocampista del Claustro Sagrado, entrena con los monjes.',
+  locked:false,cost:18
+},
+{
+  id:'r327', nombre:'Earnest Bookworm', original:'Earnest Bookworm',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:42,pase:62,defensa:70,especial:68,
+  hissatsu:['Cabeza Defensiva'],tipoTecnica:'defensa',
+  desc:'Estudioso del juego, lee las jugadas antes de que ocurran.',
+  locked:false,cost:18
+},
+{
+  id:'r328', nombre:'Ian Telektual', original:'Ian Telektual',
+  posicion:'Portero', tipo:'Montaña',
+  tiro:26,pase:44,defensa:65,especial:70,
+  hissatsu:['Red de caza'],tipoTecnica:'portero',
+  desc:'Portero de temple tranquilo, concentrado en cada disparo.',
+  locked:false,cost:18
+},
+{
+  id:'r329', nombre:'Junior Fardream', original:'Junior Fardream',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:67,pase:70,defensa:60,especial:68,
+  hissatsu:['Danza del viento'],tipoTecnica:'regate',
+  desc:'Soñador que reparte juego con calma desde el centro del campo.',
+  locked:false,cost:18
+},
+{
+  id:'r330', nombre:'Lee Dinglite', original:'Lee Dinglite',
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:47,pase:61,defensa:65,especial:63,
+  hissatsu:['Barrido Defensivo'],tipoTecnica:'defensa',
+  desc:'Defensa del Claustro Sagrado, firme en cada entrada.',
+  locked:false,cost:18
+},
+// Servicio Secreto (datos aproximados: nombre real, resto estimado)
+{
+  id:'r331', nombre:'Ken Ironwall', original:'Ken Ironwall',
+  posicion:'Portero', tipo:'Montaña',
+  tiro:22,pase:52,defensa:64,especial:65,
+  hissatsu:['Escudo de Fuerza'],tipoTecnica:'portero',
+  desc:'Un muro humano bajo los palos del Servicio Secreto.',
+  locked:false,cost:18
+},
+{
+  id:'r332', nombre:'Timothy Western', original:'Timothy Western',
+  posicion:'Defensa', tipo:'Viento',
+  tiro:50,pase:69,defensa:66,especial:62,
+  hissatsu:['Robo Rápido'],tipoTecnica:'defensa',
+  desc:'Agente veterano, defiende sin perder nunca la posición.',
+  locked:false,cost:18
+},
+{
+  id:'r333', nombre:'Shirley Stevens', original:'Shirley Stevens',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:49,pase:68,defensa:71,especial:67,
+  hissatsu:['Bloqueo'],tipoTecnica:'defensa',
+  desc:'Agente del Servicio Secreto, rápida leyendo al rival.',
+  locked:false,cost:18
+},
+{
+  id:'r334', nombre:'Wallace Hammond', original:'Wallace Hammond',
+  posicion:'Defensa', tipo:'Fuego',
+  tiro:48,pase:67,defensa:72,especial:69,
+  hissatsu:['Barrido Defensivo'],tipoTecnica:'defensa',
+  desc:'Contundente en cada balón dividido.',
+  locked:false,cost:18
+},
+{
+  id:'r335', nombre:'Ian Smith', original:'Ian Smith',
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:55,pase:69,defensa:73,especial:65,
+  hissatsu:['Cabeza Defensiva'],tipoTecnica:'defensa',
+  desc:'Defensa del Servicio Secreto, serio y fiable.',
+  locked:false,cost:18
+},
+{
+  id:'r336', nombre:'Sid Safehouse', original:'Sid Safehouse',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:50,pase:60,defensa:66,especial:72,
+  hissatsu:['Robo Rápido'],tipoTecnica:'defensa',
+  desc:'Cierra los espacios como si guardara un refugio.',
+  locked:false,cost:18
+},
+{
+  id:'r337', nombre:'Taylor Firepool', original:'Taylor Firepool',
+  posicion:'Centrocampista', tipo:'Fuego',
+  tiro:58,pase:68,defensa:55,especial:71,
+  hissatsu:['Aikido'],tipoTecnica:'defensa',
+  desc:'Centrocampista que combina el aikido con el fútbol junto a Marge Fielding.',
+  locked:false,cost:18
+},
+{
+  id:'r338', nombre:'Marge Fielding', original:'Marge Fielding',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:66,pase:65,defensa:65,especial:65,
+  hissatsu:['Aikido'],tipoTecnica:'defensa',
+  desc:'Conocida como Agente M, domina el aikido junto a Taylor Firepool.',
+  locked:false,cost:18
+},
+{
+  id:'r339', nombre:'Holly Mirror', original:'Holly Mirror',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:67,pase:68,defensa:52,especial:69,
+  hissatsu:['Danza del viento'],tipoTecnica:'regate',
+  desc:'Centrocampista astuta, difícil de leer para el rival.',
+  locked:false,cost:18
+},
+{
+  id:'r340', nombre:'Ian Sights', original:'Ian Sights',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:67,pase:65,defensa:54,especial:65,
+  hissatsu:['Tiro Sónico'],tipoTecnica:'tiro',
+  desc:'Siempre tiene el campo a la vista antes de pasar.',
+  locked:false,cost:18
+},
+{
+  id:'r341', nombre:'Ryan Tappin', original:'Ryan Tappin',
+  posicion:'Centrocampista', tipo:'Fuego',
+  tiro:57,pase:68,defensa:64,especial:63,
+  hissatsu:['Remate Giratorio'],tipoTecnica:'tiro',
+  desc:'Trabajador incansable en el centro del campo.',
+  locked:false,cost:18
+},
+{
+  id:'r342', nombre:'Joe Kenneddy', original:'Joe Kenneddy',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:64,pase:66,defensa:32,especial:67,
+  hissatsu:['Chut Granada'],tipoTecnica:'tiro',
+  desc:'Delantero del Servicio Secreto, remata sin dudar.',
+  locked:false,cost:18
+},
+{
+  id:'r343', nombre:'Marshall Firsthand', original:'Marshall Firsthand',
+  posicion:'Delantero', tipo:'Montaña',
+  tiro:64,pase:63,defensa:43,especial:60,
+  hissatsu:['Remate Múltiple'],tipoTecnica:'tiro',
+  desc:'Siempre llega primero al balón.',
+  locked:false,cost:18
+},
+{
+  id:'r344', nombre:'Greene Beray', original:'Greene Beray',
+  posicion:'Delantero', tipo:'Bosque',
+  tiro:66,pase:58,defensa:33,especial:68,
+  hissatsu:['Cañonazo'],tipoTecnica:'tiro',
+  desc:'Delantero paciente que espera su momento.',
+  locked:false,cost:18
+},
+{
+  id:'r345', nombre:'Linda Shadey', original:'Linda Shadey',
+  posicion:'Delantero', tipo:'Viento',
+  tiro:67,pase:58,defensa:34,especial:62,
+  hissatsu:['Tiro Sónico'],tipoTecnica:'tiro',
+  desc:'Se desmarca sin que el rival la vea llegar.',
+  locked:false,cost:18
+},
+// Alpino (datos aproximados: nombre real, resto estimado)
+{
+  id:'r346', nombre:'Adam Ropes', original:'Adam Ropes',
+  posicion:'Portero', tipo:'Montaña',
+  tiro:22,pase:53,defensa:68,especial:74,
+  hissatsu:['Manos infinitas'],tipoTecnica:'portero',
+  desc:'Portero del Instituto Alpino, curtido en el frío.',
+  locked:false,cost:18
+},
+{
+  id:'r347', nombre:'Milton Bindings', original:'Milton Bindings',
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:44,pase:68,defensa:71,especial:61,
+  hissatsu:['Muro de Hierro'],tipoTecnica:'defensa',
+  desc:'Defensa del Alpino, aguanta cualquier embestida.',
+  locked:false,cost:18
+},
+{
+  id:'r348', nombre:'Spike Gleeson', original:'Spike Gleeson',
+  posicion:'Defensa', tipo:'Viento',
+  tiro:48,pase:61,defensa:72,especial:61,
+  hissatsu:['Robo Rápido'],tipoTecnica:'defensa',
+  desc:'Defensa del Alpino, duro y rápido en la entrada.',
+  locked:false,cost:18
+},
+{
+  id:'r349', nombre:'Joaquine Downtown', original:'Joaquine Downtown',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:50,pase:65,defensa:66,especial:64,
+  hissatsu:['Bloqueo'],tipoTecnica:'defensa',
+  desc:'Defensa del Alpino que sale jugando desde atrás.',
+  locked:false,cost:18
+},
+{
+  id:'r350', nombre:'Roland Climbstein', original:'Roland Climbstein',
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:43,pase:61,defensa:74,especial:61,
+  hissatsu:['Cabeza Defensiva'],tipoTecnica:'defensa',
+  desc:'Escalador nato, sube y baja la banda sin cansarse.',
+  locked:false,cost:18
+},
+{
+  id:'r351', nombre:'Kerry Bootgaiter', original:'Kerry Bootgaiter',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:66,pase:67,defensa:54,especial:70,
+  hissatsu:['Espejismo'],tipoTecnica:'regate',
+  desc:'Centrocampista del Alpino, incansable en la nieve.',
+  locked:false,cost:18
+},
+{
+  id:'r352', nombre:'Maddox Rock', original:'Maddox Rock',
+  posicion:'Centrocampista', tipo:'Montaña',
+  tiro:66,pase:72,defensa:60,especial:65,
+  hissatsu:['Remate Giratorio'],tipoTecnica:'tiro',
+  desc:'Centrocampista sólido como una roca.',
+  locked:false,cost:18
+},
+{
+  id:'r353', nombre:'Quentin Rackner', original:'Quentin Rackner',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:66,pase:67,defensa:54,especial:60,
+  hissatsu:['Danza del viento'],tipoTecnica:'regate',
+  desc:'Reparte juego con precisión desde el medio campo.',
+  locked:false,cost:18
+},
+{
+  id:'r354', nombre:'Sean Snowfield', original:'Sean Snowfield',
+  posicion:'Delantero', tipo:'Viento',
+  tiro:71,pase:58,defensa:44,especial:60,
+  hissatsu:['Remate Giratorio'],tipoTecnica:'tiro',
+  desc:'Delantero del Alpino, frío ante la portería.',
+  locked:false,cost:18
+},
+{
+  id:'r355', nombre:'Robert Skipolson', original:'Robert Skipolson',
+  posicion:'Delantero', tipo:'Montaña',
+  tiro:71,pase:55,defensa:40,especial:70,
+  hissatsu:['Tiro Sónico'],tipoTecnica:'tiro',
+  desc:'Delantero del Alpino, potente y directo.',
+  locked:false,cost:18
+},
+
 ];

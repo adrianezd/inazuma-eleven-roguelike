@@ -390,13 +390,20 @@ function careerGrowthRoomFactor(current) {
   // Hasta 95 igual que siempre; de 95 a 120 el crecimiento cae hasta casi
   // nada (0.3 en 95 -> ~0.03 en 120), a petición explícita ("suben mucho
   // mucho más lento a partir de 95").
-  if (current > 95) return clamp(CAREER_GROWTH_ROOM_FLOOR * (1 - (current - 95) / 27), 0.03, CAREER_GROWTH_ROOM_FLOOR);
+  if (current > 95) return clamp(0.12 * (1 - (current - 95) / 30), 0.01, 0.12);
   return clamp((99 - current) / CAREER_GROWTH_ROOM_SPAN, CAREER_GROWTH_ROOM_FLOOR, 1);
 }
 // Los Prodigio (nivel 6) suben todavía más rápido que un Muy alto: cuentan
 // como 9 tanto en el bonus anual como en el tope de subida por temporada.
 var CAREER_PRODIGY_GROWTH_POWER = 9;
 function careerGrowthTierPower(tier) { return tier === 6 ? CAREER_PRODIGY_GROWTH_POWER : tier; }
+// Tirón hacia el ancla (techo natural, máx. 94). Por encima de 95 ya no
+// empuja hacia abajo: la media puede seguir subiendo hasta 120, solo con el
+// crecimiento propio del jugador y muy despacio (careerGrowthRoomFactor).
+function careerProgressionPull(current, params) {
+  var pull = (params.anchor - current) * params.rate;
+  return current > 95 ? Math.max(0, pull) : pull;
+}
 function careerGrowthTierBonus(c, p, current) {
   var tier = careerGrowthTierPower(careerPlayerGrowthTier(c, p));
   return tier * CAREER_GROWTH_TIER_SCALE * careerGrowthRoomFactor(current);
@@ -472,7 +479,7 @@ function careerExpectedProgressionDelta(c, p) {
   var current = careerPlayerScore(p);
   var tier = careerPlayerGrowthTier(c, p);
   var tierBonus = careerGrowthTierBonus(c, p, current);
-  var raw = (params.anchor - current) * params.rate + tierBonus;
+  var raw = careerProgressionPull(current, params) + tierBonus;
   var capped = Math.min(raw, careerGrowthSeasonCap(tier, c.trainingLevel));
   // Solo se enseña en Entrenamiento (siempre jugadores de tu plantilla),
   // así que aquí también se aplica el reparto entrenamiento/minutos
@@ -514,7 +521,7 @@ function careerProgressAllPlayers(c) {
     var current = careerPlayerScore(p);
     var tier = careerPlayerGrowthTier(c, p);
     var tierBonus = careerGrowthTierBonus(c, p, current);
-    var pull = (params.anchor - current) * params.rate + tierBonus;
+    var pull = careerProgressionPull(current, params) + tierBonus;
     var noise = (Math.random() * 2 - 1) * params.variance;
     var delta = Math.round((pull + noise) * 2) / 2;
     delta = Math.min(delta, careerGrowthSeasonCap(tier, c.trainingLevel));
