@@ -1069,8 +1069,61 @@ function futDraftVsFinishDraft() {
   var playersB = s.lineupB.map(function (x) { return x.player; });
   var timeline = futDraftBuildTimeline(golA, golB, playersA, playersB);
   s.result = { golA: golA, golB: golB, timeline: timeline, scoreA: scoreA, scoreB: scoreB };
+  // El partido se revela minuto a minuto (como cualquier partido simulado)
+  // y al llegar al 90' pasa solo a la pantalla de resultado.
+  s.live = { minute: 0, pending: timeline.slice(), revealed: [], gA: 0, gB: 0, done: false, token: (s.live ? s.live.token : 0) + 1 };
+  G.screen = 'futdraftVsLive';
+  render();
+  futDraftVsLiveTick(s.live.token);
+}
+window.actionReplayFutDraftVsMatch = function () { futDraftVsFinishDraft(); };
+function futDraftVsLiveLogHtml(live) {
+  return live.revealed.slice().reverse().map(futDraftVsTimelineRowHtml).join('') || '<p class="dim small center-text">Aún no ha pasado nada…</p>';
+}
+function futDraftVsLiveRefresh(live) {
+  var root = document.querySelector('.screen[data-vslive]');
+  if (!root) { render(); return; }
+  var nums = root.querySelectorAll('.score-num');
+  nums[0].textContent = live.gA;
+  nums[1].textContent = live.gB;
+  root.querySelector('.turn-indicator').textContent = 'Minuto ' + live.minute + "' de 90'";
+  var tl = root.querySelector('.futdraft-timeline');
+  if (tl.getAttribute('data-count') !== String(live.revealed.length)) {
+    tl.innerHTML = futDraftVsLiveLogHtml(live);
+    tl.setAttribute('data-count', String(live.revealed.length));
+  }
+}
+function futDraftVsLiveTick(token) {
+  var s = G.futdraftVs;
+  if (G.screen !== 'futdraftVsLive' || !s || !s.live || s.live.done || s.live.token !== token) return;
+  var live = s.live;
+  live.minute = Math.min(90, live.minute + rand(3, 7));
+  while (live.pending.length && live.pending[0].minute <= live.minute) {
+    var ev = live.pending.shift();
+    if (ev.side === 'opp') live.gB++; else live.gA++;
+    live.revealed.push(ev);
+  }
+  futDraftVsLiveRefresh(live);
+  if (live.minute >= 90) { live.done = true; setTimeout(function () { if (G.screen === 'futdraftVsLive' && s.live === live) { G.screen = 'futdraftVsResult'; render(); } }, 600); return; }
+  setTimeout(function () { futDraftVsLiveTick(token); }, 150);
+}
+window.actionSkipFutDraftVsLive = function () {
+  var s = G.futdraftVs;
+  if (s && s.live) s.live.done = true;
   G.screen = 'futdraftVsResult';
   render();
+};
+function renderFutDraftVsLive() {
+  var s = G.futdraftVs, live = s.live;
+  function side(k, g) {
+    return '<div class="score-side"><img class="team-shield" src="' + escapeHtml(futDraftVsShield(k)) + '" alt=""><div class="score-name">' + escapeHtml(futDraftVsTeamName(k)) + '</div><div class="score-num">' + g + '</div></div>';
+  }
+  return '<div class="screen" data-vslive="1">' +
+    '<div class="match-scoreboard">' + side('A', live.gA) + '<div class="score-vs">VS</div>' + side('B', live.gB) + '</div>' +
+    '<div class="turn-indicator">Minuto ' + live.minute + "' de 90'" + '</div>' +
+    '<div class="panel"><div class="futdraft-timeline" data-count="' + live.revealed.length + '">' + futDraftVsLiveLogHtml(live) + '</div></div>' +
+    '<button class="btn btn-outline btn-block" onclick="actionSkipFutDraftVsLive()">Saltar simulación</button>' +
+  '</div>';
 }
 function renderFutDraftVsPick() {
   var s = G.futdraftVs;
@@ -1158,7 +1211,8 @@ function renderFutDraftVsResult() {
       '</div>' +
       '<div class="panel center-text"><h3 style="margin-bottom:4px">' + resultLabel + '</h3></div>' +
       timelineHtml +
-      '<button class="btn btn-primary btn-block mt" onclick="actionStartFutDraftVsDraft()">Revancha (mismo equipo y escudo)</button>' +
+      '<button class="btn btn-primary btn-block mt" onclick="actionReplayFutDraftVsMatch()">Volver a jugar con estos equipos</button>' +
+      '<button class="btn btn-outline btn-block mt" onclick="actionStartFutDraftVsDraft()">Nuevo draft (mismos nombres y escudos)</button>' +
       '<button class="btn btn-outline btn-block mt" onclick="actionGoFutDraftVsSetup()">Cambiar nombres y escudos</button>' +
       '<button class="btn btn-outline btn-block mt" onclick="actionBackToMenu()">Volver al menú</button>' +
     '</div>'
