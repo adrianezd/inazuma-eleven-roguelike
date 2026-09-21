@@ -1011,6 +1011,9 @@ function careerSerialize(c) {
     academyCandidates: c.academyCandidates || [],
     cup: c.cup, cupsWon: c.cupsWon || 0, lastCupResult: c.lastCupResult || null,
     lastLeagueFinish: c.lastLeagueFinish || null,
+    board: c.board || null,
+    fired: c.fired || null,
+    lastBoardReview: c.lastBoardReview || null,
     lastPromotionResult: c.lastPromotionResult || null,
     champions: c.champions || null,
     qualifiedForChampionsNextSeason: !!c.qualifiedForChampionsNextSeason,
@@ -1100,6 +1103,9 @@ function careerDeserialize(data) {
     cupsWon: data.cupsWon || 0,
     lastCupResult: data.lastCupResult || null,
     lastLeagueFinish: data.lastLeagueFinish || null,
+    board: data.board || null,
+    fired: data.fired || null,
+    lastBoardReview: data.lastBoardReview || null,
     lastPromotionResult: data.lastPromotionResult || null,
     champions: careerCupRelinkWinners(data.champions) || null,
     qualifiedForChampionsNextSeason: !!data.qualifiedForChampionsNextSeason,
@@ -3121,13 +3127,16 @@ function careerPlayStyleModifiers(c) {
 // (Jornada/Copa/Champions, camino "Saltar" -- el camino "Simular" hace
 // lo mismo pero dentro de futDraftSimulateMatchCore, ver styleAtkMult/
 // styleDefMult en los puentes a FutDraft): misma base que ya se usaba
-// (futDraftScoreBreakdown, sin progresión -- limitación ya conocida del
-// motor compartido) multiplicada por la formación y ahora también por
-// el estilo de juego.
+// (ahora con la progresión de tus jugadores: careerMatchTeamScore, antes
+// eran las stats crudas del roster y entrenar/crecer no ganaba partidos)
+// multiplicada por la formación y por el estilo de juego.
+// Puntuación de tu equipo para RESOLVER partidos: la misma que se ve en Mi
+// equipo (careerScoreBreakdown, con c.playerProgression).
+function careerMatchTeamScore(c) { return careerScoreBreakdown(c.lineup, c.captainId).total; }
 function careerMyAtkDef(c) {
   var formation = FUTDRAFT_FORMATIONS.find(function (ft) { return ft.id === c.formation; }) || FUTDRAFT_FORMATIONS[0];
   var mods = careerPlayStyleModifiers(c);
-  var base = futDraftScoreBreakdown(c.lineup, c.captainId).total;
+  var base = careerMatchTeamScore(c);
   return { atk: base * formation.atk * mods.atk, def: base * formation.def * mods.def };
 }
 
@@ -3247,6 +3256,90 @@ function careerLeaguePositionBonusBase(position, division) {
 // c.lastLeagueFinish queda guardado para el resumen de temporada
 // (careerSeasonSummaryHtml), que se sigue viendo hasta que se pulsa ese
 // botón (actionStartNewCareerSeason reconstruye la liga de cero).
+// ===== Directiva =====
+// Objetivos de la directiva con riesgo de despido (a petición explícita).
+// Cada temporada la directiva marca una posición MÁXIMA en la Liga según lo
+// fuerte que sea tu equipo frente al resto (careerBoardComputeTarget: tu
+// puesto esperado + un margen de 2). Tienes una "confianza" de 0 a 100
+// (empieza en 70): a mitad de temporada hay una revisión (si vas peor que el
+// objetivo + 2 baja un poco) y al acabar la Liga se evalúa el puesto final.
+// Cumplir sube la confianza, quedarte cerca la baja algo y fallar por mucho
+// la hunde. Si llega a 0 te despiden y la carrera termina (c.fired).
+var CAREER_BOARD_START_CONFIDENCE = 70;
+var CAREER_BOARD_TARGET_MARGIN = 2;
+function careerBoardComputeTarget(c) {
+  var league = c.league;
+  var n = league.teamNames.length;
+  var mine = careerMatchTeamScore(c);
+  var rank = 1;
+  for (var i = 1; i < n; i++) {
+    if (careerRivalPower(league.teamNames[i]) > mine) rank++;
+  }
+  return clamp(rank + CAREER_BOARD_TARGET_MARGIN, 2, n - 3);
+}
+function careerEnsureBoard(c) {
+  if (!c.board) c.board = { targetPosition: careerBoardComputeTarget(c), confidence: CAREER_BOARD_START_CONFIDENCE, midWarning: false };
+  return c.board;
+}
+function careerBoardMidseasonReview(c) {
+  var board = careerEnsureBoard(c);
+  var half = Math.floor(c.league.schedule.length / 2);
+  if (c.league.matchdayIndex !== half || board.midWarning) return;
+  var position = careerCurrentLeaguePosition(c);
+  if (position !== null && position > board.targetPosition + 2) {
+    board.confidence = Math.max(0, board.confidence - 8);
+    board.midWarning = true;
+    if (board.confidence <= 0) careerBoardFire(c, position);
+  }
+}
+function careerCurrentLeaguePosition(c) {
+  var sorted = ligaSortedTable(c.league.table);
+  var idx = sorted.findIndex(function (t) { return t.idx === 0; });
+  return idx === -1 ? null : idx + 1;
+}
+function careerBoardFire(c, position) {
+  c.fired = { season: c.season || 1, position: position, target: careerEnsureBoard(c).targetPosition, division: c.division };
+}
+// Evalúa el puesto final. Devuelve y guarda el resumen para enseñarlo.
+function careerBoardSeasonReview(c, position) {
+  var board = careerEnsureBoard(c);
+  var before = board.confidence;
+  var diff = position - board.targetPosition;
+  var delta = diff <= 0 ? 12 : (diff <= 2 ? -6 : (diff <= 5 ? -20 : -35));
+  var n = c.league.teamNames.length;
+  if (c.division === 1 && position > n - CAREER_PROMOTION_SPOTS) delta -= 15;
+  board.confidence = clamp(before + delta, 0, 100);
+  c.lastBoardReview = { position: position, target: board.targetPosition, delta: delta, before: before, after: board.confidence, fired: board.confidence <= 0 };
+  if (board.confidence <= 0) careerBoardFire(c, position);
+  return c.lastBoardReview;
+}
+function renderCareerBoardPanel(c) {
+  var board = careerEnsureBoard(c);
+  var position = careerCurrentLeaguePosition(c);
+  var conf = Math.round(board.confidence);
+  var color = conf >= 60 ? 'var(--success)' : (conf >= 30 ? '#e08a1e' : 'var(--danger)');
+  var status = position === null ? '' : (position <= board.targetPosition ? 'Vas cumpliendo el objetivo.' : (position <= board.targetPosition + 2 ? 'Ligeramente por debajo del objetivo.' : 'La directiva está preocupada.'));
+  return '<div class="panel">' +
+    '<h3 style="margin-bottom:4px">🧑‍💼 Directiva</h3>' +
+    '<p class="dim small">Objetivo de la temporada: acabar en el puesto <strong>' + board.targetPosition + 'º</strong> o mejor' + (position === null ? '' : ' (ahora vas ' + position + 'º)') + '. ' + status + '</p>' +
+    '<div class="sponsor-progress-track"><div class="sponsor-progress-fill" style="width:' + conf + '%;background:' + color + '"></div></div>' +
+    '<p class="dim small">Confianza: <strong style="color:' + color + '">' + conf + ' / 100</strong>. Si llega a 0, te despiden.</p>' +
+  '</div>';
+}
+function renderCareerFired(c) {
+  var f = c.fired;
+  return '<div class="screen">' +
+    '<div class="panel center-text">' +
+      '<h2 class="panel-title mb0">Despedido</h2>' +
+      '<p style="font-size:2.4rem;margin:8px 0">📦</p>' +
+      '<p class="dim small">La directiva ha perdido la confianza en ti al final de la temporada ' + f.season + ': acabaste ' + f.position + 'º en ' + escapeHtml(careerDivisionName(f.division)) + ' y el objetivo era el ' + f.target + 'º.</p>' +
+      '<p class="dim small">Títulos en tu palmarés: Ligas ' + (c.ligaTitlesWon || 0) + ', Copas ' + (c.cupsWon || 0) + ', Champions ' + (c.championsWon || 0) + '.</p>' +
+      '<button class="btn btn-primary btn-block mt" onclick="actionGoCareerMode()">Empezar una carrera nueva</button>' +
+      '<button class="btn btn-outline btn-block mt" onclick="actionBackToMenu()">Volver al menú</button>' +
+    '</div>' +
+  '</div>';
+}
+
 // ===== Patrocinadores =====
 // Pestaña propia (sustituye al viejo sistema automático de "objetivos de
 // patrocinador"). 5 ofertas al empezar cada temporada, firmas como mucho
@@ -3432,6 +3525,7 @@ function careerMaybeAwardLeagueFinish(c) {
   var federationAwards = careerEvaluateFederationAwards(c);
   federationAwards.forEach(function (award) { c.budget = Math.round((c.budget + award.reward) * 10) / 10; });
   c.lastLeagueFinish = { position: position, bonus: bonus, federationAwards: federationAwards };
+  careerBoardSeasonReview(c, position);
   if (position === 1) {
     c.ligaTitlesWon = (c.ligaTitlesWon || 0) + 1;
     careerTriggerTrophyPopup(careerDivisionName(c.division));
@@ -3639,6 +3733,7 @@ window.actionSkipCareerMatchday = function () {
   league.matchdayIndex++;
   careerUpdateBestPosition(c);
   careerMaybeOpenMidseasonWindow(c);
+  careerBoardMidseasonReview(c);
   careerMaybeAwardLeagueFinish(c);
   render();
 };
@@ -3672,7 +3767,7 @@ window.actionSimulateCareerMatchday = function () {
   // petición explícita ("no puede meter gol alguien en el equipo
   // contrario al que estoy jugando, un jugador que yo tengo en mi equipo").
   var careerStyleMods = careerPlayStyleModifiers(c);
-  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna', styleAtkMult: careerStyleMods.atk, styleDefMult: careerStyleMods.def };
+  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna', styleAtkMult: careerStyleMods.atk, styleDefMult: careerStyleMods.def, teamScoreOverride: careerMatchTeamScore(c) };
   var sim = futDraftSimulateMatchCore(careerRivalPowerWithForm(oppName, league.table, oppIdx));
   G.futdraft.live = {
     oppSide: { name: oppName }, modifier: sim.modifier,
@@ -3724,6 +3819,7 @@ function finishCareerMatchdayMatch() {
   league.matchdayIndex++;
   careerUpdateBestPosition(c);
   careerMaybeOpenMidseasonWindow(c);
+  careerBoardMidseasonReview(c);
   careerMaybeAwardLeagueFinish(c);
 
   G.futdraft.lastMatchResult = {
@@ -3761,6 +3857,7 @@ window.continueCareerCupMatch = function () {
 // temporada real de verdad.
 window.actionStartNewCareerSeason = function () {
   var c = G.career;
+  if (c.fired) return;
   if (c.league.matchdayIndex < c.league.schedule.length) return;
   careerRecordSeasonHistory(c);
   c.season = (c.season || 1) + 1;
@@ -3816,6 +3913,10 @@ window.actionStartNewCareerSeason = function () {
   careerApplyPromotionRelegation(c);
   c.lastPromotionResult = null;
   c.league = careerBuildLeague(c.division, c.divisionTeams);
+  var prevConfidence = c.board ? c.board.confidence : CAREER_BOARD_START_CONFIDENCE;
+  c.board = null;
+  careerEnsureBoard(c).confidence = prevConfidence;
+  c.lastBoardReview = null;
   c.marketWindow = careerNewMarketWindow('preseason', CAREER_PRESEASON_DAYS);
   c.incomingOffers = [];
   c.boughtThisSeasonIds = []; // temporada nueva: ya se pueden volver a mover
@@ -3958,7 +4059,7 @@ function careerCupSettleRemaining(cup) {
   while (!careerCupChampion(cup)) careerCupAdvanceRound(cup);
 }
 function careerCupPenaltyShootout(c, oppName) {
-  var myScore = futDraftTeamScore(c.lineup, c.captainId);
+  var myScore = careerMatchTeamScore(c);
   var diff = myScore - careerRivalPower(oppName);
   var myChance = futDraftPenaltyShotChance(diff);
   var rivalChance = futDraftPenaltyShotChance(-diff);
@@ -4002,7 +4103,7 @@ window.actionSimulateCareerCupMatch = function () {
   // petición explícita ("no puede meter gol alguien en el equipo
   // contrario al que estoy jugando, un jugador que yo tengo en mi equipo").
   var careerStyleMods = careerPlayStyleModifiers(c);
-  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna', styleAtkMult: careerStyleMods.atk, styleDefMult: careerStyleMods.def };
+  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna', styleAtkMult: careerStyleMods.atk, styleDefMult: careerStyleMods.def, teamScoreOverride: careerMatchTeamScore(c) };
   var sim = futDraftSimulateMatchCore(careerRivalPower(opp.name));
   G.futdraft.live = {
     oppSide: { name: opp.name }, modifier: sim.modifier,
@@ -4338,7 +4439,7 @@ window.actionSimulateCareerChampionsMatch = function () {
   // petición explícita ("no puede meter gol alguien en el equipo
   // contrario al que estoy jugando, un jugador que yo tengo en mi equipo").
   var careerStyleMods = careerPlayStyleModifiers(c);
-  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna', styleAtkMult: careerStyleMods.atk, styleDefMult: careerStyleMods.def };
+  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna', styleAtkMult: careerStyleMods.atk, styleDefMult: careerStyleMods.def, teamScoreOverride: careerMatchTeamScore(c) };
   var sim = futDraftSimulateMatchCore(careerRivalPower(opp.name));
   G.futdraft.live = {
     oppSide: { name: opp.name }, modifier: sim.modifier,
@@ -4619,7 +4720,7 @@ window.actionSimulateCareerSupercopaMatch = function () {
   var youAreHome = sc.legIndex === 0;
   c.savedFutdraft = G.futdraft;
   var careerStyleMods = careerPlayStyleModifiers(c);
-  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna', styleAtkMult: careerStyleMods.atk, styleDefMult: careerStyleMods.def };
+  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna', styleAtkMult: careerStyleMods.atk, styleDefMult: careerStyleMods.def, teamScoreOverride: careerMatchTeamScore(c) };
   var sim = futDraftSimulateMatchCore(CAREER_SUPERCOPA_POWER);
   G.futdraft.live = {
     oppSide: { name: sc.opponentName }, modifier: sim.modifier,
@@ -4747,6 +4848,10 @@ function careerSeasonSummaryHtml(c) {
   // resultado (c.lastPromotionResult) al terminar la última jornada --
   // aquí solo se enseña, la aplicación real (mover nombres, cambiar
   // c.division) pasa al pulsar "Empezar temporada" (actionStartNewCareerSeason).
+  var boardReview = c.lastBoardReview;
+  var boardBadge = boardReview
+    ? careerSeasonBadgeHtml('🧑‍💼', 'Directiva, objetivo ' + boardReview.target + 'º', (boardReview.delta >= 0 ? 'Cumplido' : 'No cumplido') + ' · confianza ' + boardReview.after + ' (' + (boardReview.delta >= 0 ? '+' : '') + boardReview.delta + ')', boardReview.delta >= 0 ? 'season-badge-good' : 'season-badge-bad')
+    : '';
   var sponsorBadges = c.activeSponsor
     ? careerSeasonBadgeHtml('🤝', 'Patrocinador: ' + c.activeSponsor.label, '+' + c.activeSponsor.totalEarned + ' M€', 'season-badge-gold')
     : '';
@@ -4772,6 +4877,7 @@ function careerSeasonSummaryHtml(c) {
     '<div class="season-summary-badges">' +
       careerSeasonBadgeHtml('📊', 'Posición final', positionText, '') +
       (bonus ? careerSeasonBadgeHtml('💰', 'Premio de Liga', '+' + bonus + ' M€', 'season-badge-gold') : '') +
+      boardBadge +
       sponsorBadges +
       federationBadges +
       promotionBadge +
@@ -4990,6 +5096,7 @@ function renderCareerTrophyPopup() {
 }
 function renderCareerMode() {
   var c = G.career;
+  if (c.fired) return renderCareerFired(c);
   // Fila de pestañas ÚNICA que se desliza en horizontal (career-tabs-scroll)
   // en vez de partirse en dos líneas cuando no caben todas, a petición
   // explícita ("tanto en móvil como en web, tiene que ser una única fila
@@ -5003,7 +5110,7 @@ function renderCareerMode() {
   else if (c.tab === 'mercado') bodyHtml = renderCareerMercado(c);
   else if (c.tab === 'patrocinadores') bodyHtml = renderCareerPatrocinadores(c);
   else if (c.tab === 'competiciones') bodyHtml = renderCareerCompeticiones(c);
-  else if (c.tab === 'jornada') bodyHtml = renderCareerJornada(c);
+  else if (c.tab === 'jornada') bodyHtml = renderCareerBoardPanel(c) + renderCareerJornada(c);
   else if (c.tab === 'estadisticas') bodyHtml = renderCareerEstadisticas(c);
   else if (c.tab === 'gestion') bodyHtml = renderCareerGestion(c);
   else bodyHtml = renderCareerEquipo(c);

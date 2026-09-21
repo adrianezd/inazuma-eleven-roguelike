@@ -3086,4 +3086,38 @@ var ROSTER = [
   locked:false,cost:18
 },
 
+// Raimon (Ares) (datos aproximados: nombre real, resto estimado)
+{
+  id:'r356', nombre:'Sonny Wright', original:'Sonny Wright',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:67,pase:62,defensa:45,especial:71,
+  hissatsu:['Chut Granada'],tipoTecnica:'tiro',
+  desc:'Protagonista de la isla de Inakuni, llega para cambiar el Raimon.',
+  locked:false,cost:18
+},
+{
+  id:'r357', nombre:'Maxime Dassier', original:'Maxime Dassier',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:63,pase:73,defensa:62,especial:72,
+  hissatsu:['Giro de Mono'],tipoTecnica:'regate',
+  desc:'Capitán del Inakuni Raimon durante el torneo.',
+  locked:false,cost:18
+},
+{
+  id:'r358', nombre:'Basile Hardy', original:'Basile Hardy',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:64,pase:72,defensa:58,especial:63,
+  hissatsu:['Danza del viento'],tipoTecnica:'regate',
+  desc:'Compañero del Inakuni Raimon, siempre buscando nuevas técnicas.',
+  locked:false,cost:18
+},
+{
+  id:'r359', nombre:'Cliff Parker', original:'Cliff Parker',
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:50,pase:63,defensa:69,especial:62,
+  hissatsu:['Cabeza Defensiva'],tipoTecnica:'defensa',
+  desc:'Entrena sin descanso para desarrollar nuevas técnicas.',
+  locked:false,cost:18
+},
+
 ];

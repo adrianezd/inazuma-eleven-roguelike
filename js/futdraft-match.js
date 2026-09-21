@@ -148,7 +148,9 @@ function futDraftModifierMultipliers(modifierId, lineup) {
 function futDraftSimulateMatchCore(oppPower) {
   var f = G.futdraft;
   var formation = FUTDRAFT_FORMATIONS.find(function (ft) { return ft.id === f.formation; });
-  var score = futDraftTeamScore(f.lineup, f.captainId);
+  // Modo Carrera pasa su propia puntuación (con la progresión de los jugadores)
+  // en teamScoreOverride; el resto de modos usan las stats del roster de siempre.
+  var score = typeof f.teamScoreOverride === 'number' ? f.teamScoreOverride : futDraftTeamScore(f.lineup, f.captainId);
   var modifier = futDraftRollMatchModifier(f.condition);
   var mods = futDraftModifierMultipliers(modifier, f.lineup);
   // f.styleAtkMult/f.styleDefMult: solo Modo Carrera los pone (estilo de
