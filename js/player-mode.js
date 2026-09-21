@@ -337,6 +337,12 @@ window.actionGoJugadorSetup = function () {
 window.actionSetJugadorField = function (field, value) {
   if (!G.jugadorSetupChoices) return;
   G.jugadorSetupChoices[field] = value;
+  if (field === 'apellido') {
+    var btn = document.querySelector('[onclick="actionConfirmJugadorSetup()"]');
+    if (btn) btn.disabled = !(String(value).trim() && G.jugadorSetupChoices.club);
+    return;
+  }
+  if (field === 'dorsal') return;
   render();
 };
 window.actionConfirmJugadorSetup = function () {

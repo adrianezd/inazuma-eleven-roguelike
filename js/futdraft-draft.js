@@ -901,7 +901,6 @@ window.actionGoFutDraftVsSetup = function () {
 };
 window.actionSetFutDraftVsName = function (side, value) {
   G.futdraftVs.names[side] = value;
-  render();
 };
 window.actionSetFutDraftVsShield = function (side, name) {
   G.futdraftVs.shields[side] = name || '';

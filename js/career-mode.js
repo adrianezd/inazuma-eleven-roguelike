@@ -1191,7 +1191,6 @@ window.actionSetCareerSetupSquadMode = function (mode) {
 };
 window.actionSetCareerSetupClubName = function (value) {
   G.careerSetupChoices.clubName = value;
-  render();
 };
 window.actionSetCareerSetupClubShield = function (name) {
   G.careerSetupChoices.clubShieldName = name || null;

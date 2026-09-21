@@ -109,6 +109,7 @@ function restoreFocusAfterRerender(info) {
 // (pendingRerender) y se ejecuta justo después, nunca a la vez.
 var isRendering = false;
 var pendingRerender = false;
+var lastRenderedScreen = null;
 function render() {
   if (isRendering) { pendingRerender = true; return; }
   isRendering = true;
@@ -165,6 +166,9 @@ function render() {
     default: html = renderMenu();
   }
   if (G.confirmLeaveOpen) html += renderConfirmLeaveModal();
+  // Re-render de la misma pantalla (teclear, filtros, pestañas): sin repetir el fundido de entrada.
+  appEl.classList.toggle('no-anim', G.screen === lastRenderedScreen);
+  lastRenderedScreen = G.screen;
   appEl.innerHTML = html;
   restoreFocusAfterRerender(focusInfo);
   if (G.screen === 'map') drawMapConnections();
