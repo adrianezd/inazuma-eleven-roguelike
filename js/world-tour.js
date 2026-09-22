@@ -155,7 +155,9 @@ window.actionStartWorldTour = function (useRandom) {
     stageIndex: 0,
     cleared: [],
     pendingDraft: null,
-    won: false
+    won: false,
+    mode: worldTourSetupMode(),
+    lastLossMessage: null
   };
   G.screen = 'worldTourHome';
   render();
@@ -171,13 +173,29 @@ function worldTourStage() {
   return WORLD_TOUR_STAGES[G.worldTour.stageIndex];
 }
 
+// Modo al perder (a petición explícita, "haz dos modos... que se
+// reintente desde cero, o que empiezas desde cero pero conservando las
+// mejoras de las medias"): 'libre' te deja reintentar el mismo rival sin
+// más; 'duro' te manda otra vez al primer rival (Occult) al perder, pero
+// tu plantilla conserva todo lo ganado hasta entonces (media y fichajes).
+function worldTourSetupMode() { return G.worldTourSetupMode === 'duro' ? 'duro' : 'libre'; }
+window.actionSetWorldTourSetupMode = function (mode) { G.worldTourSetupMode = mode; render(); };
 function renderWorldTourSetup() {
+  var mode = worldTourSetupMode();
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
         '<h2 class="panel-title mt">Modo Mundial</h2>' +
         '<p class="dim small">Recorre los equipos de Inazuma Eleven 1, empezando por el Occult. Cada victoria sube un poco tu media y te deja fichar a un jugador del equipo derrotado, elegido al azar entre varios (como un draft).</p>' +
+      '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:8px" class="center-text">Al perder</h3>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-tiny' + (mode === 'libre' ? ' active' : '') + '" onclick="actionSetWorldTourSetupMode(\'libre\')">Reintentar</button>' +
+          '<button class="btn btn-tiny' + (mode === 'duro' ? ' active' : '') + '" onclick="actionSetWorldTourSetupMode(\'duro\')">Racha</button>' +
+        '</div>' +
+        '<p class="dim small center-text mt">' + (mode === 'libre' ? 'Si pierdes, te quedas en el mismo rival y lo repites.' : 'Si pierdes, vuelves al Occult, pero tu plantilla conserva la media y los fichajes ganados.') + '</p>' +
       '</div>' +
       '<div class="panel center-text">' +
         '<button class="btn btn-primary btn-block" onclick="actionStartWorldTour(false)">Raimon</button>' +
@@ -214,6 +232,7 @@ function renderWorldTourHome() {
         '<h2 class="panel-title mt mb0">Modo Mundial</h2>' +
         '<p class="dim small">Equipo ' + (wt.stageIndex + 1) + ' de ' + WORLD_TOUR_STAGES.length + ' · Tu media: <strong style="color:var(--accent-2)">' + score + '</strong> / 100 · Plantilla: ' + wt.squad.length + '</p>' +
       '</div>' +
+      (wt.lastLossMessage ? '<div class="panel center-text"><p class="dim small">' + escapeHtml(wt.lastLossMessage) + '</p></div>' : '') +
       careerMatchupCardHtml(stage.name, 'Rival ' + (wt.stageIndex + 1)) +
       '<div class="panel">' +
         '<div class="match-mode-picker">' +
@@ -294,7 +313,14 @@ function finishWorldTourMatch() {
     var options = stage.players.slice().sort(function () { return Math.random() - 0.5; }).slice(0, 3);
     wt.pendingDraft = { stageId: stage.id, options: options };
     wt.stageIndex++;
+    wt.lastLossMessage = null;
     if (wt.stageIndex >= WORLD_TOUR_STAGES.length) wt.won = true;
+  } else if (wt.mode === 'duro' && wt.stageIndex > 0) {
+    // Racha: pierdes, vuelves al Occult -- pero la plantilla conserva
+    // todo lo ganado (media y fichajes), a petición explícita.
+    wt.stageIndex = 0;
+    wt.cleared = [];
+    wt.lastLossMessage = 'Racha rota: vuelves al Occult, pero tu plantilla conserva lo ganado.';
   }
 
   G.futdraft.lastMatchResult = {
