@@ -752,7 +752,7 @@ function renderFutDraftTeam() {
       '</div>' +
       (f.mode === 'liga'
         ? '<button class="btn btn-primary btn-block" onclick="startLigaRun()">Empezar Liga</button>'
-        : '<button class="btn btn-primary btn-block" onclick="startFutDraftMatches()">Jugar torneo (' + futDraftBracketSize() + ' equipos)</button>') +
+        : '<button class="btn btn-primary btn-block" onclick="startFutDraftMatches()">Jugar torneo</button>') +
     '</div>'
   );
 }
@@ -1262,7 +1262,7 @@ function renderFutDraftVsPrep() {
         '<img class="team-shield" style="width:56px;height:56px" src="' + escapeHtml(futDraftVsShield(side)) + '" alt="">' +
         '<h2 class="panel-title mb0">Prepara a ' + escapeHtml(name) + '</h2>' +
         '<p class="dim small">Toca a dos jugadores para cambiarlos (titulares entre sí o titular por suplente) y elige formación. Puntuación: <strong style="color:var(--accent-2)">' + total + '</strong> / 100</p>' +
-        '<button class="btn btn-tiny' + (s.pickingCaptain ? ' active' : '') + '" onclick="actionToggleFutDraftVsCaptain()">' + (s.pickingCaptain ? 'Toca a un titular para hacerlo capitán…' : (capId ? 'Cambiar capitán 👑' : 'Elegir capitán 👑')) + '</button>' +
+        '<button class="btn btn-tiny' + (s.pickingCaptain ? ' active' : '') + '" onclick="actionToggleFutDraftVsCaptain()">' + (s.pickingCaptain ? 'Toca un titular…' : (capId ? 'Cambiar capitán 👑' : 'Elegir capitán 👑')) + '</button>' +
       '</div>' +
       '<div class="panel"><h3 style="margin-bottom:8px">Formación</h3><div class="view-toggle view-toggle-wrap">' + formationBtns + '</div>' +
         '<div class="pitch pitch-11">' + rowsHtml + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div></div>' +

@@ -176,7 +176,7 @@ function render() {
   if (G.confirmLeaveOpen) html += renderConfirmLeaveModal();
   if (G.showPatchNotes) html += renderPatchNotesModal();
   // Re-render de la misma pantalla (teclear, filtros, pestañas): sin repetir el fundido de entrada.
-  appEl.classList.toggle('no-anim', G.screen === lastRenderedScreen);
+  appEl.classList.toggle('no-anim', G.screen === lastRenderedScreen || !!(G.meta && G.meta.reduceMotion));
   lastRenderedScreen = G.screen;
   appEl.innerHTML = html;
   restoreFocusAfterRerender(focusInfo);

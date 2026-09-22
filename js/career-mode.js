@@ -978,7 +978,7 @@ function careerFreshState(choices) {
     // careerRecordSeasonHistory/renderCareerHistorial) -- ACUMULADO de
     // toda la carrera, nunca se resetea, como bestPosition/careerStats.
     seasonHistory: [],
-    autosave: false, autosaveMessage: null,
+    autosave: true, autosaveMessage: null,
     equipoTab: 'alineacion', clubTab: 'entrenamiento', ajustesTab: 'gestion',
     // Centro de entrenamiento: arranca SIN construir (0), infraestructura
     // del club, nunca se resetea entre temporadas (como el presupuesto)
@@ -1364,9 +1364,9 @@ function renderCareerSetup() {
         '<h3 style="margin-bottom:4px">Tu club</h3>' +
         '<label class="dim small">Nombre del club</label>' +
         '<input class="select-field" type="text" maxlength="24" data-focus-key="career-setup-clubname" placeholder="Tu Equipo" value="' + escapeHtml(choices.clubName || '') + '" oninput="actionSetCareerSetupClubName(this.value)">' +
-        '<p class="dim small mt">Escudo' + (myShields.length ? '' : ' (aún no has desbloqueado ninguno, se usará el de por defecto)') + '</p>' +
+        '<p class="dim small mt">Escudo' + (myShields.length ? '' : ' (aún no has desbloqueado ninguno, se usará el de por defecto)') + (myShields.length ? (choices.clubShieldName ? ': ' + escapeHtml(choices.clubShieldName) : ': por defecto') : '') + '</p>' +
         (myShields.length
-          ? '<button class="btn btn-outline btn-block btn-tiny" onclick="actionToggleCareerSetupShields()">' + (choices.shieldsExpanded ? 'Ocultar escudos ▲' : 'Mostrar escudos ▼') + (choices.clubShieldName ? ', elegido: ' + escapeHtml(choices.clubShieldName) : ', por defecto') + '</button>'
+          ? '<button class="btn btn-outline btn-block btn-tiny" onclick="actionToggleCareerSetupShields()">' + (choices.shieldsExpanded ? 'Ocultar ▲' : 'Elegir ▼') + '</button>'
           : '') +
         (choices.shieldsExpanded || !myShields.length ? clubShieldOptionsHtml : '') +
       '</div>' +
@@ -1961,7 +1961,7 @@ function renderCareerEntrenamiento(c) {
         ? '<p class="dim small">Entrenamiento cerrado hasta la próxima temporada.</p>'
         : (maxed
           ? '<p class="dim small">Centro al máximo.</p>'
-          : '<button class="btn btn-primary btn-block mt" ' + (c.budget < nextCost ? 'disabled' : '') + ' onclick="actionUpgradeTrainingCenter()">' + (level === 0 ? 'CONSTRUIR' : 'POTENCIAR, nivel ' + (level + 1)) + ' (' + nextCost + ' M€)</button>')) +
+          : '<button class="btn btn-primary btn-block mt" ' + (c.budget < nextCost ? 'disabled' : '') + ' onclick="actionUpgradeTrainingCenter()">' + (level === 0 ? 'Construir' : 'Mejorar') + ' · ' + nextCost + ' M€</button>')) +
     '</div>';
   var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
   var rowsHtml = all.map(function (p) {
@@ -2087,7 +2087,7 @@ function renderCareerAcademia(c) {
         ? '<p class="dim small">Cerrada hasta la próxima temporada.</p>'
         : (maxed
           ? '<p class="dim small">Academia al máximo.</p>'
-          : '<button class="btn btn-primary btn-block mt" ' + (c.budget < nextCost ? 'disabled' : '') + ' onclick="actionUpgradeAcademy()">' + (level === 0 ? '🏗️ CONSTRUIR' : '⬆️ MEJORAR, nivel ' + (level + 1)) + ' (' + nextCost + ' M€)</button>')) +
+          : '<button class="btn btn-primary btn-block mt" ' + (c.budget < nextCost ? 'disabled' : '') + ' onclick="actionUpgradeAcademy()">' + (level === 0 ? '🏗️ Construir' : '⬆️ Mejorar') + ' · ' + nextCost + ' M€</button>')) +
     '</div>';
   var candidatesHtml = candidates.length
     ? '<div class="academy-candidates-grid">' + candidates.map(function (p) {
@@ -5177,9 +5177,32 @@ function renderCareerConfiguracion(c) {
       '<div><strong>Sonido</strong><div class="dim small">Sonido de gol y de inicio de partido.</div></div>' +
       '<button class="btn btn-tiny' + (soundEnabled() ? ' active' : '') + '" onclick="actionToggleSound()">' + (soundEnabled() ? 'Activado' : 'Desactivado') + '</button>' +
     '</div>' +
+    '<div class="btn-row mt" style="justify-content:space-between;align-items:center">' +
+      '<div><strong>Ocultar prodigios</strong><div class="dim small">No avisa qué jugadores son Prodigio (crecimiento máximo) en el Mercado.</div></div>' +
+      '<button class="btn btn-tiny' + (c.hideProdigy ? ' active' : '') + '" onclick="actionToggleCareerHideProdigy()">' + (c.hideProdigy ? 'Activado' : 'Desactivado') + '</button>' +
+    '</div>' +
+    '<div class="btn-row mt" style="justify-content:space-between;align-items:center">' +
+      '<div><strong>Animaciones</strong><div class="dim small">Fundido al cambiar de pantalla.</div></div>' +
+      '<button class="btn btn-tiny' + (!G.meta.reduceMotion ? ' active' : '') + '" onclick="actionToggleReduceMotion()">' + (!G.meta.reduceMotion ? 'Activado' : 'Desactivado') + '</button>' +
+    '</div>' +
     '<p class="dim small mt">Versión ' + escapeHtml(APP_VERSION) + '.</p>' +
   '</div>';
 }
+window.actionToggleCareerHideProdigy = function () {
+  var c = G.career;
+  if (!c) return;
+  c.hideProdigy = !c.hideProdigy;
+  render();
+};
+// Animaciones: además del "sin repetir el fundido al re-renderizar la
+// misma pantalla" que ya había, este interruptor las quita del todo
+// (incluida la entrada a una pantalla nueva) para quien prefiera un
+// cambio instantáneo -- guardado en meta, no por partida, como el sonido.
+window.actionToggleReduceMotion = function () {
+  G.meta.reduceMotion = !G.meta.reduceMotion;
+  saveMeta(G.meta);
+  render();
+};
 
 // Animación de trofeo al ganar cualquier título de Modo Carrera (Liga,
 // Copa del Rey, Champions League, Supercopa), a petición explícita
