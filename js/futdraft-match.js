@@ -339,33 +339,55 @@ function futDraftLiveLogHtml(live) {
 // que acaba de recibir el gol -- a petición explícita ("no quiero que
 // enseñes los personajes, quiero que enseñes puntitos con los dorsales...
 // y también el balón"). Solo para live.visualMode === 'dots'.
+// Un color por línea (no solo "yo/rival" liso) para que el campo se lea
+// de un vistazo, con la camiseta de tu equipo si la tienes elegida --
+// mismo criterio de colores que el resto de la app (--fuego/--bosque/...
+// no aplica aquí, así que se define su propia paleta por posición).
+var PITCH_DOT_POS_COLORS = {
+  Portero: ['#ffd166', '#c9960a'],
+  Defensa: ['#4ecdc4', '#1f8f86'],
+  Centrocampista: ['#5cff9e', '#27a35e'],
+  Delantero: ['#ff5c7a', '#c92c48']
+};
+function pitchDotHtml(pos, num, side, pulsing) {
+  var pal = PITCH_DOT_POS_COLORS[pos] || ['#4ecdc4', '#1f8f86'];
+  var style = 'background:radial-gradient(circle at 35% 28%,' + pal[0] + ',' + pal[1] + ')';
+  return '<div class="pitch-dot pitch-dot-' + side + (pulsing ? ' pitch-dot-active' : '') + '" style="' + style + '"><span>' + num + '</span></div>';
+}
 function futDraftPitchDotsHtml(live) {
   var lineup = (G.career && live.isCareer) ? G.career.lineup : G.futdraft.lineup;
   var formation = FUTDRAFT_FORMATIONS.find(function (f) { return f.id === (G.career && live.isCareer ? G.career.formation : G.futdraft.formation); });
   var order = ['Delantero', 'Centrocampista', 'Defensa', 'Portero'];
+  // El "puntito activo" (el que lleva el balón) es aproximado: el de la
+  // línea más ofensiva del lado al que se dirige la jugada, solo estético.
+  var activeSide = live.lastGoalSide === 'opp' ? 'opp' : 'me';
   var n = 1;
-  var rowsHtml = order.map(function (pos) {
+  var rowsHtml = order.map(function (pos, idx) {
     var slots = lineup.filter(function (s) { return s.pos === pos; });
-    var dotsHtml = slots.map(function () { return '<div class="pitch-dot pitch-dot-me">' + (n++) + '</div>'; }).join('');
+    var dotsHtml = slots.map(function () { var isActive = activeSide === 'me' && idx === 0; return pitchDotHtml(pos, n++, 'me', isActive); }).join('');
     return '<div class="pitch-dots-row">' + dotsHtml + '</div>';
   }).join('');
   var m = 1;
-  var oppRowsHtml = order.slice().reverse().map(function (pos) {
+  var oppOrder = order.slice().reverse();
+  var oppRowsHtml = oppOrder.map(function (pos, idx) {
     var row = formation.rows.find(function (r) { return r.pos === pos; });
     var count = row ? row.count : 0;
     var dotsHtml = '';
-    for (var i = 0; i < count; i++) dotsHtml += '<div class="pitch-dot pitch-dot-opp">' + (m++) + '</div>';
+    for (var i = 0; i < count; i++) { var isActive = activeSide === 'opp' && idx === oppOrder.length - 1; dotsHtml += pitchDotHtml(pos, m++, 'opp', isActive); }
     return '<div class="pitch-dots-row">' + dotsHtml + '</div>';
   }).join('');
   var ballSide = live.lastGoalSide === 'opp' ? 'top' : (live.lastGoalSide === 'me' ? 'bottom' : 'mid');
   var flashHtml = (live.lastGoalSide && live.goalFlashUntil && Date.now() < live.goalFlashUntil) ? '<div class="pitch-goal-flash pitch-goal-flash-' + live.lastGoalSide + '">' + (live.lastGoalSide === 'me' ? '¡GOOOL! ⚽' : 'Gol rival ⚽') + '</div>' : '';
   return '<div class="pitch pitch-dots-field">' +
     '<div class="pitch-dots-field-stripes"></div>' +
-    '<div class="pitch-goal pitch-goal-top"></div><div class="pitch-goal pitch-goal-bottom"></div>' +
+    '<div class="pitch-crowd pitch-crowd-top"></div><div class="pitch-crowd pitch-crowd-bottom"></div>' +
+    '<div class="pitch-goal pitch-goal-top"><div class="pitch-net"></div></div><div class="pitch-goal pitch-goal-bottom"><div class="pitch-net"></div></div>' +
+    '<div class="pitch-side-label pitch-side-label-top">Rival</div>' +
     oppRowsHtml +
-    '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div>' +
-    '<div class="pitch-ball pitch-ball-' + ballSide + '">⚽</div>' +
+    '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div><div class="pitch-center-dot"></div>' +
+    '<div class="pitch-ball pitch-ball-' + ballSide + '"><span class="pitch-ball-shadow"></span>⚽</div>' +
     rowsHtml +
+    '<div class="pitch-side-label pitch-side-label-bottom">Tu equipo</div>' +
     flashHtml +
   '</div>';
 }
