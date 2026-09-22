@@ -181,6 +181,19 @@ function worldTourSetupMode() { return G.worldTourSetupMode === 'duro' ? 'duro' 
 window.actionSetWorldTourSetupMode = function (mode) { G.worldTourSetupMode = mode; render(); };
 function worldTourSetupSpecials() { return G.worldTourSetupSpecials !== false; }
 window.actionSetWorldTourSpecials = function (on) { G.worldTourSetupSpecials = !!on; render(); };
+// 3 opciones más al empezar, a petición explícita: cuántas etapas jugar
+// (corto = las 5 primeras, hasta la Royal Academy; completo = las 11),
+// tamaño del draft (1 de 3, más control, o 1 de 5, más variedad) y modo
+// Leyenda (los rivales suben de fuerza cada vez que completas el
+// recorrido -- se cuenta en localStorage, independiente de cada partida).
+var WORLD_TOUR_LEGEND_KEY = 'worldTourRogue_legendWins';
+function worldTourLegendWins() { try { return parseInt(localStorage.getItem(WORLD_TOUR_LEGEND_KEY), 10) || 0; } catch (e) { return 0; } }
+function worldTourSetupStageCount() { return G.worldTourSetupStageCount === 5 ? 5 : 11; }
+window.actionSetWorldTourStageCount = function (n) { G.worldTourSetupStageCount = n; render(); };
+function worldTourSetupDraftSize() { return G.worldTourSetupDraftSize === 5 ? 5 : 3; }
+window.actionSetWorldTourDraftSize = function (n) { G.worldTourSetupDraftSize = n; render(); };
+function worldTourSetupLegend() { return !!G.worldTourSetupLegend; }
+window.actionSetWorldTourLegend = function (on) { G.worldTourSetupLegend = !!on; render(); };
 function worldTourSetupSquadType() { return G.worldTourSetupSquadType === 'random' ? 'random' : 'raimon'; }
 window.actionSetWorldTourSquadType = function (type) { G.worldTourSetupSquadType = type; render(); };
 // Escudo por defecto del Raimon (no está en TEAM_SHIELD_FILES porque ese
@@ -237,6 +250,30 @@ function renderWorldTourSetup() {
         '</div>' +
         '<p class="dim small center-text mt">' + (mode === 'libre' ? 'Si pierdes, te quedas en el mismo rival y lo repites.' : 'Si pierdes, vuelves al Occult, pero tu plantilla conserva la media y los fichajes ganados.') + '</p>' +
       '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:8px" class="center-text">Recorrido</h3>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-tiny' + (worldTourSetupStageCount() === 5 ? ' active' : '') + '" onclick="actionSetWorldTourStageCount(5)">Corto (5)</button>' +
+          '<button class="btn btn-tiny' + (worldTourSetupStageCount() === 11 ? ' active' : '') + '" onclick="actionSetWorldTourStageCount(11)">Completo (11)</button>' +
+        '</div>' +
+        '<p class="dim small center-text mt">' + (worldTourSetupStageCount() === 5 ? 'Hasta el Brain, sin Royal Academy ni los rivales finales.' : 'Los 11 equipos, hasta el Zeus.') + '</p>' +
+      '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:8px" class="center-text">Draft</h3>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-tiny' + (worldTourSetupDraftSize() === 3 ? ' active' : '') + '" onclick="actionSetWorldTourDraftSize(3)">1 de 3</button>' +
+          '<button class="btn btn-tiny' + (worldTourSetupDraftSize() === 5 ? ' active' : '') + '" onclick="actionSetWorldTourDraftSize(5)">1 de 5</button>' +
+        '</div>' +
+        '<p class="dim small center-text mt">' + (worldTourSetupDraftSize() === 3 ? 'Menos opciones, más control sobre quién sale.' : 'Más variedad, menos control.') + '</p>' +
+      '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:8px" class="center-text">Modo Leyenda</h3>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-tiny' + (worldTourSetupLegend() ? ' active' : '') + '" onclick="actionSetWorldTourLegend(true)">Sí</button>' +
+          '<button class="btn btn-tiny' + (!worldTourSetupLegend() ? ' active' : '') + '" onclick="actionSetWorldTourLegend(false)">No</button>' +
+        '</div>' +
+        '<p class="dim small center-text mt">Los rivales suben de fuerza con cada recorrido completo que ya hayas terminado (llevas ' + worldTourLegendWins() + ').</p>' +
+      '</div>' +
       (squadType === 'raimon' ? (
       '<div class="panel">' +
         '<h3 style="margin-bottom:8px" class="center-text">Especiales</h3>' +
@@ -260,6 +297,15 @@ window.actionStartWorldTour = function () {
   var useRandom = worldTourSetupSquadType() === 'random';
   var squad = useRandom ? worldTourRandomSquad() : WORLD_TOUR_RAIMON_BASE.map(function (p) { return Object.assign({}, p); });
   if (!useRandom && worldTourSetupSpecials()) squad = squad.concat(WORLD_TOUR_RAIMON_SPECIALS.map(function (p) { return Object.assign({}, p); }));
+  var stageCount = worldTourSetupStageCount();
+  var legend = worldTourSetupLegend();
+  var legendBoost = legend ? worldTourLegendWins() * 3 : 0;
+  // Modo Leyenda: los rivales suben de fuerza según cuántos recorridos
+  // completos llevas ya terminados (contador en localStorage, no en esta
+  // partida) -- clonado aparte para no tocar nunca la potencia base.
+  var stages = (stageCount === 5 ? WORLD_TOUR_STAGES.slice(0, 5) : WORLD_TOUR_STAGES.slice()).map(function (st) {
+    return legendBoost ? Object.assign({}, st, { power: Math.min(99, st.power + legendBoost) }) : st;
+  });
   G.worldTour = {
     squad: squad,
     isRaimon: !useRandom,
@@ -267,6 +313,9 @@ window.actionStartWorldTour = function () {
     teamShieldName: useRandom ? (G.worldTourSetupShield || null) : null,
     formationId: WORLD_TOUR_DEFAULT_FORMATION,
     captainId: null,
+    stages: stages,
+    draftSize: worldTourSetupDraftSize(),
+    legend: legend,
     stageIndex: 0,
     cleared: [],
     pendingDraft: null,
@@ -350,7 +399,7 @@ function worldTourTeamScore() {
   return futDraftTeamScore(worldTourLineup(), G.worldTour.captainId || null);
 }
 function worldTourStage() {
-  return WORLD_TOUR_STAGES[G.worldTour.stageIndex];
+  return (G.worldTour.stages || WORLD_TOUR_STAGES)[G.worldTour.stageIndex];
 }
 
 // ===== Alineación ("Prepartido"): misma pantalla y mecánica que "Tu
@@ -450,14 +499,14 @@ function renderWorldTourHome() {
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
         '<h2 class="panel-title mt mb0">Modo Mundial</h2>' +
-        '<p class="dim small">Equipo ' + (wt.stageIndex + 1) + ' de ' + WORLD_TOUR_STAGES.length + ' · Tu media: <strong style="color:var(--accent-2)">' + score + '</strong> / 100 · Plantilla: ' + wt.squad.length + '</p>' +
+        '<p class="dim small">Equipo ' + (wt.stageIndex + 1) + ' de ' + wt.stages.length + ' · Tu media: <strong style="color:var(--accent-2)">' + score + '</strong> / 100 · Plantilla: ' + wt.squad.length + '</p>' +
       '</div>' +
       (wt.lastLossMessage ? '<div class="panel center-text"><p class="dim small">' + escapeHtml(wt.lastLossMessage) + '</p></div>' : '') +
       (wt.lastJoinMessage ? '<div class="panel center-text"><p class="dim small">' + escapeHtml(wt.lastJoinMessage) + '</p></div>' : '') +
       worldTourMatchupCardHtml(stage.name, 'Rival ' + (wt.stageIndex + 1)) +
       '<div class="panel">' +
         '<div class="match-mode-picker">' +
-          '<button class="match-mode-card" onclick="actionPlayWorldTourMatch()"><span class="match-mode-icon">⚽</span><strong>Jugar</strong><span class="dim small">Puntitos en directo</span></button>' +
+          '<button class="match-mode-card" onclick="actionPlayWorldTourMatch()"><span class="match-mode-icon">⚽</span><strong>Jugar</strong><span class="dim small">Partido en vivo</span></button>' +
           '<button class="match-mode-card" onclick="actionSimulateWorldTourMatch()"><span class="match-mode-icon">▶️</span><strong>Simular</strong><span class="dim small">Minuto a minuto</span></button>' +
           '<button class="match-mode-card" onclick="actionSkipWorldTourMatch()"><span class="match-mode-icon">⏭️</span><strong>Saltar</strong><span class="dim small">Resultado al momento</span></button>' +
         '</div>' +
@@ -537,7 +586,7 @@ function finishWorldTourMatch() {
     // a petición explícita.
     var squadIds = wt.squad.map(function (p) { return p.id; });
     var available = stage.players.filter(function (p) { return squadIds.indexOf(p.id) === -1; });
-    var options = available.slice().sort(function () { return Math.random() - 0.5; }).slice(0, 3);
+    var options = available.slice().sort(function () { return Math.random() - 0.5; }).slice(0, wt.draftSize || 3);
     if (options.length) wt.pendingDraft = { stageId: stage.id, options: options };
     wt.stageIndex++;
     wt.lastLossMessage = null;
@@ -553,7 +602,15 @@ function finishWorldTourMatch() {
       });
       if (joinedNames.length) wt.lastJoinMessage = '🆕 ' + joinedNames.join(' y ') + ' se une' + (joinedNames.length > 1 ? 'n' : '') + ' al equipo.';
     }
-    if (wt.stageIndex >= WORLD_TOUR_STAGES.length) wt.won = true;
+    if (wt.stageIndex >= wt.stages.length) {
+      wt.won = true;
+      // Modo Leyenda: solo cuenta si completaste el recorrido COMPLETO
+      // (11), no el corto -- así el contador siempre refleja "cuántas
+      // veces has terminado del todo".
+      if (wt.stages.length >= WORLD_TOUR_STAGES.length) {
+        try { localStorage.setItem(WORLD_TOUR_LEGEND_KEY, String(worldTourLegendWins() + 1)); } catch (e) {}
+      }
+    }
     // El evento aleatorio solo pasa al GANAR, nunca al perder -- a
     // petición explícita.
     worldTourRandomEvent(wt);

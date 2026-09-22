@@ -905,8 +905,10 @@ function careerFreshState(choices) {
     : choices.squadMode === 'raimon' ? { starterIds: CAREER_MODE_RAIMON_STARTER_IDS, benchIds: CAREER_MODE_RAIMON_BENCH_IDS }
     : { starterIds: CAREER_MODE_STARTER_IDS, benchIds: CAREER_MODE_BENCH_IDS };
   var starters = careerModeRoster(squadIds.starterIds);
-  // Arrancas en Segunda División por defecto, a petición explícita.
-  var division = 2;
+  // Arrancas en Segunda División por defecto, pero se puede elegir
+  // Primera desde el principio (renderCareerSetup) -- a petición
+  // explícita ("elegir si empiezas en Segunda o Primera").
+  var division = choices.startDivision === 1 ? 1 : 2;
   // Nombre y escudo de TU club (elegidos en renderCareerSetup), a
   // petición explícita ("elige nombre de club (cualquiera) y escudo de
   // club entre los que hay desbloqueados"). clubShieldName es el club
@@ -938,6 +940,12 @@ function careerFreshState(choices) {
     // "haz un modo donde no puedas ver si son prodigio o no": fijo toda
     // la partida igual que dificultad/negociación, ver careerGrowthArrowHtml.
     hideProdigy: !!choices.hideProdigy,
+    // Estilo de directiva (exigente/normal/tranquila) e Ironman (si te
+    // despiden, se borra el hueco de guardado para no poder recargar la
+    // partida) -- a petición explícita, elegidos al crear la carrera y
+    // fijos toda la partida.
+    boardStyle: CAREER_BOARD_STYLES[choices.boardStyle] ? choices.boardStyle : 'normal',
+    ironman: !!choices.ironman,
     division: division,
     divisionTeams: divisionTeams,
     league: careerBuildLeague(division, divisionTeams),
@@ -1058,7 +1066,7 @@ function careerSerialize(c) {
     loanedOutIds: c.loanedOutIds || [],
     difficulty: c.difficulty || 'normal',
     negotiation: c.negotiation || 'duras',
-    hideProdigy: !!c.hideProdigy,
+    hideProdigy: !!c.hideProdigy, boardStyle: c.boardStyle || 'normal', ironman: !!c.ironman,
     division: c.division || 2,
     divisionTeams: c.divisionTeams,
     league: c.league,
@@ -1080,7 +1088,7 @@ function careerSerialize(c) {
     playerGrowthTier: c.playerGrowthTier || careerInitialGrowthTiers(),
     trainingLevel: typeof c.trainingLevel === 'number' ? c.trainingLevel : 0,
     academyLevel: typeof c.academyLevel === 'number' ? c.academyLevel : 0,
-    academyCandidates: c.academyCandidates || [],
+    academyCandidates: c.academyCandidates || [], academyPromotedIds: c.academyPromotedIds || [],
     cup: c.cup, cupsWon: c.cupsWon || 0, lastCupResult: c.lastCupResult || null,
     lastLeagueFinish: c.lastLeagueFinish || null,
     board: c.board || null,
@@ -1139,7 +1147,7 @@ function careerDeserialize(data) {
     // ahí).
     difficulty: CAREER_DIFFICULTY_TIERS[data.difficulty] ? data.difficulty : 'normal',
     negotiation: CAREER_NEGOTIATION_MODES[data.negotiation] ? data.negotiation : 'duras',
-    hideProdigy: !!data.hideProdigy,
+    hideProdigy: !!data.hideProdigy, boardStyle: data.boardStyle || 'normal', ironman: !!data.ironman,
     division: data.division || 1,
     divisionTeams: data.divisionTeams || careerInitialDivisionTeams(),
     league: data.league,
@@ -1170,7 +1178,7 @@ function careerDeserialize(data) {
     // cual -- 0 aquí solo es de reserva para un guardado sin el campo.
     trainingLevel: typeof data.trainingLevel === 'number' ? data.trainingLevel : 0,
     academyLevel: typeof data.academyLevel === 'number' ? data.academyLevel : 0,
-    academyCandidates: data.academyCandidates || [],
+    academyCandidates: data.academyCandidates || [], academyPromotedIds: data.academyPromotedIds || [],
     academyMessage: null,
     trainingMessage: null,
     cup: careerCupRelinkWinners(data.cup) || careerNewCup(),
@@ -1252,7 +1260,7 @@ function actionGoCareerMode() {
 // este punto.
 window.actionNewCareerInSlot = function (slot) {
   G.careerSetupSlot = slot;
-  G.careerSetupChoices = { difficulty: 'normal', budget: CAREER_STARTING_BUDGET, negotiation: 'duras', clubName: '', clubShieldName: null, hideProdigy: false, shieldsExpanded: false, squadMode: 'default' };
+  G.careerSetupChoices = { difficulty: 'normal', budget: CAREER_STARTING_BUDGET, negotiation: 'duras', clubName: '', clubShieldName: null, hideProdigy: false, shieldsExpanded: false, squadMode: 'default', startDivision: 2, boardStyle: 'normal', ironman: false };
   G.screen = 'careerSetup';
   render();
 };
@@ -1285,6 +1293,19 @@ window.actionToggleCareerSetupShields = function () {
 // careerGrowthLabel/careerGrowthFilterBtnsHtml) sin tocar la progresión real.
 window.actionSetCareerSetupHideProdigy = function (hide) {
   G.careerSetupChoices.hideProdigy = !!hide;
+  render();
+};
+window.actionSetCareerSetupStartDivision = function (div) {
+  G.careerSetupChoices.startDivision = div === 1 ? 1 : 2;
+  render();
+};
+window.actionSetCareerSetupBoardStyle = function (id) {
+  if (!CAREER_BOARD_STYLES[id]) return;
+  G.careerSetupChoices.boardStyle = id;
+  render();
+};
+window.actionSetCareerSetupIronman = function (on) {
+  G.careerSetupChoices.ironman = !!on;
   render();
 };
 window.actionSetCareerSetupDifficulty = function (tier) {
@@ -1394,6 +1415,31 @@ function renderCareerSetup() {
         '<h3 style="margin-bottom:4px">Plantilla inicial</h3>' +
         '<p class="dim small">Por defecto: los mismos 16 jugadores de siempre. Aleatoria: 16 jugadores al azar, todos de 82 de nota o menos.</p>' +
         '<select class="select-field mt" onchange="actionSetCareerSetupSquadMode(this.value)">' + squadModeOptionsHtml + '</select>' +
+      '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:4px">División inicial</h3>' +
+        '<p class="dim small">Segunda: empiezas desde abajo. Primera: arrancas ya en la máxima categoría, contra los mejores.</p>' +
+        '<div class="btn-row mt">' +
+          '<button class="btn btn-tiny' + ((choices.startDivision !== 1) ? ' active' : '') + '" onclick="actionSetCareerSetupStartDivision(2)">Segunda</button>' +
+          '<button class="btn btn-tiny' + (choices.startDivision === 1 ? ' active' : '') + '" onclick="actionSetCareerSetupStartDivision(1)">Primera</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:4px">Estilo de directiva</h3>' +
+        '<p class="dim small">Exigente: objetivo más alto y los resultados pesan más (para bien y para mal). Tranquila: más margen y menos castigo.</p>' +
+        '<div class="btn-row mt">' +
+          Object.keys(CAREER_BOARD_STYLES).map(function (id) {
+            return '<button class="btn btn-tiny' + ((choices.boardStyle || 'normal') === id ? ' active' : '') + '" onclick="actionSetCareerSetupBoardStyle(\'' + id + '\')">' + CAREER_BOARD_STYLES[id].name + '</button>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:4px">Modo Ironman</h3>' +
+        '<p class="dim small">Si te despiden, se borra este hueco de guardado -- no podrás recargar la partida desde antes del despido.</p>' +
+        '<div class="btn-row mt">' +
+          '<button class="btn btn-tiny' + (!choices.ironman ? ' active' : '') + '" onclick="actionSetCareerSetupIronman(false)">No</button>' +
+          '<button class="btn btn-tiny' + (choices.ironman ? ' active' : '') + '" onclick="actionSetCareerSetupIronman(true)">Sí</button>' +
+        '</div>' +
       '</div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:4px">Dificultad</h3>' +
@@ -2068,6 +2114,10 @@ window.actionPromoteAcademyPlayer = function (id) {
   if (!p) return;
   c.bench.push(p);
   c.academyCandidates = candidates.filter(function (x) { return x !== id; });
+  // Se recuerda qué jugadores llegaron por la cantera (para el objetivo
+  // de directiva "usa jugadores de cantera", ver careerBoardObjectiveMet).
+  c.academyPromotedIds = c.academyPromotedIds || [];
+  c.academyPromotedIds.push(id);
   c.academyMessage = 'Promocionado desde la cantera: ' + p.nombre + '.';
   render();
 };
@@ -3364,6 +3414,16 @@ function careerLeaguePositionBonusBase(position, division) {
 // temporada (peor caso, -23) hacen falta 5 temporadas para llegar a 0 (c.fired).
 var CAREER_BOARD_START_CONFIDENCE = 100;
 var CAREER_BOARD_TARGET_MARGIN = 2;
+// Estilo de directiva (elegido al crear la carrera, renderCareerSetup):
+// cambia el margen del objetivo (más margen = objetivo más fácil de
+// cumplir) y cuánto duelen los malos resultados -- a petición explícita
+// ("elegir el estilo de directiva, exigente/tranquila").
+var CAREER_BOARD_STYLES = {
+  tranquila: { name: 'Tranquila', marginBonus: 2, deltaMult: 0.6 },
+  normal: { name: 'Normal', marginBonus: 0, deltaMult: 1 },
+  exigente: { name: 'Exigente', marginBonus: -2, deltaMult: 1.5 }
+};
+function careerBoardStyle(c) { return CAREER_BOARD_STYLES[c.boardStyle] || CAREER_BOARD_STYLES.normal; }
 function careerBoardComputeTarget(c) {
   var league = c.league;
   var n = league.teamNames.length;
@@ -3372,7 +3432,8 @@ function careerBoardComputeTarget(c) {
   for (var i = 1; i < n; i++) {
     if (careerRivalPower(league.teamNames[i]) > mine) rank++;
   }
-  return clamp(rank + CAREER_BOARD_TARGET_MARGIN, 2, n - 3);
+  var margin = CAREER_BOARD_TARGET_MARGIN + careerBoardStyle(c).marginBonus;
+  return clamp(rank + margin, 2, n - 3);
 }
 function careerEnsureBoard(c) {
   if (!c.board) c.board = { targetPosition: careerBoardComputeTarget(c), confidence: CAREER_BOARD_START_CONFIDENCE, midWarning: false };
@@ -3384,7 +3445,7 @@ function careerBoardMidseasonReview(c) {
   if (c.league.matchdayIndex !== half || board.midWarning) return;
   var position = careerCurrentLeaguePosition(c);
   if (position !== null && position > board.targetPosition + 2) {
-    board.confidence = Math.max(0, board.confidence - 3);
+    board.confidence = Math.max(0, board.confidence - 3 * careerBoardStyle(c).deltaMult);
     board.midWarning = true;
     if (board.confidence <= 0) careerBoardFire(c, position);
   }
@@ -3394,19 +3455,27 @@ function careerCurrentLeaguePosition(c) {
   var idx = sorted.findIndex(function (t) { return t.idx === 0; });
   return idx === -1 ? null : idx + 1;
 }
+// Ironman (elegido al crear la carrera): si te despiden, se borra el
+// hueco de guardado -- no puedes recargar la partida desde antes del
+// despido, a petición explícita ("un modo ironman sin poder cargar
+// partida tras una derrota importante").
 function careerBoardFire(c, position) {
   c.fired = { season: c.season || 1, position: position, target: careerEnsureBoard(c).targetPosition, division: c.division };
+  if (c.ironman && G.careerActiveSlot) { try { localStorage.removeItem(careerSlotKey(G.careerActiveSlot)); } catch (e) {} }
 }
 // Evalúa el puesto final. Devuelve y guarda el resumen para enseñarlo.
 function careerBoardSeasonReview(c, position) {
   var board = careerEnsureBoard(c);
   var before = board.confidence;
   var diff = position - board.targetPosition;
-  var delta = diff <= 0 ? 10 : (diff <= 2 ? -3 : (diff <= 5 ? -8 : -15));
+  var style = careerBoardStyle(c);
+  var delta = diff <= 0 ? Math.round(10 / style.deltaMult) : Math.round((diff <= 2 ? -3 : (diff <= 5 ? -8 : -15)) * style.deltaMult);
   var n = c.league.teamNames.length;
-  if (c.division === 1 && position > n - CAREER_PROMOTION_SPOTS) delta -= 5;
+  if (c.division === 1 && position > n - CAREER_PROMOTION_SPOTS) delta -= Math.round(5 * style.deltaMult);
+  var objectiveResult = careerBoardObjectiveMet(c, board);
+  if (objectiveResult) delta += objectiveResult.met ? 5 : -5;
   board.confidence = clamp(before + delta, 0, 100);
-  c.lastBoardReview = { position: position, target: board.targetPosition, delta: delta, before: before, after: board.confidence, fired: board.confidence <= 0 };
+  c.lastBoardReview = { position: position, target: board.targetPosition, delta: delta, before: before, after: board.confidence, fired: board.confidence <= 0, objective: objectiveResult };
   if (board.confidence <= 0) careerBoardFire(c, position);
   return c.lastBoardReview;
 }
@@ -3421,6 +3490,10 @@ function renderCareerBoardPanel(c) {
     '<p class="dim small">Objetivo de la temporada: acabar en el puesto <strong>' + board.targetPosition + 'º</strong> o mejor' + (position === null ? '' : ' (ahora vas ' + position + 'º)') + '. ' + status + '</p>' +
     '<div class="sponsor-progress-track"><div class="sponsor-progress-fill" style="width:' + conf + '%;background:' + color + '"></div></div>' +
     '<p class="dim small">Confianza: <strong style="color:' + color + '">' + conf + ' / 100</strong>. Si llega a 0, te despiden.</p>' +
+    (board.extraObjective ? (function () {
+      var r = careerBoardObjectiveMet(c, board);
+      return '<p class="dim small">Objetivo extra: ' + r.label + ' ' + (r.met ? '✅' : '❌') + '</p>';
+    })() : '') +
   '</div>';
 }
 function renderCareerFired(c) {
@@ -3738,6 +3811,39 @@ function careerApplyPromotionRelegation(c) {
   var newDiv2 = c.divisionTeams[2].filter(function (n) { return r.promotedNames.indexOf(n) === -1; }).concat(r.relegatedNames);
   c.divisionTeams = { 1: newDiv1, 2: newDiv2 };
   c.division = r.newDivision;
+  // Objetivo extra de directiva al ascender (a petición explícita, "mete
+  // más objetivos en directiva al ascender, como usar jugadores de algún
+  // elemento, usar jugadores de la cantera"): se sortea al ascender y se
+  // renueva cada temporada mientras sigas en Primera.
+  if (c.division === 1) careerRollBoardObjective(c);
+  else if (c.board) c.board.extraObjective = null;
+}
+// Sortea un objetivo nuevo (mitad y mitad elemento/cantera). El de
+// elemento pide un tipo al azar que ya tengas representado en la
+// plantilla (para que sea posible, no una petición imposible). Se
+// evalúa en careerBoardSeasonReview mirando el ONCE TITULAR actual.
+function careerRollBoardObjective(c) {
+  var board = careerEnsureBoard(c);
+  if (Math.random() < 0.5) {
+    var squadTypes = (c.lineup.map(function (s) { return s.player; }).concat(c.bench)).map(function (p) { return p.tipo; });
+    var tipo = choice(TYPES.filter(function (t) { return squadTypes.indexOf(t) !== -1; })) || choice(TYPES);
+    board.extraObjective = { type: 'element', element: tipo, required: 4 };
+  } else {
+    board.extraObjective = { type: 'academy', required: 2 };
+  }
+}
+// Comprueba el objetivo extra sobre el ONCE TITULAR de ahora mismo (al
+// evaluar la temporada) -- devuelve null si no hay objetivo activo.
+function careerBoardObjectiveMet(c, board) {
+  var obj = board.extraObjective;
+  if (!obj) return null;
+  if (obj.type === 'element') {
+    var count = c.lineup.filter(function (s) { return s.player.tipo === obj.element; }).length;
+    return { obj: obj, count: count, met: count >= obj.required, label: 'usar ' + obj.required + '+ titulares de tipo ' + obj.element + ' (llevas ' + count + ')' };
+  }
+  var academyIds = c.academyPromotedIds || [];
+  var count2 = c.lineup.filter(function (s) { return academyIds.indexOf(s.player.id) !== -1; }).length;
+  return { obj: obj, count: count2, met: count2 >= obj.required, label: 'usar ' + obj.required + '+ titulares de cantera (llevas ' + count2 + ')' };
 }
 
 // Resuelve todos los partidos de la jornada actual que NO sean el tuyo
@@ -4232,6 +4338,7 @@ window.actionSimulateCareerCupMatch = function () {
     done: false
   };
   G.screen = 'futdraftLive';
+  if (typeof playKickoffSound === 'function') playKickoffSound();
   render();
   futDraftLiveTick();
 };
@@ -4583,6 +4690,7 @@ window.actionSimulateCareerChampionsMatch = function () {
     done: false
   };
   G.screen = 'futdraftLive';
+  if (typeof playKickoffSound === 'function') playKickoffSound();
   render();
   futDraftLiveTick();
 };
@@ -4861,6 +4969,7 @@ window.actionSimulateCareerSupercopaMatch = function () {
     done: false
   };
   G.screen = 'futdraftLive';
+  if (typeof playKickoffSound === 'function') playKickoffSound();
   render();
   futDraftLiveTick();
 };
@@ -4980,6 +5089,11 @@ function careerSeasonSummaryHtml(c) {
   var boardBadge = boardReview
     ? careerSeasonBadgeHtml('🧑‍💼', 'Directiva, objetivo ' + boardReview.target + 'º', (boardReview.delta >= 0 ? 'Cumplido' : 'No cumplido') + ' · confianza ' + boardReview.after + ' (' + (boardReview.delta >= 0 ? '+' : '') + boardReview.delta + ')', boardReview.delta >= 0 ? 'season-badge-good' : 'season-badge-bad')
     : '';
+  // Objetivo extra de la directiva (elemento/cantera), solo en Primera --
+  // a petición explícita ("mete más objetivos en directiva al ascender").
+  var objectiveBadge = (boardReview && boardReview.objective)
+    ? careerSeasonBadgeHtml(boardReview.objective.obj.type === 'element' ? '🔥' : '🌱', 'Objetivo extra', (boardReview.objective.met ? 'Cumplido' : 'No cumplido') + ': ' + boardReview.objective.label, boardReview.objective.met ? 'season-badge-good' : 'season-badge-bad')
+    : '';
   var sponsorBadges = c.activeSponsor
     ? careerSeasonBadgeHtml('🤝', 'Patrocinador: ' + c.activeSponsor.label, '+' + c.activeSponsor.totalEarned + ' M€', 'season-badge-gold')
     : '';
@@ -5006,6 +5120,7 @@ function careerSeasonSummaryHtml(c) {
       careerSeasonBadgeHtml('📊', 'Posición final', positionText, '') +
       (bonus ? careerSeasonBadgeHtml('💰', 'Premio de Liga', '+' + bonus + ' M€', 'season-badge-gold') : '') +
       boardBadge +
+      objectiveBadge +
       sponsorBadges +
       federationBadges +
       promotionBadge +
@@ -5092,7 +5207,7 @@ function renderCareerJornada(c) {
       (seasonOver
         ? '<button class="btn btn-primary btn-block mt" onclick="actionStartNewCareerSeason()">Empezar temporada ' + (c.season + 1) + '</button>'
         : '<div class="match-mode-picker">' +
-            '<button class="match-mode-card" onclick="actionPlayCareerMatchday()"><span class="match-mode-icon">⚽</span><strong>Jugar</strong><span class="dim small">Puntitos en directo</span></button>' +
+            '<button class="match-mode-card" onclick="actionPlayCareerMatchday()"><span class="match-mode-icon">⚽</span><strong>Jugar</strong><span class="dim small">Partido en vivo</span></button>' +
             '<button class="match-mode-card" onclick="actionSimulateCareerMatchday()"><span class="match-mode-icon">▶️</span><strong>Simular</strong><span class="dim small">Minuto a minuto</span></button>' +
             '<button class="match-mode-card" onclick="actionSkipCareerMatchday()"><span class="match-mode-icon">⏭️</span><strong>Saltar</strong><span class="dim small">Resultado al momento</span></button>' +
           '</div>') +

@@ -243,6 +243,7 @@ window.playLigaMatch = function () {
     done: false
   };
   G.screen = 'futdraftLive';
+  if (typeof playKickoffSound === 'function') playKickoffSound();
   render();
   futDraftLiveTick();
 };

@@ -193,6 +193,7 @@ window.playFutDraftMatch = function () {
     done: false
   };
   G.screen = 'futdraftLive';
+  if (typeof playKickoffSound === 'function') playKickoffSound();
   render();
   futDraftLiveTick();
 };
@@ -279,7 +280,11 @@ function futDraftAdvancePossession(live) {
   // racha de presión se note venir.
   var nextGoal = live.pending[0];
   var minutesToGoal = nextGoal ? nextGoal.minute - live.minute : 99;
-  if (nextGoal && minutesToGoal <= 2 && p.side !== nextGoal.side) { p.side = nextGoal.side; p.line = 2; }
+  // Justo antes del gol, el balón pasa al DELANTERO del equipo que va a
+  // marcar (línea 3), no solo al centro del campo -- a petición explícita
+  // ("cuando vaya a haber un gol... que tengan más probabilidades de
+  // tener el balón los delanteros").
+  if (nextGoal && minutesToGoal <= 2 && (p.side !== nextGoal.side || p.line < 3)) { p.side = nextGoal.side; p.line = 3; }
   var biasSide = minutesToGoal <= 6 ? (nextGoal && nextGoal.side) : null;
   var attacking = p.side === biasSide;
   var towardsGoal = Math.random() < (attacking ? 0.8 : 0.6);
@@ -561,10 +566,12 @@ function futDraftMatchStatsHtml(live) {
     return '<div class="futdraft-timeline-row' + (c.side === 'opp' ? ' futdraft-timeline-row-opp' : '') + '"><span class="futdraft-timeline-minute">' + c.minute + '\'</span><span>' + icon + ' ' + escapeHtml(c.name) + ' — ' + label + '</span></div>';
   }).join('');
   return '<div class="panel">' +
-    '<h3 style="margin-bottom:6px">Posesión</h3>' +
-    '<div class="mana-bar" style="margin-bottom:4px"><div class="mana-fill" style="width:' + myPct + '%"></div></div>' +
-    '<p class="dim small center-text">' + myPct + '% - ' + (100 - myPct) + '%</p>' +
-    (cardsHtml ? '<h3 style="margin:10px 0 6px">Incidencias</h3><div class="futdraft-timeline">' + cardsHtml + '</div>' : '') +
+    '<h3 style="margin-bottom:8px">Posesión</h3>' +
+    '<div class="poss-bar">' +
+      '<div class="poss-bar-fill poss-bar-fill-me" style="width:' + myPct + '%">' + (myPct >= 14 ? myPct + '%' : '') + '</div>' +
+      '<div class="poss-bar-fill poss-bar-fill-opp" style="width:' + (100 - myPct) + '%">' + (100 - myPct >= 14 ? (100 - myPct) + '%' : '') + '</div>' +
+    '</div>' +
+    (cardsHtml ? '<h3 style="margin:12px 0 6px">Incidencias</h3><div class="futdraft-timeline">' + cardsHtml + '</div>' : '') +
   '</div>';
 }
 function futDraftPitchDotsHtml(live) {
