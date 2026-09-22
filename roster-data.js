@@ -2797,16 +2797,16 @@ var ROSTER = [
 // Claustro Sagrado (datos aproximados: nombre real, resto estimado)
 {
   id:'r320', nombre:'Crane Kik', original:'Crane Kik',
-  posicion:'Centrocampista', tipo:'Montaña',
-  tiro:56,pase:67,defensa:59,especial:66,
-  hissatsu:['Giro de Mono'],tipoTecnica:'regate',
+  posicion:'Portero', tipo:'Bosque',
+  tiro:56,pase:67,defensa:80,especial:72,
+  hissatsu:['Lanzallamas'],tipoTecnica:'portero',
   desc:'Capitán del Claustro Sagrado, busca la paz interior a través del fútbol.',
   locked:false,cost:18
 },
 {
   id:'r321', nombre:'Tyke Wando', original:'Tyke Wando',
-  posicion:'Delantero', tipo:'Fuego',
-  tiro:67,pase:65,defensa:33,especial:69,
+  posicion:'Delantero', tipo:'Bosque',
+  tiro:78,pase:75,defensa:33,especial:69,
   hissatsu:['Remate Giratorio'],tipoTecnica:'tiro',
   desc:'Mano derecha del capitán, muy hábil con las artes marciales.',
   locked:false,cost:18
@@ -2814,39 +2814,39 @@ var ROSTER = [
 {
   id:'r322', nombre:'Dirk Artz', original:'Dirk Artz',
   posicion:'Delantero', tipo:'Viento',
-  tiro:65,pase:66,defensa:36,especial:68,
+  tiro:75,pase:74,defensa:36,especial:71,
   hissatsu:['Cañonazo'],tipoTecnica:'tiro',
   desc:'Delantero del Claustro Sagrado, hermano pequeño de Marshall.',
   locked:false,cost:18
 },
 {
   id:'r323', nombre:'Marshall Artz', original:'Marshall Artz',
-  posicion:'Defensa', tipo:'Montaña',
-  tiro:41,pase:63,defensa:70,especial:65,
-  hissatsu:['Torre Inexpugnable'],tipoTecnica:'defensa',
-  desc:'Defensa disciplinado del Claustro Sagrado, hermano mayor de Dirk.',
+  posicion:'Delantero', tipo:'Montaña',
+  tiro:71,pase:76,defensa:40,especial:70,
+  hissatsu:['Cañon Dragón'],tipoTecnica:'tiro',
+  desc:'Delantero disciplinado del Claustro Sagrado, hermano mayor de Dirk.',
   locked:false,cost:18
 },
 {
   id:'r324', nombre:'Brendan Water', original:'Brendan Water',
-  posicion:'Defensa', tipo:'Bosque',
-  tiro:44,pase:68,defensa:71,especial:61,
+  posicion:'Defensa', tipo:'Fuego',
+  tiro:44,pase:72,defensa:74,especial:73,
   hissatsu:['Cabeza Defensiva'],tipoTecnica:'defensa',
   desc:'Sereno y constante, no pierde la calma ni bajo presión.',
   locked:false,cost:18
 },
 {
   id:'r325', nombre:'Bri Spark', original:'Bri Spark',
-  posicion:'Delantero', tipo:'Fuego',
-  tiro:63,pase:58,defensa:31,especial:62,
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:33,pase:68,defensa:72,especial:68,
   hissatsu:['Tiro Sónico'],tipoTecnica:'tiro',
   desc:'Rápido y con mucho carácter, siempre busca el remate.',
   locked:false,cost:18
 },
 {
   id:'r326', nombre:'Don Ation', original:'Don Ation',
-  posicion:'Centrocampista', tipo:'Bosque',
-  tiro:64,pase:71,defensa:62,especial:67,
+  posicion:'Delantero', tipo:'Viento',
+  tiro:69,pase:71,defensa:32,especial:67,
   hissatsu:['Tiro Sónico'],tipoTecnica:'tiro',
   desc:'Centrocampista del Claustro Sagrado, entrena con los monjes.',
   locked:false,cost:18
@@ -2861,10 +2861,10 @@ var ROSTER = [
 },
 {
   id:'r328', nombre:'Ian Telektual', original:'Ian Telektual',
-  posicion:'Portero', tipo:'Montaña',
-  tiro:26,pase:44,defensa:65,especial:70,
-  hissatsu:['Red de caza'],tipoTecnica:'portero',
-  desc:'Portero de temple tranquilo, concentrado en cada disparo.',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:66,pase:74,defensa:65,especial:70,
+  hissatsu:['Giro de Mono'],tipoTecnica:'regate',
+  desc:'Mediocentro de temple tranquilo, concentrado en cada disparo.',
   locked:false,cost:18
 },
 {
@@ -3090,31 +3090,31 @@ var ROSTER = [
 {
   id:'r356', nombre:'Sonny Wright', original:'Asuto Inamori',
   posicion:'Delantero', tipo:'Fuego',
-  tiro:70,pase:64,defensa:45,especial:73,
-  hissatsu:['Ave goleadora','Entrada relampagueante'],tipoTecnica:'tiro',
+  tiro:84,pase:74,defensa:45,especial:80,
+  hissatsu:['Ave goleadora'],tipoTecnica:'tiro',
   desc:'Protagonista de la isla de Inakuni; capitán en la final del Fútbol Frontier.',
   locked:false,cost:18
 },
 {
   id:'r357', nombre:'Maxime Dassier', original:'Tatsumi Michinari',
   posicion:'Centrocampista', tipo:'Bosque',
-  tiro:66,pase:74,defensa:62,especial:72,
-  hissatsu:['Ofensiva danzarina','Victoria tricolor'],tipoTecnica:'tiro',
+  tiro:74,pase:74,defensa:70,especial:72,
+  hissatsu:['Ofensiva danzarina'],tipoTecnica:'tiro',
   desc:'Capitán del Raimon Isla Remota durante el torneo.',
   locked:false,cost:18
 },
 {
   id:'r358', nombre:'Basile Hardy', original:'Sasuke Kozoumaru',
   posicion:'Delantero', tipo:'Fuego',
-  tiro:76,pase:68,defensa:52,especial:66,
-  hissatsu:['Tornado de fuego','Daruma de fuego'],tipoTecnica:'tiro',
+  tiro:79,pase:76,defensa:52,especial:75,
+  hissatsu:['Tornado de fuego A'],tipoTecnica:'tiro',
   desc:'Delantero del Raimon Isla Remota, obsesionado con su Tornado de fuego.',
   locked:false,cost:18
 },
 {
   id:'r359', nombre:'Cliff Parker', original:'Takashi Iwato',
   posicion:'Defensa', tipo:'Montaña',
-  tiro:48,pase:60,defensa:74,especial:64,
+  tiro:48,pase:73,defensa:85,especial:80,
   hissatsu:['El muro'],tipoTecnica:'defensa',
   desc:'El Gólem de la isla: un muro imposible de pasar.',
   locked:false,cost:18
@@ -3124,23 +3124,23 @@ var ROSTER = [
 {
   id:'r360', nombre:'Elliot Ember', original:'Ryouhei Haizaki',
   posicion:'Delantero', tipo:'Bosque',
-  tiro:80,pase:72,defensa:40,especial:68,
-  hissatsu:['Chilena de pingüino','Triángulo Letal'],tipoTecnica:'tiro',
+  tiro:85,pase:80,defensa:40,especial:85,
+  hissatsu:['Chilena de pingüino'],tipoTecnica:'tiro',
   desc:'Estrella de Polaris que se une al Raimon Isla Remota contra el Plenilunio.',
   locked:false,cost:18
 },
 {
   id:'r361', nombre:'Heath Moore', original:'Yuuma Nosaka',
   posicion:'Centrocampista', tipo:'Bosque',
-  tiro:66,pase:73,defensa:56,especial:65,
-  hissatsu:['Danza del viento'],tipoTecnica:'regate',
-  desc:'Centrocampista incansable del Inakuni Raimon.',
+  tiro:82,pase:86,defensa:70,especial:85,
+  hissatsu:['Regate Lunar'],tipoTecnica:'regate',
+  desc:'Centrocampista incansable del Plenilunio.',
   locked:false,cost:18
 },
 {
   id:'r362', nombre:'Valentin Eisner', original:'Kirina Hiura',
   posicion:'Centrocampista', tipo:'Viento',
-  tiro:70,pase:68,defensa:58,especial:70,
+  tiro:74,pase:82,defensa:67,especial:70,
   hissatsu:['Flecha de hielo','Lanza polar','Tiro meteórico'],tipoTecnica:'tiro',
   desc:'Centrocampista del Raimon Isla Remota con técnicas de hielo.',
   locked:false,cost:18
@@ -3148,7 +3148,7 @@ var ROSTER = [
 {
   id:'r363', nombre:'Nino Nango', original:'Hanta Hattori',
   posicion:'Centrocampista', tipo:'Bosque',
-  tiro:68,pase:70,defensa:58,especial:68,
+  tiro:71,pase:70,defensa:78,especial:80,
   hissatsu:['Sapo ninja','Jaula gravitatoria'],tipoTecnica:'tiro',
   desc:'Centrocampista ágil del Raimon Isla Remota.',
   locked:false,cost:18
@@ -3156,7 +3156,7 @@ var ROSTER = [
 {
   id:'r364', nombre:'César Montalbán', original:'Hiro Okuiri',
   posicion:'Centrocampista', tipo:'Montaña',
-  tiro:58,pase:72,defensa:68,especial:66,
+  tiro:68,pase:72,defensa:68,especial:66,
   hissatsu:['Laberinto'],tipoTecnica:'regate',
   desc:'Centrocampista que desorienta rivales con el Laberinto.',
   locked:false,cost:18
@@ -3164,7 +3164,7 @@ var ROSTER = [
 {
   id:'r365', nombre:'Adriano Donati', original:'Tetsunosuke Goujin',
   posicion:'Delantero', tipo:'Fuego',
-  tiro:72,pase:62,defensa:44,especial:68,
+  tiro:82,pase:70,defensa:44,especial:81,
   hissatsu:['Cabezazo fiero','Granizado de fuego'],tipoTecnica:'tiro',
   desc:'Delantero del Raimon Isla Remota, letal de cabeza.',
   locked:false,cost:18
@@ -3172,7 +3172,7 @@ var ROSTER = [
 {
   id:'r366', nombre:'Trevor Cook', original:'Yuuichirou Mansaku',
   posicion:'Defensa', tipo:'Viento',
-  tiro:52,pase:64,defensa:68,especial:68,
+  tiro:52,pase:75,defensa:79,especial:77,
   hissatsu:['Viento centelleante'],tipoTecnica:'regate',
   desc:'Defensa veloz del Raimon Isla Remota.',
   locked:false,cost:18
@@ -3180,7 +3180,7 @@ var ROSTER = [
 {
   id:'r367', nombre:'Kiko Calavento', original:'Masakatsu Hiyori',
   posicion:'Defensa', tipo:'Bosque',
-  tiro:54,pase:64,defensa:70,especial:68,
+  tiro:54,pase:74,defensa:80,especial:74,
   hissatsu:['Torbellino interceptor','Jaula gravitatoria'],tipoTecnica:'defensa',
   desc:'Defensa del Raimon Isla Remota que recupera el balón con su Torbellino.',
   locked:false,cost:18
