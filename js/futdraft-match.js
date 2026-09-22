@@ -283,18 +283,28 @@ function futDraftAdvancePossession(live) {
   // Justo antes del gol, el balón pasa al DELANTERO del equipo que va a
   // marcar (línea 3), no solo al centro del campo -- a petición explícita
   // ("cuando vaya a haber un gol... que tengan más probabilidades de
-  // tener el balón los delanteros").
-  if (nextGoal && minutesToGoal <= 2 && (p.side !== nextGoal.side || p.line < 3)) { p.side = nextGoal.side; p.line = 3; }
-  var biasSide = minutesToGoal <= 6 ? (nextGoal && nextGoal.side) : null;
+  // tener el balón los delanteros"). Ventana un poco más amplia (3
+  // minutos) para que dé tiempo a verse la jugada de ataque antes del gol
+  // en vez de un salto brusco de última hora.
+  var inGoalWindow = nextGoal && minutesToGoal <= 3;
+  if (inGoalWindow && (p.side !== nextGoal.side || p.line < 3)) { p.side = nextGoal.side; p.line = 3; }
+  // Cuanto más cerca esté el gol, más se nota la presión: la probabilidad
+  // de seguir avanzando hacia esa portería crece de forma gradual (en vez
+  // de un empujón fijo a partir de los 6 minutos) -- a petición explícita
+  // ("haz que los pases y movimientos parezcan más un partido real").
+  var pressure = nextGoal ? clamp(1 - minutesToGoal / 8, 0, 1) : 0;
+  var biasSide = pressure > 0 ? nextGoal.side : null;
   var attacking = p.side === biasSide;
-  var towardsGoal = Math.random() < (attacking ? 0.8 : 0.6);
+  var towardsGoal = Math.random() < (attacking ? (0.65 + pressure * 0.25) : 0.6);
   if (towardsGoal) p.line = clamp(p.line + (Math.random() < 0.5 ? -1 : 1), 0, 3);
   // Al perder el balón, pasa a la defensa (línea 1), nunca directo al
   // portero contrario -- a petición explícita ("el balón no puede ir de
   // portero a portero rival"): con línea 0 en las dos posesiones
   // seguidas (justo antes de perderlo y justo al ganarlo) el balón
   // saltaba de una portería a la otra de golpe en el mismo tick.
-  var turnoverChance = p.line === 3 ? (attacking ? 0.06 : 0.22) : 0.09;
+  // Dentro de la ventana del gol casi no se pierde el balón -- que la
+  // jugada de ataque llegue a puerta en vez de cortarse a medias.
+  var turnoverChance = inGoalWindow ? 0.02 : (p.line === 3 ? (attacking ? 0.06 : 0.22) : 0.09);
   if (Math.random() < turnoverChance) { p.side = p.side === 'me' ? 'opp' : 'me'; p.line = 1; }
 
   // Posesión real (a petición explícita, "mete posesión"): un tanto por
@@ -534,9 +544,22 @@ function futDraftBuildDotsState(live) {
 // resto de jugadores sí se muevan"). El resto de líneas sigue con
 // bastante recorrido (±5% por empujón).
 var WT_KEEPER_X = { me: 4, opp: 96 };
-function futDraftNudgeDotsState(state) {
+// Forma de equipo según quién tiene el balón, a petición explícita ("haz
+// que los pases y movimientos parezcan más un partido real"): antes cada
+// puntito se movía con un empujón aleatorio independiente del resto, sin
+// relación con la jugada -- ahora, mientras un equipo tiene el balón, sus
+// líneas se adelantan en bloque hacia la portería rival (como un ataque de
+// verdad), y el equipo sin balón se repliega hacia la suya (bloque
+// defensivo); el temblor aleatorio de cada uno baja para que se note el
+// movimiento de conjunto en vez de puro ruido.
+var WT_SHAPE_SHIFT_ATTACK = 7;
+var WT_SHAPE_SHIFT_DEFEND = -4;
+function futDraftNudgeDotsState(state, poss) {
   ['me', 'opp'].forEach(function (side) {
     var colX = side === 'me' ? WT_LINE_X_ME : WT_LINE_X_OPP;
+    var attackDir = side === 'me' ? 1 : -1;
+    var hasBall = poss && poss.side === side;
+    var shapeShift = (hasBall ? WT_SHAPE_SHIFT_ATTACK : WT_SHAPE_SHIFT_DEFEND) * attackDir;
     state[side].forEach(function (d) {
       if (d.line === 0) {
         // Portero: prácticamente clavado en la línea de gol, solo un
@@ -545,9 +568,9 @@ function futDraftNudgeDotsState(state) {
         d.y = clamp(d.y + rand(-8, 8) / 10, 38, 62);
         return;
       }
-      var targetX = colX[d.line];
-      d.x = clamp(d.x + (targetX - d.x) * 0.2 + rand(-80, 80) / 10, 3, 97);
-      d.y = clamp(d.y + rand(-80, 80) / 10, 5, 95);
+      var targetX = clamp(colX[d.line] + shapeShift, 2, 98);
+      d.x = clamp(d.x + (targetX - d.x) * 0.16 + rand(-50, 50) / 10, 3, 97);
+      d.y = clamp(d.y + rand(-60, 60) / 10, 5, 95);
     });
   });
 }
@@ -574,6 +597,22 @@ function futDraftMatchStatsHtml(live) {
     (cardsHtml ? '<h3 style="margin:12px 0 6px">Incidencias</h3><div class="futdraft-timeline">' + cardsHtml + '</div>' : '') +
   '</div>';
 }
+// El balón se queda con el mismo portador mientras siga en la misma línea
+// y equipo (en vez de saltar a otro puntito activo al azar en cada
+// refresco), y solo "pasa" a otro cuando la posesión cambia de línea -- a
+// petición explícita ("que los pases y movimientos parezcan más un
+// partido real"): antes el balón temblaba entre compañeros sin venir de
+// ningún sitio, ahora se nota que va de uno a otro solo cuando avanza.
+function futDraftBallCarrierDot(live, poss, activeList) {
+  if (!activeList.length) return null;
+  if (live.ballCarrier && live.ballCarrier.side === poss.side && live.ballCarrier.line === poss.line) {
+    var kept = activeList.find(function (d) { return d.num === live.ballCarrier.num; });
+    if (kept) return kept;
+  }
+  var pick = activeList[Math.floor(Math.random() * activeList.length)];
+  live.ballCarrier = { side: poss.side, line: poss.line, num: pick.num };
+  return pick;
+}
 function futDraftPitchDotsHtml(live) {
   if (!live.dotsState) live.dotsState = futDraftBuildDotsState(live);
   var poss = live.poss || { side: live.lastGoalSide === 'opp' ? 'opp' : 'me', line: 1 };
@@ -594,7 +633,7 @@ function futDraftPitchDotsHtml(live) {
   // (si hay varios, se elige uno cada refresco, dando sensación de pase
   // entre compañeros de la misma línea).
   var activeList = (poss.side === 'me' ? meDots : oppDots).filter(function (d) { return d.active; });
-  var ballDot = activeList.length ? activeList[Math.floor(Math.random() * activeList.length)] : null;
+  var ballDot = futDraftBallCarrierDot(live, poss, activeList);
   var inGoal = live.goalBall && Date.now() < live.goalBall.until;
   var ballX = inGoal ? live.goalBall.x : (ballDot ? ballDot.x + (poss.side === 'me' ? 4 : -4) : 50);
   var ballY = inGoal ? live.goalBall.y : (ballDot ? ballDot.y : 50);
@@ -629,8 +668,8 @@ function futDraftDotsRefresh(live) {
   if (!field || !state) { render(); return; }
   var total = state.me.length + state.opp.length;
   if (field.querySelectorAll('.pitch-dot').length !== total) { render(); return; }
-  futDraftNudgeDotsState(state);
   var poss = live.poss || { side: 'me', line: 1 };
+  futDraftNudgeDotsState(state, poss);
   state.me.forEach(function (d) { d.active = poss.side === 'me' && poss.line === d.line; });
   state.opp.forEach(function (d) { d.active = poss.side === 'opp' && poss.line === d.line; });
   function place(d, side) {
@@ -643,7 +682,7 @@ function futDraftDotsRefresh(live) {
   state.me.forEach(function (d) { place(d, 'me'); });
   state.opp.forEach(function (d) { place(d, 'opp'); });
   var activeList = (poss.side === 'me' ? state.me : state.opp).filter(function (d) { return d.active; });
-  var ballDot = activeList.length ? activeList[Math.floor(Math.random() * activeList.length)] : null;
+  var ballDot = futDraftBallCarrierDot(live, poss, activeList);
   var inGoal = live.goalBall && Date.now() < live.goalBall.until;
   var ball = field.querySelector('.pitch-ball');
   if (ball) {
