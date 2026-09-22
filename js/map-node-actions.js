@@ -283,7 +283,7 @@ function renderRecruit() {
     '<div class="screen">' +
       '<div class="panel"><h2 class="panel-title mb0">Fichaje</h2><p class="dim small">' + (full ? 'Tu plantilla ya tiene 4 jugadores.' : 'Añade un nuevo jugador real de Inazuma Eleven a tu plantilla (máx. 4).') + '</p></div>' +
       cards +
-      '<button class="btn btn-outline btn-block mt" onclick="returnToMap()">Rechazar y continuar</button>' +
+      '<button class="btn btn-outline btn-block mt" onclick="returnToMap()">Rechazar</button>' +
     '</div>'
   );
 }
@@ -312,7 +312,7 @@ function renderRest() {
         '<h2 class="panel-title">Descanso</h2>' +
         '<p class="dim">Tu equipo recupera fuerzas antes del siguiente reto.</p>' +
         '<div class="card-grid">' + G.run.squad.map(function (p) { return playerCardHtml(p, '', false, true); }).join('') + '</div>' +
-        '<button class="btn btn-primary btn-block mt" onclick="applyRest()">' + (anyFatigued ? 'Quitar fatiga y continuar' : 'Continuar') + '</button>' +
+        '<button class="btn btn-primary btn-block mt" onclick="applyRest()">' + (anyFatigued ? 'Quitar fatiga' : 'Continuar') + '</button>' +
       '</div>' +
     '</div>'
   );

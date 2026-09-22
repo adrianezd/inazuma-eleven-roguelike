@@ -832,7 +832,7 @@ function renderJugadorDecision(p) {
 
 function renderJugadorRetired(p) {
   var shareHtml = '<div class="panel center-text">' +
-    '<button class="btn btn-outline btn-block" onclick="actionShareJugadorCareer()">Compartir con un enlace 🔗</button>' +
+    '<button class="btn btn-outline btn-block" onclick="actionShareJugadorCareer()">Compartir 🔗</button>' +
     (G.jugadorShareMessage ? '<p class="dim small">' + escapeHtml(G.jugadorShareMessage) + '</p>' : '') +
     (G.jugadorShareUrl ? '<input class="select-field mt" type="text" readonly value="' + escapeHtml(G.jugadorShareUrl) + '" onclick="this.select()">' : '') +
   '</div>';
@@ -848,7 +848,7 @@ function renderJugadorRetired(p) {
     playerModeHistoryHtml(p) +
     shareHtml +
     '<div class="panel">' +
-      '<button class="btn btn-primary btn-block" onclick="actionReplayJugadorCareer()">Volver a jugar (mismo jugador, desde los 16)</button>' +
+      '<button class="btn btn-primary btn-block" onclick="actionReplayJugadorCareer()">Repetir</button>' +
       '<button class="btn btn-outline btn-block mt" onclick="actionRestartJugadorCareer()">Crear otra carrera</button>' +
       '<button class="btn btn-outline btn-block mt" onclick="doBackToMenuNow()">Volver al menú</button>' +
     '</div>'

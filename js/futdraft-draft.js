@@ -732,7 +732,7 @@ function renderFutDraftTeam() {
         '<p class="dim small">Puntuación de equipo: <strong style="color:var(--accent-2)">' + breakdown.total + '</strong> / 100</p>' +
         '<p class="dim small">' + swapHint + '</p>' +
         '<p class="dim small">' + captainHint + '</p>' +
-        '<button class="btn btn-tiny' + (f.pickingCaptain ? ' active' : '') + '" onclick="toggleFutDraftCaptainMode()">' + (f.pickingCaptain ? 'Toca a un titular para hacerlo capitán…' : 'Elegir capitán 👑') + '</button>' +
+        '<button class="btn btn-tiny' + (f.pickingCaptain ? ' active' : '') + '" onclick="toggleFutDraftCaptainMode()">' + (f.pickingCaptain ? 'Toca un titular…' : 'Elegir capitán 👑') + '</button>' +
       '</div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:8px">Formación</h3>' +
@@ -746,12 +746,12 @@ function renderFutDraftTeam() {
       '</div>' +
       benchHtml +
       '<div class="panel center-text">' +
-        '<button class="btn btn-outline btn-block" onclick="actionShareFutDraftSquad()">Compartir plantilla 🔗</button>' +
+        '<button class="btn btn-outline btn-block" onclick="actionShareFutDraftSquad()">Compartir 🔗</button>' +
         (G.futdraftShareMessage ? '<p class="dim small">' + escapeHtml(G.futdraftShareMessage) + '</p>' : '') +
         (G.futdraftShareUrl ? '<input class="select-field mt" type="text" readonly value="' + escapeHtml(G.futdraftShareUrl) + '" onclick="this.select()">' : '') +
       '</div>' +
       (f.mode === 'liga'
-        ? '<button class="btn btn-primary btn-block" onclick="startLigaRun()">Empezar Liga (18 equipos)</button>'
+        ? '<button class="btn btn-primary btn-block" onclick="startLigaRun()">Empezar Liga</button>'
         : '<button class="btn btn-primary btn-block" onclick="startFutDraftMatches()">Jugar torneo (' + futDraftBracketSize() + ' equipos)</button>') +
     '</div>'
   );
@@ -1267,7 +1267,7 @@ function renderFutDraftVsPrep() {
       '<div class="panel"><h3 style="margin-bottom:8px">Formación</h3><div class="view-toggle view-toggle-wrap">' + formationBtns + '</div>' +
         '<div class="pitch pitch-11">' + rowsHtml + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div></div>' +
       '<div class="panel"><h3 style="margin-bottom:4px">Banquillo</h3><div class="pitch-row" style="justify-content:center">' + bench.map(function (p) { return slotHtml(p, false); }).join('') + '</div></div>' +
-      '<button class="btn btn-primary btn-block mt" onclick="actionConfirmFutDraftVsPrep()">' + (last ? 'Equipo listo' : 'Equipo listo (le toca al Jugador 2)') + '</button>' +
+      '<button class="btn btn-primary btn-block mt" onclick="actionConfirmFutDraftVsPrep()">' + (last ? 'Listo' : 'Listo, turno del 2') + '</button>' +
     '</div>'
   );
 }
@@ -1299,9 +1299,9 @@ function renderFutDraftVsResult() {
       '<div class="panel center-text"><h3 style="margin-bottom:4px">' + resultLabel + '</h3></div>' +
       timelineHtml +
       (r.penalties ? '<div class="panel"><h3 style="margin-bottom:8px">Tanda de penaltis (' + r.penalties.a + ' - ' + r.penalties.b + ')</h3><div class="futdraft-timeline">' + r.penalties.attempts.map(futDraftVsPenRowHtml).join('') + '</div></div>' : '') +
-      '<button class="btn btn-primary btn-block mt" onclick="actionReplayFutDraftVsMatch()">Volver a jugar con estos equipos</button>' +
-      '<button class="btn btn-outline btn-block mt" onclick="actionStartFutDraftVsDraft()">Nuevo draft (mismos nombres y escudos)</button>' +
-      '<button class="btn btn-outline btn-block mt" onclick="actionGoFutDraftVsSetup()">Cambiar nombres y escudos</button>' +
+      '<button class="btn btn-primary btn-block mt" onclick="actionReplayFutDraftVsMatch()">Repetir partido</button>' +
+      '<button class="btn btn-outline btn-block mt" onclick="actionStartFutDraftVsDraft()">Nuevo draft</button>' +
+      '<button class="btn btn-outline btn-block mt" onclick="actionGoFutDraftVsSetup()">Cambiar nombres</button>' +
       '<button class="btn btn-outline btn-block mt" onclick="actionBackToMenu()">Volver al menú</button>' +
     '</div>'
   );

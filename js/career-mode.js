@@ -1615,7 +1615,7 @@ function renderCareerEquipo(c) {
     '<div class="panel center-text">' +
       '<p class="dim small">Puntuación de equipo: <strong style="color:var(--accent-2)">' + breakdown.total + '</strong> / 100</p>' +
       '<p class="dim small">' + captainHint + '</p>' +
-      '<button class="btn btn-tiny' + (c.pickingCaptain ? ' active' : '') + '" onclick="toggleCareerCaptainMode()">' + (c.pickingCaptain ? 'Toca a un titular para hacerlo capitán…' : 'Elegir capitán 👑') + '</button>' +
+      '<button class="btn btn-tiny' + (c.pickingCaptain ? ' active' : '') + '" onclick="toggleCareerCaptainMode()">' + (c.pickingCaptain ? 'Toca un titular…' : 'Elegir capitán 👑') + '</button>' +
     '</div>' +
     '<div class="panel">' +
       '<h3 style="margin-bottom:8px">Formación</h3>' +
@@ -3396,7 +3396,7 @@ function renderCareerFired(c) {
       '<p style="font-size:2.4rem;margin:8px 0">📦</p>' +
       '<p class="dim small">La directiva ha perdido la confianza en ti al final de la temporada ' + f.season + ': acabaste ' + f.position + 'º en ' + escapeHtml(careerDivisionName(f.division)) + ' y el objetivo era el ' + f.target + 'º.</p>' +
       '<p class="dim small">Títulos en tu palmarés: Ligas ' + (c.ligaTitlesWon || 0) + ', Copas ' + (c.cupsWon || 0) + ', Champions ' + (c.championsWon || 0) + '.</p>' +
-      '<button class="btn btn-primary btn-block mt" onclick="actionGoCareerMode()">Empezar una carrera nueva</button>' +
+      '<button class="btn btn-primary btn-block mt" onclick="actionGoCareerMode()">Nueva carrera</button>' +
       '<button class="btn btn-outline btn-block mt" onclick="actionBackToMenu()">Volver al menú</button>' +
     '</div>' +
   '</div>';

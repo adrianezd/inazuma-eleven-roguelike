@@ -166,6 +166,9 @@ function render() {
     case 'ligaPoolSelect': html = renderLigaPoolSelect(); break;
     case 'ligaTable': html = renderLigaTable(); break;
     case 'ligaSummary': html = renderLigaSummary(); break;
+    case 'worldTourSetup': html = renderWorldTourSetup(); break;
+    case 'worldTourHome': html = renderWorldTourHome(); break;
+    case 'worldTourDraft': html = renderWorldTourDraft(); break;
     default: html = renderMenu();
   }
   if (G.confirmLeaveOpen) html += renderConfirmLeaveModal();
@@ -206,6 +209,9 @@ function renderMenu() {
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-block" onclick="actionGoFutDraftVsSetup()">FutDraft 2 jugadores</button>' +
+        '</div>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-block" onclick="actionGoWorldTour()">Modo Mundial</button>' +
         '</div>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-block" onclick="actionStartTournament()">Modo Torneo</button>' +

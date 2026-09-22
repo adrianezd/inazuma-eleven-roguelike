@@ -3188,7 +3188,7 @@ var ROSTER = [
 {
   id:'r368', nombre:'Sandra Fischer', original:'Sandra Fischer',
   posicion:'Portero', tipo:'Viento',
-  tiro:30,pase:52,defensa:68,especial:72,
+  tiro:30,pase:52,defensa:78,especial:72,
   hissatsu:['Mano oceánica','Velo de sirena'],tipoTecnica:'portero',
   desc:'Portera del Raimon Isla Remota.',
   locked:false,cost:18

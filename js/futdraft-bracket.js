@@ -167,17 +167,19 @@ function renderFutDraftMatchResult() {
         weatherHtml + penaltyHtml +
       '</div>' +
       timelineHtml +
-      (r.isCareer
-        ? (r.isSupercopa
-            ? '<button class="btn btn-primary btn-block mt" onclick="continueCareerSupercopaMatch()">Volver a la Supercopa</button>'
-            : r.isChampions
-              ? '<button class="btn btn-primary btn-block mt" onclick="continueCareerChampionsMatch()">Volver a la Champions</button>'
-              : r.isCup
-                ? '<button class="btn btn-primary btn-block mt" onclick="continueCareerCupMatch()">Volver a la Copa</button>'
-                : '<button class="btn btn-primary btn-block mt" onclick="continueCareerMatchday()">Volver a Jornada</button>')
-        : r.isLiga
-          ? '<button class="btn btn-primary btn-block mt" onclick="continueLigaMatchday()">Ver jornada</button>'
-          : '<button class="btn btn-primary btn-block mt" onclick="continueFutDraftMatch()">' + (r.playerWon ? 'Continuar' : 'Ver resultado') + '</button>') +
+      (r.isWorldTour
+        ? '<button class="btn btn-primary btn-block mt" onclick="continueWorldTourMatch()">Continuar</button>'
+        : r.isCareer
+          ? (r.isSupercopa
+              ? '<button class="btn btn-primary btn-block mt" onclick="continueCareerSupercopaMatch()">Volver a la Supercopa</button>'
+              : r.isChampions
+                ? '<button class="btn btn-primary btn-block mt" onclick="continueCareerChampionsMatch()">Volver a la Champions</button>'
+                : r.isCup
+                  ? '<button class="btn btn-primary btn-block mt" onclick="continueCareerCupMatch()">Volver a la Copa</button>'
+                  : '<button class="btn btn-primary btn-block mt" onclick="continueCareerMatchday()">Volver a Jornada</button>')
+          : r.isLiga
+            ? '<button class="btn btn-primary btn-block mt" onclick="continueLigaMatchday()">Ver jornada</button>'
+            : '<button class="btn btn-primary btn-block mt" onclick="continueFutDraftMatch()">' + (r.playerWon ? 'Continuar' : 'Ver resultado') + '</button>') +
     '</div>'
   );
 }
@@ -229,7 +231,7 @@ function renderFutDraftSummary() {
       '</div>' +
       renderTopScorersAssistsPanel(f.stats) +
       '<div class="panel center-text">' +
-        '<button class="btn btn-outline btn-block" onclick="actionShareFutDraftResult()">Compartir resultado 🔗</button>' +
+        '<button class="btn btn-outline btn-block" onclick="actionShareFutDraftResult()">Compartir 🔗</button>' +
         (G.futdraftShareMessage ? '<p class="dim small">' + escapeHtml(G.futdraftShareMessage) + '</p>' : '') +
         (G.futdraftShareUrl ? '<input class="select-field mt" type="text" readonly value="' + escapeHtml(G.futdraftShareUrl) + '" onclick="this.select()">' : '') +
       '</div>' +
