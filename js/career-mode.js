@@ -3757,11 +3757,17 @@ function careerMaybeAwardLeagueFinish(c) {
   c.budget = Math.round((c.budget + bonus) * 10) / 10;
   var federationAwards = careerEvaluateFederationAwards(c);
   federationAwards.forEach(function (award) { c.budget = Math.round((c.budget + award.reward) * 10) / 10; });
-  c.lastLeagueFinish = { position: position, bonus: bonus, federationAwards: federationAwards };
+  // Puntos de Espíritu por acabar top 3 (ver CAREER_LEAGUE_TOP3_POINTS),
+  // doble en Primera -- guardados en lastLeagueFinish.spiritPoints para
+  // enseñarlos en el resumen de temporada aunque no sea el campeón (solo
+  // el campeón se lleva el popup de trofeo, 2º y 3º no).
+  var top3Points = CAREER_LEAGUE_TOP3_POINTS[position];
+  var leaguePoints = top3Points ? careerAwardSpiritPoints(top3Points * (c.division === 1 ? 2 : 1)) : 0;
+  c.lastLeagueFinish = { position: position, bonus: bonus, federationAwards: federationAwards, spiritPoints: leaguePoints };
   careerBoardSeasonReview(c, position);
   if (position === 1) {
     c.ligaTitlesWon = (c.ligaTitlesWon || 0) + 1;
-    careerTriggerTrophyPopup(careerDivisionName(c.division));
+    careerTriggerTrophyPopup(careerDivisionName(c.division), leaguePoints);
     careerApplySponsorTrophyPayout(c);
   }
   // Clasificación a la Champions (solo desde Primera): entre los
@@ -4365,7 +4371,8 @@ function careerCupMaybeAwardChampion(c) {
   if (champion.isPlayer) {
     c.budget = Math.round((c.budget + CAREER_CUP_WIN_BONUS) * 10) / 10;
     c.cupsWon = (c.cupsWon || 0) + 1;
-    careerTriggerTrophyPopup('Copa del Rey');
+    var cupPoints = careerAwardSpiritPoints(CAREER_CUP_WIN_POINTS * (c.division === 1 ? 2 : 1));
+    careerTriggerTrophyPopup('Copa del Rey', cupPoints);
     careerApplySponsorTrophyPayout(c);
   }
 }
@@ -4711,7 +4718,8 @@ function careerChampionsMaybeAwardChampion(c) {
   if (champion.isPlayer) {
     c.budget = Math.round((c.budget + CAREER_CHAMPIONS_WIN_BONUS) * 10) / 10;
     c.championsWon = (c.championsWon || 0) + 1;
-    careerTriggerTrophyPopup('Champions League');
+    var championsPoints = careerAwardSpiritPoints(CAREER_CHAMPIONS_WIN_POINTS);
+    careerTriggerTrophyPopup('Champions League', championsPoints);
     careerApplySponsorTrophyPayout(c);
     // Supercopa: se crea sola en cuanto ganas la Champions esta
     // temporada, a petición explícita ("añade una supercopa también si
@@ -5160,6 +5168,12 @@ function careerSeasonSummaryHtml(c) {
   var sponsorBadges = c.activeSponsor
     ? careerSeasonBadgeHtml('🤝', 'Patrocinador: ' + c.activeSponsor.label, '+' + c.activeSponsor.totalEarned + ' M€', 'season-badge-gold')
     : '';
+  // Puntos de Espíritu por top 3 (careerMaybeAwardLeagueFinish); el
+  // campeón ya los ve en el popup de trofeo, así que esta insignia solo
+  // se enseña para 2º/3º -- que no se pierda ese premio en el resumen.
+  var spiritBadge = (finish && finish.spiritPoints && finish.position !== 1)
+    ? careerSeasonBadgeHtml('✨', 'Puntos de Espíritu', 'Top 3 de ' + careerDivisionName(c.division) + ' · +' + finish.spiritPoints, 'season-badge-gold')
+    : '';
   var federationAwards = finish && finish.federationAwards || [];
   var federationBadges = federationAwards.map(function (award) {
     return careerSeasonBadgeHtml('🏅', award.title, escapeHtml(award.playerName) + ' (' + award.count + ') · +' + award.reward + ' M€', 'season-badge-gold');
@@ -5182,6 +5196,7 @@ function careerSeasonSummaryHtml(c) {
     '<div class="season-summary-badges">' +
       careerSeasonBadgeHtml('📊', 'Posición final', positionText, '') +
       (bonus ? careerSeasonBadgeHtml('💰', 'Premio de Liga', '+' + bonus + ' M€', 'season-badge-gold') : '') +
+      spiritBadge +
       boardBadge +
       objectiveBadge +
       sponsorBadges +
@@ -5427,8 +5442,23 @@ window.actionToggleReduceMotion = function () {
 // con rebote + brillo ya usado en Modo Jugador (.jugador-trophy-card/
 // jugadorTrophyPop/jugadorTrophyShine en style.css), reaprovechado tal
 // cual para no duplicar la animación.
-function careerTriggerTrophyPopup(title) {
-  G.careerTrophyPopup = { title: title };
+function careerTriggerTrophyPopup(title, points) {
+  G.careerTrophyPopup = { title: title, points: points || 0 };
+}
+// Puntos de Espíritu por títulos/puestos de Modo Carrera (para gastar en
+// la Máquina de Premios), a petición explícita ("que me den fichas o
+// puntos de juego al ganar una liga/copa/champions o quedar top 3 en
+// liga"): en Segunda 50/75/100 M€ (3º/2º/campeón), doble en Primera; Copa
+// del Rey igual que ser campeón de liga en tu división; Champions un
+// escalón más (siempre se juega desde Primera).
+var CAREER_LEAGUE_TOP3_POINTS = { 3: 50, 2: 75, 1: 100 };
+var CAREER_CUP_WIN_POINTS = 100;
+var CAREER_CHAMPIONS_WIN_POINTS = 300;
+function careerAwardSpiritPoints(amount) {
+  if (!amount) return 0;
+  G.meta.points += amount;
+  saveMeta(G.meta);
+  return amount;
 }
 window.actionDismissCareerTrophyPopup = function () {
   G.careerTrophyPopup = null;
@@ -5440,6 +5470,7 @@ function renderCareerTrophyPopup() {
       '<div class="jugador-trophy-icon">🏆</div>' +
       '<h3 style="margin-bottom:4px">¡Campeón!</h3>' +
       '<p class="dim small">' + escapeHtml(G.careerTrophyPopup.title) + '</p>' +
+      (G.careerTrophyPopup.points ? '<p class="dim small" style="color:var(--accent-2)">' + spiritIcon() + ' +' + G.careerTrophyPopup.points + ' Puntos de Espíritu</p>' : '') +
       '<button class="btn btn-primary btn-block mt" onclick="actionDismissCareerTrophyPopup()">Seguir</button>' +
     '</div>' +
   '</div>';
