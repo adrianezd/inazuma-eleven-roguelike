@@ -103,6 +103,7 @@ var TEAM_SHIELD_FILES = {
   'Instituto Plenilunio': 'plenilunio.png',
   'Resistencia Japón GO': 'resistencia-japon-go.png',
   'Umbrella': 'umbrella.png',
+  'Inazuma Kids': 'inazuma-kids.webp',
   'Veteranos Inazuma': 'veteranos-inazuma.png',
   'Alius Masters': 'alius-masters.webp',
   'Los arions': 'arions.webp',
