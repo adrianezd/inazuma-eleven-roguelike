@@ -441,7 +441,7 @@ function playerModeRollStartingClubOptions() {
   return options;
 }
 function playerModeFreshSetupChoices() {
-  return { apellido: '', dorsal: 10, pierna: 'derecha', posicion: 'Delantero', club: null, clubOptions: playerModeRollStartingClubOptions() };
+  return { step: 1, apellido: '', dorsal: 10, pierna: 'derecha', posicion: 'Delantero', club: null, clubOptions: playerModeRollStartingClubOptions() };
 }
 // Punto de entrada desde el menú principal: si ya hay una carrera en
 // marcha (o retirada, para poder repasar el resumen final), continúa
@@ -476,11 +476,29 @@ window.actionSetJugadorField = function (field, value) {
   if (!G.jugadorSetupChoices) return;
   G.jugadorSetupChoices[field] = value;
   if (field === 'apellido') {
-    var btn = document.querySelector('[onclick="actionConfirmJugadorSetup()"]');
-    if (btn) btn.disabled = !(String(value).trim() && G.jugadorSetupChoices.club);
+    // Paso 1 (identidad): el botón es "Listo" (actionJugadorSetupNextStep),
+    // solo exige apellido. Paso 2 (club, renderJugadorSetupClub) ya no
+    // toca este campo -- si algún día lo hiciera, ahí sigue exigiendo
+    // también club para "Confirmar".
+    var btn = document.querySelector('[onclick="actionJugadorSetupNextStep()"]') ||
+      document.querySelector('[onclick="actionConfirmJugadorSetup()"]');
+    if (btn) btn.disabled = !(String(value).trim() && (btn.getAttribute('onclick') === 'actionJugadorSetupNextStep()' || G.jugadorSetupChoices.club));
     return;
   }
   if (field === 'dorsal') return;
+  render();
+};
+window.actionJugadorSetupNextStep = function () {
+  var ch = G.jugadorSetupChoices;
+  if (!ch || !ch.apellido.trim()) return;
+  ch.dorsal = clamp(parseInt(ch.dorsal, 10) || 10, 1, 99);
+  ch.step = 2;
+  render();
+};
+window.actionJugadorSetupPrevStep = function () {
+  var ch = G.jugadorSetupChoices;
+  if (!ch) return;
+  ch.step = 1;
   render();
 };
 window.actionConfirmJugadorSetup = function () {
@@ -718,23 +736,21 @@ function playerModeHistoryHtml(p) {
   return '<div class="panel"><h3 style="margin-bottom:8px" class="center-text">Trayectoria</h3><div class="season-summary-badges">' + rows + '</div></div>';
 }
 
+// En dos pasos, a petición explícita ("primero rellenas nombre,
+// posición, dorsal... y al darle a Listo, lo primero que sale es la
+// elección del primer club"): paso 1 solo pide la identidad (nunca el
+// club), paso 2 solo pide el club. Antes estaba todo junto en la misma
+// pantalla y "Listo" ya exigía tener club elegido para poder pulsarlo.
 function renderJugadorSetup() {
   var ch = G.jugadorSetupChoices;
+  if (ch.step === 2) return renderJugadorSetupClub(ch);
   var posBtns = POSITIONS.map(function (pos) {
     return '<button class="jugador-pos-card' + (ch.posicion === pos ? ' active' : '') + '" onclick="actionSetJugadorField(\'posicion\',\'' + pos + '\')">' +
       '<img src="' + positionIconPath(pos) + '" alt="' + pos + '">' +
       '<span>' + pos + '</span>' +
     '</button>';
   }).join('');
-  var clubItems = ch.clubOptions.map(function (name) {
-    var selected = ch.club === name;
-    return '<button class="shop-item" style="width:100%;text-align:left;border-color:' + (selected ? 'var(--accent-2)' : 'var(--border)') + '" onclick="actionSetJugadorField(\'club\',\'' + escapeHtml(name).replace(/'/g, "\\'") + '\')">' +
-      '<img class="team-shield-inline" src="' + escapeHtml(teamShieldPath(name)) + '" alt="">' +
-      '<div style="flex:1"><strong>' + escapeHtml(name) + '</strong></div>' +
-      (selected ? '<span class="pill">Elegido</span>' : '') +
-    '</button>';
-  }).join('');
-  var canConfirm = ch.apellido.trim() && ch.club;
+  var canContinue = ch.apellido.trim();
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
@@ -759,12 +775,30 @@ function renderJugadorSetup() {
         '<div class="jugador-pos-grid">' + posBtns + '</div>' +
       '</div>' +
       '<div class="panel">' +
-        '<h3 style="margin-bottom:8px">Primer club</h3>' +
-        '<p class="dim small">Debutas con 16 años en la cantera de uno de estos clubes.</p>' +
-        clubItems +
+        '<button class="btn btn-primary btn-block" ' + (canContinue ? '' : 'disabled') + ' onclick="actionJugadorSetupNextStep()">Listo</button>' +
       '</div>' +
+    '</div>'
+  );
+}
+function renderJugadorSetupClub(ch) {
+  var clubItems = ch.clubOptions.map(function (name) {
+    var selected = ch.club === name;
+    return '<button class="shop-item" style="width:100%;text-align:left;border-color:' + (selected ? 'var(--accent-2)' : 'var(--border)') + '" onclick="actionSetJugadorField(\'club\',\'' + escapeHtml(name).replace(/'/g, "\\'") + '\')">' +
+      '<img class="team-shield-inline" src="' + escapeHtml(teamShieldPath(name)) + '" alt="">' +
+      '<div style="flex:1"><strong>' + escapeHtml(name) + '</strong></div>' +
+      (selected ? '<span class="pill">Elegido</span>' : '') +
+    '</button>';
+  }).join('');
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<button class="btn btn-outline btn-block" onclick="actionJugadorSetupPrevStep()">Atrás</button>' +
+        '<h2 class="panel-title mt">Primer club</h2>' +
+        '<p class="dim small">Debutas con 16 años en la cantera de uno de estos clubes.</p>' +
+      '</div>' +
+      '<div class="panel">' + clubItems + '</div>' +
       '<div class="panel">' +
-        '<button class="btn btn-primary btn-block" ' + (canConfirm ? '' : 'disabled') + ' onclick="actionConfirmJugadorSetup()">Listo</button>' +
+        '<button class="btn btn-primary btn-block" ' + (ch.club ? '' : 'disabled') + ' onclick="actionConfirmJugadorSetup()">Confirmar</button>' +
       '</div>' +
     '</div>'
   );

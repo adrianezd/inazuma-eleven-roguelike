@@ -837,6 +837,15 @@ var CAREER_MIDSEASON_DAYS = 2;
 var CAREER_MIDSEASON_AT_MATCHDAY = 10;
 var CAREER_MAX_OFFERS_PER_PLAYER_PER_DAY = 2;
 var CAREER_MAX_SIGNINGS_PER_DAY = 2;
+// Actividad de mercado elegida en el setup (c.marketActivity), a petición
+// explícita: 'baja' es el comportamiento de siempre (1-3 ofertas entrantes
+// al día, 2 fichajes máximo al día), 'alta' sube ambas cosas.
+var CAREER_MARKET_ACTIVITY = {
+  baja: { name: 'Baja', offersMin: 1, offersMax: 3, maxSignings: 2 },
+  alta: { name: 'Alta', offersMin: 3, offersMax: 5, maxSignings: 4 }
+};
+function careerMarketActivity(c) { return CAREER_MARKET_ACTIVITY[c.marketActivity] || CAREER_MARKET_ACTIVITY.baja; }
+function careerMaxSigningsPerDay(c) { return careerMarketActivity(c).maxSignings; }
 function careerNewMarketWindow(phase, totalDays) {
   return { open: true, phase: phase, dayIndex: 1, totalDays: totalDays, offersToday: {}, signingsToday: 0 };
 }
@@ -857,6 +866,8 @@ function careerNewMarketWindow(phase, totalDays) {
 // (ver actionAdvanceCareerMarketDay), así que el número de ofertas
 // VISIBLES a la vez puede ser algo mayor que el máximo diario si se
 // solapan con las del día anterior.
+// Rango por defecto ('baja'); careerGenerateIncomingOffers usa el rango de
+// careerMarketActivity(c) en su lugar cuando hay carrera activa.
 var CAREER_INCOMING_OFFERS_MIN_PER_DAY = 1;
 var CAREER_INCOMING_OFFERS_MAX_PER_DAY = 3;
 var CAREER_INCOMING_OFFER_VARIANCE = 0.2;
@@ -873,7 +884,8 @@ function careerGenerateIncomingOffers(c) {
       !pending.some(function (o) { return o.playerId === p.id; });
   });
   var shuffled = eligible.slice().sort(function () { return Math.random() - 0.5; });
-  var target = CAREER_INCOMING_OFFERS_MIN_PER_DAY + Math.floor(Math.random() * (CAREER_INCOMING_OFFERS_MAX_PER_DAY - CAREER_INCOMING_OFFERS_MIN_PER_DAY + 1));
+  var activity = careerMarketActivity(c);
+  var target = activity.offersMin + Math.floor(Math.random() * (activity.offersMax - activity.offersMin + 1));
   shuffled.slice(0, target).forEach(function (p) {
     var mode = Math.random() < 0.25 ? 'loan' : 'buy';
     var asking = careerNegotiationAskingValue(p, mode);
@@ -946,6 +958,9 @@ function careerFreshState(choices) {
     // fijos toda la partida.
     boardStyle: CAREER_BOARD_STYLES[choices.boardStyle] ? choices.boardStyle : 'normal',
     ironman: !!choices.ironman,
+    // Actividad de mercado (baja/alta, ver CAREER_MARKET_ACTIVITY) -- igual
+    // de fija toda la partida, elegida al crear la carrera.
+    marketActivity: CAREER_MARKET_ACTIVITY[choices.marketActivity] ? choices.marketActivity : 'baja',
     division: division,
     divisionTeams: divisionTeams,
     league: careerBuildLeague(division, divisionTeams),
@@ -1066,14 +1081,14 @@ function careerSerialize(c) {
     loanedOutIds: c.loanedOutIds || [],
     difficulty: c.difficulty || 'normal',
     negotiation: c.negotiation || 'duras',
-    hideProdigy: !!c.hideProdigy, boardStyle: c.boardStyle || 'normal', ironman: !!c.ironman,
+    hideProdigy: !!c.hideProdigy, boardStyle: c.boardStyle || 'normal', ironman: !!c.ironman, marketActivity: c.marketActivity || 'baja',
     division: c.division || 2,
     divisionTeams: c.divisionTeams,
     league: c.league,
     lastMatchdayResult: c.lastMatchdayResult,
     jornadaAckPending: !!c.jornadaAckPending,
     calendarView: c.calendarView,
-    marketFilter: c.marketFilter, marketTypeFilter: c.marketTypeFilter, marketGrowthFilter: c.marketGrowthFilter, marketSearch: c.marketSearch,
+    marketFilter: c.marketFilter, marketTypeFilter: c.marketTypeFilter, marketGrowthFilter: c.marketGrowthFilter, marketSearch: c.marketSearch, marketPriceMin: (typeof c.marketPriceMin === "number" ? c.marketPriceMin : null), marketPriceMax: (typeof c.marketPriceMax === "number" ? c.marketPriceMax : null),
     marketSort: c.marketSort, marketSortDir: c.marketSortDir, marketPage: c.marketPage,
     plantillaFilter: c.plantillaFilter, plantillaSearch: c.plantillaSearch,
     plantillaSort: c.plantillaSort, plantillaSortDir: c.plantillaSortDir,
@@ -1147,7 +1162,7 @@ function careerDeserialize(data) {
     // ahí).
     difficulty: CAREER_DIFFICULTY_TIERS[data.difficulty] ? data.difficulty : 'normal',
     negotiation: CAREER_NEGOTIATION_MODES[data.negotiation] ? data.negotiation : 'duras',
-    hideProdigy: !!data.hideProdigy, boardStyle: data.boardStyle || 'normal', ironman: !!data.ironman,
+    hideProdigy: !!data.hideProdigy, boardStyle: data.boardStyle || 'normal', ironman: !!data.ironman, marketActivity: data.marketActivity || 'baja',
     division: data.division || 1,
     divisionTeams: data.divisionTeams || careerInitialDivisionTeams(),
     league: data.league,
@@ -1157,7 +1172,7 @@ function careerDeserialize(data) {
     loanedIds: data.loanedIds || [],
     loanedOutIds: data.loanedOutIds || [],
     calendarView: data.calendarView,
-    marketFilter: data.marketFilter || null, marketTypeFilter: data.marketTypeFilter || null, marketGrowthFilter: data.marketGrowthFilter || null, marketSearch: data.marketSearch || '',
+    marketFilter: data.marketFilter || null, marketTypeFilter: data.marketTypeFilter || null, marketGrowthFilter: data.marketGrowthFilter || null, marketSearch: data.marketSearch || '', marketPriceMin: (typeof data.marketPriceMin === "number" ? data.marketPriceMin : null), marketPriceMax: (typeof data.marketPriceMax === "number" ? data.marketPriceMax : null),
     marketSort: data.marketSort, marketSortDir: data.marketSortDir, marketPage: data.marketPage || 0,
     plantillaFilter: data.plantillaFilter || null, plantillaSearch: data.plantillaSearch || '',
     plantillaSort: data.plantillaSort, plantillaSortDir: data.plantillaSortDir,
@@ -1260,7 +1275,7 @@ function actionGoCareerMode() {
 // este punto.
 window.actionNewCareerInSlot = function (slot) {
   G.careerSetupSlot = slot;
-  G.careerSetupChoices = { difficulty: 'normal', budget: CAREER_STARTING_BUDGET, negotiation: 'duras', clubName: '', clubShieldName: null, hideProdigy: false, shieldsExpanded: false, squadMode: 'default', startDivision: 2, boardStyle: 'normal', ironman: false };
+  G.careerSetupChoices = { difficulty: 'normal', budget: CAREER_STARTING_BUDGET, negotiation: 'duras', clubName: '', clubShieldName: null, hideProdigy: false, shieldsExpanded: false, squadMode: 'default', startDivision: 2, boardStyle: 'normal', ironman: false, marketActivity: 'baja' };
   G.screen = 'careerSetup';
   render();
 };
@@ -1306,6 +1321,11 @@ window.actionSetCareerSetupBoardStyle = function (id) {
 };
 window.actionSetCareerSetupIronman = function (on) {
   G.careerSetupChoices.ironman = !!on;
+  render();
+};
+window.actionSetCareerSetupMarketActivity = function (id) {
+  if (!CAREER_MARKET_ACTIVITY[id]) return;
+  G.careerSetupChoices.marketActivity = id;
   render();
 };
 window.actionSetCareerSetupDifficulty = function (tier) {
@@ -1442,6 +1462,15 @@ function renderCareerSetup() {
         '<div class="btn-row mt">' +
           '<button class="btn btn-tiny' + (!choices.ironman ? ' active' : '') + '" onclick="actionSetCareerSetupIronman(false)">No</button>' +
           '<button class="btn btn-tiny' + (choices.ironman ? ' active' : '') + '" onclick="actionSetCareerSetupIronman(true)">Sí</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:4px">Actividad de mercado</h3>' +
+        '<p class="dim small">Baja: llegan de ' + CAREER_MARKET_ACTIVITY.baja.offersMin + ' a ' + CAREER_MARKET_ACTIVITY.baja.offersMax + ' ofertas por tus jugadores al día, y puedes fichar hasta ' + CAREER_MARKET_ACTIVITY.baja.maxSignings + ' al día. Alta: de ' + CAREER_MARKET_ACTIVITY.alta.offersMin + ' a ' + CAREER_MARKET_ACTIVITY.alta.offersMax + ' ofertas, hasta ' + CAREER_MARKET_ACTIVITY.alta.maxSignings + ' fichajes al día.</p>' +
+        '<div class="btn-row mt">' +
+          Object.keys(CAREER_MARKET_ACTIVITY).map(function (id) {
+            return '<button class="btn btn-tiny' + ((choices.marketActivity || 'baja') === id ? ' active' : '') + '" onclick="actionSetCareerSetupMarketActivity(\'' + id + '\')">' + CAREER_MARKET_ACTIVITY[id].name + '</button>';
+          }).join('') +
         '</div>' +
       '</div>' +
       '<div class="panel">' +
@@ -2194,6 +2223,27 @@ window.actionSetCareerMarketSearch = function (value) {
   G.career.marketPage = 0;
   render();
 };
+// Filtro de precio (min/max en M€), a petición explícita ("añade filtro de
+// precio... para filtrar por un precio en concreto"). Dos campos numéricos,
+// igual que la búsqueda por nombre -- vacío = sin límite en ese lado.
+window.actionSetCareerMarketPriceMin = function (value) {
+  var n = parseFloat(value);
+  G.career.marketPriceMin = (value === '' || !isFinite(n)) ? null : Math.max(0, n);
+  G.career.marketPage = 0;
+  render();
+};
+window.actionSetCareerMarketPriceMax = function (value) {
+  var n = parseFloat(value);
+  G.career.marketPriceMax = (value === '' || !isFinite(n)) ? null : Math.max(0, n);
+  G.career.marketPage = 0;
+  render();
+};
+window.actionClearCareerMarketPriceFilter = function () {
+  G.career.marketPriceMin = null;
+  G.career.marketPriceMax = null;
+  G.career.marketPage = 0;
+  render();
+};
 // Filtro por crecimiento (1-5, ver careerPlayerGrowthTier) en vez del
 // antiguo "Podrían unirse" -- a petición explícita ("quita el filtro de
 // podrían unirse en el mercado, añade un filtro de crecimiento también").
@@ -2497,7 +2547,7 @@ window.actionSendCareerOffer = function () {
   if (neg.mode === 'loan' && careerLoanCount(c) >= CAREER_MAX_LOANS_IN) { neg.lastResult = 'cesionesLlenas'; render(); return; }
   var offersSoFar = w.offersToday[neg.playerId] || 0;
   if (offersSoFar >= CAREER_MAX_OFFERS_PER_PLAYER_PER_DAY) { neg.lastResult = 'limiteOfertas'; render(); return; }
-  if (w.signingsToday >= CAREER_MAX_SIGNINGS_PER_DAY) { neg.lastResult = 'limiteFichajes'; render(); return; }
+  if (w.signingsToday >= careerMaxSigningsPerDay(c)) { neg.lastResult = 'limiteFichajes'; render(); return; }
   if (neg.offer > c.budget) { neg.lastResult = 'sinPresupuesto'; render(); return; }
   var asking = careerNegotiationAskingValue(p, neg.mode);
   var teamAvg = careerTeamAvgScore(c);
@@ -2531,7 +2581,7 @@ function renderCareerNegotiation(c) {
   var w = c.marketWindow;
   var offersUsed = (w && w.offersToday[neg.playerId]) || 0;
   var offersLeft = CAREER_MAX_OFFERS_PER_PLAYER_PER_DAY - offersUsed;
-  var signingsLeft = w ? CAREER_MAX_SIGNINGS_PER_DAY - w.signingsToday : 0;
+  var signingsLeft = w ? careerMaxSigningsPerDay(c) - w.signingsToday : 0;
   var canOffer = w && w.open && offersLeft > 0 && signingsLeft > 0;
   var resultHtml;
   if (neg.lastResult === 'accepted') {
@@ -2545,9 +2595,9 @@ function renderCareerNegotiation(c) {
       (neg.lastResult === 'plantillaLlena' ? '<p class="dim small" style="color:var(--danger)">Tu plantilla ya está al máximo (' + CAREER_MAX_SQUAD_SIZE + '). Vende o cede a alguien antes de fichar.</p>' : '') +
       (neg.lastResult === 'cesionesLlenas' ? '<p class="dim small" style="color:var(--danger)">Ya tienes ' + CAREER_MAX_LOANS_IN + ' jugadores cedidos, el máximo. Devuelve a alguno antes de fichar otra cesión.</p>' : '') +
       (neg.lastResult === 'limiteOfertas' ? '<p class="dim small" style="color:var(--danger)">Ya le has hecho ' + CAREER_MAX_OFFERS_PER_PLAYER_PER_DAY + ' ofertas hoy a ' + escapeHtml(p.nombre) + '. Prueba mañana.</p>' : '') +
-      (neg.lastResult === 'limiteFichajes' ? '<p class="dim small" style="color:var(--danger)">Ya has fichado ' + CAREER_MAX_SIGNINGS_PER_DAY + ' jugadores hoy, el máximo. Avanza el día para seguir.</p>' : '') +
+      (neg.lastResult === 'limiteFichajes' ? '<p class="dim small" style="color:var(--danger)">Ya has fichado ' + careerMaxSigningsPerDay(c) + ' jugadores hoy, el máximo. Avanza el día para seguir.</p>' : '') +
       (neg.lastResult === 'mercadoCerrado' ? '<p class="dim small" style="color:var(--danger)">La ventana de fichajes se ha cerrado.</p>' : '') +
-      '<p class="dim small">Ofertas a este jugador hoy: ' + offersUsed + ' / ' + CAREER_MAX_OFFERS_PER_PLAYER_PER_DAY + '. Fichajes hoy: ' + (w ? w.signingsToday : 0) + ' / ' + CAREER_MAX_SIGNINGS_PER_DAY + '.</p>' +
+      '<p class="dim small">Ofertas a este jugador hoy: ' + offersUsed + ' / ' + CAREER_MAX_OFFERS_PER_PLAYER_PER_DAY + '. Fichajes hoy: ' + (w ? w.signingsToday : 0) + ' / ' + careerMaxSigningsPerDay(c) + '.</p>' +
       '<div class="stepper-row">' +
         '<button class="btn stepper-arrow" onclick="actionAdjustCareerOffer(-0.1)">◀</button>' +
         careerMoneyInputHtml(neg.offer, 'offer') +
@@ -2707,7 +2757,7 @@ function renderCareerMercado(c) {
   }
   var windowBannerHtml = '<div class="panel center-text">' +
     '<h3 style="margin-bottom:4px">Ventana de fichajes: día ' + w.dayIndex + ' de ' + w.totalDays + ' (' + (w.phase === 'preseason' ? 'pretemporada' : 'mercado de invierno') + ')</h3>' +
-    '<p class="dim small">Máximo ' + CAREER_MAX_OFFERS_PER_PLAYER_PER_DAY + ' ofertas por jugador y día, y ' + CAREER_MAX_SIGNINGS_PER_DAY + ' fichajes confirmados al día. Fichajes hoy: ' + w.signingsToday + ' / ' + CAREER_MAX_SIGNINGS_PER_DAY + '.</p>' +
+    '<p class="dim small">Máximo ' + CAREER_MAX_OFFERS_PER_PLAYER_PER_DAY + ' ofertas por jugador y día, y ' + careerMaxSigningsPerDay(c) + ' fichajes confirmados al día. Fichajes hoy: ' + w.signingsToday + ' / ' + careerMaxSigningsPerDay(c) + '.</p>' +
     '<button class="btn btn-outline btn-block" onclick="actionAdvanceCareerMarketDay()">Avanzar día ▶</button>' +
   '</div>';
   var incomingOffersHtml = renderCareerIncomingOffers(c);
@@ -2720,6 +2770,8 @@ function renderCareerMercado(c) {
   var typeFilter = c.marketTypeFilter || null;
   var growthFilter = c.marketGrowthFilter || null;
   var search = (c.marketSearch || '').trim().toLowerCase();
+  var priceMin = (typeof c.marketPriceMin === 'number') ? c.marketPriceMin : null;
+  var priceMax = (typeof c.marketPriceMax === 'number') ? c.marketPriceMax : null;
   // Ya no se esconden los jugadores por encima de tu techo de media, a
   // petición explícita ("quiero que salgan en el mercado todos los
   // jugadores para poder fichar") -- antes careerMarketSignableCap los
@@ -2731,6 +2783,8 @@ function renderCareerMercado(c) {
     if (typeFilter && p.tipo !== typeFilter) return false;
     if (growthFilter && careerPlayerGrowthTier(c, p) !== growthFilter) return false;
     if (search && p.nombre.toLowerCase().indexOf(search) === -1) return false;
+    if (priceMin !== null && careerPlayerValue(p) < priceMin) return false;
+    if (priceMax !== null && careerPlayerValue(p) > priceMax) return false;
     return true;
   });
   var sortField = CAREER_MARKET_SORT_FIELDS.find(function (f) { return f.id === c.marketSort; }) || CAREER_MARKET_SORT_FIELDS[0];
@@ -2780,6 +2834,12 @@ function renderCareerMercado(c) {
       '<div class="btn-row mt">' + filterBtnsHtml + '</div>' +
       '<div class="btn-row mt">' + typeFilterBtnsHtml + '</div>' +
       '<div class="btn-row mt">' + growthFilterBtnsHtml + '</div>' +
+      '<div class="btn-row mt" style="align-items:center;gap:6px">' +
+        '<input class="select-field" type="number" min="0" step="1" placeholder="Precio mín. M€" style="min-width:0" value="' + (priceMin === null ? '' : priceMin) + '" oninput="actionSetCareerMarketPriceMin(this.value)">' +
+        '<span class="dim small">–</span>' +
+        '<input class="select-field" type="number" min="0" step="1" placeholder="Precio máx. M€" style="min-width:0" value="' + (priceMax === null ? '' : priceMax) + '" oninput="actionSetCareerMarketPriceMax(this.value)">' +
+        (priceMin !== null || priceMax !== null ? '<button class="btn btn-tiny" onclick="actionClearCareerMarketPriceFilter()">✕</button>' : '') +
+      '</div>' +
       '<div class="btn-row mt" style="align-items:center">' +
         '<select class="select-field" style="width:auto;min-height:36px;padding:6px 10px" onchange="actionSetCareerMarketSort(this.value)">' + sortOptionsHtml + '</select>' +
         '<button class="btn btn-tiny" onclick="actionToggleCareerMarketSortDir()">' + (sortDir === -1 ? '⬇ Mayor a menor' : '⬆ Menor a mayor') + '</button>' +
