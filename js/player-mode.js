@@ -848,7 +848,8 @@ function renderJugadorRetired(p) {
     playerModeHistoryHtml(p) +
     shareHtml +
     '<div class="panel">' +
-      '<button class="btn btn-primary btn-block" onclick="actionRestartJugadorCareer()">Crear otra carrera</button>' +
+      '<button class="btn btn-primary btn-block" onclick="actionReplayJugadorCareer()">Volver a jugar (mismo jugador, desde los 16)</button>' +
+      '<button class="btn btn-outline btn-block mt" onclick="actionRestartJugadorCareer()">Crear otra carrera</button>' +
       '<button class="btn btn-outline btn-block mt" onclick="doBackToMenuNow()">Volver al menú</button>' +
     '</div>'
   );
@@ -892,6 +893,19 @@ window.actionRestartJugadorCareer = function () {
   G.jugadorShareUrl = null;
   G.jugadorShareMessage = null;
   actionGoJugadorSetup();
+};
+// "Volver a jugar": misma identidad (apellido, dorsal, pierna, posición y
+// club de origen) pero una carrera nueva de cero, otra vez con 16 años --
+// a petición explícita, para no tener que rellenar el formulario de
+// nuevo si solo quieres repetir con el mismo jugador.
+window.actionReplayJugadorCareer = function () {
+  var p = G.playerCareer;
+  if (!p) return;
+  G.playerCareer = playerModeFreshState({ apellido: p.apellido, dorsal: p.dorsal, pierna: p.pierna, posicion: p.posicion, club: p.homeClub || p.club });
+  G.jugadorShareUrl = null;
+  G.jugadorShareMessage = null;
+  G.screen = 'jugadorMode';
+  render();
 };
 function renderJugadorShared() {
   var p = G.jugadorSharedSummary;

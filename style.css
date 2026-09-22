@@ -678,25 +678,62 @@ a { color: var(--accent); }
 .pitch-11 .avatar { width: 32px; height: 32px; }
 /* "Jugar partido" en Modo Carrera: campo esquemático de puntitos
    numerados (sin dorsal real en los datos, se numeran 1-11 por equipo) y
-   el balón, a petición explícita. */
-.pitch-dots-field { min-height: 220px; gap: 10px; position: relative; }
-.pitch-dots-row { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; position: relative; z-index: 1; }
-.pitch-dot {
-  width: 26px; height: 26px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.7rem; font-weight: 700; color: #fff;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+   el balón, a petición explícita ("mucho más estético"). */
+.pitch-dots-field { min-height: 260px; gap: 14px; position: relative; padding: 20px 10px; }
+.pitch-dots-field-stripes {
+  position: absolute; inset: 0; z-index: 0; border-radius: inherit;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02) 13%, transparent 13%, transparent 26%);
 }
-.pitch-dot-me { background: var(--accent-2); }
-.pitch-dot-opp { background: var(--danger); }
+.pitch-goal {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  width: 34%; height: 8px; border: 2px solid rgba(255,255,255,0.35); border-top: none;
+  z-index: 1;
+}
+.pitch-goal-top { top: -2px; border: 2px solid rgba(255,255,255,0.35); border-top: none; }
+.pitch-goal-bottom { bottom: -2px; border: 2px solid rgba(255,255,255,0.35); border-bottom: none; }
+.pitch-dots-row { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; position: relative; z-index: 2; }
+.pitch-dot {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.68rem; font-weight: 800; color: #fff;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.55), inset 0 -3px 4px rgba(0,0,0,0.25), inset 0 2px 3px rgba(255,255,255,0.35);
+  border: 2px solid rgba(255,255,255,0.5);
+}
+.pitch-dot-me { background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent-2) 80%, white), var(--accent-2)); }
+.pitch-dot-opp { background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--danger) 80%, white), var(--danger)); }
 .pitch-ball {
   position: absolute; left: 50%; transform: translateX(-50%);
-  font-size: 1.1rem; z-index: 2;
-  transition: top 0.4s ease;
+  font-size: 1.25rem; z-index: 3;
+  transition: top 0.5s cubic-bezier(0.3, 0.6, 0.4, 1);
+  filter: drop-shadow(0 3px 3px rgba(0,0,0,0.6));
 }
-.pitch-ball-top { top: 12%; }
+.pitch-ball-top { top: 8%; }
 .pitch-ball-mid { top: 48%; }
-.pitch-ball-bottom { top: 84%; }
+.pitch-ball-bottom { top: 88%; }
+.pitch-goal-flash {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  z-index: 4; font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 1.3rem;
+  color: #fff; background: rgba(0, 0, 0, 0.65); padding: 8px 18px; border-radius: 999px;
+  letter-spacing: 0.03em; white-space: nowrap;
+  animation: pitchGoalFlashPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+}
+.pitch-goal-flash-me { border: 2px solid var(--accent-2); }
+.pitch-goal-flash-opp { border: 2px solid var(--danger); }
+@keyframes pitchGoalFlashPop { from { transform: translate(-50%, -50%) scale(0.6); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+/* Selector "Jugar / Simular / Saltar" con tarjetas en vez de botones de
+   texto plano, a petición explícita ("mucho más estético"). */
+.match-mode-picker { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.match-mode-card {
+  flex: 1 1 100px; min-width: 96px; max-width: 140px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 12px 8px; border-radius: var(--radius);
+  background: var(--panel-2); border: 1px solid var(--border);
+  color: var(--text); cursor: pointer; transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.match-mode-card:active { transform: scale(0.96); }
+.match-mode-card:hover { border-color: var(--accent-2); }
+.match-mode-icon { font-size: 1.5rem; line-height: 1; }
 .pitch-empty-slot {
   width: 32px; height: 32px;
   border: 2px dashed rgba(255,255,255,0.28);

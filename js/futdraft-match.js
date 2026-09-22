@@ -251,6 +251,7 @@ function futDraftLiveTick() {
     if (ev.side === 'me') live.myGoals++; else live.oppGoals++;
     live.revealed.push(ev);
     live.lastGoalSide = ev.side;
+    live.goalFlashUntil = Date.now() + 1600;
     if (typeof playGoalSound === 'function') playGoalSound();
   }
   futDraftLiveRefresh(live);
@@ -357,11 +358,15 @@ function futDraftPitchDotsHtml(live) {
     return '<div class="pitch-dots-row">' + dotsHtml + '</div>';
   }).join('');
   var ballSide = live.lastGoalSide === 'opp' ? 'top' : (live.lastGoalSide === 'me' ? 'bottom' : 'mid');
+  var flashHtml = (live.lastGoalSide && live.goalFlashUntil && Date.now() < live.goalFlashUntil) ? '<div class="pitch-goal-flash pitch-goal-flash-' + live.lastGoalSide + '">' + (live.lastGoalSide === 'me' ? '¡GOOOL! ⚽' : 'Gol rival ⚽') + '</div>' : '';
   return '<div class="pitch pitch-dots-field">' +
+    '<div class="pitch-dots-field-stripes"></div>' +
+    '<div class="pitch-goal pitch-goal-top"></div><div class="pitch-goal pitch-goal-bottom"></div>' +
     oppRowsHtml +
-    '<div class="pitch-center-line"></div>' +
+    '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div>' +
     '<div class="pitch-ball pitch-ball-' + ballSide + '">⚽</div>' +
     rowsHtml +
+    flashHtml +
   '</div>';
 }
 function futDraftLiveRefresh(live) {

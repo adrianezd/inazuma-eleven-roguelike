@@ -150,18 +150,52 @@
 // ahora son su propia pestaña "Gestión de partida", a petición explícita
 // ("guardar y cambiar partida, pertenecen a gestión de partida, un
 // nuevo modo también a la misma altura que liga, mi plantilla...").
+// Agrupadas para que la fila de pestañas no sea eterna en móvil, a
+// petición explícita ("agruparas las que creas que tiene sentido
+// agruparlas juntas... para que no estén como con 10 pestañas distintas
+// a la vez"): "Mi equipo" junta Alineación + Plantilla, "Club" junta
+// Entrenamiento + Mercado + Patrocinadores, y "Ajustes" junta Gestión de
+// partida + Configuración -- cada una con su propia fila de sub-pestañas
+// (mismo patrón que ya usaba Competiciones con Liga/Copa/Champions).
 var CAREER_TABS = [
   { id: 'jornada', name: 'Jornada' },
   { id: 'equipo', name: 'Mi equipo' },
-  { id: 'plantilla', name: 'Gestionar plantilla' },
-  { id: 'entrenamiento', name: 'Entrenamiento' },
-  { id: 'mercado', name: 'Mercado' },
-  { id: 'patrocinadores', name: 'Patrocinadores' },
+  { id: 'club', name: 'Club' },
   { id: 'competiciones', name: 'Competiciones' },
   { id: 'estadisticas', name: 'Estadísticas' },
-  { id: 'gestion', name: 'Gestión de partida' },
-  { id: 'configuracion', name: 'Configuración' }
+  { id: 'ajustes', name: 'Ajustes' }
 ];
+function careerSubTabsHtml(items) {
+  return '<div class="btn-row career-tabs-scroll" style="margin-bottom:10px">' +
+    items.map(function (it) { return '<button class="btn btn-tiny' + (it.active ? ' active' : '') + '" onclick="' + it.onclick + '">' + escapeHtml(it.name) + '</button>'; }).join('') +
+  '</div>';
+}
+window.actionSetCareerEquipoTab = function (id) { G.career.equipoTab = id; render(); };
+function renderCareerEquipoGroup(c) {
+  var sub = c.equipoTab === 'plantilla' ? 'plantilla' : 'alineacion';
+  return careerSubTabsHtml([
+    { name: 'Alineación', active: sub === 'alineacion', onclick: "actionSetCareerEquipoTab('alineacion')" },
+    { name: 'Gestionar plantilla', active: sub === 'plantilla', onclick: "actionSetCareerEquipoTab('plantilla')" }
+  ]) + (sub === 'plantilla' ? renderCareerPlantilla(c) : renderCareerEquipo(c));
+}
+window.actionSetCareerClubTab = function (id) { G.career.clubTab = id; render(); };
+function renderCareerClubGroup(c) {
+  var valid = ['entrenamiento', 'mercado', 'patrocinadores'];
+  var sub = valid.indexOf(c.clubTab) !== -1 ? c.clubTab : 'entrenamiento';
+  return careerSubTabsHtml([
+    { name: 'Entrenamiento', active: sub === 'entrenamiento', onclick: "actionSetCareerClubTab('entrenamiento')" },
+    { name: 'Mercado', active: sub === 'mercado', onclick: "actionSetCareerClubTab('mercado')" },
+    { name: 'Patrocinadores', active: sub === 'patrocinadores', onclick: "actionSetCareerClubTab('patrocinadores')" }
+  ]) + (sub === 'mercado' ? renderCareerMercado(c) : sub === 'patrocinadores' ? renderCareerPatrocinadores(c) : renderCareerEntrenamiento(c));
+}
+window.actionSetCareerAjustesTab = function (id) { G.career.ajustesTab = id; render(); };
+function renderCareerAjustesGroup(c) {
+  var sub = c.ajustesTab === 'configuracion' ? 'configuracion' : 'gestion';
+  return careerSubTabsHtml([
+    { name: 'Gestión de partida', active: sub === 'gestion', onclick: "actionSetCareerAjustesTab('gestion')" },
+    { name: 'Configuración', active: sub === 'configuracion', onclick: "actionSetCareerAjustesTab('configuracion')" }
+  ]) + (sub === 'configuracion' ? renderCareerConfiguracion(c) : renderCareerGestion(c));
+}
 
 // 11 titulares + 5 suplentes elegidos por el usuario. Larry Pogue (r43,
 // Centrocampista) sale de titular en vez de Eugene Conwell (r57,
@@ -656,9 +690,12 @@ var CAREER_STARTING_BUDGET = 2;
 // se ha pedido tocarla), a petición explícita ("baja la dificultad de
 // modo carrera en normal y dificil, unos 5-7 puntos cada una").
 // "Muy difícil" añadido a petición explícita, por encima de "Difícil".
+// Fácil y Normal un pelín más altos (antes 63/79), a petición explícita
+// ("sube un pelin la dificultad de facil y normal") -- Difícil y Muy
+// difícil se quedan igual.
 var CAREER_DIFFICULTY_TIERS = {
-  facil: { name: 'Fácil', rivalLevelTarget: 63 },
-  normal: { name: 'Normal', rivalLevelTarget: 79 },
+  facil: { name: 'Fácil', rivalLevelTarget: 67 },
+  normal: { name: 'Normal', rivalLevelTarget: 82 },
   dificil: { name: 'Difícil', rivalLevelTarget: 87 },
   muy_dificil: { name: 'Muy difícil', rivalLevelTarget: 91 }
 };
@@ -924,6 +961,7 @@ function careerFreshState(choices) {
     // toda la carrera, nunca se resetea, como bestPosition/careerStats.
     seasonHistory: [],
     autosave: false, autosaveMessage: null,
+    equipoTab: 'alineacion', clubTab: 'entrenamiento', ajustesTab: 'gestion',
     // Centro de entrenamiento: arranca SIN construir (0), infraestructura
     // del club, nunca se resetea entre temporadas (como el presupuesto)
     // -- ver careerTrainingEffectiveParams/CAREER_TRAINING_LEVEL_COSTS.
@@ -1028,7 +1066,8 @@ function careerSerialize(c) {
     sponsorOffers: c.sponsorOffers || null,
     activeSponsor: c.activeSponsor || null,
     seasonHistory: c.seasonHistory || [],
-    autosave: !!c.autosave
+    autosave: !!c.autosave,
+    equipoTab: c.equipoTab, clubTab: c.clubTab, ajustesTab: c.ajustesTab
   };
 }
 function careerDeserialize(data) {
@@ -1122,7 +1161,8 @@ function careerDeserialize(data) {
     activeSponsor: data.activeSponsor || null,
     sponsorMessage: null,
     seasonHistory: data.seasonHistory || [],
-    autosave: !!data.autosave
+    autosave: !!data.autosave,
+    equipoTab: data.equipoTab || 'alineacion', clubTab: data.clubTab || 'entrenamiento', ajustesTab: data.ajustesTab || 'gestion'
   };
 }
 // Guarda el estado ACTUAL (G.career) en el hueco activo
@@ -4108,6 +4148,7 @@ window.actionSimulateCareerCupMatch = function () {
   var cup = c.cup;
   var match = careerCupMyMatch(cup);
   if (!match) return;
+  c.lastCupResult = null;
   var opp = careerCupOpponent(match);
   c.savedFutdraft = G.futdraft;
   // f.squad (no solo f.lineup) hace falta para que futDraftUndraftedPool
@@ -4171,6 +4212,7 @@ window.actionSkipCareerCupMatch = function () {
   var cup = c.cup;
   var match = careerCupMyMatch(cup);
   if (!match) return;
+  c.lastCupResult = null;
   var opp = careerCupOpponent(match);
   var myAtkDef = careerMyAtkDef(c);
   var oppPower = careerRivalPower(opp.name);
@@ -4192,21 +4234,32 @@ window.actionSkipCareerCupMatch = function () {
   c.lastCupResult = { oppName: opp.name, myGoals: myGoals, oppGoals: oppGoals, playerWon: playerWon, penalty: penalty };
   render();
 };
+// Resultado del último cruce jugado (Jugar/Simular/Saltar): se enseña
+// SIEMPRE que exista, incluso con la Copa bloqueada hasta la próxima
+// ronda -- antes, al saltar un partido, la ronda avanzaba de golpe
+// (careerCupAdvanceRound) y la pestaña se quedaba bloqueada sin más,
+// sin enseñar nunca el resultado que se acababa de jugar, un bug real
+// ("le doy a saltar partido, no me dice el resultado... quiero que me
+// lo muestres"). Se limpia solo al jugar el siguiente cruce tuyo.
+function careerCupResultBannerHtml(c) {
+  var r = c.lastCupResult;
+  if (!r) return '';
+  var label = r.playerWon ? '🏆 Ganaste' : '❌ Perdiste';
+  var scoreText = r.myGoals + ' - ' + r.oppGoals + (r.penalty ? ' (penaltis ' + r.penalty.myGoals + '-' + r.penalty.oppGoals + ')' : '');
+  return '<div class="panel center-text"><h3 style="margin-bottom:4px">' + label + ' contra ' + escapeHtml(r.oppName) + '</h3><p class="dim small">' + scoreText + '</p></div>';
+}
 function renderCareerCopa(c) {
-  if (careerCupLocked(c)) {
-    var roundIdx = c.cup.rounds.length - 1;
-    var nextMatchday = CAREER_CUP_ROUND_MATCHDAYS[roundIdx] !== undefined ? CAREER_CUP_ROUND_MATCHDAYS[roundIdx] : CAREER_CUP_ROUND_MATCHDAYS[CAREER_CUP_ROUND_MATCHDAYS.length - 1];
-    var lockedMsg = 'La próxima ronda de la Copa del Rey se juega en la jornada ' + nextMatchday + '. Llevas jugadas ' + c.league.matchdayIndex + '.';
-    return '<div class="panel center-text">' +
-      '<h3 style="margin-bottom:4px">Copa del Rey</h3>' +
-      '<p class="dim small">' + lockedMsg + '</p>' +
-    '</div>';
-  }
   var cup = c.cup;
   var totalRounds = Math.log2(cup.size);
   var champion = careerCupChampion(cup);
-  var myMatch = careerCupMyMatch(cup);
+  var locked = careerCupLocked(c);
+  // Aunque esté bloqueada hasta la próxima ronda, se puede seguir viendo
+  // el cuadro entero con los resultados que ya ha habido -- a petición
+  // explícita ("aún así quiero ir viendo la Copa del Rey, aunque no lo
+  // pueda jugar. Quiero ver los resultados que ha habido").
+  var myMatch = locked ? null : careerCupMyMatch(cup);
   var headerHtml = '<div class="panel center-text"><h3 style="margin-bottom:4px">Copa del Rey</h3></div>';
+  var resultBannerHtml = careerCupResultBannerHtml(c);
   var actionHtml;
   if (champion) {
     actionHtml = '<div class="panel center-text"><p class="dim small">' + (champion.isPlayer ? '¡Campeón de la Copa!' : 'Campeón: ' + escapeHtml(champion.name)) + '</p></div>';
@@ -4217,11 +4270,15 @@ function renderCareerCopa(c) {
     actionHtml =
       careerMatchupCardHtml(opp.name, roundNameForIndex(cup.rounds.length - 1, totalRounds)) +
       '<div class="panel center-text">' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-primary" onclick="actionSimulateCareerCupMatch()">▶ Simular partido</button>' +
-          '<button class="btn btn-skip" onclick="actionSkipCareerCupMatch()">⏭ Saltar</button>' +
+        '<div class="match-mode-picker">' +
+          '<button class="match-mode-card" onclick="actionSimulateCareerCupMatch()"><span class="match-mode-icon">▶️</span><strong>Simular</strong><span class="dim small">Minuto a minuto</span></button>' +
+          '<button class="match-mode-card" onclick="actionSkipCareerCupMatch()"><span class="match-mode-icon">⏭️</span><strong>Saltar</strong><span class="dim small">Resultado al momento</span></button>' +
         '</div>' +
       '</div>';
+  } else if (locked) {
+    var roundIdx = cup.rounds.length - 1;
+    var nextMatchday = CAREER_CUP_ROUND_MATCHDAYS[roundIdx] !== undefined ? CAREER_CUP_ROUND_MATCHDAYS[roundIdx] : CAREER_CUP_ROUND_MATCHDAYS[CAREER_CUP_ROUND_MATCHDAYS.length - 1];
+    actionHtml = '<div class="panel center-text"><p class="dim small">La próxima ronda de la Copa del Rey se juega en la jornada ' + nextMatchday + '. Llevas jugadas ' + c.league.matchdayIndex + '.</p></div>';
   } else {
     actionHtml = '';
   }
@@ -4243,7 +4300,7 @@ function renderCareerCopa(c) {
         '<div class="bracket-trophy-wrap"><div class="bracket-trophy' + (champion ? '' : ' is-pending') + '">🏆</div>' +
         '<div class="bracket-champion-name">' + (champion ? (champion.isPlayer ? escapeHtml(careerClubDisplayName(c)) : escapeHtml(champion.name)) : '?') + '</div></div></div>' +
     '</div></div>';
-  return headerHtml + actionHtml + bracketHtml;
+  return headerHtml + resultBannerHtml + actionHtml + bracketHtml;
 }
 
 // ===== Champions League =====
@@ -4977,10 +5034,10 @@ function renderCareerJornada(c) {
       (seasonOver ? '<h3 style="margin-bottom:4px">Temporada ' + c.season + ' terminada</h3>' : '') +
       (seasonOver
         ? '<button class="btn btn-primary btn-block mt" onclick="actionStartNewCareerSeason()">Empezar temporada ' + (c.season + 1) + '</button>'
-        : '<div class="btn-row" style="justify-content:center">' +
-            '<button class="btn btn-primary" onclick="actionPlayCareerMatchday()">👀 Jugar partido</button>' +
-            '<button class="btn btn-primary" onclick="actionSimulateCareerMatchday()">▶ Simular partido</button>' +
-            '<button class="btn btn-skip" onclick="actionSkipCareerMatchday()">⏭ Saltar</button>' +
+        : '<div class="match-mode-picker">' +
+            '<button class="match-mode-card" onclick="actionPlayCareerMatchday()"><span class="match-mode-icon">⚽</span><strong>Jugar</strong><span class="dim small">Puntitos en directo</span></button>' +
+            '<button class="match-mode-card" onclick="actionSimulateCareerMatchday()"><span class="match-mode-icon">▶️</span><strong>Simular</strong><span class="dim small">Minuto a minuto</span></button>' +
+            '<button class="match-mode-card" onclick="actionSkipCareerMatchday()"><span class="match-mode-icon">⏭️</span><strong>Saltar</strong><span class="dim small">Resultado al momento</span></button>' +
           '</div>') +
     '</div>' +
     (seasonOver ? careerSeasonSummaryHtml(c) : '')
@@ -5140,16 +5197,12 @@ function renderCareerMode() {
     return '<button class="btn btn-tiny' + (c.tab === t.id ? ' active' : '') + '" onclick="actionSetCareerTab(\'' + t.id + '\')">' + t.name + '</button>';
   }).join('');
   var bodyHtml;
-  if (c.tab === 'plantilla') bodyHtml = renderCareerPlantilla(c);
-  else if (c.tab === 'entrenamiento') bodyHtml = renderCareerEntrenamiento(c);
-  else if (c.tab === 'mercado') bodyHtml = renderCareerMercado(c);
-  else if (c.tab === 'patrocinadores') bodyHtml = renderCareerPatrocinadores(c);
+  if (c.tab === 'club') bodyHtml = renderCareerClubGroup(c);
   else if (c.tab === 'competiciones') bodyHtml = renderCareerCompeticiones(c);
   else if (c.tab === 'jornada') bodyHtml = renderCareerBoardPanel(c) + renderCareerJornada(c);
   else if (c.tab === 'estadisticas') bodyHtml = renderCareerEstadisticas(c);
-  else if (c.tab === 'gestion') bodyHtml = renderCareerGestion(c);
-  else if (c.tab === 'configuracion') bodyHtml = renderCareerConfiguracion(c);
-  else bodyHtml = renderCareerEquipo(c);
+  else if (c.tab === 'ajustes') bodyHtml = renderCareerAjustesGroup(c);
+  else bodyHtml = renderCareerEquipoGroup(c);
   // "Volver" ya no vive aquí (fijo en todas las pestañas) -- ahora está
   // SOLO en "Gestión de partida" (renderCareerGestion), a petición
   // explícita ("volver ahí está mal, en modo carrera, déjalo en gestión
