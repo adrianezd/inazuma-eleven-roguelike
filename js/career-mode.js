@@ -1359,14 +1359,17 @@ function renderCareerSetup() {
   var hideProdigyBtnsHtml =
     '<button class="btn btn-tiny' + (!hideProdigy ? ' active' : '') + '" onclick="actionSetCareerSetupHideProdigy(false)">Visible</button>' +
     '<button class="btn btn-tiny' + (hideProdigy ? ' active' : '') + '" onclick="actionSetCareerSetupHideProdigy(true)">Oculto</button>';
-  // Plantilla inicial: desplegable, a petición explícita ("un equipo por
-  // defecto que es el que hay ahora, y un modo aleatorio... todo esto
-  // con desplegable junto al resto de opciones").
+  // Plantilla inicial: botones como el resto de opciones (antes un
+  // desplegable, a petición explícita: "haz que salga también con
+  // botones para elegir, así").
   var squadMode = (choices.squadMode === 'random' || choices.squadMode === 'raimon') ? choices.squadMode : 'default';
-  var squadModeOptionsHtml =
-    '<option value="default"' + (squadMode === 'default' ? ' selected' : '') + '>Por defecto (la plantilla de siempre)</option>' +
-    '<option value="random"' + (squadMode === 'random' ? ' selected' : '') + '>Aleatoria (16 jugadores de 82 o menos)</option>' +
-    '<option value="raimon"' + (squadMode === 'raimon' ? ' selected' : '') + '>Raimon (el once real, con Jude/Bobby/Erik de refuerzo)</option>';
+  var squadModeBtnsHtml =
+    '<button class="btn btn-tiny' + (squadMode === 'default' ? ' active' : '') + '" onclick="actionSetCareerSetupSquadMode(\'default\')">Por defecto</button>' +
+    '<button class="btn btn-tiny' + (squadMode === 'random' ? ' active' : '') + '" onclick="actionSetCareerSetupSquadMode(\'random\')">Aleatoria</button>' +
+    '<button class="btn btn-tiny' + (squadMode === 'raimon' ? ' active' : '') + '" onclick="actionSetCareerSetupSquadMode(\'raimon\')">Raimon</button>';
+  var squadModeDesc = squadMode === 'random' ? '16 jugadores al azar, todos de 82 de nota o menos.'
+    : squadMode === 'raimon' ? 'El once real de Inazuma Eleven 1, con Jude/Bobby/Erik de refuerzo en el banquillo.'
+    : 'Los mismos 16 jugadores de siempre.';
   // Nombre/escudo de TU club, a petición explícita ("elige nombre de
   // club (cualquiera) y escudo de club entre los que hay desbloqueados"):
   // el escudo sale de los mismos que ya desbloqueas en la Máquina de
@@ -1413,8 +1416,8 @@ function renderCareerSetup() {
       '</div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:4px">Plantilla inicial</h3>' +
-        '<p class="dim small">Por defecto: los mismos 16 jugadores de siempre. Aleatoria: 16 jugadores al azar, todos de 82 de nota o menos.</p>' +
-        '<select class="select-field mt" onchange="actionSetCareerSetupSquadMode(this.value)">' + squadModeOptionsHtml + '</select>' +
+        '<p class="dim small">' + squadModeDesc + '</p>' +
+        '<div class="btn-row mt">' + squadModeBtnsHtml + '</div>' +
       '</div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:4px">División inicial</h3>' +
