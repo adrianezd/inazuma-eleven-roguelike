@@ -30,11 +30,28 @@ function wtSquad(defs) {
 // Once base del Raimon en Inazuma Eleven 1 (temporada 1, antes de que el
 // equipo se hiciera fuerte de verdad): jugadores reales del roster, todos
 // por debajo de 75 de media, a petición explícita.
+// Once real de la temporada 1 (Saga de Mark) según la wiki de Inazuma
+// (https://inazuma.fandom.com/es/wiki/Instituto_Raimon, dorsales 1-11):
+// Mark, Nathan, Jack, Jim, Tod, Steve, Timmy, Sam, Max, Axel y Kevin.
+// Jude Sharp (dorsal 14) es un fichaje real de la Royal Academy y Erik
+// Eagle (16) y Bobby Shearer (13) se unen más tarde, contra el Kirkwood
+// -- a petición explícita, empiezan en el banquillo, no en el once
+// inicial. Todos personajes reales y "normales" (nunca versiones "Osc."
+// ni de otra línea temporal).
 var WORLD_TOUR_RAIMON_BASE = wtSquad([
-  ['r01', 52], ['r03', 50], ['r06', 48], ['r08', 49], ['r16', 46],
-  ['r04', 56], ['r07', 51], ['r10', 50], ['r15', 49],
-  ['r02', 58], ['r05', 53]
+  ['r01', 52],                                                          // Mark Evans (portero)
+  ['r03', 50], ['r06', 48], ['r49', 47], ['r12', 46],                   // Nathan, Jack, Jim, Tod
+  ['r46', 51], ['r47', 49], ['r178', 50], ['r48', 49],                  // Steve, Timmy, Sam, Max
+  ['r02', 58], ['r05', 53],                                             // Axel, Kevin
+  // banquillo: se unen más adelante o son reservas de la época
+  ['r04', 54], ['r16', 45], ['r10', 48],                                // Jude, Bobby, Erik
+  ['r40', 46]                                                           // Willy
 ]);
+// Personajes "especiales" (secundarios/de refuerzo, no del once fijo de
+// la temporada 1): Austin Hobbs, Shadow Cimmerian y Paul Peabody -- a
+// petición explícita, con un botón propio para incluirlos o no en el
+// banquillo del Raimon.
+var WORLD_TOUR_RAIMON_SPECIALS = wtSquad([['r09', 46], ['r39', 45], ['r41', 44]]);
 
 // 7 equipos de Inazuma Eleven 1, en el orden real del torneo Fútbol
 // Frontier (Occult primero, Kirkwood el más fuerte al final). Todos los
@@ -122,6 +139,8 @@ function worldTourRandomSquad() {
 // tu plantilla conserva todo lo ganado hasta entonces (media y fichajes).
 function worldTourSetupMode() { return G.worldTourSetupMode === 'duro' ? 'duro' : 'libre'; }
 window.actionSetWorldTourSetupMode = function (mode) { G.worldTourSetupMode = mode; render(); };
+function worldTourSetupSpecials() { return G.worldTourSetupSpecials !== false; }
+window.actionSetWorldTourSpecials = function (on) { G.worldTourSetupSpecials = !!on; render(); };
 function renderWorldTourSetup() {
   var mode = worldTourSetupMode();
   return (
@@ -138,6 +157,14 @@ function renderWorldTourSetup() {
           '<button class="btn btn-tiny' + (mode === 'duro' ? ' active' : '') + '" onclick="actionSetWorldTourSetupMode(\'duro\')">Racha</button>' +
         '</div>' +
         '<p class="dim small center-text mt">' + (mode === 'libre' ? 'Si pierdes, te quedas en el mismo rival y lo repites.' : 'Si pierdes, vuelves al Occult, pero tu plantilla conserva la media y los fichajes ganados.') + '</p>' +
+      '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:8px" class="center-text">Especiales</h3>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-tiny' + (worldTourSetupSpecials() ? ' active' : '') + '" onclick="actionSetWorldTourSpecials(true)">Sí</button>' +
+          '<button class="btn btn-tiny' + (!worldTourSetupSpecials() ? ' active' : '') + '" onclick="actionSetWorldTourSpecials(false)">No</button>' +
+        '</div>' +
+        '<p class="dim small center-text mt">Austin Hobbs, Shadow Cimmerian y Paul Peabody en el banquillo del Raimon (personajes secundarios de refuerzo).</p>' +
       '</div>' +
       '<div class="panel center-text">' +
         '<button class="btn btn-primary btn-block" onclick="actionStartWorldTour(false)">Raimon</button>' +
@@ -156,6 +183,7 @@ window.actionGoWorldTour = function () {
 };
 window.actionStartWorldTour = function (useRandom) {
   var squad = useRandom ? worldTourRandomSquad() : WORLD_TOUR_RAIMON_BASE.map(function (p) { return Object.assign({}, p); });
+  if (!useRandom && worldTourSetupSpecials()) squad = squad.concat(WORLD_TOUR_RAIMON_SPECIALS.map(function (p) { return Object.assign({}, p); }));
   G.worldTour = {
     squad: squad,
     formationId: WORLD_TOUR_DEFAULT_FORMATION,
@@ -165,11 +193,45 @@ window.actionStartWorldTour = function (useRandom) {
     pendingDraft: null,
     won: false,
     mode: worldTourSetupMode(),
-    lastLossMessage: null
+    lastLossMessage: null,
+    lastEventMessage: null
   };
   G.screen = 'worldTourHome';
   render();
 };
+
+// Evento aleatorio entre partido y partido (a petición explícita: "que
+// alguno suba 5 puntos, alguno pierda 4, algún jugador se lesione y no
+// pueda jugar"). Se resuelve después de CADA partido (ganado o perdido).
+// Las lesiones se cuentan en partidos, no en tiempo -- cada partido que
+// juegas les resta 1 (worldTourTickInjuries); mientras dura, el jugador
+// se manda al fondo de la plantilla para que slice(0, 11) no lo escoja
+// solo en las pantallas que ya construyen el once así (Alineación, la
+// vista previa y el propio partido).
+function worldTourTickInjuries(wt) {
+  wt.squad.forEach(function (p) { if (p.injuredMatches > 0) p.injuredMatches--; });
+}
+function worldTourRandomEvent(wt) {
+  worldTourTickInjuries(wt);
+  if (Math.random() > 0.5 || !wt.squad.length) { wt.lastEventMessage = null; return; }
+  var pool = wt.squad.filter(function (p) { return !(p.injuredMatches > 0); });
+  if (!pool.length) { wt.lastEventMessage = null; return; }
+  var p = pool[Math.floor(Math.random() * pool.length)];
+  var roll = Math.random();
+  if (roll < 0.4) {
+    p.tiro += 5; p.pase += 5; p.defensa += 5; p.especial += 5;
+    wt.lastEventMessage = '📈 ' + p.nombre + ' está en racha: +5 de media.';
+  } else if (roll < 0.75) {
+    p.tiro = Math.max(20, p.tiro - 4); p.pase = Math.max(20, p.pase - 4); p.defensa = Math.max(20, p.defensa - 4); p.especial = Math.max(20, p.especial - 4);
+    wt.lastEventMessage = '📉 ' + p.nombre + ' flojea: -4 de media.';
+  } else {
+    var matches = rand(1, 2);
+    p.injuredMatches = matches;
+    var idx = wt.squad.indexOf(p);
+    if (idx !== -1) { wt.squad.splice(idx, 1); wt.squad.push(p); }
+    wt.lastEventMessage = '🤕 ' + p.nombre + ' se lesiona: no puede jugar ' + matches + ' partido' + (matches > 1 ? 's' : '') + '.';
+  }
+}
 
 function worldTourLineup() {
   return futDraftBuildLineup(G.worldTour.squad.slice(0, 11), G.worldTour.formationId || WORLD_TOUR_DEFAULT_FORMATION);
@@ -230,7 +292,8 @@ function renderWorldTourLineup() {
   if (hasBench) {
     var benchItemsHtml = f.bench.map(function (p) {
       var cls = 'pitch-player futdraft-swappable' + (f.swapSelectedId === p.id ? ' selected' : '');
-      return '<div class="' + cls + '" onclick="selectFutDraftPlayer(\'' + p.id + '\')">' + (f.captainId === p.id ? '<span class="futdraft-captain-badge" title="Capitán">👑</span>' : '') + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
+      var injured = p.injuredMatches > 0;
+      return '<div class="' + cls + '" onclick="selectFutDraftPlayer(\'' + p.id + '\')">' + (f.captainId === p.id ? '<span class="futdraft-captain-badge" title="Capitán">👑</span>' : '') + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + (injured ? ' 🤕' : '') + '</span><span class="dim small">' + Math.round(futDraftPlayerScore(p)) + '</span></div>';
     }).join('');
     benchHtml = '<div class="panel"><h3 style="margin-bottom:4px">Banquillo</h3><div class="pitch-row" style="justify-content:center;flex-wrap:wrap">' + benchItemsHtml + '</div></div>';
   }
@@ -280,6 +343,7 @@ function renderWorldTourHome() {
         '<p class="dim small">Equipo ' + (wt.stageIndex + 1) + ' de ' + WORLD_TOUR_STAGES.length + ' · Tu media: <strong style="color:var(--accent-2)">' + score + '</strong> / 100 · Plantilla: ' + wt.squad.length + '</p>' +
       '</div>' +
       (wt.lastLossMessage ? '<div class="panel center-text"><p class="dim small">' + escapeHtml(wt.lastLossMessage) + '</p></div>' : '') +
+      (wt.lastEventMessage ? '<div class="panel center-text"><p class="dim small">' + escapeHtml(wt.lastEventMessage) + '</p></div>' : '') +
       careerMatchupCardHtml(stage.name, 'Rival ' + (wt.stageIndex + 1)) +
       '<div class="panel">' +
         '<div class="match-mode-picker">' +
@@ -369,6 +433,7 @@ function finishWorldTourMatch() {
     wt.cleared = [];
     wt.lastLossMessage = 'Racha rota: vuelves al Occult, pero tu plantilla conserva lo ganado.';
   }
+  worldTourRandomEvent(wt);
 
   G.futdraft.lastMatchResult = {
     oppName: stage.name, oppShield: teamShieldPath(stage.name), oppPower: stage.power,

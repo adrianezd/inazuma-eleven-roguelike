@@ -362,52 +362,78 @@ function futDraftLiveLogHtml(live) {
 // color"), para distinguir de un vistazo quién es quién sin tener que
 // fijarse en el número.
 var PITCH_DOT_TEAM_COLORS = { me: ['#4ecdc4', '#1f8f86'], opp: ['#ff6b7a', '#c92c48'] };
-function pitchDotHtml(num, side, pulsing) {
+function pitchDotHtml(d, side) {
   var pal = PITCH_DOT_TEAM_COLORS[side];
-  var style = 'background:radial-gradient(circle at 35% 28%,' + pal[0] + ',' + pal[1] + ')';
-  return '<div class="pitch-dot pitch-dot-' + side + (pulsing ? ' pitch-dot-active' : '') + '" style="' + style + '"><span>' + num + '</span></div>';
+  var style = 'background:radial-gradient(circle at 35% 28%,' + pal[0] + ',' + pal[1] + ');left:' + d.x.toFixed(1) + '%;top:' + d.y.toFixed(1) + '%';
+  return '<div class="pitch-dot pitch-dot-' + side + (d.active ? ' pitch-dot-active' : '') + '" style="' + style + '"><span>' + d.num + '</span></div>';
+}
+// Columna (posición horizontal, 0-100%) de cada línea -- "me" defiende la
+// portería izquierda y ataca hacia la derecha, "opp" al revés, como en la
+// vista de partido de referencia (campo horizontal con las dos plantillas
+// desplegadas de punta a punta). lineIdx: 0=portero,1=defensa,
+// 2=centrocampista,3=delantero.
+var WT_LINE_X_ME = [7, 25, 44, 66];
+var WT_LINE_X_OPP = [93, 75, 56, 34];
+function futDraftLineSlots(count, seed) {
+  // Reparte `count` jugadores en vertical (6%-94%) con un pequeño
+  // temblor aleatorio en cada refresco, para que no se vean nunca del
+  // todo quietos -- ver petición explícita ("que los puntitos se muevan
+  // por el campo").
+  var ys = [];
+  for (var i = 0; i < count; i++) {
+    var base = count === 1 ? 50 : 12 + (i * (76 / (count - 1)));
+    ys.push(clamp(base + rand(-5, 5), 5, 95));
+  }
+  return ys;
 }
 function futDraftPitchDotsHtml(live) {
   var lineup = (G.career && live.isCareer) ? G.career.lineup : G.futdraft.lineup;
   var formation = FUTDRAFT_FORMATIONS.find(function (f) { return f.id === (G.career && live.isCareer ? G.career.formation : G.futdraft.formation); });
-  var order = ['Delantero', 'Centrocampista', 'Defensa', 'Portero'];
+  var order = ['Portero', 'Defensa', 'Centrocampista', 'Delantero'];
   // Línea con el balón ahora mismo, según la posesión simulada
-  // (futDraftAdvancePossession) -- line 3=delantera...0=portero, para
-  // que el balón se vea pasar de línea en línea como una jugada real en
-  // vez de saltar directo de un extremo al otro.
+  // (futDraftAdvancePossession).
   var poss = live.poss || { side: live.lastGoalSide === 'opp' ? 'opp' : 'me', line: 1 };
-  var n = 1;
-  var rowsHtml = order.map(function (pos, idx) {
+
+  // Dorsales con sentido: 1 para el portero, luego defensas,
+  // centrocampistas y delanteros -- a petición explícita ("mi portero no
+  // puede ser el dorsal 12").
+  var meDots = [], oppDots = [], num = 1;
+  order.forEach(function (pos, lineIdx) {
     var slots = lineup.filter(function (s) { return s.pos === pos; });
-    var rowLine = 3 - idx; // Delantero=3, Centro=2, Defensa=1, Portero=0
-    var dotsHtml = slots.map(function () { var isActive = poss.side === 'me' && poss.line === rowLine; return pitchDotHtml(n++, 'me', isActive); }).join('');
-    return '<div class="pitch-dots-row">' + dotsHtml + '</div>';
-  }).join('');
-  var m = 1;
-  var oppOrder = order.slice().reverse();
-  var oppRowsHtml = oppOrder.map(function (pos, idx) {
+    var ys = futDraftLineSlots(slots.length);
+    slots.forEach(function (s, i) {
+      meDots.push({ x: clamp(WT_LINE_X_ME[lineIdx] + rand(-4, 4), 3, 50), y: ys[i], num: num++, line: lineIdx, active: poss.side === 'me' && poss.line === lineIdx });
+    });
+  });
+  var oppNum = 1;
+  order.forEach(function (pos, lineIdx) {
     var row = formation.rows.find(function (r) { return r.pos === pos; });
     var count = row ? row.count : 0;
-    var rowLine = idx === 0 ? 0 : idx === oppOrder.length - 1 ? 3 : idx;
-    var dotsHtml = '';
-    for (var i = 0; i < count; i++) { var isActive = poss.side === 'opp' && poss.line === rowLine; dotsHtml += pitchDotHtml(m++, 'opp', isActive); }
-    return '<div class="pitch-dots-row">' + dotsHtml + '</div>';
-  }).join('');
-  // 8 franjas verticales (4 líneas por lado) en vez de solo 3 zonas fijas,
-  // para que el balón se mueva con más matiz entre pases.
-  var zoneIndex = poss.side === 'opp' ? poss.line : (7 - poss.line);
-  var ballPct = 8 + zoneIndex * (84 / 7);
+    var ys = futDraftLineSlots(count);
+    for (var i = 0; i < count; i++) {
+      oppDots.push({ x: clamp(WT_LINE_X_OPP[lineIdx] + rand(-4, 4), 50, 97), y: ys[i], num: oppNum++, line: lineIdx, active: poss.side === 'opp' && poss.line === lineIdx });
+    }
+  });
+
+  // El balón sigue a un jugador activo al azar de la línea con posesión
+  // (si hay varios, se elige uno cada refresco, dando sensación de pase
+  // entre compañeros de la misma línea).
+  var activeList = (poss.side === 'me' ? meDots : oppDots).filter(function (d) { return d.active; });
+  var ballDot = activeList.length ? activeList[Math.floor(Math.random() * activeList.length)] : null;
+  var ballX = ballDot ? ballDot.x + (poss.side === 'me' ? 4 : -4) : 50;
+  var ballY = ballDot ? ballDot.y : 50;
+
+  var dotsHtml = meDots.map(function (d) { return pitchDotHtml(d, 'me'); }).join('') + oppDots.map(function (d) { return pitchDotHtml(d, 'opp'); }).join('');
   var flashHtml = (live.lastGoalSide && live.goalFlashUntil && Date.now() < live.goalFlashUntil) ? '<div class="pitch-goal-flash pitch-goal-flash-' + live.lastGoalSide + '">' + (live.lastGoalSide === 'me' ? '¡GOOOL! ⚽' : 'Gol rival ⚽') + '</div>' : '';
-  return '<div class="pitch pitch-dots-field">' +
-    '<div class="pitch-dots-field-stripes"></div>' +
-    '<div class="pitch-crowd pitch-crowd-top"></div><div class="pitch-crowd pitch-crowd-bottom"></div>' +
-    '<div class="pitch-goal pitch-goal-top"><div class="pitch-net"></div></div><div class="pitch-goal pitch-goal-bottom"><div class="pitch-net"></div></div>' +
-    '<div class="pitch-side-label pitch-side-label-top">Rival</div>' +
-    oppRowsHtml +
-    '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div><div class="pitch-center-dot"></div>' +
-    '<div class="pitch-ball" style="top:' + ballPct + '%"><span class="pitch-ball-shadow"></span>⚽</div>' +
-    rowsHtml +
-    '<div class="pitch-side-label pitch-side-label-bottom">Tu equipo</div>' +
+  return '<div class="pitch pitch-dots-field pitch-dots-field-h">' +
+    '<div class="pitch-dots-field-stripes pitch-dots-field-stripes-h"></div>' +
+    '<div class="pitch-crowd pitch-crowd-left"></div><div class="pitch-crowd pitch-crowd-right"></div>' +
+    '<div class="pitch-goal pitch-goal-left"><div class="pitch-net"></div></div><div class="pitch-goal pitch-goal-right"><div class="pitch-net"></div></div>' +
+    '<div class="pitch-side-label pitch-side-label-left">Tu equipo</div>' +
+    '<div class="pitch-side-label pitch-side-label-right">Rival</div>' +
+    '<div class="pitch-center-line pitch-center-line-h"></div><div class="pitch-center-circle"></div><div class="pitch-center-dot"></div>' +
+    dotsHtml +
+    '<div class="pitch-ball" style="left:' + ballX.toFixed(1) + '%;top:' + ballY.toFixed(1) + '%"><span class="pitch-ball-shadow"></span>⚽</div>' +
     flashHtml +
   '</div>';
 }

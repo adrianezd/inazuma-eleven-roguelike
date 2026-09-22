@@ -681,32 +681,39 @@ a { color: var(--accent); }
    el balón, a petición explícita ("mucho más estético... currate más la
    estética de jugar partido, de dentro, de los puntitos"). */
 .pitch-dots-field {
-  min-height: 280px; gap: 10px; position: relative; padding: 34px 10px;
+  min-height: 280px; gap: 10px; position: relative; padding: 10px 30px;
   background: radial-gradient(ellipse at 50% 50%, #1c4a2e, #0f2b1b 78%);
   overflow: hidden;
 }
+/* Campo en horizontal (como un marcador de partido de verdad, no en
+   vertical): ancho fijo por aspect-ratio en vez de alto mínimo, a
+   petición explícita ("que se vea en horizontal, como la foto"). */
+.pitch-dots-field-h { min-height: 0; aspect-ratio: 16 / 10; padding: 8px 10px; }
 .pitch-dots-field-stripes {
   position: absolute; inset: 0; z-index: 0; border-radius: inherit;
   background: repeating-linear-gradient(0deg, rgba(255,255,255,0.035), rgba(255,255,255,0.035) 12.5%, transparent 12.5%, transparent 25%);
 }
+.pitch-dots-field-stripes-h {
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,0.035), rgba(255,255,255,0.035) 12.5%, transparent 12.5%, transparent 25%);
+}
 .pitch-crowd {
-  position: absolute; left: 0; right: 0; height: 14px; z-index: 0;
+  position: absolute; top: 0; bottom: 0; width: 10px; z-index: 0;
   background:
-    radial-gradient(circle, rgba(255,255,255,0.16) 1px, transparent 1.4px) repeat-x,
-    linear-gradient(#20293e, #171f30);
+    radial-gradient(circle, rgba(255,255,255,0.16) 1px, transparent 1.4px) repeat-y,
+    linear-gradient(90deg, #20293e, #171f30);
   background-size: 7px 7px, auto;
 }
-.pitch-crowd-top { top: 0; }
-.pitch-crowd-bottom { bottom: 0; }
+.pitch-crowd-left { left: 0; }
+.pitch-crowd-right { right: 0; }
 .pitch-goal {
-  position: absolute; left: 50%; transform: translateX(-50%);
-  width: 30%; height: 16px; z-index: 1;
+  position: absolute; top: 50%; transform: translateY(-50%);
+  height: 30%; width: 12px; z-index: 1;
   border: 2px solid rgba(255,255,255,0.55);
   box-shadow: 0 0 6px rgba(255,255,255,0.25);
   overflow: hidden;
 }
-.pitch-goal-top { top: 14px; border-top: none; border-radius: 0 0 4px 4px; }
-.pitch-goal-bottom { bottom: 14px; border-bottom: none; border-radius: 4px 4px 0 0; }
+.pitch-goal-left { left: 10px; border-left: none; border-radius: 0 4px 4px 0; }
+.pitch-goal-right { right: 10px; border-right: none; border-radius: 4px 0 0 4px; }
 .pitch-net {
   position: absolute; inset: 0;
   background:
@@ -714,49 +721,44 @@ a { color: var(--accent); }
     repeating-linear-gradient(0deg, rgba(255,255,255,0.3) 0 1px, transparent 1px 6px);
 }
 .pitch-side-label {
-  position: absolute; left: 50%; transform: translateX(-50%);
+  position: absolute; top: 4px;
   z-index: 1; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.06em;
   text-transform: uppercase; color: rgba(255,255,255,0.55);
 }
-.pitch-side-label-top { top: 3px; }
-.pitch-side-label-bottom { bottom: 3px; }
-.pitch-dots-row { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; position: relative; z-index: 2; }
+.pitch-side-label-left { left: 14px; }
+.pitch-side-label-right { right: 14px; }
 .pitch-dot {
-  width: 26px; height: 26px; border-radius: 50%;
+  position: absolute;
+  width: 24px; height: 24px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 3px 6px rgba(0,0,0,0.6), inset 0 -3px 4px rgba(0,0,0,0.3), inset 0 2px 3px rgba(255,255,255,0.4);
   border: 2px solid rgba(255,255,255,0.55);
-  transition: transform 0.2s ease;
+  transform: translate(-50%, -50%);
+  transition: left 0.45s ease, top 0.45s ease, transform 0.2s ease;
+  z-index: 2;
 }
 .pitch-dot span {
-  font-size: 0.62rem; font-weight: 800; color: rgba(0,0,0,0.55);
+  font-size: 0.6rem; font-weight: 800; color: rgba(0,0,0,0.55);
   text-shadow: 0 1px 0 rgba(255,255,255,0.3);
 }
-.pitch-dot-opp { filter: saturate(0.85) brightness(0.92); transform: scaleY(-1); }
-.pitch-dot-opp span { transform: scaleY(-1); display: inline-block; }
 .pitch-dot-active {
   animation: pitchDotPulse 0.9s ease-in-out infinite;
   box-shadow: 0 3px 6px rgba(0,0,0,0.6), inset 0 -3px 4px rgba(0,0,0,0.3), inset 0 2px 3px rgba(255,255,255,0.4), 0 0 0 4px rgba(255,255,255,0.18);
 }
-@keyframes pitchDotPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.16); } }
-.pitch-dot-opp.pitch-dot-active { animation: pitchDotPulseOpp 0.9s ease-in-out infinite; }
-@keyframes pitchDotPulseOpp { 0%, 100% { transform: scaleY(-1) scale(1); } 50% { transform: scaleY(-1) scale(1.16); } }
+@keyframes pitchDotPulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.2); } }
 .pitch-ball {
-  position: absolute; left: 50%; transform: translateX(-50%);
-  font-size: 1.15rem; z-index: 3;
-  transition: top 0.5s cubic-bezier(0.3, 0.6, 0.4, 1);
+  position: absolute; transform: translate(-50%, -50%);
+  font-size: 1.05rem; z-index: 3;
+  transition: left 0.45s ease, top 0.45s ease;
   filter: drop-shadow(0 2px 2px rgba(0,0,0,0.6));
   animation: pitchBallBounce 0.6s ease-in-out infinite;
 }
 .pitch-ball-shadow {
-  position: absolute; left: 50%; bottom: -5px; transform: translateX(-50%);
-  width: 14px; height: 5px; border-radius: 50%;
+  position: absolute; left: 50%; bottom: -4px; transform: translateX(-50%);
+  width: 12px; height: 4px; border-radius: 50%;
   background: rgba(0,0,0,0.4); filter: blur(1px);
 }
-@keyframes pitchBallBounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-4px); } }
-.pitch-ball-top { top: 20%; }
-.pitch-ball-mid { top: 50%; }
-.pitch-ball-bottom { top: 80%; }
+@keyframes pitchBallBounce { 0%, 100% { margin-top: 0; } 50% { margin-top: -4px; } }
 .pitch-goal-flash {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   z-index: 4; font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 1.3rem;
@@ -828,11 +830,13 @@ a { color: var(--accent); }
 .pitch-affinity-badge img { display: block; }
 .futdraft-out-of-position .avatar { box-shadow: 0 0 0 2px var(--danger) inset; }
 .pitch-center-line { position: absolute; left: 8%; right: 8%; top: 50%; height: 1px; background: rgba(255,255,255,0.18); }
+.pitch-center-line-h { left: 50%; right: auto; top: 8%; bottom: 8%; width: 1px; height: auto; }
 .pitch-center-circle {
   position: absolute; left: 50%; top: 50%; width: 70px; height: 70px;
   border: 1px solid rgba(255,255,255,0.18); border-radius: 50%;
   transform: translate(-50%, -50%);
 }
+.pitch-center-dot { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,0.3); transform: translate(-50%, -50%); }
 
 .player-card {
   background: var(--panel-2);
