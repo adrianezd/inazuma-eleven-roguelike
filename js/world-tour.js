@@ -197,6 +197,7 @@ function renderWorldTourSetup() {
         '</div>' +
         '<p class="dim small center-text mt">' + (squadType === 'raimon' ? 'El once base de Inazuma Eleven 1, todos por debajo de 75 de media.' : '11 jugadores al azar de toda la franquicia, también por debajo de 75.') + '</p>' +
       '</div>' +
+      customNameHtml +
       '<div class="panel">' +
         '<h3 style="margin-bottom:8px" class="center-text">Al perder</h3>' +
         '<div class="btn-row" style="justify-content:center">' +
@@ -247,6 +248,26 @@ window.actionStartWorldTour = function () {
   G.screen = 'worldTourHome';
   render();
 };
+// Misma tarjeta de "Tú vs rival" que Modo Carrera, pero con tu nombre y
+// escudo del Modo Mundial (antes salía "Tú" con el escudo de la web,
+// otro sitio donde se coló el mismo bug).
+function worldTourMatchupCardHtml(oppName, contextLabel) {
+  var wt = G.worldTour;
+  var youSideHtml =
+    '<div class="matchup-side">' +
+      '<img class="matchup-shield" src="' + escapeHtml(worldTourShieldPath()) + '" alt="">' +
+      '<div class="matchup-name">' + escapeHtml(wt.teamName) + '</div>' +
+    '</div>';
+  var oppSideHtml =
+    '<div class="matchup-side">' +
+      '<img class="matchup-shield" src="' + escapeHtml(teamShieldPath(oppName)) + '" alt="">' +
+      '<div class="matchup-name">' + escapeHtml(oppName) + '</div>' +
+    '</div>';
+  return '<div class="panel matchup-card">' +
+    (contextLabel ? '<p class="dim small center-text">' + contextLabel + '</p>' : '') +
+    '<div class="matchup-row">' + youSideHtml + '<div class="matchup-vs">VS</div>' + oppSideHtml + '</div>' +
+  '</div>';
+}
 function worldTourShieldPath() {
   var wt = G.worldTour;
   if (!wt) return WORLD_TOUR_RAIMON_SHIELD;
@@ -402,7 +423,7 @@ function renderWorldTourHome() {
       '</div>' +
       (wt.lastLossMessage ? '<div class="panel center-text"><p class="dim small">' + escapeHtml(wt.lastLossMessage) + '</p></div>' : '') +
       (wt.lastJoinMessage ? '<div class="panel center-text"><p class="dim small">' + escapeHtml(wt.lastJoinMessage) + '</p></div>' : '') +
-      careerMatchupCardHtml(stage.name, 'Rival ' + (wt.stageIndex + 1)) +
+      worldTourMatchupCardHtml(stage.name, 'Rival ' + (wt.stageIndex + 1)) +
       '<div class="panel">' +
         '<div class="match-mode-picker">' +
           '<button class="match-mode-card" onclick="actionPlayWorldTourMatch()"><span class="match-mode-icon">⚽</span><strong>Jugar</strong><span class="dim small">Puntitos en directo</span></button>' +
@@ -481,8 +502,12 @@ function finishWorldTourMatch() {
   if (playerWon) {
     wt.squad.forEach(function (p) { p.tiro += WORLD_TOUR_WIN_BOOST; p.pase += WORLD_TOUR_WIN_BOOST; p.defensa += WORLD_TOUR_WIN_BOOST; p.especial += WORLD_TOUR_WIN_BOOST; });
     wt.cleared.push(stage.id);
-    var options = stage.players.slice().sort(function () { return Math.random() - 0.5; }).slice(0, 3);
-    wt.pendingDraft = { stageId: stage.id, options: options };
+    // No ofrecer en el draft a jugadores que ya tienes en la plantilla --
+    // a petición explícita.
+    var squadIds = wt.squad.map(function (p) { return p.id; });
+    var available = stage.players.filter(function (p) { return squadIds.indexOf(p.id) === -1; });
+    var options = available.slice().sort(function () { return Math.random() - 0.5; }).slice(0, 3);
+    if (options.length) wt.pendingDraft = { stageId: stage.id, options: options };
     wt.stageIndex++;
     wt.lastLossMessage = null;
     // Fichajes que se unen solos, como en la historia real (solo con el
