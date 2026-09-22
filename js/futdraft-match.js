@@ -462,12 +462,23 @@ function futDraftBuildDotsState(live) {
 }
 // Empujoncito pequeño (±1.5% por tick) hacia la columna de su línea, con
 // algo de deriva vertical -- movimiento continuo y suave en vez de saltos.
+// Portería fija: el portero (línea 0) se queda pegado a su portería,
+// solo se desliza un poco en vertical para tapar palos -- a petición
+// explícita ("el portero no puede moverse de la portería, aunque el
+// resto de jugadores sí se muevan"). El resto de líneas sigue con
+// bastante recorrido (±5% por empujón).
+var WT_KEEPER_X = { me: 4, opp: 96 };
 function futDraftNudgeDotsState(state) {
-  // Bastante más recorrido por empujón (antes ±1.5%, ahora ±5%), a
-  // petición explícita ("bastante más movimiento por el campo").
   ['me', 'opp'].forEach(function (side) {
     var colX = side === 'me' ? WT_LINE_X_ME : WT_LINE_X_OPP;
     state[side].forEach(function (d) {
+      if (d.line === 0) {
+        // Portero: prácticamente clavado en la línea de gol, solo un
+        // pequeño vaivén vertical dentro del área pequeña.
+        d.x = clamp(d.x + (WT_KEEPER_X[side] - d.x) * 0.4, 2, 98);
+        d.y = clamp(d.y + rand(-8, 8) / 10, 38, 62);
+        return;
+      }
       var targetX = colX[d.line];
       d.x = clamp(d.x + (targetX - d.x) * 0.2 + rand(-50, 50) / 10, 3, 97);
       d.y = clamp(d.y + rand(-50, 50) / 10, 5, 95);
