@@ -576,12 +576,30 @@ function careerProgressAllPlayers(c) {
 var CAREER_VALUE_ANCHOR_SCORE = 75;
 var CAREER_VALUE_ANCHOR_MILLIONS = 1;
 var CAREER_VALUE_DOUBLING_BELOW_ANCHOR = 10;
-var CAREER_VALUE_DOUBLING_ABOVE_ANCHOR = 2.6;
+// Arreglo de economía (a petición explícita: "vendes un jugador de 99 y
+// ya prácticamente eres rico... te quedas con 500 millones y no te vale
+// para nada"). La curva de antes DOBLABA el precio cada 2.6 puntos por
+// encima del ancla (75) sin ningún techo -- con el tope de media subido a
+// 120 (ver CAREER_SCORE_MAX), un solo crack llegaba a valer CIENTOS de
+// millones de golpe, muy por encima de cualquier presupuesto real de la
+// carrera (CAREER_STARTING_BUDGET_OPTIONS va de 1 a 100), lo que
+// reventaba de un plumazo toda la economía: un fichaje o una venta
+// desequilibraba más que 10 temporadas enteras de sueldos y patrocinios.
+// Ahora, por encima del ancla, el valor crece de forma mucho más plana
+// (lineal + una curva suave, no exponencial): un jugador de 99 de media
+// vale unos 12 M€ y uno de 120 (el tope físico posible) unos 23 M€ --
+// caro de verdad, pero de una escala que sigue teniendo sentido al lado
+// del presupuesto y de los ingresos por temporada. Por debajo del ancla
+// se mantiene la curva de siempre (dobla cada 10 puntos hacia abajo).
 function careerPlayerValue(p) {
   var score = careerPlayerScore(p);
   var excess = score - CAREER_VALUE_ANCHOR_SCORE;
-  var doubling = excess >= 0 ? CAREER_VALUE_DOUBLING_ABOVE_ANCHOR : CAREER_VALUE_DOUBLING_BELOW_ANCHOR;
-  var millions = CAREER_VALUE_ANCHOR_MILLIONS * Math.pow(2, excess / doubling);
+  var millions;
+  if (excess >= 0) {
+    millions = CAREER_VALUE_ANCHOR_MILLIONS + excess * 0.35 + Math.pow(excess, 1.5) * 0.02;
+  } else {
+    millions = CAREER_VALUE_ANCHOR_MILLIONS * Math.pow(2, excess / CAREER_VALUE_DOUBLING_BELOW_ANCHOR);
+  }
   return Math.max(0.1, Math.round(millions * 10) / 10);
 }
 
