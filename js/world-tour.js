@@ -152,9 +152,36 @@ function worldTourSetupSpecials() { return G.worldTourSetupSpecials !== false; }
 window.actionSetWorldTourSpecials = function (on) { G.worldTourSetupSpecials = !!on; render(); };
 function worldTourSetupSquadType() { return G.worldTourSetupSquadType === 'random' ? 'random' : 'raimon'; }
 window.actionSetWorldTourSquadType = function (type) { G.worldTourSetupSquadType = type; render(); };
+// Escudo por defecto del Raimon (no está en TEAM_SHIELD_FILES porque ese
+// registro es de equipos RIVALES, pero el archivo sí existe).
+var WORLD_TOUR_RAIMON_SHIELD = 'assets/escudos/raimon.webp';
+window.actionSetWorldTourName = function (value) { G.worldTourSetupName = value; };
+window.actionSetWorldTourShield = function (name) { G.worldTourSetupShield = name || null; render(); };
 function renderWorldTourSetup() {
   var mode = worldTourSetupMode();
   var squadType = worldTourSetupSquadType();
+  var customNameHtml = '';
+  if (squadType === 'random') {
+    var shieldNames = Object.keys(TEAM_SHIELD_FILES).sort(function (a, b) { return a.localeCompare(b); });
+    var options = '<option value="">Escudo por defecto</option>' + shieldNames.map(function (n) {
+      return '<option value="' + escapeHtml(n) + '"' + (G.worldTourSetupShield === n ? ' selected' : '') + '>' + escapeHtml(n) + '</option>';
+    }).join('');
+    var shieldPreview = G.worldTourSetupShield ? teamShieldPath(G.worldTourSetupShield) : PLAYER_SHIELD;
+    // Mismo patrón que FutDraft 2 jugadores: nombre + escudo elegibles.
+    customNameHtml =
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:8px">Nombre y escudo</h3>' +
+        '<div style="display:flex;align-items:center;gap:12px">' +
+          '<img class="team-shield" style="width:56px;height:56px;margin:0" src="' + escapeHtml(shieldPreview) + '" alt="">' +
+          '<div style="flex:1;min-width:0">' +
+            '<label class="dim small">Nombre del equipo</label>' +
+            '<input class="select-field" type="text" maxlength="24" data-focus-key="wt-name" placeholder="Tu Equipo" value="' + escapeHtml(G.worldTourSetupName || '') + '" oninput="actionSetWorldTourName(this.value)">' +
+          '</div>' +
+        '</div>' +
+        '<label class="dim small mt">Escudo</label>' +
+        '<select class="select-field" onchange="actionSetWorldTourShield(this.value)">' + options + '</select>' +
+      '</div>';
+  }
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
@@ -204,20 +231,28 @@ window.actionStartWorldTour = function () {
   G.worldTour = {
     squad: squad,
     isRaimon: !useRandom,
+    teamName: useRandom ? ((G.worldTourSetupName || '').trim() || 'Tu Equipo') : 'Raimon',
+    teamShieldName: useRandom ? (G.worldTourSetupShield || null) : null,
     formationId: WORLD_TOUR_DEFAULT_FORMATION,
     captainId: null,
     stageIndex: 0,
     cleared: [],
     pendingDraft: null,
+    pendingEvent: null,
     won: false,
     mode: worldTourSetupMode(),
     lastLossMessage: null,
-    lastEventMessage: null,
     lastJoinMessage: null
   };
   G.screen = 'worldTourHome';
   render();
 };
+function worldTourShieldPath() {
+  var wt = G.worldTour;
+  if (!wt) return WORLD_TOUR_RAIMON_SHIELD;
+  if (wt.isRaimon) return WORLD_TOUR_RAIMON_SHIELD;
+  return wt.teamShieldName ? teamShieldPath(wt.teamShieldName) : PLAYER_SHIELD;
+}
 
 // Evento aleatorio entre partido y partido (a petición explícita: "que
 // alguno suba 5 puntos, alguno pierda 4, algún jugador se lesione y no
@@ -230,25 +265,29 @@ window.actionStartWorldTour = function () {
 function worldTourTickInjuries(wt) {
   wt.squad.forEach(function (p) { if (p.injuredMatches > 0) p.injuredMatches--; });
 }
+// Solo tras GANAR (nunca al perder) -- a petición explícita. Se guarda
+// como wt.pendingEvent (no un simple texto) para poder enseñarlo en su
+// propia pantalla con dibujo, en vez de una línea suelta en Jornada.
 function worldTourRandomEvent(wt) {
   worldTourTickInjuries(wt);
-  if (Math.random() > 0.5 || !wt.squad.length) { wt.lastEventMessage = null; return; }
+  wt.pendingEvent = null;
+  if (Math.random() > 0.5 || !wt.squad.length) return;
   var pool = wt.squad.filter(function (p) { return !(p.injuredMatches > 0); });
-  if (!pool.length) { wt.lastEventMessage = null; return; }
+  if (!pool.length) return;
   var p = pool[Math.floor(Math.random() * pool.length)];
   var roll = Math.random();
   if (roll < 0.4) {
     p.tiro += 5; p.pase += 5; p.defensa += 5; p.especial += 5;
-    wt.lastEventMessage = '📈 ' + p.nombre + ' está en racha: +5 de media.';
+    wt.pendingEvent = { kind: 'boost', player: p, title: '¡Racha de forma!', text: p.nombre + ' sube +5 de media.' };
   } else if (roll < 0.75) {
     p.tiro = Math.max(20, p.tiro - 4); p.pase = Math.max(20, p.pase - 4); p.defensa = Math.max(20, p.defensa - 4); p.especial = Math.max(20, p.especial - 4);
-    wt.lastEventMessage = '📉 ' + p.nombre + ' flojea: -4 de media.';
+    wt.pendingEvent = { kind: 'drop', player: p, title: 'Bajón de forma', text: p.nombre + ' baja -4 de media.' };
   } else {
     var matches = rand(1, 2);
     p.injuredMatches = matches;
     var idx = wt.squad.indexOf(p);
     if (idx !== -1) { wt.squad.splice(idx, 1); wt.squad.push(p); }
-    wt.lastEventMessage = '🤕 ' + p.nombre + ' se lesiona: no puede jugar ' + matches + ' partido' + (matches > 1 ? 's' : '') + '.';
+    wt.pendingEvent = { kind: 'injury', player: p, title: 'Lesión', text: p.nombre + ' no podrá jugar ' + matches + ' partido' + (matches > 1 ? 's' : '') + '.' };
   }
 }
 
@@ -362,7 +401,6 @@ function renderWorldTourHome() {
         '<p class="dim small">Equipo ' + (wt.stageIndex + 1) + ' de ' + WORLD_TOUR_STAGES.length + ' · Tu media: <strong style="color:var(--accent-2)">' + score + '</strong> / 100 · Plantilla: ' + wt.squad.length + '</p>' +
       '</div>' +
       (wt.lastLossMessage ? '<div class="panel center-text"><p class="dim small">' + escapeHtml(wt.lastLossMessage) + '</p></div>' : '') +
-      (wt.lastEventMessage ? '<div class="panel center-text"><p class="dim small">' + escapeHtml(wt.lastEventMessage) + '</p></div>' : '') +
       (wt.lastJoinMessage ? '<div class="panel center-text"><p class="dim small">' + escapeHtml(wt.lastJoinMessage) + '</p></div>' : '') +
       careerMatchupCardHtml(stage.name, 'Rival ' + (wt.stageIndex + 1)) +
       '<div class="panel">' +
@@ -388,6 +426,7 @@ function worldTourBridgeFutdraft() {
 }
 window.actionSimulateWorldTourMatch = function (visualMode) {
   var stage = worldTourStage();
+  if (!stage || G.worldTour.won) return;
   worldTourBridgeFutdraft();
   var sim = futDraftSimulateMatchCore(stage.power);
   G.futdraft.live = {
@@ -408,6 +447,7 @@ window.actionSimulateWorldTourMatch = function (visualMode) {
 window.actionPlayWorldTourMatch = function () { actionSimulateWorldTourMatch('dots'); };
 window.actionSkipWorldTourMatch = function () {
   var stage = worldTourStage();
+  if (!stage || G.worldTour.won) return;
   worldTourBridgeFutdraft();
   var sim = futDraftSimulateMatchCore(stage.power);
   G.futdraft.live = { oppSide: { name: stage.name }, modifier: sim.modifier, myGoals: sim.myGoals, oppGoals: sim.oppGoals, finalMyGoals: sim.myGoals, finalOppGoals: sim.oppGoals, revealed: sim.timeline, myAtk: sim.myAtk, myDef: sim.myDef, effectiveOppPower: sim.effectiveOppPower, isWorldTour: true, youAreHome: true };
@@ -458,6 +498,9 @@ function finishWorldTourMatch() {
       if (joinedNames.length) wt.lastJoinMessage = '🆕 ' + joinedNames.join(' y ') + ' se une' + (joinedNames.length > 1 ? 'n' : '') + ' al equipo.';
     }
     if (wt.stageIndex >= WORLD_TOUR_STAGES.length) wt.won = true;
+    // El evento aleatorio solo pasa al GANAR, nunca al perder -- a
+    // petición explícita.
+    worldTourRandomEvent(wt);
   } else if (wt.mode === 'duro' && wt.stageIndex > 0) {
     // Racha: pierdes, vuelves al Occult -- pero la plantilla conserva
     // todo lo ganado (media y fichajes), a petición explícita.
@@ -465,7 +508,6 @@ function finishWorldTourMatch() {
     wt.cleared = [];
     wt.lastLossMessage = 'Racha rota: vuelves al Occult, pero tu plantilla conserva lo ganado.';
   }
-  worldTourRandomEvent(wt);
 
   G.futdraft.lastMatchResult = {
     oppName: stage.name, oppShield: teamShieldPath(stage.name), oppPower: stage.power,
@@ -478,6 +520,37 @@ function finishWorldTourMatch() {
 }
 window.continueWorldTourMatch = function () {
   var wt = G.worldTour;
+  G.screen = wt.pendingEvent ? 'worldTourEvent' : wt.pendingDraft ? 'worldTourDraft' : 'worldTourHome';
+  render();
+};
+// Pantalla propia con dibujo para el evento aleatorio (antes solo era una
+// línea de texto en Jornada) -- a petición explícita ("que tenga una
+// pantalla especial con dibujos, no que salga como ahora").
+var WORLD_TOUR_EVENT_STYLE = {
+  boost: { icon: '📈', color: 'var(--success)' },
+  drop: { icon: '📉', color: 'var(--danger)' },
+  injury: { icon: '🤕', color: 'var(--danger)' }
+};
+function renderWorldTourEvent() {
+  var wt = G.worldTour;
+  var ev = wt.pendingEvent;
+  if (!ev) { G.screen = wt.pendingDraft ? 'worldTourDraft' : 'worldTourHome'; return wt.pendingDraft ? renderWorldTourDraft() : renderWorldTourHome(); }
+  var style = WORLD_TOUR_EVENT_STYLE[ev.kind];
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text" style="border:2px solid ' + style.color + '">' +
+        '<div style="font-size:3.4rem;line-height:1">' + style.icon + '</div>' +
+        '<h2 class="panel-title mt mb0">' + escapeHtml(ev.title) + '</h2>' +
+        '<div class="mt" style="display:flex;justify-content:center">' + avatarHtml(ev.player) + '</div>' +
+        '<p class="dim small mt">' + escapeHtml(ev.text) + '</p>' +
+      '</div>' +
+      '<div class="panel center-text"><button class="btn btn-primary btn-block" onclick="actionDismissWorldTourEvent()">Seguir</button></div>' +
+    '</div>'
+  );
+}
+window.actionDismissWorldTourEvent = function () {
+  var wt = G.worldTour;
+  wt.pendingEvent = null;
   G.screen = wt.pendingDraft ? 'worldTourDraft' : 'worldTourHome';
   render();
 };

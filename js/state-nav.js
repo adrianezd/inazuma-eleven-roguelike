@@ -169,6 +169,7 @@ function render() {
     case 'worldTourSetup': html = renderWorldTourSetup(); break;
     case 'worldTourHome': html = renderWorldTourHome(); break;
     case 'worldTourDraft': html = renderWorldTourDraft(); break;
+    case 'worldTourEvent': html = renderWorldTourEvent(); break;
     case 'worldTourLineup': html = renderWorldTourLineup(); break;
     default: html = renderMenu();
   }

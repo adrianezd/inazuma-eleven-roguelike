@@ -269,7 +269,14 @@ function futDraftLiveTick() {
     live.revealed.push(ev);
     live.lastGoalSide = ev.side;
     live.goalFlashUntil = Date.now() + 1600;
-    if (isDots) live.poss = { side: ev.side, line: 3 };
+    if (isDots) {
+      live.poss = { side: ev.side, line: 3 };
+      // El balón "entra" en la portería justo cuando se marca el gol, en
+      // vez de quedarse a medio camino en la línea de delanteros -- a
+      // petición explícita ("que coincida el gol con justo cuando tira
+      // alguien a puerta").
+      live.goalBall = { x: ev.side === 'me' ? 95 : 5, y: 50, until: Date.now() + 900 };
+    }
     if (typeof playGoalSound === 'function') playGoalSound();
   }
   futDraftLiveRefresh(live);
@@ -441,6 +448,15 @@ function futDraftNudgeDotsState(state) {
 function futDraftPitchDotsHtml(live) {
   if (!live.dotsState) live.dotsState = futDraftBuildDotsState(live);
   var poss = live.poss || { side: live.lastGoalSide === 'opp' ? 'opp' : 'me', line: 1 };
+  // Nombre y escudo de verdad en vez de "Tu equipo"/"Rival" fijos -- a
+  // petición explícita ("pon Raimon si has elegido raimon... y pon el
+  // del rival, si estoy jugando contra el occult, pon occult").
+  var isCareerDots = live.isCareer && G.career;
+  var isWorldTourDots = live.isWorldTour && G.worldTour;
+  var oppName = live.oppSide.name;
+  var youName = isCareerDots ? careerClubDisplayName(G.career) : isWorldTourDots ? G.worldTour.teamName : 'Tú';
+  var youShield = isCareerDots ? careerClubShieldPath(G.career) : isWorldTourDots ? worldTourShieldPath() : getPlayerShieldPath();
+  var oppShield = teamShieldPath(oppName);
   var meDots = live.dotsState.me, oppDots = live.dotsState.opp;
   meDots.forEach(function (d) { d.active = poss.side === 'me' && poss.line === d.line; });
   oppDots.forEach(function (d) { d.active = poss.side === 'opp' && poss.line === d.line; });
@@ -450,8 +466,9 @@ function futDraftPitchDotsHtml(live) {
   // entre compañeros de la misma línea).
   var activeList = (poss.side === 'me' ? meDots : oppDots).filter(function (d) { return d.active; });
   var ballDot = activeList.length ? activeList[Math.floor(Math.random() * activeList.length)] : null;
-  var ballX = ballDot ? ballDot.x + (poss.side === 'me' ? 4 : -4) : 50;
-  var ballY = ballDot ? ballDot.y : 50;
+  var inGoal = live.goalBall && Date.now() < live.goalBall.until;
+  var ballX = inGoal ? live.goalBall.x : (ballDot ? ballDot.x + (poss.side === 'me' ? 4 : -4) : 50);
+  var ballY = inGoal ? live.goalBall.y : (ballDot ? ballDot.y : 50);
   live.dotsBall = { x: ballX, y: ballY };
 
   var dotsHtml = meDots.map(function (d) { return pitchDotHtml(d, 'me'); }).join('') + oppDots.map(function (d) { return pitchDotHtml(d, 'opp'); }).join('');
@@ -460,8 +477,8 @@ function futDraftPitchDotsHtml(live) {
     '<div class="pitch-dots-field-stripes pitch-dots-field-stripes-h"></div>' +
     '<div class="pitch-crowd pitch-crowd-left"></div><div class="pitch-crowd pitch-crowd-right"></div>' +
     '<div class="pitch-goal pitch-goal-left"><div class="pitch-net"></div></div><div class="pitch-goal pitch-goal-right"><div class="pitch-net"></div></div>' +
-    '<div class="pitch-side-label pitch-side-label-left">Tu equipo</div>' +
-    '<div class="pitch-side-label pitch-side-label-right">Rival</div>' +
+    '<div class="pitch-side-label pitch-side-label-left"><img src="' + escapeHtml(youShield) + '" alt=""><span>' + escapeHtml(youName) + '</span></div>' +
+    '<div class="pitch-side-label pitch-side-label-right"><span>' + escapeHtml(oppName) + '</span><img src="' + escapeHtml(oppShield) + '" alt=""></div>' +
     '<div class="pitch-center-line pitch-center-line-h"></div><div class="pitch-center-circle"></div><div class="pitch-center-dot"></div>' +
     dotsHtml +
     '<div class="pitch-ball" style="left:' + ballX.toFixed(1) + '%;top:' + ballY.toFixed(1) + '%"><span class="pitch-ball-shadow"></span>⚽</div>' +
@@ -496,10 +513,16 @@ function futDraftDotsRefresh(live) {
   state.opp.forEach(function (d) { place(d, 'opp'); });
   var activeList = (poss.side === 'me' ? state.me : state.opp).filter(function (d) { return d.active; });
   var ballDot = activeList.length ? activeList[Math.floor(Math.random() * activeList.length)] : null;
+  var inGoal = live.goalBall && Date.now() < live.goalBall.until;
   var ball = field.querySelector('.pitch-ball');
-  if (ball && ballDot) {
-    ball.style.left = (ballDot.x + (poss.side === 'me' ? 4 : -4)).toFixed(1) + '%';
-    ball.style.top = ballDot.y.toFixed(1) + '%';
+  if (ball) {
+    if (inGoal) {
+      ball.style.left = live.goalBall.x.toFixed(1) + '%';
+      ball.style.top = live.goalBall.y.toFixed(1) + '%';
+    } else if (ballDot) {
+      ball.style.left = (ballDot.x + (poss.side === 'me' ? 4 : -4)).toFixed(1) + '%';
+      ball.style.top = ballDot.y.toFixed(1) + '%';
+    }
   }
   var flashWanted = !!(live.lastGoalSide && live.goalFlashUntil && Date.now() < live.goalFlashUntil);
   var flashEl = field.querySelector('.pitch-goal-flash');
@@ -546,8 +569,9 @@ function renderFutDraftLive() {
   // se está simulando el partido siempre soy local"), otro bug real,
   // corregidos los dos a la vez.
   var isCareer = live.isCareer && G.career;
-  var youShield = isCareer ? careerClubShieldPath(G.career) : getPlayerShieldPath();
-  var youName = isCareer ? careerClubDisplayName(G.career) : 'Tú';
+  var isWorldTour = live.isWorldTour && G.worldTour;
+  var youShield = isCareer ? careerClubShieldPath(G.career) : isWorldTour ? worldTourShieldPath() : getPlayerShieldPath();
+  var youName = isCareer ? careerClubDisplayName(G.career) : isWorldTour ? G.worldTour.teamName : 'Tú';
   var youAreHome = live.youAreHome !== false;
   var youSideHtml = '<div class="score-side"><img class="team-shield" src="' + escapeHtml(youShield) + '" alt=""><div class="score-name">' + escapeHtml(youName) + '</div><div class="score-num">' + live.myGoals + '</div></div>';
   var oppSideHtml = '<div class="score-side"><img class="team-shield" src="' + escapeHtml(teamShieldPath(oppName)) + '" alt=""><div class="score-name">' + escapeHtml(oppName) + '</div><div class="score-num">' + live.oppGoals + '</div></div>';
