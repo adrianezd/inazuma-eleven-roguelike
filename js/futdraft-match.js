@@ -58,6 +58,12 @@ function futDraftGoalEvent(myPlayers) {
 // a alguien con nombre real, en vez de quedar en blanco.
 function futDraftUndraftedPool() {
   var f = G.futdraft;
+  // Modo Carrera puede fijar f.oppGhostPool (careerTeamGhostPool) para
+  // que el rival de Liga anote siempre con su MISMA plantilla fantasma
+  // durante toda la temporada, en vez de un sorteo distinto entre todo
+  // el roster cada vez -- así ese rival puede tener un máximo goleador
+  // propio de verdad que le haga competencia al tuyo.
+  if (f && f.oppGhostPool) return f.oppGhostPool;
   var squadIds = (f && f.squad ? f.squad : []).map(function (p) { return p.id; });
   return ROSTER.filter(function (p) { return squadIds.indexOf(p.id) === -1; });
 }
@@ -248,28 +254,62 @@ function finishFutDraftRegularTime() {
 // pero da tiempo a ver "pases" antes del siguiente gol, a petición
 // explícita ("el partido tiene que ir más lento, para que dé tiempo a
 // verse pases y ocasiones").
+var FUTDRAFT_LINE_POS = ['Portero', 'Defensa', 'Centrocampista', 'Delantero'];
+// Jugador "dueño" del balón ahora mismo -- de tu once real si es tu
+// posesión, o un nombre genérico del rival (no hay plantilla rival real
+// fuera de World Tour) si es la suya. Usado para las tarjetas/lesiones.
+function futDraftBallCarrierPlayer(live, poss) {
+  if (poss.side !== 'me') return { nombre: 'Un jugador del ' + (live.oppSide ? live.oppSide.name : 'rival') };
+  var lineup = (G.career && live.isCareer) ? G.career.lineup : G.futdraft.lineup;
+  if (!lineup) return null;
+  var pos = FUTDRAFT_LINE_POS[poss.line];
+  var candidates = lineup.filter(function (s) { return s.pos === pos; });
+  var pick = (candidates.length ? candidates : lineup)[Math.floor(Math.random() * (candidates.length ? candidates.length : lineup.length))];
+  return pick ? pick.player : null;
+}
 function futDraftAdvancePossession(live) {
   if (!live.poss) live.poss = { side: 'me', line: 1 };
   var p = live.poss;
-  // Más sincronía entre las jugadas y los goles de verdad: si el próximo
-  // gol pendiente es de un equipo y está cerca (a 6 minutos o menos), la
-  // posesión se inclina hacia su ataque, para que el gol llegue tras una
-  // racha de presión en vez de salir de la nada -- a petición explícita
-  // ("más sincronización entre los goles y los tiros a puerta").
+  // Sincronía de verdad entre quién tiene el balón y quién marca -- a
+  // petición explícita ("a veces tiene el balón el rival y de repente
+  // pone que hay gol mío"): si el próximo gol pendiente está a 2 minutos
+  // o menos, la posesión pasa a ser DE VERDAD de ese equipo (no solo más
+  // probable), así el gol siempre llega con el balón ya en su sitio. Más
+  // lejos (hasta 6 minutos) solo se inclina la probabilidad, para que la
+  // racha de presión se note venir.
   var nextGoal = live.pending[0];
-  var biasSide = (nextGoal && nextGoal.minute - live.minute <= 6) ? nextGoal.side : null;
+  var minutesToGoal = nextGoal ? nextGoal.minute - live.minute : 99;
+  if (nextGoal && minutesToGoal <= 2 && p.side !== nextGoal.side) { p.side = nextGoal.side; p.line = 2; }
+  var biasSide = minutesToGoal <= 6 ? (nextGoal && nextGoal.side) : null;
   var attacking = p.side === biasSide;
   var towardsGoal = Math.random() < (attacking ? 0.8 : 0.6);
   if (towardsGoal) p.line = clamp(p.line + (Math.random() < 0.5 ? -1 : 1), 0, 3);
-  // Ocasión / tiro a puerta sin gol (el balón se asoma a la portería y
-  // vuelve): pasa con más frecuencia cuando se acerca el gol de verdad,
-  // así hay tiros de verdad antes del tanto, no solo el que anota.
-  if (p.line === 3 && Math.random() < (attacking ? 0.55 : 0.3)) {
-    live.shotSide = p.side;
-    live.shotUntil = Date.now() + 550;
-  }
+  // Al perder el balón, pasa a la defensa (línea 1), nunca directo al
+  // portero contrario -- a petición explícita ("el balón no puede ir de
+  // portero a portero rival"): con línea 0 en las dos posesiones
+  // seguidas (justo antes de perderlo y justo al ganarlo) el balón
+  // saltaba de una portería a la otra de golpe en el mismo tick.
   var turnoverChance = p.line === 3 ? (attacking ? 0.06 : 0.22) : 0.09;
-  if (Math.random() < turnoverChance) { p.side = p.side === 'me' ? 'opp' : 'me'; p.line = 0; }
+  if (Math.random() < turnoverChance) { p.side = p.side === 'me' ? 'opp' : 'me'; p.line = 1; }
+
+  // Posesión real (a petición explícita, "mete posesión"): un tanto por
+  // cada tick para el equipo que tiene el balón ahora mismo.
+  if (!live.poss_ticks) live.poss_ticks = { me: 0, opp: 0 };
+  live.poss_ticks[p.side]++;
+
+  // Tarjetas y lesiones durante el partido (a petición explícita, "más
+  // tarjetas, lesiones"): sucesos cosméticos poco frecuentes, con el
+  // jugador que tiene el balón como protagonista (tiene sentido: quien
+  // más toca el balón es quien más entradas recibe o sufre). Se guardan
+  // en live.cards para enseñarlos en el resumen de debajo del marcador.
+  if (!live.cards) live.cards = [];
+  var scoreboardPlayer = futDraftBallCarrierPlayer(live, p);
+  if (scoreboardPlayer && Math.random() < 0.012) {
+    var isRed = Math.random() < 0.15;
+    live.cards.push({ side: p.side, minute: Math.round(live.minute), type: isRed ? 'red' : 'yellow', name: scoreboardPlayer.nombre });
+  } else if (scoreboardPlayer && Math.random() < 0.006) {
+    live.cards.push({ side: p.side, minute: Math.round(live.minute), type: 'injury', name: scoreboardPlayer.nombre });
+  }
 }
 function futDraftApplyGoalEvent(live, ev, isDots) {
   if (ev.side === 'me') live.myGoals++; else live.oppGoals++;
@@ -334,6 +374,11 @@ function futDraftLiveTick() {
       return;
     }
     live.done = true;
+    // Posesión y tarjetas/lesiones para el resumen de la pantalla de
+    // resultado (renderFutDraftMatchResult) -- guardado aparte en vez de
+    // en cada lastMatchResult (que se construye en 6 sitios distintos
+    // según el modo) para no tener que tocarlos todos uno a uno.
+    G.futdraft.lastLiveStats = isDots ? { cards: live.cards || [], poss_ticks: live.poss_ticks || { me: 0, opp: 0 } } : null;
     setTimeout(live.onFinish, 500);
   } else {
     setTimeout(futDraftLiveTick, isDots ? 420 : 150);
@@ -363,6 +408,7 @@ window.futDraftSkipLive = function () {
     live.minute = 120;
   }
   live.done = true;
+  G.futdraft.lastLiveStats = live.visualMode === 'dots' ? { cards: live.cards || [], poss_ticks: live.poss_ticks || { me: 0, opp: 0 } } : null;
   live.onFinish();
 };
 
@@ -500,6 +546,27 @@ function futDraftNudgeDotsState(state) {
     });
   });
 }
+// Resumen debajo del campo: posesión (real, según qué equipo ha tenido
+// el balón más ticks) y tarjetas/lesiones ocurridas -- a petición
+// explícita ("haz que en el resumen de partido abajo, haya tarjetas, y
+// posesión, mete eso").
+function futDraftMatchStatsHtml(live) {
+  if (!live) return '';
+  var t = live.poss_ticks || { me: 0, opp: 0 };
+  var total = t.me + t.opp;
+  var myPct = total ? Math.round((t.me / total) * 100) : 50;
+  var cardsHtml = (live.cards || []).slice().reverse().map(function (c) {
+    var icon = c.type === 'red' ? '🟥' : c.type === 'yellow' ? '🟨' : '🩹';
+    var label = c.type === 'red' ? 'roja' : c.type === 'yellow' ? 'amarilla' : 'se resiente';
+    return '<div class="futdraft-timeline-row' + (c.side === 'opp' ? ' futdraft-timeline-row-opp' : '') + '"><span class="futdraft-timeline-minute">' + c.minute + '\'</span><span>' + icon + ' ' + escapeHtml(c.name) + ' — ' + label + '</span></div>';
+  }).join('');
+  return '<div class="panel">' +
+    '<h3 style="margin-bottom:6px">Posesión</h3>' +
+    '<div class="mana-bar" style="margin-bottom:4px"><div class="mana-fill" style="width:' + myPct + '%"></div></div>' +
+    '<p class="dim small center-text">' + myPct + '% - ' + (100 - myPct) + '%</p>' +
+    (cardsHtml ? '<h3 style="margin:10px 0 6px">Incidencias</h3><div class="futdraft-timeline">' + cardsHtml + '</div>' : '') +
+  '</div>';
+}
 function futDraftPitchDotsHtml(live) {
   if (!live.dotsState) live.dotsState = futDraftBuildDotsState(live);
   var poss = live.poss || { side: live.lastGoalSide === 'opp' ? 'opp' : 'me', line: 1 };
@@ -522,13 +589,14 @@ function futDraftPitchDotsHtml(live) {
   var activeList = (poss.side === 'me' ? meDots : oppDots).filter(function (d) { return d.active; });
   var ballDot = activeList.length ? activeList[Math.floor(Math.random() * activeList.length)] : null;
   var inGoal = live.goalBall && Date.now() < live.goalBall.until;
-  var inShot = !inGoal && live.shotUntil && Date.now() < live.shotUntil;
-  var ballX = inGoal ? live.goalBall.x : inShot ? (live.shotSide === 'me' ? 92 : 8) : (ballDot ? ballDot.x + (poss.side === 'me' ? 4 : -4) : 50);
-  var ballY = inGoal ? live.goalBall.y : inShot ? 50 : (ballDot ? ballDot.y : 50);
+  var ballX = inGoal ? live.goalBall.x : (ballDot ? ballDot.x + (poss.side === 'me' ? 4 : -4) : 50);
+  var ballY = inGoal ? live.goalBall.y : (ballDot ? ballDot.y : 50);
   live.dotsBall = { x: ballX, y: ballY };
 
   var dotsHtml = meDots.map(function (d) { return pitchDotHtml(d, 'me'); }).join('') + oppDots.map(function (d) { return pitchDotHtml(d, 'opp'); }).join('');
-  var flashHtml = (live.lastGoalSide && live.goalFlashUntil && Date.now() < live.goalFlashUntil) ? '<div class="pitch-goal-flash pitch-goal-flash-' + live.lastGoalSide + '">' + (live.lastGoalSide === 'me' ? '¡GOOOL! ⚽' : 'Gol rival ⚽') + '</div>' : (inShot ? '<div class="pitch-shot-flash">¡Tiro! 🥅</div>' : '');
+  // Solo se avisa en pantalla de los goles, no de cada tiro -- a
+  // petición explícita ("que no salga tiro en pantalla, solo los goles").
+  var flashHtml = (live.lastGoalSide && live.goalFlashUntil && Date.now() < live.goalFlashUntil) ? '<div class="pitch-goal-flash pitch-goal-flash-' + live.lastGoalSide + '">' + (live.lastGoalSide === 'me' ? '¡GOOOL! ⚽' : 'Gol rival ⚽') + '</div>' : '';
   return '<div class="pitch pitch-dots-field pitch-dots-field-h">' +
     '<div class="pitch-dots-field-stripes pitch-dots-field-stripes-h"></div>' +
     '<div class="pitch-crowd pitch-crowd-left"></div><div class="pitch-crowd pitch-crowd-right"></div>' +
@@ -570,24 +638,16 @@ function futDraftDotsRefresh(live) {
   var activeList = (poss.side === 'me' ? state.me : state.opp).filter(function (d) { return d.active; });
   var ballDot = activeList.length ? activeList[Math.floor(Math.random() * activeList.length)] : null;
   var inGoal = live.goalBall && Date.now() < live.goalBall.until;
-  var inShot = !inGoal && live.shotUntil && Date.now() < live.shotUntil;
   var ball = field.querySelector('.pitch-ball');
   if (ball) {
     if (inGoal) {
       ball.style.left = live.goalBall.x.toFixed(1) + '%';
       ball.style.top = live.goalBall.y.toFixed(1) + '%';
-    } else if (inShot) {
-      ball.style.left = (live.shotSide === 'me' ? 92 : 8) + '%';
-      ball.style.top = '50%';
     } else if (ballDot) {
       ball.style.left = (ballDot.x + (poss.side === 'me' ? 4 : -4)).toFixed(1) + '%';
       ball.style.top = ballDot.y.toFixed(1) + '%';
     }
   }
-  var shotFlashWanted = !!inShot;
-  var shotFlashEl = field.querySelector('.pitch-shot-flash');
-  if (shotFlashWanted && !shotFlashEl && !field.querySelector('.pitch-goal-flash')) { render(); return; }
-  if (!shotFlashWanted && shotFlashEl) shotFlashEl.remove();
   var flashWanted = !!(live.lastGoalSide && live.goalFlashUntil && Date.now() < live.goalFlashUntil);
   var flashEl = field.querySelector('.pitch-goal-flash');
   if (flashWanted && !flashEl) { render(); return; }
@@ -649,7 +709,7 @@ function renderFutDraftLive() {
       '<div class="turn-indicator">' + futDraftLiveIndicatorText(live) + '</div>' +
       (live.inExtraTime && live.minute <= 91 ? '<p class="dim small center-text">Empate al término del tiempo reglamentario: se juega la prórroga.</p>' : '') +
       (live.modifier && live.modifier !== 'ninguno' ? '<p class="dim small center-text">🌦️ ' + FUTDRAFT_MODIFIERS_BY_ID[live.modifier].name + ': ' + FUTDRAFT_MODIFIERS_BY_ID[live.modifier].desc + '</p>' : '') +
-      (live.visualMode === 'dots' ? '<div class="panel">' + futDraftPitchDotsHtml(live) + '</div>' : '') +
+      (live.visualMode === 'dots' ? '<div class="panel">' + futDraftPitchDotsHtml(live) + '</div>' + futDraftMatchStatsHtml(live) : '') +
       '<div class="panel">' +
         '<div class="futdraft-timeline" data-count="' + live.revealed.length + '">' + (logHtml || '<p class="dim small center-text">Aún no ha pasado nada…</p>') + '</div>' +
       '</div>' +

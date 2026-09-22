@@ -764,7 +764,7 @@ function renderJugadorSetup() {
         clubItems +
       '</div>' +
       '<div class="panel">' +
-        '<button class="btn btn-primary btn-block" ' + (canConfirm ? '' : 'disabled') + ' onclick="actionConfirmJugadorSetup()">Confirmar identidad</button>' +
+        '<button class="btn btn-primary btn-block" ' + (canConfirm ? '' : 'disabled') + ' onclick="actionConfirmJugadorSetup()">Listo</button>' +
       '</div>' +
     '</div>'
   );

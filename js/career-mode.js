@@ -209,6 +209,14 @@ var CAREER_MODE_STARTER_IDS = ['r41', 'r170', 'r67', 'r264', 'r267', 'r263', 'r2
 // Boar/Franky/Chameleon/Wolf -- Jimmy Mach (r66) es el único suplente
 // original que se queda.
 var CAREER_MODE_BENCH_IDS = ['r270', 'r271', 'r272', 'r66', 'r57'];
+// Plantilla "Raimon": el once real de la temporada 1 (mismos ids que el
+// Modo Mundial, pero aquí con su media REAL del roster, sin aplanar) más
+// Jude Sharp, Bobby Shearer y Erik Eagle de banquillo (se unen más tarde
+// en la historia real) -- a petición explícita ("si eliges raimon tienes
+// al 11 del raimon, y a erik, bobby, jude... y empiezas con ellos y su
+// puntuación real del roster").
+var CAREER_MODE_RAIMON_STARTER_IDS = ['r01', 'r03', 'r06', 'r49', 'r12', 'r46', 'r47', 'r178', 'r48', 'r02', 'r05'];
+var CAREER_MODE_RAIMON_BENCH_IDS = ['r41', 'r04', 'r16', 'r10', 'r40'];
 var CAREER_MODE_DEFAULT_FORMATION = '433';
 // Modo "Plantilla aleatoria" (selector en renderCareerSetup, a petición
 // explícita: "un modo aleatorio, con un equipo de 16 aleatorio donde
@@ -680,6 +688,10 @@ function careerBuildLeague(division, divisionTeams) {
     results: schedule.map(function (fixtures) { return fixtures.map(function () { return null; }); }),
     matchdayIndex: 0,
     stats: { scorers: {}, assists: {} },
+    // Plantilla "fantasma" de cada rival, ver careerTeamGhostPool -- se
+    // rellena la primera vez que ese equipo mete un gol y se queda fija
+    // toda la temporada.
+    ghostSquads: {},
     // Ver careerMaybeAwardLeagueFinish -- evita dar el premio de fin de
     // Liga más de una vez si se repasa la pantalla de Jornada.
     finishBonusAwarded: false
@@ -889,7 +901,9 @@ function careerFreshState(choices) {
   // mano) o aleatoria (careerRandomSquadIds, sorteada una vez aquí al
   // confirmar la carrera y ya fija para siempre, igual que el resto de
   // elecciones de creación).
-  var squadIds = choices.squadMode === 'random' ? careerRandomSquadIds() : { starterIds: CAREER_MODE_STARTER_IDS, benchIds: CAREER_MODE_BENCH_IDS };
+  var squadIds = choices.squadMode === 'random' ? careerRandomSquadIds()
+    : choices.squadMode === 'raimon' ? { starterIds: CAREER_MODE_RAIMON_STARTER_IDS, benchIds: CAREER_MODE_RAIMON_BENCH_IDS }
+    : { starterIds: CAREER_MODE_STARTER_IDS, benchIds: CAREER_MODE_BENCH_IDS };
   var starters = careerModeRoster(squadIds.starterIds);
   // Arrancas en Segunda División por defecto, a petición explícita.
   var division = 2;
@@ -1247,7 +1261,7 @@ window.actionNewCareerInSlot = function (slot) {
 // explícita ("un equipo por defecto que es el que hay ahora, y un modo
 // aleatorio... todo esto con desplegable junto al resto de opciones").
 window.actionSetCareerSetupSquadMode = function (mode) {
-  if (mode !== 'default' && mode !== 'random') return;
+  if (mode !== 'default' && mode !== 'random' && mode !== 'raimon') return;
   G.careerSetupChoices.squadMode = mode;
   render();
 };
@@ -1327,10 +1341,11 @@ function renderCareerSetup() {
   // Plantilla inicial: desplegable, a petición explícita ("un equipo por
   // defecto que es el que hay ahora, y un modo aleatorio... todo esto
   // con desplegable junto al resto de opciones").
-  var squadMode = choices.squadMode === 'random' ? 'random' : 'default';
+  var squadMode = (choices.squadMode === 'random' || choices.squadMode === 'raimon') ? choices.squadMode : 'default';
   var squadModeOptionsHtml =
     '<option value="default"' + (squadMode === 'default' ? ' selected' : '') + '>Por defecto (la plantilla de siempre)</option>' +
-    '<option value="random"' + (squadMode === 'random' ? ' selected' : '') + '>Aleatoria (16 jugadores de 82 o menos)</option>';
+    '<option value="random"' + (squadMode === 'random' ? ' selected' : '') + '>Aleatoria (16 jugadores de 82 o menos)</option>' +
+    '<option value="raimon"' + (squadMode === 'raimon' ? ' selected' : '') + '>Raimon (el once real, con Jude/Bobby/Erik de refuerzo)</option>';
   // Nombre/escudo de TU club, a petición explícita ("elige nombre de
   // club (cualquiera) y escudo de club entre los que hay desbloqueados"):
   // el escudo sale de los mismos que ya desbloqueas en la Máquina de
@@ -3236,6 +3251,27 @@ function careerGhostPool(c) {
   var myIds = c.lineup.map(function (s) { return s.player.id; }).concat(c.bench.map(function (p) { return p.id; }));
   return ROSTER.filter(function (p) { return myIds.indexOf(p.id) === -1; });
 }
+// Plantilla fantasma FIJA por equipo rival, no todo el roster suelto de
+// golpe -- a petición explícita ("haz que sea más complicado ganar el
+// máximo goleador... eso no tiene sentido"). Antes cada gol rival salía
+// de un sorteo entre TODO el roster (300+ jugadores) sin ninguna
+// continuidad, así que ningún rival concreto acumulaba goles de verdad
+// en toda la temporada y tu delantero (que juega y marca cada semana)
+// ganaba el Pichichi casi seguro, quedases donde quedases en la tabla.
+// Ahora cada equipo tiene sus 16 jugadores fantasma fijos para toda la
+// temporada (elegidos una vez, cacheados en league.ghostSquads), así que
+// un rival de verdad puede tener su propio máximo goleador consistente
+// semana a semana y hacerte competencia real.
+function careerTeamGhostPool(c, league, teamIdx) {
+  league.ghostSquads = league.ghostSquads || {};
+  if (league.ghostSquads[teamIdx]) return league.ghostSquads[teamIdx];
+  var myIds = c.lineup.map(function (s) { return s.player.id; }).concat(c.bench.map(function (p) { return p.id; }));
+  var pool = ROSTER.filter(function (p) { return myIds.indexOf(p.id) === -1; });
+  var shuffled = pool.slice().sort(function () { return Math.random() - 0.5; });
+  var squad = shuffled.slice(0, 16);
+  league.ghostSquads[teamIdx] = squad;
+  return squad;
+}
 
 // Genera goleador (y asistente, si toca) para cada gol de un marcador ya
 // decidido y los suma a league.stats (de ESTA temporada) -- mismo
@@ -3250,9 +3286,8 @@ function careerRecordMatchGoals(c, league, homeIdx, awayIdx, homeGoals, awayGoal
   var homeLabel = homeIdx === 0 ? 'Tu equipo' : league.teamNames[homeIdx];
   var awayLabel = awayIdx === 0 ? 'Tu equipo' : league.teamNames[awayIdx];
   var myPlayers = c.lineup.map(function (s) { return s.player; });
-  var ghostPool = careerGhostPool(c);
-  var homePool = homeIdx === 0 ? myPlayers : ghostPool;
-  var awayPool = awayIdx === 0 ? myPlayers : ghostPool;
+  var homePool = homeIdx === 0 ? myPlayers : careerTeamGhostPool(c, league, homeIdx);
+  var awayPool = awayIdx === 0 ? myPlayers : careerTeamGhostPool(c, league, awayIdx);
   var homeEvents = [], awayEvents = [];
   for (var i = 0; i < homeGoals; i++) homeEvents.push(futDraftGoalEvent(homePool));
   for (var j = 0; j < awayGoals; j++) awayEvents.push(futDraftGoalEvent(awayPool));
@@ -3829,7 +3864,11 @@ window.actionSimulateCareerMatchday = function (visualMode) {
   // petición explícita ("no puede meter gol alguien en el equipo
   // contrario al que estoy jugando, un jugador que yo tengo en mi equipo").
   var careerStyleMods = careerPlayStyleModifiers(c);
-  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna', styleAtkMult: careerStyleMods.atk, styleDefMult: careerStyleMods.def, teamScoreOverride: careerMatchTeamScore(c) };
+  // oppGhostPool: el rival anota SIEMPRE con su misma plantilla fantasma
+  // de toda la temporada (careerTeamGhostPool), no un sorteo distinto
+  // entre todo el roster cada partido -- para que su máximo goleador
+  // pueda hacerte competencia real por la Bota de Oro.
+  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna', styleAtkMult: careerStyleMods.atk, styleDefMult: careerStyleMods.def, teamScoreOverride: careerMatchTeamScore(c), oppGhostPool: careerTeamGhostPool(c, league, oppIdx) };
   var sim = futDraftSimulateMatchCore(careerRivalPowerWithForm(oppName, league.table, oppIdx));
   G.futdraft.live = {
     oppSide: { name: oppName }, modifier: sim.modifier,

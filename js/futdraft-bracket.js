@@ -152,6 +152,11 @@ function renderFutDraftMatchResult() {
         '</div>' +
       '</div>'
     : '<p class="dim small center-text">Partido sin goles en el tiempo reglamentario.</p>';
+  // Posesión y tarjetas del partido (solo si se jugó con Jugar/puntitos,
+  // ver G.futdraft.lastLiveStats en js/futdraft-match.js) -- a petición
+  // explícita ("en el resumen de partido abajo, haya tarjetas, y
+  // posesión").
+  var statsHtml = futDraftMatchStatsHtml(G.futdraft.lastLiveStats);
   var youSideHtml = '<div class="score-side"><img class="team-shield" src="' + escapeHtml(youShield) + '" alt=""><div class="score-name">' + escapeHtml(youName) + '</div><div class="score-num">' + r.myGoals + '</div></div>';
   var oppSideHtml = '<div class="score-side"><img class="team-shield" src="' + escapeHtml(r.oppShield) + '" alt=""><div class="score-name">' + escapeHtml(r.oppName) + '</div><div class="score-num">' + r.oppGoals + '</div></div>';
   return (
@@ -167,6 +172,7 @@ function renderFutDraftMatchResult() {
         weatherHtml + penaltyHtml +
       '</div>' +
       timelineHtml +
+      statsHtml +
       (r.isWorldTour
         ? '<button class="btn btn-primary btn-block mt" onclick="continueWorldTourMatch()">Continuar</button>'
         : r.isCareer
