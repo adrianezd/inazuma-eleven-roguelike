@@ -364,8 +364,17 @@ function futDraftLiveLogHtml(live) {
 var PITCH_DOT_TEAM_COLORS = { me: ['#4ecdc4', '#1f8f86'], opp: ['#ff6b7a', '#c92c48'] };
 function pitchDotHtml(d, side) {
   var pal = PITCH_DOT_TEAM_COLORS[side];
-  var style = 'background:radial-gradient(circle at 35% 28%,' + pal[0] + ',' + pal[1] + ');left:' + d.x.toFixed(1) + '%;top:' + d.y.toFixed(1) + '%';
-  return '<div class="pitch-dot pitch-dot-' + side + (d.active ? ' pitch-dot-active' : '') + '" style="' + style + '"><span>' + d.num + '</span></div>';
+  var posStyle = 'left:' + d.x.toFixed(1) + '%;top:' + d.y.toFixed(1) + '%';
+  // Tu equipo se ve con la cara real del jugador (avatarHtml, con sus
+  // iniciales de respaldo si no tiene sprite, igual que en el resto de
+  // pantallas) -- a petición explícita. El rival no tiene jugadores
+  // individuales asignados (solo cuenta por línea), así que se queda
+  // como puntito de color liso.
+  if (side === 'me' && d.player) {
+    return '<div class="pitch-dot pitch-dot-face pitch-dot-' + side + (d.active ? ' pitch-dot-active' : '') + '" data-dot="' + side + d.num + '" style="' + posStyle + '">' + avatarHtml(d.player) + '</div>';
+  }
+  var style = posStyle + ';background:radial-gradient(circle at 35% 28%,' + pal[0] + ',' + pal[1] + ')';
+  return '<div class="pitch-dot pitch-dot-' + side + (d.active ? ' pitch-dot-active' : '') + '" data-dot="' + side + d.num + '" style="' + style + '"><span>' + d.num + '</span></div>';
 }
 // Columna (posición horizontal, 0-100%) de cada línea -- "me" defiende la
 // portería izquierda y ataca hacia la derecha, "opp" al revés, como en la
@@ -374,11 +383,16 @@ function pitchDotHtml(d, side) {
 // 2=centrocampista,3=delantero.
 var WT_LINE_X_ME = [7, 25, 44, 66];
 var WT_LINE_X_OPP = [93, 75, 56, 34];
-function futDraftLineSlots(count, seed) {
-  // Reparte `count` jugadores en vertical (6%-94%) con un pequeño
-  // temblor aleatorio en cada refresco, para que no se vean nunca del
-  // todo quietos -- ver petición explícita ("que los puntitos se muevan
-  // por el campo").
+
+// Estado persistente de los puntitos: se calcula UNA vez al empezar el
+// partido (futDraftBuildDotsState) y luego solo se les da un empujoncito
+// pequeño y correlacionado en cada tick (futDraftNudgeDotsState), nunca
+// se recolocan desde cero -- antes se recalculaba tod0 al azar en cada
+// refresco (cada ~400ms), lo que además de no tener ninguna relación
+// entre un fotograma y el siguiente, obligaba a repintar toda la pantalla
+// de golpe y se veía como un parpadeo constante, a petición explícita
+// ("que haya correlación entre las jugadas, y que no haya parpadeos").
+function futDraftLineSlots(count) {
   var ys = [];
   for (var i = 0; i < count; i++) {
     var base = count === 1 ? 50 : 12 + (i * (76 / (count - 1)));
@@ -386,14 +400,10 @@ function futDraftLineSlots(count, seed) {
   }
   return ys;
 }
-function futDraftPitchDotsHtml(live) {
+function futDraftBuildDotsState(live) {
   var lineup = (G.career && live.isCareer) ? G.career.lineup : G.futdraft.lineup;
   var formation = FUTDRAFT_FORMATIONS.find(function (f) { return f.id === (G.career && live.isCareer ? G.career.formation : G.futdraft.formation); });
   var order = ['Portero', 'Defensa', 'Centrocampista', 'Delantero'];
-  // Línea con el balón ahora mismo, según la posesión simulada
-  // (futDraftAdvancePossession).
-  var poss = live.poss || { side: live.lastGoalSide === 'opp' ? 'opp' : 'me', line: 1 };
-
   // Dorsales con sentido: 1 para el portero, luego defensas,
   // centrocampistas y delanteros -- a petición explícita ("mi portero no
   // puede ser el dorsal 12").
@@ -402,7 +412,7 @@ function futDraftPitchDotsHtml(live) {
     var slots = lineup.filter(function (s) { return s.pos === pos; });
     var ys = futDraftLineSlots(slots.length);
     slots.forEach(function (s, i) {
-      meDots.push({ x: clamp(WT_LINE_X_ME[lineIdx] + rand(-4, 4), 3, 50), y: ys[i], num: num++, line: lineIdx, active: poss.side === 'me' && poss.line === lineIdx });
+      meDots.push({ x: clamp(WT_LINE_X_ME[lineIdx] + rand(-4, 4), 3, 50), y: ys[i], num: num++, line: lineIdx, player: s.player });
     });
   });
   var oppNum = 1;
@@ -411,9 +421,29 @@ function futDraftPitchDotsHtml(live) {
     var count = row ? row.count : 0;
     var ys = futDraftLineSlots(count);
     for (var i = 0; i < count; i++) {
-      oppDots.push({ x: clamp(WT_LINE_X_OPP[lineIdx] + rand(-4, 4), 50, 97), y: ys[i], num: oppNum++, line: lineIdx, active: poss.side === 'opp' && poss.line === lineIdx });
+      oppDots.push({ x: clamp(WT_LINE_X_OPP[lineIdx] + rand(-4, 4), 50, 97), y: ys[i], num: oppNum++, line: lineIdx });
     }
   });
+  return { me: meDots, opp: oppDots };
+}
+// Empujoncito pequeño (±1.5% por tick) hacia la columna de su línea, con
+// algo de deriva vertical -- movimiento continuo y suave en vez de saltos.
+function futDraftNudgeDotsState(state) {
+  ['me', 'opp'].forEach(function (side) {
+    var colX = side === 'me' ? WT_LINE_X_ME : WT_LINE_X_OPP;
+    state[side].forEach(function (d) {
+      var targetX = colX[d.line];
+      d.x = clamp(d.x + (targetX - d.x) * 0.15 + rand(-15, 15) / 10, 3, 97);
+      d.y = clamp(d.y + rand(-15, 15) / 10, 5, 95);
+    });
+  });
+}
+function futDraftPitchDotsHtml(live) {
+  if (!live.dotsState) live.dotsState = futDraftBuildDotsState(live);
+  var poss = live.poss || { side: live.lastGoalSide === 'opp' ? 'opp' : 'me', line: 1 };
+  var meDots = live.dotsState.me, oppDots = live.dotsState.opp;
+  meDots.forEach(function (d) { d.active = poss.side === 'me' && poss.line === d.line; });
+  oppDots.forEach(function (d) { d.active = poss.side === 'opp' && poss.line === d.line; });
 
   // El balón sigue a un jugador activo al azar de la línea con posesión
   // (si hay varios, se elige uno cada refresco, dando sensación de pase
@@ -422,6 +452,7 @@ function futDraftPitchDotsHtml(live) {
   var ballDot = activeList.length ? activeList[Math.floor(Math.random() * activeList.length)] : null;
   var ballX = ballDot ? ballDot.x + (poss.side === 'me' ? 4 : -4) : 50;
   var ballY = ballDot ? ballDot.y : 50;
+  live.dotsBall = { x: ballX, y: ballY };
 
   var dotsHtml = meDots.map(function (d) { return pitchDotHtml(d, 'me'); }).join('') + oppDots.map(function (d) { return pitchDotHtml(d, 'opp'); }).join('');
   var flashHtml = (live.lastGoalSide && live.goalFlashUntil && Date.now() < live.goalFlashUntil) ? '<div class="pitch-goal-flash pitch-goal-flash-' + live.lastGoalSide + '">' + (live.lastGoalSide === 'me' ? '¡GOOOL! ⚽' : 'Gol rival ⚽') + '</div>' : '';
@@ -437,8 +468,54 @@ function futDraftPitchDotsHtml(live) {
     flashHtml +
   '</div>';
 }
+// Refresco in situ del campo de puntitos: mueve cada puntito y el balón
+// tocando solo su left/top (la transición CSS del propio elemento hace
+// el resto), sin volver a pintar nada -- antes se llamaba a render()
+// completo en cada tick (~400ms), lo que además de parpadear impedía
+// que la transición de posición se animara (un elemento nuevo no puede
+// "venir desde" donde estaba el viejo). Solo cae a render() completo si
+// la pantalla aún no existe o cambia el número de puntitos.
+function futDraftDotsRefresh(live) {
+  var field = document.querySelector('.pitch-dots-field');
+  var state = live.dotsState;
+  if (!field || !state) { render(); return; }
+  var total = state.me.length + state.opp.length;
+  if (field.querySelectorAll('.pitch-dot').length !== total) { render(); return; }
+  futDraftNudgeDotsState(state);
+  var poss = live.poss || { side: 'me', line: 1 };
+  state.me.forEach(function (d) { d.active = poss.side === 'me' && poss.line === d.line; });
+  state.opp.forEach(function (d) { d.active = poss.side === 'opp' && poss.line === d.line; });
+  function place(d, side) {
+    var el = field.querySelector('[data-dot="' + side + d.num + '"]');
+    if (!el) return;
+    el.style.left = d.x.toFixed(1) + '%';
+    el.style.top = d.y.toFixed(1) + '%';
+    el.classList.toggle('pitch-dot-active', !!d.active);
+  }
+  state.me.forEach(function (d) { place(d, 'me'); });
+  state.opp.forEach(function (d) { place(d, 'opp'); });
+  var activeList = (poss.side === 'me' ? state.me : state.opp).filter(function (d) { return d.active; });
+  var ballDot = activeList.length ? activeList[Math.floor(Math.random() * activeList.length)] : null;
+  var ball = field.querySelector('.pitch-ball');
+  if (ball && ballDot) {
+    ball.style.left = (ballDot.x + (poss.side === 'me' ? 4 : -4)).toFixed(1) + '%';
+    ball.style.top = ballDot.y.toFixed(1) + '%';
+  }
+  var flashWanted = !!(live.lastGoalSide && live.goalFlashUntil && Date.now() < live.goalFlashUntil);
+  var flashEl = field.querySelector('.pitch-goal-flash');
+  if (flashWanted && !flashEl) { render(); return; }
+  if (!flashWanted && flashEl) flashEl.remove();
+  var indicator = document.querySelector('.turn-indicator');
+  if (indicator) indicator.textContent = futDraftLiveIndicatorText(live);
+  var nums = document.querySelectorAll('.score-num');
+  if (nums.length >= 2) {
+    var youAreHome = live.youAreHome !== false;
+    nums[0].textContent = youAreHome ? live.myGoals : live.oppGoals;
+    nums[1].textContent = youAreHome ? live.oppGoals : live.myGoals;
+  }
+}
 function futDraftLiveRefresh(live) {
-  if (live.visualMode === 'dots') { render(); return; }
+  if (live.visualMode === 'dots') { futDraftDotsRefresh(live); return; }
   var root = document.querySelector('.screen[data-live]');
   var nums = root ? root.querySelectorAll('.score-num') : [];
   var indicator = root ? root.querySelector('.turn-indicator') : null;

@@ -43,10 +43,19 @@ var WORLD_TOUR_RAIMON_BASE = wtSquad([
   ['r03', 50], ['r06', 48], ['r49', 47], ['r12', 46],                   // Nathan, Jack, Jim, Tod
   ['r46', 51], ['r47', 49], ['r178', 50], ['r48', 49],                  // Steve, Timmy, Sam, Max
   ['r02', 58], ['r05', 53],                                             // Axel, Kevin
-  // banquillo: se unen más adelante o son reservas de la época
-  ['r04', 54], ['r16', 45], ['r10', 48],                                // Jude, Bobby, Erik
+  // banquillo: reservas de la época (Jude, Erik y Bobby NO están aquí --
+  // se unen más adelante como en la historia real, ver
+  // WORLD_TOUR_STORY_JOINS).
   ['r40', 46]                                                           // Willy
 ]);
+// Fichajes que se unen solos durante el recorrido, como en la historia
+// real (a petición explícita): Jude Sharp llega al ganar a la Royal
+// Academy, Erik Eagle y Bobby Shearer al ganar al Kirkwood -- solo si
+// empezaste con el Raimon (con un equipo aleatorio no aplica).
+var WORLD_TOUR_STORY_JOINS = {
+  royal: [['r04', 54, 'Jude Sharp']],
+  kirkwood: [['r10', 48, 'Erik Eagle'], ['r16', 45, 'Bobby Shearer']]
+};
 // Personajes "especiales" (secundarios/de refuerzo, no del once fijo de
 // la temporada 1): Austin Hobbs, Shadow Cimmerian y Paul Peabody -- a
 // petición explícita, con un botón propio para incluirlos o no en el
@@ -141,14 +150,25 @@ function worldTourSetupMode() { return G.worldTourSetupMode === 'duro' ? 'duro' 
 window.actionSetWorldTourSetupMode = function (mode) { G.worldTourSetupMode = mode; render(); };
 function worldTourSetupSpecials() { return G.worldTourSetupSpecials !== false; }
 window.actionSetWorldTourSpecials = function (on) { G.worldTourSetupSpecials = !!on; render(); };
+function worldTourSetupSquadType() { return G.worldTourSetupSquadType === 'random' ? 'random' : 'raimon'; }
+window.actionSetWorldTourSquadType = function (type) { G.worldTourSetupSquadType = type; render(); };
 function renderWorldTourSetup() {
   var mode = worldTourSetupMode();
+  var squadType = worldTourSetupSquadType();
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
         '<h2 class="panel-title mt">Modo Mundial</h2>' +
         '<p class="dim small">Recorre los equipos de Inazuma Eleven 1, empezando por el Occult. Cada victoria sube un poco tu media y te deja fichar a un jugador real del equipo derrotado (como un draft).</p>' +
+      '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:8px" class="center-text">Tu equipo</h3>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-tiny' + (squadType === 'raimon' ? ' active' : '') + '" onclick="actionSetWorldTourSquadType(\'raimon\')">Raimon</button>' +
+          '<button class="btn btn-tiny' + (squadType === 'random' ? ' active' : '') + '" onclick="actionSetWorldTourSquadType(\'random\')">Aleatorio</button>' +
+        '</div>' +
+        '<p class="dim small center-text mt">' + (squadType === 'raimon' ? 'El once base de Inazuma Eleven 1, todos por debajo de 75 de media.' : '11 jugadores al azar de toda la franquicia, también por debajo de 75.') + '</p>' +
       '</div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:8px" class="center-text">Al perder</h3>' +
@@ -158,6 +178,7 @@ function renderWorldTourSetup() {
         '</div>' +
         '<p class="dim small center-text mt">' + (mode === 'libre' ? 'Si pierdes, te quedas en el mismo rival y lo repites.' : 'Si pierdes, vuelves al Occult, pero tu plantilla conserva la media y los fichajes ganados.') + '</p>' +
       '</div>' +
+      (squadType === 'raimon' ? (
       '<div class="panel">' +
         '<h3 style="margin-bottom:8px" class="center-text">Especiales</h3>' +
         '<div class="btn-row" style="justify-content:center">' +
@@ -165,14 +186,9 @@ function renderWorldTourSetup() {
           '<button class="btn btn-tiny' + (!worldTourSetupSpecials() ? ' active' : '') + '" onclick="actionSetWorldTourSpecials(false)">No</button>' +
         '</div>' +
         '<p class="dim small center-text mt">Austin Hobbs, Shadow Cimmerian y Paul Peabody en el banquillo del Raimon (personajes secundarios de refuerzo).</p>' +
-      '</div>' +
+      '</div>') : '') +
       '<div class="panel center-text">' +
-        '<button class="btn btn-primary btn-block" onclick="actionStartWorldTour(false)">Raimon</button>' +
-        '<p class="dim small">El once base de Inazuma Eleven 1, todos por debajo de 75 de media.</p>' +
-      '</div>' +
-      '<div class="panel center-text">' +
-        '<button class="btn btn-outline btn-block" onclick="actionStartWorldTour(true)">Aleatorio</button>' +
-        '<p class="dim small">11 jugadores al azar de toda la franquicia, también por debajo de 75.</p>' +
+        '<button class="btn btn-primary btn-block" onclick="actionStartWorldTour()">Listo</button>' +
       '</div>' +
     '</div>'
   );
@@ -181,11 +197,13 @@ window.actionGoWorldTour = function () {
   G.screen = 'worldTourSetup';
   render();
 };
-window.actionStartWorldTour = function (useRandom) {
+window.actionStartWorldTour = function () {
+  var useRandom = worldTourSetupSquadType() === 'random';
   var squad = useRandom ? worldTourRandomSquad() : WORLD_TOUR_RAIMON_BASE.map(function (p) { return Object.assign({}, p); });
   if (!useRandom && worldTourSetupSpecials()) squad = squad.concat(WORLD_TOUR_RAIMON_SPECIALS.map(function (p) { return Object.assign({}, p); }));
   G.worldTour = {
     squad: squad,
+    isRaimon: !useRandom,
     formationId: WORLD_TOUR_DEFAULT_FORMATION,
     captainId: null,
     stageIndex: 0,
@@ -194,7 +212,8 @@ window.actionStartWorldTour = function (useRandom) {
     won: false,
     mode: worldTourSetupMode(),
     lastLossMessage: null,
-    lastEventMessage: null
+    lastEventMessage: null,
+    lastJoinMessage: null
   };
   G.screen = 'worldTourHome';
   render();
@@ -293,7 +312,7 @@ function renderWorldTourLineup() {
     var benchItemsHtml = f.bench.map(function (p) {
       var cls = 'pitch-player futdraft-swappable' + (f.swapSelectedId === p.id ? ' selected' : '');
       var injured = p.injuredMatches > 0;
-      return '<div class="' + cls + '" onclick="selectFutDraftPlayer(\'' + p.id + '\')">' + (f.captainId === p.id ? '<span class="futdraft-captain-badge" title="Capitán">👑</span>' : '') + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + (injured ? ' 🤕' : '') + '</span><span class="dim small">' + Math.round(futDraftPlayerScore(p)) + '</span></div>';
+      return '<div class="' + cls + '" onclick="selectFutDraftPlayer(\'' + p.id + '\')">' + (f.captainId === p.id ? '<span class="futdraft-captain-badge" title="Capitán">👑</span>' : '') + pitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + (injured ? ' 🤕' : '') + '</span></div>';
     }).join('');
     benchHtml = '<div class="panel"><h3 style="margin-bottom:4px">Banquillo</h3><div class="pitch-row" style="justify-content:center;flex-wrap:wrap">' + benchItemsHtml + '</div></div>';
   }
@@ -344,6 +363,7 @@ function renderWorldTourHome() {
       '</div>' +
       (wt.lastLossMessage ? '<div class="panel center-text"><p class="dim small">' + escapeHtml(wt.lastLossMessage) + '</p></div>' : '') +
       (wt.lastEventMessage ? '<div class="panel center-text"><p class="dim small">' + escapeHtml(wt.lastEventMessage) + '</p></div>' : '') +
+      (wt.lastJoinMessage ? '<div class="panel center-text"><p class="dim small">' + escapeHtml(wt.lastJoinMessage) + '</p></div>' : '') +
       careerMatchupCardHtml(stage.name, 'Rival ' + (wt.stageIndex + 1)) +
       '<div class="panel">' +
         '<div class="match-mode-picker">' +
@@ -425,6 +445,18 @@ function finishWorldTourMatch() {
     wt.pendingDraft = { stageId: stage.id, options: options };
     wt.stageIndex++;
     wt.lastLossMessage = null;
+    // Fichajes que se unen solos, como en la historia real (solo con el
+    // Raimon) -- a petición explícita.
+    if (wt.isRaimon && WORLD_TOUR_STORY_JOINS[stage.id]) {
+      var joinedNames = [];
+      WORLD_TOUR_STORY_JOINS[stage.id].forEach(function (j) {
+        var already = wt.squad.some(function (p) { return p.id === j[0]; });
+        if (already) return;
+        var clone = wtFromRoster(j[0], j[1]);
+        if (clone) { wt.squad.push(clone); joinedNames.push(j[2]); }
+      });
+      if (joinedNames.length) wt.lastJoinMessage = '🆕 ' + joinedNames.join(' y ') + ' se une' + (joinedNames.length > 1 ? 'n' : '') + ' al equipo.';
+    }
     if (wt.stageIndex >= WORLD_TOUR_STAGES.length) wt.won = true;
   } else if (wt.mode === 'duro' && wt.stageIndex > 0) {
     // Racha: pierdes, vuelves al Occult -- pero la plantilla conserva

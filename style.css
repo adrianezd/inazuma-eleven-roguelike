@@ -745,6 +745,14 @@ a { color: var(--accent); }
   animation: pitchDotPulse 0.9s ease-in-out infinite;
   box-shadow: 0 3px 6px rgba(0,0,0,0.6), inset 0 -3px 4px rgba(0,0,0,0.3), inset 0 2px 3px rgba(255,255,255,0.4), 0 0 0 4px rgba(255,255,255,0.18);
 }
+/* Puntitos de tu equipo con la cara real (avatarHtml) en vez de color
+   liso, a petición explícita ("que salga la cara de cada jugador real...
+   y si no, las iniciales, como en otros modos"). */
+.pitch-dot-face { background: transparent; border-color: var(--accent-2); padding: 0; }
+.pitch-dot-face .avatar { width: 100%; height: 100%; }
+.pitch-dot-face .avatar-pos-badge { width: 11px; height: 11px; bottom: -1px; right: -1px; }
+.pitch-dot-face .avatar-initials { font-size: 0.6rem; }
+.pitch-dot-face.pitch-dot-active { border-color: #fff; }
 @keyframes pitchDotPulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.2); } }
 .pitch-ball {
   position: absolute; transform: translate(-50%, -50%);
