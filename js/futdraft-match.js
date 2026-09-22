@@ -241,17 +241,35 @@ function finishFutDraftRegularTime() {
 // simulación activa -- así, si el jugador navega a otro sitio (o salta la
 // simulación), la cadena se para sola en vez de seguir mutando estado en
 // segundo plano.
+// Simulación visual de posesión/pases para el modo "Jugar" (puntitos):
+// un paseo aleatorio entre las 4 líneas de un equipo (0=portero...
+// 3=delantera) que a veces pierde el balón hacia el otro equipo -- solo
+// estético (no cambia el resultado, que ya sale de futDraftBuildTimeline),
+// pero da tiempo a ver "pases" antes del siguiente gol, a petición
+// explícita ("el partido tiene que ir más lento, para que dé tiempo a
+// verse pases y ocasiones").
+function futDraftAdvancePossession(live) {
+  if (!live.poss) live.poss = { side: 'me', line: 1 };
+  var p = live.poss;
+  var towardsGoal = Math.random() < 0.6;
+  if (towardsGoal) p.line = clamp(p.line + (Math.random() < 0.5 ? -1 : 1), 0, 3);
+  var turnoverChance = p.line === 3 ? 0.22 : 0.09;
+  if (Math.random() < turnoverChance) { p.side = p.side === 'me' ? 'opp' : 'me'; p.line = 0; }
+}
 function futDraftLiveTick() {
   if (G.screen !== 'futdraftLive' || !G.futdraft || !G.futdraft.live || G.futdraft.live.done) return;
   var live = G.futdraft.live;
+  var isDots = live.visualMode === 'dots';
   var cap = live.inExtraTime ? 120 : 90;
-  live.minute = Math.min(cap, live.minute + rand(3, 7));
+  live.minute = Math.min(cap, live.minute + (isDots ? rand(1, 2.4) : rand(3, 7)));
+  if (isDots) futDraftAdvancePossession(live);
   while (live.pending.length && live.pending[0].minute <= live.minute) {
     var ev = live.pending.shift();
     if (ev.side === 'me') live.myGoals++; else live.oppGoals++;
     live.revealed.push(ev);
     live.lastGoalSide = ev.side;
     live.goalFlashUntil = Date.now() + 1600;
+    if (isDots) live.poss = { side: ev.side, line: 3 };
     if (typeof playGoalSound === 'function') playGoalSound();
   }
   futDraftLiveRefresh(live);
@@ -269,7 +287,7 @@ function futDraftLiveTick() {
     live.done = true;
     setTimeout(live.onFinish, 500);
   } else {
-    setTimeout(futDraftLiveTick, 150);
+    setTimeout(futDraftLiveTick, isDots ? 420 : 150);
   }
 }
 
@@ -339,18 +357,13 @@ function futDraftLiveLogHtml(live) {
 // que acaba de recibir el gol -- a petición explícita ("no quiero que
 // enseñes los personajes, quiero que enseñes puntitos con los dorsales...
 // y también el balón"). Solo para live.visualMode === 'dots'.
-// Un color por línea (no solo "yo/rival" liso) para que el campo se lea
-// de un vistazo, con la camiseta de tu equipo si la tienes elegida --
-// mismo criterio de colores que el resto de la app (--fuego/--bosque/...
-// no aplica aquí, así que se define su propia paleta por posición).
-var PITCH_DOT_POS_COLORS = {
-  Portero: ['#ffd166', '#c9960a'],
-  Defensa: ['#4ecdc4', '#1f8f86'],
-  Centrocampista: ['#5cff9e', '#27a35e'],
-  Delantero: ['#ff5c7a', '#c92c48']
-};
-function pitchDotHtml(pos, num, side, pulsing) {
-  var pal = PITCH_DOT_POS_COLORS[pos] || ['#4ecdc4', '#1f8f86'];
+// Un color sólido por EQUIPO (no por posición): a petición explícita
+// ("que haya un equipo de un color los 11 puntos y el otro de otro
+// color"), para distinguir de un vistazo quién es quién sin tener que
+// fijarse en el número.
+var PITCH_DOT_TEAM_COLORS = { me: ['#4ecdc4', '#1f8f86'], opp: ['#ff6b7a', '#c92c48'] };
+function pitchDotHtml(num, side, pulsing) {
+  var pal = PITCH_DOT_TEAM_COLORS[side];
   var style = 'background:radial-gradient(circle at 35% 28%,' + pal[0] + ',' + pal[1] + ')';
   return '<div class="pitch-dot pitch-dot-' + side + (pulsing ? ' pitch-dot-active' : '') + '" style="' + style + '"><span>' + num + '</span></div>';
 }
@@ -358,13 +371,16 @@ function futDraftPitchDotsHtml(live) {
   var lineup = (G.career && live.isCareer) ? G.career.lineup : G.futdraft.lineup;
   var formation = FUTDRAFT_FORMATIONS.find(function (f) { return f.id === (G.career && live.isCareer ? G.career.formation : G.futdraft.formation); });
   var order = ['Delantero', 'Centrocampista', 'Defensa', 'Portero'];
-  // El "puntito activo" (el que lleva el balón) es aproximado: el de la
-  // línea más ofensiva del lado al que se dirige la jugada, solo estético.
-  var activeSide = live.lastGoalSide === 'opp' ? 'opp' : 'me';
+  // Línea con el balón ahora mismo, según la posesión simulada
+  // (futDraftAdvancePossession) -- line 3=delantera...0=portero, para
+  // que el balón se vea pasar de línea en línea como una jugada real en
+  // vez de saltar directo de un extremo al otro.
+  var poss = live.poss || { side: live.lastGoalSide === 'opp' ? 'opp' : 'me', line: 1 };
   var n = 1;
   var rowsHtml = order.map(function (pos, idx) {
     var slots = lineup.filter(function (s) { return s.pos === pos; });
-    var dotsHtml = slots.map(function () { var isActive = activeSide === 'me' && idx === 0; return pitchDotHtml(pos, n++, 'me', isActive); }).join('');
+    var rowLine = 3 - idx; // Delantero=3, Centro=2, Defensa=1, Portero=0
+    var dotsHtml = slots.map(function () { var isActive = poss.side === 'me' && poss.line === rowLine; return pitchDotHtml(n++, 'me', isActive); }).join('');
     return '<div class="pitch-dots-row">' + dotsHtml + '</div>';
   }).join('');
   var m = 1;
@@ -372,11 +388,15 @@ function futDraftPitchDotsHtml(live) {
   var oppRowsHtml = oppOrder.map(function (pos, idx) {
     var row = formation.rows.find(function (r) { return r.pos === pos; });
     var count = row ? row.count : 0;
+    var rowLine = idx === 0 ? 0 : idx === oppOrder.length - 1 ? 3 : idx;
     var dotsHtml = '';
-    for (var i = 0; i < count; i++) { var isActive = activeSide === 'opp' && idx === oppOrder.length - 1; dotsHtml += pitchDotHtml(pos, m++, 'opp', isActive); }
+    for (var i = 0; i < count; i++) { var isActive = poss.side === 'opp' && poss.line === rowLine; dotsHtml += pitchDotHtml(m++, 'opp', isActive); }
     return '<div class="pitch-dots-row">' + dotsHtml + '</div>';
   }).join('');
-  var ballSide = live.lastGoalSide === 'opp' ? 'top' : (live.lastGoalSide === 'me' ? 'bottom' : 'mid');
+  // 8 franjas verticales (4 líneas por lado) en vez de solo 3 zonas fijas,
+  // para que el balón se mueva con más matiz entre pases.
+  var zoneIndex = poss.side === 'opp' ? poss.line : (7 - poss.line);
+  var ballPct = 8 + zoneIndex * (84 / 7);
   var flashHtml = (live.lastGoalSide && live.goalFlashUntil && Date.now() < live.goalFlashUntil) ? '<div class="pitch-goal-flash pitch-goal-flash-' + live.lastGoalSide + '">' + (live.lastGoalSide === 'me' ? '¡GOOOL! ⚽' : 'Gol rival ⚽') + '</div>' : '';
   return '<div class="pitch pitch-dots-field">' +
     '<div class="pitch-dots-field-stripes"></div>' +
@@ -385,7 +405,7 @@ function futDraftPitchDotsHtml(live) {
     '<div class="pitch-side-label pitch-side-label-top">Rival</div>' +
     oppRowsHtml +
     '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div><div class="pitch-center-dot"></div>' +
-    '<div class="pitch-ball pitch-ball-' + ballSide + '"><span class="pitch-ball-shadow"></span>⚽</div>' +
+    '<div class="pitch-ball" style="top:' + ballPct + '%"><span class="pitch-ball-shadow"></span>⚽</div>' +
     rowsHtml +
     '<div class="pitch-side-label pitch-side-label-bottom">Tu equipo</div>' +
     flashHtml +

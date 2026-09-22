@@ -10,119 +10,88 @@
    plantilla. Usa el mismo motor de partido que el resto de la app
    (futDraftSimulateMatchCore/futDraftLiveTick), con los 3 mismos botones
    que en Jornada de Modo Carrera: Jugar (puntitos), Simular, Saltar.
-   Los jugadores de este modo son objetos ligeros propios (no vienen del
-   ROSTER principal, ids con prefijo "wt_") pero con los mismos campos
-   que necesita el motor de partido (tiro/pase/defensa/especial/tipo/
-   posicion/nombre), así que avatarHtml y el resto de piezas reutilizadas
-   funcionan igual, solo que sin sprite (caen en las iniciales).
+   Los jugadores de este modo son SIEMPRE clones de personajes reales del
+   ROSTER (mismo id/nombre/tipo/posicion/sprite, así que avatarHtml enseña
+   su cara real) con las 4 stats aplanadas a un "ovr" propio de este modo
+   (independiente de sus stats reales, para mantener el tope de 75 al
+   empezar) -- a petición explícita ("tienen que salir con caras y
+   basarse en los personajes ya existentes del roster").
    --------------------------------------------------------------------- */
 
-function wtPlayer(id, nombre, posicion, tipo, ovr) {
-  return { id: id, nombre: nombre, posicion: posicion, tipo: tipo, tiro: ovr, pase: ovr, defensa: ovr, especial: ovr, hissatsu: [], sprite: null };
+function wtFromRoster(id, ovr) {
+  var src = ROSTER.find(function (p) { return p.id === id; });
+  if (!src) return null;
+  return { id: src.id, nombre: src.nombre, posicion: src.posicion, tipo: src.tipo, sprite: src.sprite || null, hissatsu: src.hissatsu || [], tiro: ovr, pase: ovr, defensa: ovr, especial: ovr };
+}
+function wtSquad(defs) {
+  return defs.map(function (d) { return wtFromRoster(d[0], d[1]); }).filter(Boolean);
 }
 
 // Once base del Raimon en Inazuma Eleven 1 (temporada 1, antes de que el
-// equipo se hiciera fuerte de verdad): todos por debajo de 75 de media,
-// a petición explícita.
-var WORLD_TOUR_RAIMON_BASE = [
-  wtPlayer('wt_r_gk', 'Mark Evans', 'Portero', 'Bosque', 52),
-  wtPlayer('wt_r_df1', 'Nathan Swift', 'Defensa', 'Montaña', 50),
-  wtPlayer('wt_r_df2', 'Jack Wallside', 'Defensa', 'Montaña', 48),
-  wtPlayer('wt_r_df3', 'Shawn Froste', 'Defensa', 'Viento', 49),
-  wtPlayer('wt_r_df4', 'Bobby Shearer', 'Defensa', 'Viento', 46),
-  wtPlayer('wt_r_mf1', 'Jude Sharp', 'Centrocampista', 'Viento', 56),
-  wtPlayer('wt_r_mf2', 'Caleb Stonewall', 'Centrocampista', 'Montaña', 51),
-  wtPlayer('wt_r_mf3', 'Erik Eagle', 'Centrocampista', 'Viento', 50),
-  wtPlayer('wt_r_mf4', 'Jordan Greenway', 'Centrocampista', 'Bosque', 49),
-  wtPlayer('wt_r_fw1', 'Axel Blaze', 'Delantero', 'Fuego', 58),
-  wtPlayer('wt_r_fw2', 'Kevin Dragonfly', 'Delantero', 'Fuego', 53)
-];
+// equipo se hiciera fuerte de verdad): jugadores reales del roster, todos
+// por debajo de 75 de media, a petición explícita.
+var WORLD_TOUR_RAIMON_BASE = wtSquad([
+  ['r01', 52], ['r03', 50], ['r06', 48], ['r08', 49], ['r16', 46],
+  ['r04', 56], ['r07', 51], ['r10', 50], ['r15', 49],
+  ['r02', 58], ['r05', 53]
+]);
 
 // 7 equipos de Inazuma Eleven 1, en el orden real del torneo Fútbol
-// Frontier (Occult primero, Kirkwood el más fuerte al final) -- nombres
-// reales de la franquicia (ver roster-data.js: Talisman/Wolf/Mask del
-// Occult, Boar/Chicken del Wild, Feldt del Brain, etc.); el Otaku no
-// tiene jugadores con nombre propio en el roster, así que los suyos son
-// genéricos ("estimados", como el resto de rellenos de esta app). Todos
-// los equipos rivales también están por debajo de 75 de fuerza.
+// Frontier (Occult primero, Kirkwood el más fuerte al final). Todos los
+// jugadores son reales del roster (Occult y Wild tienen su once completo
+// ya cargado -- ver roster-data.js ids r80-r101 y r83-r93; Brain, Royal
+// Academy, Zeus y Kirkwood tienen los que aparecen con su nombre real en
+// el roster, menos de 11 en algunos casos). El Otaku es la única
+// excepción: no tiene ningún personaje con nombre propio en el roster,
+// así que sus 5 jugadores son genéricos (estimados, como el resto de
+// rellenos de esta app) y sin cara.
 var WORLD_TOUR_STAGES = [
   {
     id: 'occult', name: 'Occult', power: 48,
-    players: [
-      wtPlayer('wt_occult_1', 'Talisman', 'Delantero', 'Bosque', 60),
-      wtPlayer('wt_occult_2', 'Wolf', 'Centrocampista', 'Montaña', 58),
-      wtPlayer('wt_occult_3', 'Mask', 'Portero', 'Viento', 57),
-      wtPlayer('wt_occult_4', 'Styx', 'Defensa', 'Montaña', 54),
-      wtPlayer('wt_occult_5', 'Caronte', 'Defensa', 'Montaña', 51)
-    ]
+    players: wtSquad([['r82', 60], ['r81', 58], ['r80', 57], ['r94', 54], ['r98', 53], ['r95', 52]])
   },
   {
     id: 'wild', name: 'Wild', power: 53,
-    players: [
-      wtPlayer('wt_wild_1', 'Boar', 'Portero', 'Fuego', 59),
-      wtPlayer('wt_wild_2', 'Chicken', 'Centrocampista', 'Viento', 60),
-      wtPlayer('wt_wild_3', 'Cheetah', 'Delantero', 'Fuego', 61),
-      wtPlayer('wt_wild_4', 'Rhino', 'Defensa', 'Montaña', 55),
-      wtPlayer('wt_wild_5', 'Panther', 'Defensa', 'Bosque', 53)
-    ]
+    players: wtSquad([['r83', 59], ['r84', 60], ['r93', 61], ['r91', 58], ['r89', 56], ['r85', 55]])
   },
   {
     id: 'brain', name: 'Brain', power: 58,
-    players: [
-      wtPlayer('wt_brain_1', 'Feldt', 'Portero', 'Viento', 61),
-      wtPlayer('wt_brain_2', 'Francis Tell', 'Centrocampista', 'Bosque', 62),
-      wtPlayer('wt_brain_3', 'Samuel Buster', 'Centrocampista', 'Fuego', 63),
-      wtPlayer('wt_brain_4', 'Philip Marvel', 'Defensa', 'Montaña', 58),
-      wtPlayer('wt_brain_5', 'Jonathan Seller', 'Defensa', 'Montaña', 56)
-    ]
+    players: wtSquad([['r151', 61], ['r154', 62], ['r155', 63], ['r152', 58], ['r156', 60], ['r157', 59]])
   },
   {
     id: 'otaku', name: 'Otaku', power: 45,
     players: [
-      wtPlayer('wt_otaku_1', 'Capitán Pixel', 'Portero', 'Viento', 50),
-      wtPlayer('wt_otaku_2', 'Byte', 'Centrocampista', 'Bosque', 52),
-      wtPlayer('wt_otaku_3', 'Cursor', 'Delantero', 'Fuego', 53),
-      wtPlayer('wt_otaku_4', 'Comodín', 'Defensa', 'Montaña', 49),
-      wtPlayer('wt_otaku_5', 'Renderman', 'Defensa', 'Viento', 48)
+      wtPlayerGeneric('wt_otaku_1', 'Capitán Pixel', 'Portero', 'Viento', 50),
+      wtPlayerGeneric('wt_otaku_2', 'Byte', 'Centrocampista', 'Bosque', 52),
+      wtPlayerGeneric('wt_otaku_3', 'Cursor', 'Delantero', 'Fuego', 53),
+      wtPlayerGeneric('wt_otaku_4', 'Comodín', 'Defensa', 'Montaña', 49),
+      wtPlayerGeneric('wt_otaku_5', 'Renderman', 'Defensa', 'Viento', 48)
     ]
   },
   {
     id: 'royal', name: 'Royal Academy', power: 65,
-    players: [
-      wtPlayer('wt_royal_1', 'Ray Dark', 'Centrocampista', 'Viento', 67),
-      wtPlayer('wt_royal_2', 'Derek Swing', 'Centrocampista', 'Bosque', 66),
-      wtPlayer('wt_royal_3', 'Daniel Hatch', 'Defensa', 'Montaña', 63),
-      wtPlayer('wt_royal_4', 'Dracon Yale', 'Defensa', 'Montaña', 62),
-      wtPlayer('wt_royal_5', 'Rex Remington', 'Defensa', 'Fuego', 61)
-    ]
+    players: wtSquad([['r134', 67], ['r186', 66], ['r231', 63], ['r232', 65], ['r185', 64]])
   },
   {
     id: 'zeus', name: 'Zeus', power: 69,
-    players: [
-      wtPlayer('wt_zeus_1', 'Byron Love', 'Centrocampista', 'Fuego', 70),
-      wtPlayer('wt_zeus_2', 'Hera', 'Centrocampista', 'Viento', 68),
-      wtPlayer('wt_zeus_3', 'Apollo', 'Defensa', 'Fuego', 66),
-      wtPlayer('wt_zeus_4', 'Perseo', 'Defensa', 'Montaña', 65),
-      wtPlayer('wt_zeus_5', 'Paul Siddon', 'Portero', 'Bosque', 64)
-    ]
+    players: wtSquad([['r20', 70], ['r109', 68], ['r102', 66], ['r105', 65], ['r51', 64], ['r243', 67]])
   },
   {
     id: 'kirkwood', name: 'Kirkwood', power: 73,
-    players: [
-      wtPlayer('wt_kirk_1', 'Bay Laurel', 'Centrocampista', 'Montaña', 74),
-      wtPlayer('wt_kirk_2', 'Langford Ash', 'Centrocampista', 'Bosque', 72),
-      wtPlayer('wt_kirk_3', 'Malcolm Night', 'Defensa', 'Montaña', 69),
-      wtPlayer('wt_kirk_4', 'Bram Ndefinido', 'Defensa', 'Viento', 68),
-      wtPlayer('wt_kirk_5', 'Ozrock Stonewall', 'Delantero', 'Fuego', 71)
-    ]
+    players: wtSquad([['r236', 74], ['r237', 72], ['r238', 71]])
   }
 ];
+// Jugador genérico (solo el Otaku, que no tiene personajes con nombre
+// propio en el roster) -- sin sprite, avatarHtml cae en sus iniciales.
+function wtPlayerGeneric(id, nombre, posicion, tipo, ovr) {
+  return { id: id, nombre: nombre, posicion: posicion, tipo: tipo, sprite: null, hissatsu: [], tiro: ovr, pase: ovr, defensa: ovr, especial: ovr };
+}
 
 // Cuánto sube la media de TODO tu equipo tras cada victoria (aparte del
 // jugador nuevo que fichas por el draft) -- a petición explícita ("tus
 // jugadores subirán un poquito de media").
 var WORLD_TOUR_WIN_BOOST = 1.2;
-var WORLD_TOUR_FORMATION = '442';
+var WORLD_TOUR_DEFAULT_FORMATION = '442';
 
 function worldTourRandomSquad() {
   // Equipo aleatorio: 11 jugadores reales del ROSTER (cualquier equipo,
@@ -139,38 +108,11 @@ function worldTourRandomSquad() {
       var src = pool[i];
       var realOvr = (src.tiro + src.pase + src.defensa + src.especial) / 4;
       var ovr = Math.round(clamp(realOvr * 0.68, 42, 74));
-      squad.push(wtPlayer('wt_rand_' + src.id, src.nombre, pos, src.tipo, ovr));
+      var clone = wtFromRoster(src.id, ovr);
+      if (clone) squad.push(clone);
     }
   });
   return squad;
-}
-
-window.actionGoWorldTour = function () {
-  G.screen = 'worldTourSetup';
-  render();
-};
-window.actionStartWorldTour = function (useRandom) {
-  G.worldTour = {
-    squad: useRandom ? worldTourRandomSquad() : WORLD_TOUR_RAIMON_BASE.map(function (p) { return Object.assign({}, p); }),
-    stageIndex: 0,
-    cleared: [],
-    pendingDraft: null,
-    won: false,
-    mode: worldTourSetupMode(),
-    lastLossMessage: null
-  };
-  G.screen = 'worldTourHome';
-  render();
-};
-
-function worldTourLineup() {
-  return futDraftBuildLineup(G.worldTour.squad.slice(0, 11), WORLD_TOUR_FORMATION);
-}
-function worldTourTeamScore() {
-  return futDraftTeamScore(worldTourLineup(), null);
-}
-function worldTourStage() {
-  return WORLD_TOUR_STAGES[G.worldTour.stageIndex];
 }
 
 // Modo al perder (a petición explícita, "haz dos modos... que se
@@ -187,7 +129,7 @@ function renderWorldTourSetup() {
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionBackToMenu()">Volver</button>' +
         '<h2 class="panel-title mt">Modo Mundial</h2>' +
-        '<p class="dim small">Recorre los equipos de Inazuma Eleven 1, empezando por el Occult. Cada victoria sube un poco tu media y te deja fichar a un jugador del equipo derrotado, elegido al azar entre varios (como un draft).</p>' +
+        '<p class="dim small">Recorre los equipos de Inazuma Eleven 1, empezando por el Occult. Cada victoria sube un poco tu media y te deja fichar a un jugador real del equipo derrotado (como un draft).</p>' +
       '</div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:8px" class="center-text">Al perder</h3>' +
@@ -208,6 +150,113 @@ function renderWorldTourSetup() {
     '</div>'
   );
 }
+window.actionGoWorldTour = function () {
+  G.screen = 'worldTourSetup';
+  render();
+};
+window.actionStartWorldTour = function (useRandom) {
+  var squad = useRandom ? worldTourRandomSquad() : WORLD_TOUR_RAIMON_BASE.map(function (p) { return Object.assign({}, p); });
+  G.worldTour = {
+    squad: squad,
+    formationId: WORLD_TOUR_DEFAULT_FORMATION,
+    captainId: null,
+    stageIndex: 0,
+    cleared: [],
+    pendingDraft: null,
+    won: false,
+    mode: worldTourSetupMode(),
+    lastLossMessage: null
+  };
+  G.screen = 'worldTourHome';
+  render();
+};
+
+function worldTourLineup() {
+  return futDraftBuildLineup(G.worldTour.squad.slice(0, 11), G.worldTour.formationId || WORLD_TOUR_DEFAULT_FORMATION);
+}
+function worldTourTeamScore() {
+  return futDraftTeamScore(worldTourLineup(), G.worldTour.captainId || null);
+}
+function worldTourStage() {
+  return WORLD_TOUR_STAGES[G.worldTour.stageIndex];
+}
+
+// ===== Alineación ("Prepartido"): misma pantalla y mecánica que "Tu
+// once inicial" de FutDraft (renderFutDraftTeam/selectFutDraftPlayer/
+// setFutDraftFormation), puenteando G.futdraft con la plantilla del
+// Modo Mundial -- a petición explícita ("que tenga el formato que hay
+// en mi plantilla... poner alineación, prepartido, elegir bien a los
+// jugadores"). Al salir se guarda de vuelta en G.worldTour.
+window.actionGoWorldTourLineup = function () {
+  var wt = G.worldTour;
+  G.futdraft = {
+    lineup: futDraftBuildLineup(wt.squad.slice(0, 11), wt.formationId || WORLD_TOUR_DEFAULT_FORMATION),
+    bench: wt.squad.slice(11),
+    captainId: wt.captainId || null,
+    formation: wt.formationId || WORLD_TOUR_DEFAULT_FORMATION,
+    mode: 'worldTour',
+    swapSelectedId: null, pickingCaptain: false
+  };
+  G.screen = 'worldTourLineup';
+  render();
+};
+window.actionWorldTourLineupDone = function () {
+  var wt = G.worldTour, f = G.futdraft;
+  wt.squad = f.lineup.map(function (s) { return s.player; }).concat(f.bench);
+  wt.formationId = f.formation;
+  wt.captainId = f.captainId;
+  G.screen = 'worldTourHome';
+  render();
+};
+// Misma pantalla que renderFutDraftTeam (js/futdraft-draft.js), pero con
+// el botón de salida propio del Modo Mundial en vez de "Volver al menú"
+// y sin el pie de compartir/empezar torneo (no aplica aquí).
+function renderWorldTourLineup() {
+  var f = G.futdraft;
+  var hasBench = f.bench.length > 0;
+  var breakdown = futDraftScoreBreakdown(f.lineup, f.captainId);
+  var captain = f.captainId ? f.lineup.find(function (s) { return s.player.id === f.captainId; }) : null;
+  var formationBtns = futDraftAvailableFormations().map(function (ft) {
+    return '<button class="btn-tiny' + (f.formation === ft.id ? ' active' : '') + '" onclick="setFutDraftFormation(\'' + ft.id + '\')">' + ft.name + '</button>';
+  }).join('');
+  var captainHint = !captain
+    ? 'Sin capitán elegido.'
+    : 'Capitán: <strong>' + escapeHtml(captain.player.nombre) + '</strong> (' + (breakdown.captainBonus > 0 ? '+' : '') + breakdown.captainBonus + ' a la puntuación).';
+  var elementCounts = futDraftElementCounts(f);
+  var elementCountsHtml = TYPES.map(function (t) {
+    return '<span class="type-badge type-' + t.toLowerCase().replace('ñ', 'n') + '" style="margin:2px">' + getTypeSymbol(t) + ' ' + elementCounts[t] + '/' + FUTDRAFT_SYNERGY_THRESHOLD + '</span>';
+  }).join(' ');
+  var benchHtml = '';
+  if (hasBench) {
+    var benchItemsHtml = f.bench.map(function (p) {
+      var cls = 'pitch-player futdraft-swappable' + (f.swapSelectedId === p.id ? ' selected' : '');
+      return '<div class="' + cls + '" onclick="selectFutDraftPlayer(\'' + p.id + '\')">' + (f.captainId === p.id ? '<span class="futdraft-captain-badge" title="Capitán">👑</span>' : '') + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
+    }).join('');
+    benchHtml = '<div class="panel"><h3 style="margin-bottom:4px">Banquillo</h3><div class="pitch-row" style="justify-content:center;flex-wrap:wrap">' + benchItemsHtml + '</div></div>';
+  }
+  return (
+    '<div class="screen">' +
+      '<div class="panel center-text">' +
+        '<button class="btn btn-outline btn-block" onclick="actionWorldTourLineupDone()">Listo</button>' +
+        '<h2 class="panel-title mt mb0">Alineación</h2>' +
+        '<p class="dim small">Puntuación de equipo: <strong style="color:var(--accent-2)">' + breakdown.total + '</strong> / 100</p>' +
+        '<p class="dim small">Toca a dos jugadores para cambiarlos.</p>' +
+        '<p class="dim small">' + captainHint + '</p>' +
+        '<button class="btn btn-tiny' + (f.pickingCaptain ? ' active' : '') + '" onclick="toggleFutDraftCaptainMode()">' + (f.pickingCaptain ? 'Toca un titular…' : 'Elegir capitán 👑') + '</button>' +
+      '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:8px">Formación</h3>' +
+        '<div class="view-toggle view-toggle-wrap">' + formationBtns + '</div>' +
+        renderFutDraftLineupPitch(f) +
+      '</div>' +
+      '<div class="panel center-text">' +
+        '<h3 style="margin-bottom:8px">Bonificación de atributo</h3>' +
+        '<div>' + elementCountsHtml + '</div>' +
+      '</div>' +
+      benchHtml +
+    '</div>'
+  );
+}
 
 function renderWorldTourHome() {
   var wt = G.worldTour;
@@ -217,10 +266,8 @@ function renderWorldTourHome() {
         '<h2 class="panel-title mb0">🏆 ¡Recorrido completo!</h2>' +
         '<p class="dim small">Has ganado a los 7 equipos de Inazuma Eleven 1. Media final del equipo: <strong style="color:var(--accent-2)">' + worldTourTeamScore() + '</strong> / 100.</p>' +
       '</div>' +
-      '<div class="panel"><h3 style="margin-bottom:8px">Tu plantilla final (' + wt.squad.length + ')</h3>' +
-        '<div class="pitch-row" style="justify-content:center;flex-wrap:wrap">' + wt.squad.map(function (p) { return '<div class="pitch-player" style="width:60px"><span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>'; }).join('') + '</div>' +
-      '</div>' +
-      '<div class="panel center-text"><button class="btn btn-primary btn-block" onclick="actionGoWorldTour()">Volver a jugar</button><button class="btn btn-outline btn-block mt" onclick="actionBackToMenu()">Menú</button></div>' +
+      '<div class="panel">' + renderFutDraftPitch(wt.squad.slice(0, 11), wt.formationId || WORLD_TOUR_DEFAULT_FORMATION, false) + '</div>' +
+      '<div class="panel center-text"><button class="btn btn-primary btn-block" onclick="actionGoWorldTour()">Repetir</button><button class="btn btn-outline btn-block mt" onclick="actionBackToMenu()">Menú</button></div>' +
     '</div>';
   }
   var stage = worldTourStage();
@@ -240,10 +287,9 @@ function renderWorldTourHome() {
           '<button class="match-mode-card" onclick="actionSimulateWorldTourMatch()"><span class="match-mode-icon">▶️</span><strong>Simular</strong><span class="dim small">Minuto a minuto</span></button>' +
           '<button class="match-mode-card" onclick="actionSkipWorldTourMatch()"><span class="match-mode-icon">⏭️</span><strong>Saltar</strong><span class="dim small">Resultado al momento</span></button>' +
         '</div>' +
+        '<button class="btn btn-outline btn-block mt" onclick="actionGoWorldTourLineup()">Alineación</button>' +
       '</div>' +
-      '<div class="panel"><h3 style="margin-bottom:8px">Tu plantilla</h3>' +
-        '<div class="pitch-row" style="justify-content:center;flex-wrap:wrap">' + wt.squad.map(function (p) { return '<div class="pitch-player" style="width:56px">' + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>'; }).join('') + '</div>' +
-      '</div>' +
+      '<div class="panel"><h3 style="margin-bottom:8px">Tu once</h3>' + renderFutDraftPitch(wt.squad.slice(0, 11), wt.formationId || WORLD_TOUR_DEFAULT_FORMATION, false) + '</div>' +
     '</div>'
   );
 }
@@ -252,8 +298,9 @@ function renderWorldTourHome() {
 // Carrera): puentea G.futdraft con la plantilla del Modo Mundial y
 // reutiliza el motor de FutDraft/Liga tal cual.
 function worldTourBridgeFutdraft() {
+  var wt = G.worldTour;
   var lineup = worldTourLineup();
-  G.futdraft = { lineup: lineup, squad: G.worldTour.squad.slice(), captainId: null, formation: WORLD_TOUR_FORMATION, condition: 'ninguna', teamScoreOverride: futDraftTeamScore(lineup, null) };
+  G.futdraft = { lineup: lineup, squad: wt.squad.slice(), captainId: wt.captainId || null, formation: wt.formationId || WORLD_TOUR_DEFAULT_FORMATION, condition: 'ninguna', teamScoreOverride: futDraftTeamScore(lineup, wt.captainId || null) };
 }
 window.actionSimulateWorldTourMatch = function (visualMode) {
   var stage = worldTourStage();
@@ -352,7 +399,7 @@ function renderWorldTourDraft() {
     '<div class="screen">' +
       '<div class="panel center-text">' +
         '<h2 class="panel-title mb0">🎉 ¡Has ganado!</h2>' +
-        '<p class="dim small">Tu equipo sube +' + WORLD_TOUR_WIN_BOOST + ' de media. Elige a uno de estos 3 jugadores para fichar:</p>' +
+        '<p class="dim small">Tu equipo sube +' + WORLD_TOUR_WIN_BOOST + ' de media. Elige a uno de estos jugadores para fichar:</p>' +
       '</div>' +
       '<div class="panel">' + itemsHtml + '</div>' +
     '</div>'

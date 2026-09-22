@@ -716,7 +716,7 @@ function renderFutDraftTeam() {
   if (hasBench) {
     var benchItemsHtml = f.bench.map(function (p) {
       var cls = 'pitch-player futdraft-swappable' + (f.swapSelectedId === p.id ? ' selected' : '');
-      return '<div class="' + cls + '" onclick="selectFutDraftPlayer(\'' + p.id + '\')">' + (capId === p.id ? '<span class="futdraft-captain-badge" title="Capitán">👑</span>' : '') + pitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
+      return '<div class="' + cls + '" onclick="selectFutDraftPlayer(\'' + p.id + '\')">' + pitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
     }).join('');
     benchHtml =
       '<div class="panel">' +
