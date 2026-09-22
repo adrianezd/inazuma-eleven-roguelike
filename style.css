@@ -780,6 +780,16 @@ a { color: var(--accent); }
 }
 .pitch-goal-flash-me { border: 2px solid var(--accent-2); }
 .pitch-goal-flash-opp { border: 2px solid var(--danger); }
+/* Tiro a puerta sin gol (ocasión): mismo lenguaje visual que el gol pero
+   más discreto y rápido, para que se note la diferencia entre "casi" y
+   "gol" -- a petición explícita ("más sincronización entre los goles y
+   los tiros a puerta"). */
+.pitch-shot-flash {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  z-index: 4; font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 0.95rem;
+  color: #fff; background: rgba(0, 0, 0, 0.55); padding: 5px 12px; border-radius: 999px;
+  white-space: nowrap; animation: pitchGoalFlashPop 0.25s ease-out;
+}
 @keyframes pitchGoalFlashPop { from { transform: translate(-50%, -50%) scale(0.6); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
 /* Selector "Jugar / Simular / Saltar" con tarjetas en vez de botones de
    texto plano, a petición explícita ("mucho más estético"). */

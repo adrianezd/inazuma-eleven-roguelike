@@ -251,9 +251,24 @@ function finishFutDraftRegularTime() {
 function futDraftAdvancePossession(live) {
   if (!live.poss) live.poss = { side: 'me', line: 1 };
   var p = live.poss;
-  var towardsGoal = Math.random() < 0.6;
+  // Más sincronía entre las jugadas y los goles de verdad: si el próximo
+  // gol pendiente es de un equipo y está cerca (a 6 minutos o menos), la
+  // posesión se inclina hacia su ataque, para que el gol llegue tras una
+  // racha de presión en vez de salir de la nada -- a petición explícita
+  // ("más sincronización entre los goles y los tiros a puerta").
+  var nextGoal = live.pending[0];
+  var biasSide = (nextGoal && nextGoal.minute - live.minute <= 6) ? nextGoal.side : null;
+  var attacking = p.side === biasSide;
+  var towardsGoal = Math.random() < (attacking ? 0.8 : 0.6);
   if (towardsGoal) p.line = clamp(p.line + (Math.random() < 0.5 ? -1 : 1), 0, 3);
-  var turnoverChance = p.line === 3 ? 0.22 : 0.09;
+  // Ocasión / tiro a puerta sin gol (el balón se asoma a la portería y
+  // vuelve): pasa con más frecuencia cuando se acerca el gol de verdad,
+  // así hay tiros de verdad antes del tanto, no solo el que anota.
+  if (p.line === 3 && Math.random() < (attacking ? 0.55 : 0.3)) {
+    live.shotSide = p.side;
+    live.shotUntil = Date.now() + 550;
+  }
+  var turnoverChance = p.line === 3 ? (attacking ? 0.06 : 0.22) : 0.09;
   if (Math.random() < turnoverChance) { p.side = p.side === 'me' ? 'opp' : 'me'; p.line = 0; }
 }
 function futDraftApplyGoalEvent(live, ev, isDots) {
@@ -480,8 +495,8 @@ function futDraftNudgeDotsState(state) {
         return;
       }
       var targetX = colX[d.line];
-      d.x = clamp(d.x + (targetX - d.x) * 0.2 + rand(-50, 50) / 10, 3, 97);
-      d.y = clamp(d.y + rand(-50, 50) / 10, 5, 95);
+      d.x = clamp(d.x + (targetX - d.x) * 0.2 + rand(-80, 80) / 10, 3, 97);
+      d.y = clamp(d.y + rand(-80, 80) / 10, 5, 95);
     });
   });
 }
@@ -507,12 +522,13 @@ function futDraftPitchDotsHtml(live) {
   var activeList = (poss.side === 'me' ? meDots : oppDots).filter(function (d) { return d.active; });
   var ballDot = activeList.length ? activeList[Math.floor(Math.random() * activeList.length)] : null;
   var inGoal = live.goalBall && Date.now() < live.goalBall.until;
-  var ballX = inGoal ? live.goalBall.x : (ballDot ? ballDot.x + (poss.side === 'me' ? 4 : -4) : 50);
-  var ballY = inGoal ? live.goalBall.y : (ballDot ? ballDot.y : 50);
+  var inShot = !inGoal && live.shotUntil && Date.now() < live.shotUntil;
+  var ballX = inGoal ? live.goalBall.x : inShot ? (live.shotSide === 'me' ? 92 : 8) : (ballDot ? ballDot.x + (poss.side === 'me' ? 4 : -4) : 50);
+  var ballY = inGoal ? live.goalBall.y : inShot ? 50 : (ballDot ? ballDot.y : 50);
   live.dotsBall = { x: ballX, y: ballY };
 
   var dotsHtml = meDots.map(function (d) { return pitchDotHtml(d, 'me'); }).join('') + oppDots.map(function (d) { return pitchDotHtml(d, 'opp'); }).join('');
-  var flashHtml = (live.lastGoalSide && live.goalFlashUntil && Date.now() < live.goalFlashUntil) ? '<div class="pitch-goal-flash pitch-goal-flash-' + live.lastGoalSide + '">' + (live.lastGoalSide === 'me' ? '¡GOOOL! ⚽' : 'Gol rival ⚽') + '</div>' : '';
+  var flashHtml = (live.lastGoalSide && live.goalFlashUntil && Date.now() < live.goalFlashUntil) ? '<div class="pitch-goal-flash pitch-goal-flash-' + live.lastGoalSide + '">' + (live.lastGoalSide === 'me' ? '¡GOOOL! ⚽' : 'Gol rival ⚽') + '</div>' : (inShot ? '<div class="pitch-shot-flash">¡Tiro! 🥅</div>' : '');
   return '<div class="pitch pitch-dots-field pitch-dots-field-h">' +
     '<div class="pitch-dots-field-stripes pitch-dots-field-stripes-h"></div>' +
     '<div class="pitch-crowd pitch-crowd-left"></div><div class="pitch-crowd pitch-crowd-right"></div>' +
@@ -554,16 +570,24 @@ function futDraftDotsRefresh(live) {
   var activeList = (poss.side === 'me' ? state.me : state.opp).filter(function (d) { return d.active; });
   var ballDot = activeList.length ? activeList[Math.floor(Math.random() * activeList.length)] : null;
   var inGoal = live.goalBall && Date.now() < live.goalBall.until;
+  var inShot = !inGoal && live.shotUntil && Date.now() < live.shotUntil;
   var ball = field.querySelector('.pitch-ball');
   if (ball) {
     if (inGoal) {
       ball.style.left = live.goalBall.x.toFixed(1) + '%';
       ball.style.top = live.goalBall.y.toFixed(1) + '%';
+    } else if (inShot) {
+      ball.style.left = (live.shotSide === 'me' ? 92 : 8) + '%';
+      ball.style.top = '50%';
     } else if (ballDot) {
       ball.style.left = (ballDot.x + (poss.side === 'me' ? 4 : -4)).toFixed(1) + '%';
       ball.style.top = ballDot.y.toFixed(1) + '%';
     }
   }
+  var shotFlashWanted = !!inShot;
+  var shotFlashEl = field.querySelector('.pitch-shot-flash');
+  if (shotFlashWanted && !shotFlashEl && !field.querySelector('.pitch-goal-flash')) { render(); return; }
+  if (!shotFlashWanted && shotFlashEl) shotFlashEl.remove();
   var flashWanted = !!(live.lastGoalSide && live.goalFlashUntil && Date.now() < live.goalFlashUntil);
   var flashEl = field.querySelector('.pitch-goal-flash');
   if (flashWanted && !flashEl) { render(); return; }
