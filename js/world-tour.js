@@ -71,14 +71,37 @@ var WORLD_TOUR_RAIMON_SPECIALS = wtSquad([['r09', 46], ['r39', 45], ['r41', 44]]
 // excepción: no tiene ningún personaje con nombre propio en el roster,
 // así que sus 5 jugadores son genéricos (estimados, como el resto de
 // rellenos de esta app) y sin cara.
+// Orden corregido a petición explícita, con los amistosos y equipos que
+// faltaban: Occult, Inazuma Kids (amistoso), Wild, Umbrella (amistoso),
+// Brain, Otaku, Royal Academy, Shuriken, Farm, Kirkwood y Zeus al final.
 var WORLD_TOUR_STAGES = [
   {
     id: 'occult', name: 'Occult', power: 48,
     players: wtSquad([['r82', 60], ['r81', 58], ['r80', 57], ['r94', 54], ['r98', 53], ['r95', 52]])
   },
   {
+    id: 'inazuma-kids', name: 'Inazuma Kids', power: 40,
+    players: [
+      wtPlayerGeneric('wt_kids_1', 'Kenji', 'Portero', 'Bosque', 42),
+      wtPlayerGeneric('wt_kids_2', 'Taro', 'Centrocampista', 'Viento', 44),
+      wtPlayerGeneric('wt_kids_3', 'Yuto', 'Delantero', 'Fuego', 45),
+      wtPlayerGeneric('wt_kids_4', 'Renji', 'Defensa', 'Montaña', 41),
+      wtPlayerGeneric('wt_kids_5', 'Sora', 'Defensa', 'Bosque', 40)
+    ]
+  },
+  {
     id: 'wild', name: 'Wild', power: 53,
     players: wtSquad([['r83', 59], ['r84', 60], ['r93', 61], ['r91', 58], ['r89', 56], ['r85', 55]])
+  },
+  {
+    id: 'umbrella', name: 'Umbrella', power: 44,
+    players: [
+      wtPlayerGeneric('wt_umb_1', 'Lluvia', 'Portero', 'Viento', 47),
+      wtPlayerGeneric('wt_umb_2', 'Nube', 'Centrocampista', 'Bosque', 48),
+      wtPlayerGeneric('wt_umb_3', 'Tormenta', 'Delantero', 'Montaña', 49),
+      wtPlayerGeneric('wt_umb_4', 'Rocío', 'Defensa', 'Viento', 45),
+      wtPlayerGeneric('wt_umb_5', 'Granizo', 'Defensa', 'Montaña', 44)
+    ]
   },
   {
     id: 'brain', name: 'Brain', power: 58,
@@ -99,12 +122,20 @@ var WORLD_TOUR_STAGES = [
     players: wtSquad([['r134', 67], ['r186', 66], ['r231', 63], ['r232', 65], ['r185', 64]])
   },
   {
-    id: 'zeus', name: 'Zeus', power: 69,
-    players: wtSquad([['r20', 70], ['r109', 68], ['r102', 66], ['r105', 65], ['r51', 64], ['r243', 67]])
+    id: 'shuriken', name: 'Shuriken', power: 68,
+    players: wtSquad([['r163', 69], ['r160', 68], ['r161', 67], ['r158', 65], ['r159', 64], ['r162', 66]])
+  },
+  {
+    id: 'farm', name: 'Farm', power: 70,
+    players: wtSquad([['r167', 71], ['r168', 70], ['r169', 69], ['r165', 67], ['r166', 66], ['r164', 65]])
   },
   {
     id: 'kirkwood', name: 'Kirkwood', power: 73,
     players: wtSquad([['r236', 74], ['r237', 72], ['r238', 71]])
+  },
+  {
+    id: 'zeus', name: 'Zeus', power: 76,
+    players: wtSquad([['r20', 77], ['r109', 75], ['r102', 73], ['r105', 72], ['r51', 71], ['r243', 74]])
   }
 ];
 // Jugador genérico (solo el Otaku, que no tiene personajes con nombre

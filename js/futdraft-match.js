@@ -256,30 +256,57 @@ function futDraftAdvancePossession(live) {
   var turnoverChance = p.line === 3 ? 0.22 : 0.09;
   if (Math.random() < turnoverChance) { p.side = p.side === 'me' ? 'opp' : 'me'; p.line = 0; }
 }
+function futDraftApplyGoalEvent(live, ev, isDots) {
+  if (ev.side === 'me') live.myGoals++; else live.oppGoals++;
+  live.revealed.push(ev);
+  live.lastGoalSide = ev.side;
+  live.goalFlashUntil = Date.now() + 1600;
+  if (isDots) {
+    live.poss = { side: ev.side, line: 3 };
+    // El balón "entra" en la portería justo cuando se marca el gol, en
+    // vez de quedarse a medio camino en la línea de delanteros -- a
+    // petición explícita ("que coincida el gol con justo cuando tira
+    // alguien a puerta").
+    live.goalBall = { x: ev.side === 'me' ? 95 : 5, y: 50, until: Date.now() + 1400 };
+    // Pausa de celebración: unos segundos sin avanzar el marcador antes
+    // de seguir, para que dé tiempo a verlo -- también evita que, con
+    // varios goles muy seguidos, uno se coma la celebración del otro
+    // (antes se procesaban todos los pendientes del mismo tick de golpe
+    // y solo se veía el último), a petición explícita.
+    live.celebrateUntil = Date.now() + 1500;
+  }
+  if (typeof playGoalSound === 'function') playGoalSound();
+}
 function futDraftLiveTick() {
   if (G.screen !== 'futdraftLive' || !G.futdraft || !G.futdraft.live || G.futdraft.live.done) return;
   var live = G.futdraft.live;
   var isDots = live.visualMode === 'dots';
   var cap = live.inExtraTime ? 120 : 90;
+  if (isDots && live.celebrateUntil && Date.now() < live.celebrateUntil) {
+    futDraftLiveRefresh(live);
+    setTimeout(futDraftLiveTick, 250);
+    return;
+  }
   live.minute = Math.min(cap, live.minute + (isDots ? rand(1, 2.4) : rand(3, 7)));
   if (isDots) futDraftAdvancePossession(live);
-  while (live.pending.length && live.pending[0].minute <= live.minute) {
-    var ev = live.pending.shift();
-    if (ev.side === 'me') live.myGoals++; else live.oppGoals++;
-    live.revealed.push(ev);
-    live.lastGoalSide = ev.side;
-    live.goalFlashUntil = Date.now() + 1600;
-    if (isDots) {
-      live.poss = { side: ev.side, line: 3 };
-      // El balón "entra" en la portería justo cuando se marca el gol, en
-      // vez de quedarse a medio camino en la línea de delanteros -- a
-      // petición explícita ("que coincida el gol con justo cuando tira
-      // alguien a puerta").
-      live.goalBall = { x: ev.side === 'me' ? 95 : 5, y: 50, until: Date.now() + 900 };
+  if (isDots) {
+    // Como mucho UN gol por tick, para que cada uno tenga su propia
+    // celebración -- si hay más pendientes en el mismo minuto, se
+    // revelan uno a uno en los siguientes ticks (la pausa de celebración
+    // de arriba ya se encarga de espaciarlos).
+    if (live.pending.length && live.pending[0].minute <= live.minute) {
+      futDraftApplyGoalEvent(live, live.pending.shift(), true);
     }
-    if (typeof playGoalSound === 'function') playGoalSound();
+  } else {
+    while (live.pending.length && live.pending[0].minute <= live.minute) {
+      futDraftApplyGoalEvent(live, live.pending.shift(), false);
+    }
   }
   futDraftLiveRefresh(live);
+  // En puntitos, no se da por acabado mientras queden goles sin revelar
+  // (procesados de uno en uno) aunque ya se haya llegado al 90' -- para
+  // no dejarse celebraciones sin mostrar.
+  if (isDots && live.pending.length) { setTimeout(futDraftLiveTick, 420); return; }
   if (live.minute >= cap) {
     // En la Liga el empate es un resultado válido (allowDraw): no hay
     // prórroga ni penaltis, se queda como está y suma su punto a cada uno.
@@ -436,12 +463,14 @@ function futDraftBuildDotsState(live) {
 // Empujoncito pequeño (±1.5% por tick) hacia la columna de su línea, con
 // algo de deriva vertical -- movimiento continuo y suave en vez de saltos.
 function futDraftNudgeDotsState(state) {
+  // Bastante más recorrido por empujón (antes ±1.5%, ahora ±5%), a
+  // petición explícita ("bastante más movimiento por el campo").
   ['me', 'opp'].forEach(function (side) {
     var colX = side === 'me' ? WT_LINE_X_ME : WT_LINE_X_OPP;
     state[side].forEach(function (d) {
       var targetX = colX[d.line];
-      d.x = clamp(d.x + (targetX - d.x) * 0.15 + rand(-15, 15) / 10, 3, 97);
-      d.y = clamp(d.y + rand(-15, 15) / 10, 5, 95);
+      d.x = clamp(d.x + (targetX - d.x) * 0.2 + rand(-50, 50) / 10, 3, 97);
+      d.y = clamp(d.y + rand(-50, 50) / 10, 5, 95);
     });
   });
 }
