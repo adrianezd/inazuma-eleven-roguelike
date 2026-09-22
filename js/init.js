@@ -25,6 +25,9 @@ if (typeof document !== 'undefined') {
         if (decodedResult) { G.futdraftSharedResult = decodedResult; G.screen = 'futdraftSharedResult'; }
       }
     } catch (e) {}
+    // Aviso de "Parches": se enseña si la última versión vista (guardada en
+    // meta) no coincide con la actual, ver js/sound-version.js.
+    try { if (G.meta && G.meta.lastSeenVersion !== APP_VERSION) G.showPatchNotes = true; } catch (e) {}
     render();
   });
 }

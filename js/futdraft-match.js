@@ -250,6 +250,8 @@ function futDraftLiveTick() {
     var ev = live.pending.shift();
     if (ev.side === 'me') live.myGoals++; else live.oppGoals++;
     live.revealed.push(ev);
+    live.lastGoalSide = ev.side;
+    if (typeof playGoalSound === 'function') playGoalSound();
   }
   futDraftLiveRefresh(live);
   if (live.minute >= cap) {
@@ -330,7 +332,40 @@ function futDraftLiveLogHtml(live) {
 // se cambian in situ el marcador, el minuto y la lista de goles; render()
 // completo solo si cambia la estructura (empieza la prórroga) o si la
 // pantalla aún no está pintada.
+// Mini campo con puntitos numerados por su posición en el once (no hay
+// dorsal real en los datos, así que se numeran 1-11 por equipo en el
+// orden de la formación) más un balón que se desplaza hacia la portería
+// que acaba de recibir el gol -- a petición explícita ("no quiero que
+// enseñes los personajes, quiero que enseñes puntitos con los dorsales...
+// y también el balón"). Solo para live.visualMode === 'dots'.
+function futDraftPitchDotsHtml(live) {
+  var lineup = (G.career && live.isCareer) ? G.career.lineup : G.futdraft.lineup;
+  var formation = FUTDRAFT_FORMATIONS.find(function (f) { return f.id === (G.career && live.isCareer ? G.career.formation : G.futdraft.formation); });
+  var order = ['Delantero', 'Centrocampista', 'Defensa', 'Portero'];
+  var n = 1;
+  var rowsHtml = order.map(function (pos) {
+    var slots = lineup.filter(function (s) { return s.pos === pos; });
+    var dotsHtml = slots.map(function () { return '<div class="pitch-dot pitch-dot-me">' + (n++) + '</div>'; }).join('');
+    return '<div class="pitch-dots-row">' + dotsHtml + '</div>';
+  }).join('');
+  var m = 1;
+  var oppRowsHtml = order.slice().reverse().map(function (pos) {
+    var row = formation.rows.find(function (r) { return r.pos === pos; });
+    var count = row ? row.count : 0;
+    var dotsHtml = '';
+    for (var i = 0; i < count; i++) dotsHtml += '<div class="pitch-dot pitch-dot-opp">' + (m++) + '</div>';
+    return '<div class="pitch-dots-row">' + dotsHtml + '</div>';
+  }).join('');
+  var ballSide = live.lastGoalSide === 'opp' ? 'top' : (live.lastGoalSide === 'me' ? 'bottom' : 'mid');
+  return '<div class="pitch pitch-dots-field">' +
+    oppRowsHtml +
+    '<div class="pitch-center-line"></div>' +
+    '<div class="pitch-ball pitch-ball-' + ballSide + '">⚽</div>' +
+    rowsHtml +
+  '</div>';
+}
 function futDraftLiveRefresh(live) {
+  if (live.visualMode === 'dots') { render(); return; }
   var root = document.querySelector('.screen[data-live]');
   var nums = root ? root.querySelectorAll('.score-num') : [];
   var indicator = root ? root.querySelector('.turn-indicator') : null;
@@ -376,6 +411,7 @@ function renderFutDraftLive() {
       '<div class="turn-indicator">' + futDraftLiveIndicatorText(live) + '</div>' +
       (live.inExtraTime && live.minute <= 91 ? '<p class="dim small center-text">Empate al término del tiempo reglamentario: se juega la prórroga.</p>' : '') +
       (live.modifier && live.modifier !== 'ninguno' ? '<p class="dim small center-text">🌦️ ' + FUTDRAFT_MODIFIERS_BY_ID[live.modifier].name + ': ' + FUTDRAFT_MODIFIERS_BY_ID[live.modifier].desc + '</p>' : '') +
+      (live.visualMode === 'dots' ? '<div class="panel">' + futDraftPitchDotsHtml(live) + '</div>' : '') +
       '<div class="panel">' +
         '<div class="futdraft-timeline" data-count="' + live.revealed.length + '">' + (logHtml || '<p class="dim small center-text">Aún no ha pasado nada…</p>') + '</div>' +
       '</div>' +

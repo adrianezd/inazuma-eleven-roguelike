@@ -676,6 +676,27 @@ a { color: var(--accent); }
 .pitch-11 .pitch-player { width: 44px; }
 .pitch-11 .pitch-player-name { font-size: 0.56rem; max-width: 44px; }
 .pitch-11 .avatar { width: 32px; height: 32px; }
+/* "Jugar partido" en Modo Carrera: campo esquemático de puntitos
+   numerados (sin dorsal real en los datos, se numeran 1-11 por equipo) y
+   el balón, a petición explícita. */
+.pitch-dots-field { min-height: 220px; gap: 10px; position: relative; }
+.pitch-dots-row { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; position: relative; z-index: 1; }
+.pitch-dot {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 700; color: #fff;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+.pitch-dot-me { background: var(--accent-2); }
+.pitch-dot-opp { background: var(--danger); }
+.pitch-ball {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  font-size: 1.1rem; z-index: 2;
+  transition: top 0.4s ease;
+}
+.pitch-ball-top { top: 12%; }
+.pitch-ball-mid { top: 48%; }
+.pitch-ball-bottom { top: 84%; }
 .pitch-empty-slot {
   width: 32px; height: 32px;
   border: 2px dashed rgba(255,255,255,0.28);

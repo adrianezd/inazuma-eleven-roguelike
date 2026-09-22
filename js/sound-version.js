@@ -1,0 +1,125 @@
+/* ---------------------------------------------------------------------
+   17. SONIDOS, VERSIÓN/PARCHES Y AUTOGUARDADO DE MODO CARRERA
+   A petición explícita: sonido de gol y de inicio de partido (sintetizados
+   con Web Audio, sin depender de ningún archivo externo), un aviso de
+   "Parches" que se enseña al cargar la página con lo último que se ha
+   metido (se guarda la última versión vista en localStorage para no
+   repetirlo cada vez), y el autoguardado de Modo Carrera (cada 3
+   minutos, solo si está activado en Configuración).
+   --------------------------------------------------------------------- */
+
+// Sube este número (y añade una entrada arriba de APP_PATCH_NOTES) cada
+// vez que se publique una ronda de cambios que merezca avisarse.
+var APP_VERSION = '1.0.1';
+var APP_PATCH_NOTES = [
+  {
+    version: '1.0.1',
+    items: [
+      'Nuevo apartado Configuración en Modo Carrera: autoguardado cada 3 minutos.',
+      'Modo Carrera: 3 formas de vivir un partido — Jugar (puntos en directo con los dorsales), Simular y Saltar.',
+      'Sonido de gol y de inicio de partido.',
+      'FutDraft 2 jugadores: prórroga, penaltis y elección de capitán.',
+      'Modo Jugador: eventos con decisiones, selección nacional e historial de premios.'
+    ]
+  },
+  {
+    version: '1.0.0',
+    items: ['Primera versión con número de versión visible.']
+  }
+];
+
+// ===== Sonidos (Web Audio, sin archivos) =====
+var _audioCtx = null;
+function soundCtx() {
+  if (typeof window === 'undefined') return null;
+  var AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  if (!_audioCtx) { try { _audioCtx = new AC(); } catch (e) { return null; } }
+  if (_audioCtx.state === 'suspended') { try { _audioCtx.resume(); } catch (e) {} }
+  return _audioCtx;
+}
+function soundEnabled() { return !G.meta || G.meta.soundEnabled !== false; }
+// Nota corta con envolvente simple (ataque rápido, caída exponencial).
+function playTone(freq, startAt, duration, type, gain) {
+  var ctx = soundCtx();
+  if (!ctx) return;
+  var osc = ctx.createOscillator();
+  var g = ctx.createGain();
+  osc.type = type || 'sine';
+  osc.frequency.value = freq;
+  var t0 = ctx.currentTime + (startAt || 0);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(gain || 0.2, t0 + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+  osc.connect(g); g.connect(ctx.destination);
+  osc.start(t0); osc.stop(t0 + duration + 0.05);
+}
+// Fanfarria ascendente de 4 notas -- el "sonido de gol".
+window.playGoalSound = function () {
+  if (!soundEnabled()) return;
+  [523.25, 659.25, 783.99, 1046.5].forEach(function (f, i) { playTone(f, i * 0.09, 0.35, 'triangle', 0.22); });
+};
+// Silbato descendente corto -- el "sonido de inicio de partido".
+window.playKickoffSound = function () {
+  if (!soundEnabled()) return;
+  var ctx = soundCtx();
+  if (!ctx) return;
+  var osc = ctx.createOscillator(), g = ctx.createGain();
+  osc.type = 'square';
+  var t0 = ctx.currentTime;
+  osc.frequency.setValueAtTime(1800, t0);
+  osc.frequency.exponentialRampToValueAtTime(900, t0 + 0.35);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(0.15, t0 + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.4);
+  osc.connect(g); g.connect(ctx.destination);
+  osc.start(t0); osc.stop(t0 + 0.45);
+};
+window.actionToggleSound = function () {
+  G.meta.soundEnabled = !soundEnabled();
+  saveMeta(G.meta);
+  if (G.meta.soundEnabled) playKickoffSound();
+  render();
+};
+
+// ===== Aviso de "Parches" al cargar =====
+function renderPatchNotesModal() {
+  var latest = APP_PATCH_NOTES[0];
+  return '<div class="modal-overlay" onclick="actionDismissPatchNotes()">' +
+    '<div class="jugador-trophy-card" onclick="event.stopPropagation()" style="max-width:340px">' +
+      '<div class="jugador-trophy-icon">📣</div>' +
+      '<h3 style="margin-bottom:4px">Versión ' + escapeHtml(APP_VERSION) + '</h3>' +
+      '<p class="dim small" style="margin-bottom:6px">Parches y novedades:</p>' +
+      '<ul class="dim small" style="text-align:left;padding-left:18px;margin:0 0 8px">' +
+        latest.items.map(function (t) { return '<li>' + escapeHtml(t) + '</li>'; }).join('') +
+      '</ul>' +
+      '<button class="btn btn-primary btn-block mt" onclick="actionDismissPatchNotes()">Aceptar</button>' +
+    '</div>' +
+  '</div>';
+}
+window.actionDismissPatchNotes = function () {
+  G.showPatchNotes = false;
+  G.meta.lastSeenVersion = APP_VERSION;
+  saveMeta(G.meta);
+  render();
+};
+
+// ===== Autoguardado de Modo Carrera =====
+// Cada 3 minutos, si está activado en Configuración (c.autosave, se
+// serializa con la partida) y hay una partida de Carrera con hueco
+// activo, la guarda sola en su hueco -- sin sustituir al botón
+// "Guardar" manual, que sigue funcionando igual.
+var CAREER_AUTOSAVE_MS = 3 * 60 * 1000;
+window.actionToggleCareerAutosave = function () {
+  var c = G.career;
+  if (!c) return;
+  c.autosave = !c.autosave;
+  render();
+};
+setInterval(function () {
+  var c = G.career;
+  if (c && c.autosave && G.careerActiveSlot && !c.fired) {
+    var ok = saveCareerToSlot(G.careerActiveSlot);
+    if (ok) { c.autosaveMessage = 'Autoguardado a las ' + new Date().toLocaleTimeString(); if (G.screen === 'careerMode' && c.tab === 'configuracion') render(); }
+  }
+}, CAREER_AUTOSAVE_MS);

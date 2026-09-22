@@ -159,7 +159,8 @@ var CAREER_TABS = [
   { id: 'patrocinadores', name: 'Patrocinadores' },
   { id: 'competiciones', name: 'Competiciones' },
   { id: 'estadisticas', name: 'Estadísticas' },
-  { id: 'gestion', name: 'Gestión de partida' }
+  { id: 'gestion', name: 'Gestión de partida' },
+  { id: 'configuracion', name: 'Configuración' }
 ];
 
 // 11 titulares + 5 suplentes elegidos por el usuario. Larry Pogue (r43,
@@ -922,6 +923,7 @@ function careerFreshState(choices) {
     // careerRecordSeasonHistory/renderCareerHistorial) -- ACUMULADO de
     // toda la carrera, nunca se resetea, como bestPosition/careerStats.
     seasonHistory: [],
+    autosave: false, autosaveMessage: null,
     // Centro de entrenamiento: arranca SIN construir (0), infraestructura
     // del club, nunca se resetea entre temporadas (como el presupuesto)
     // -- ver careerTrainingEffectiveParams/CAREER_TRAINING_LEVEL_COSTS.
@@ -1025,7 +1027,8 @@ function careerSerialize(c) {
     seasonAppearances: c.seasonAppearances || {},
     sponsorOffers: c.sponsorOffers || null,
     activeSponsor: c.activeSponsor || null,
-    seasonHistory: c.seasonHistory || []
+    seasonHistory: c.seasonHistory || [],
+    autosave: !!c.autosave
   };
 }
 function careerDeserialize(data) {
@@ -1118,7 +1121,8 @@ function careerDeserialize(data) {
     sponsorOffers: data.sponsorOffers || null,
     activeSponsor: data.activeSponsor || null,
     sponsorMessage: null,
-    seasonHistory: data.seasonHistory || []
+    seasonHistory: data.seasonHistory || [],
+    autosave: !!data.autosave
   };
 }
 // Guarda el estado ACTUAL (G.career) en el hueco activo
@@ -3746,7 +3750,7 @@ window.actionSkipCareerMatchday = function () {
 // terminar (ver finishCareerMatchdayMatch), para no pisar una partida de
 // FutDraft/Liga que pudiera seguir en curso en la misma sesión. El resto
 // de la jornada se resuelve de golpe al terminar, igual que "Saltar".
-window.actionSimulateCareerMatchday = function () {
+window.actionSimulateCareerMatchday = function (visualMode) {
   var c = G.career;
   if (c.marketWindow && c.marketWindow.open) return;
   if (careerCupPending(c) || careerChampionsPending(c)) return;
@@ -3777,12 +3781,22 @@ window.actionSimulateCareerMatchday = function () {
     inExtraTime: false, allowDraw: true, onFinish: finishCareerMatchdayMatch,
     careerFixture: { idx: myFixtureIdx, youAreHome: youAreHome, oppIdx: oppIdx },
     isCareer: true, youAreHome: youAreHome,
+    visualMode: visualMode || 'avatars',
     done: false
   };
   G.screen = 'futdraftLive';
+  playKickoffSound();
   render();
   futDraftLiveTick();
 };
+
+// "Jugar partido": mismo motor y mismos datos que "Simular partido", pero
+// se ve con un mini campo de puntitos (con su dorsal) en vez de escudos y
+// avatares -- a petición explícita ("no quiero que enseñes los
+// personajes, quiero que enseñes puntitos con los dorsales... y también
+// el balón"). Ver live.visualMode y renderFutDraftLive/futDraftPitchDotsHtml
+// en js/futdraft-match.js.
+window.actionPlayCareerMatchday = function () { actionSimulateCareerMatchday('dots'); };
 
 // Se llama cuando termina de revelarse tu partido (live.onFinish): aplica
 // el resultado, resuelve el resto de la jornada de golpe, y enseña la
@@ -4964,6 +4978,7 @@ function renderCareerJornada(c) {
       (seasonOver
         ? '<button class="btn btn-primary btn-block mt" onclick="actionStartNewCareerSeason()">Empezar temporada ' + (c.season + 1) + '</button>'
         : '<div class="btn-row" style="justify-content:center">' +
+            '<button class="btn btn-primary" onclick="actionPlayCareerMatchday()">👀 Jugar partido</button>' +
             '<button class="btn btn-primary" onclick="actionSimulateCareerMatchday()">▶ Simular partido</button>' +
             '<button class="btn btn-skip" onclick="actionSkipCareerMatchday()">⏭ Saltar</button>' +
           '</div>') +
@@ -5071,6 +5086,26 @@ function renderCareerGestion(c) {
   '</div>';
 }
 
+// Apartado Configuración de Modo Carrera: autoguardado (cada 3 minutos,
+// en el hueco activo, además del botón "Guardar" manual de Gestión de
+// partida) y sonido (comparte el mismo interruptor que el resto de la
+// app, ver js/sound-version.js). A petición explícita.
+function renderCareerConfiguracion(c) {
+  return '<div class="panel">' +
+    '<h3 style="margin-bottom:8px">Configuración</h3>' +
+    '<div class="btn-row" style="justify-content:space-between;align-items:center">' +
+      '<div><strong>Autoguardado</strong><div class="dim small">Guarda la partida sola cada 3 minutos en el hueco ' + (G.careerActiveSlot || '-') + '.</div></div>' +
+      '<button class="btn btn-tiny' + (c.autosave ? ' active' : '') + '" onclick="actionToggleCareerAutosave()">' + (c.autosave ? 'Activado' : 'Desactivado') + '</button>' +
+    '</div>' +
+    (c.autosaveMessage ? '<p class="dim small mt">' + escapeHtml(c.autosaveMessage) + '</p>' : '') +
+    '<div class="btn-row mt" style="justify-content:space-between;align-items:center">' +
+      '<div><strong>Sonido</strong><div class="dim small">Sonido de gol y de inicio de partido.</div></div>' +
+      '<button class="btn btn-tiny' + (soundEnabled() ? ' active' : '') + '" onclick="actionToggleSound()">' + (soundEnabled() ? 'Activado' : 'Desactivado') + '</button>' +
+    '</div>' +
+    '<p class="dim small mt">Versión ' + escapeHtml(APP_VERSION) + '.</p>' +
+  '</div>';
+}
+
 // Animación de trofeo al ganar cualquier título de Modo Carrera (Liga,
 // Copa del Rey, Champions League, Supercopa), a petición explícita
 // ("quiero animaciones al ganar cada trofeo también") -- mismo overlay
@@ -5113,6 +5148,7 @@ function renderCareerMode() {
   else if (c.tab === 'jornada') bodyHtml = renderCareerBoardPanel(c) + renderCareerJornada(c);
   else if (c.tab === 'estadisticas') bodyHtml = renderCareerEstadisticas(c);
   else if (c.tab === 'gestion') bodyHtml = renderCareerGestion(c);
+  else if (c.tab === 'configuracion') bodyHtml = renderCareerConfiguracion(c);
   else bodyHtml = renderCareerEquipo(c);
   // "Volver" ya no vive aquí (fijo en todas las pestañas) -- ahora está
   // SOLO en "Gestión de partida" (renderCareerGestion), a petición
