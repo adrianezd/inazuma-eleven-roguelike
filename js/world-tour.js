@@ -65,12 +65,11 @@ var WORLD_TOUR_RAIMON_SPECIALS = wtSquad([['r09', 46], ['r39', 45], ['r41', 44]]
 // 7 equipos de Inazuma Eleven 1, en el orden real del torneo Fútbol
 // Frontier (Occult primero, Kirkwood el más fuerte al final). Todos los
 // jugadores son reales del roster (Occult y Wild tienen su once completo
-// ya cargado -- ver roster-data.js ids r80-r101 y r83-r93; Brain, Royal
-// Academy, Zeus y Kirkwood tienen los que aparecen con su nombre real en
-// el roster, menos de 11 en algunos casos). El Otaku es la única
-// excepción: no tiene ningún personaje con nombre propio en el roster,
-// así que sus 5 jugadores son genéricos (estimados, como el resto de
-// rellenos de esta app) y sin cara.
+// ya cargado -- ver roster-data.js ids r80-r101 y r83-r93; Umbrella tiene
+// su once real completo, ids r370-r380; Brain, Otaku, Royal Academy, Zeus
+// y Kirkwood tienen los que aparecen con su nombre real en el roster,
+// menos de 11 en algunos casos, rellenados con jugadores genéricos sin
+// cara para completar el once).
 // Orden corregido a petición explícita, con los amistosos y equipos que
 // faltaban: Occult, Inazuma Kids (amistoso), Wild, Umbrella (amistoso),
 // Brain, Otaku, Royal Academy, Shuriken, Farm, Kirkwood y Zeus al final.
@@ -94,28 +93,27 @@ var WORLD_TOUR_STAGES = [
     players: wtSquad([['r83', 59], ['r84', 60], ['r93', 61], ['r91', 58], ['r89', 56], ['r85', 55]])
   },
   {
+    // Ahora con su once real del Instituto Umbrella (ids r370-r380, con
+    // sprite propio), en vez de los 5 genéricos de antes -- a petición
+    // explícita, tras subir esos jugadores nuevos al roster.
     id: 'umbrella', name: 'Umbrella', power: 44,
-    players: [
-      wtPlayerGeneric('wt_umb_1', 'Lluvia', 'Portero', 'Viento', 47),
-      wtPlayerGeneric('wt_umb_2', 'Nube', 'Centrocampista', 'Bosque', 48),
-      wtPlayerGeneric('wt_umb_3', 'Tormenta', 'Delantero', 'Montaña', 49),
-      wtPlayerGeneric('wt_umb_4', 'Rocío', 'Defensa', 'Viento', 45),
-      wtPlayerGeneric('wt_umb_5', 'Granizo', 'Defensa', 'Montaña', 44)
-    ]
+    players: wtSquad([['r370', 47], ['r378', 49], ['r379', 48], ['r371', 45], ['r372', 45], ['r375', 44]])
   },
   {
     id: 'brain', name: 'Brain', power: 58,
     players: wtSquad([['r151', 61], ['r154', 62], ['r155', 63], ['r152', 58], ['r156', 60], ['r157', 59]])
   },
   {
+    // Ya no es la única excepción sin nombre real: Sam Idol, Light Nobel y
+    // Walter Valiant (r381-r383, con sprite propio) cubren portero/defensa/
+    // centro; Cursor y Comodín se quedan genéricos para completar el once
+    // (delantero y una segunda defensa), a petición explícita tras subir
+    // esos 3 jugadores nuevos al roster.
     id: 'otaku', name: 'Otaku', power: 45,
-    players: [
-      wtPlayerGeneric('wt_otaku_1', 'Capitán Pixel', 'Portero', 'Viento', 50),
-      wtPlayerGeneric('wt_otaku_2', 'Byte', 'Centrocampista', 'Bosque', 52),
+    players: wtSquad([['r381', 50], ['r383', 52], ['r382', 48]]).concat([
       wtPlayerGeneric('wt_otaku_3', 'Cursor', 'Delantero', 'Fuego', 53),
-      wtPlayerGeneric('wt_otaku_4', 'Comodín', 'Defensa', 'Montaña', 49),
-      wtPlayerGeneric('wt_otaku_5', 'Renderman', 'Defensa', 'Viento', 48)
-    ]
+      wtPlayerGeneric('wt_otaku_4', 'Comodín', 'Defensa', 'Montaña', 49)
+    ])
   },
   {
     id: 'royal', name: 'Royal Academy', power: 65,

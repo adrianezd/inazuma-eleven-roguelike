@@ -3099,19 +3099,160 @@ var ROSTER = [
   locked:false,cost:18
 },
 {
-  id:'r368', nombre:'Sandra Fischer', original:'Sandra Fischer',
+  id:'r368', nombre:'Sandra Fischer', original:'Sandra Fischer', sprite:'assets/sprites/r368.webp',
+
   posicion:'Portero', tipo:'Viento',
+
   tiro:30,pase:52,defensa:78,especial:72,
+
   hissatsu:['Mano oceánica','Velo de sirena'],tipoTecnica:'portero',
+
   desc:'Portera del Raimon Isla Remota.',
+
   locked:false,cost:18
+},
+
+{
+  id:'r369', nombre:'Rolland Bowlby', original:'Rolland Bowlby', sprite:'assets/sprites/r369.webp',
+
+  posicion:'Portero', tipo:'Fuego',
+
+  tiro:28,pase:46,defensa:66,especial:66,
+
+  hissatsu:['Parada ardiente'],tipoTecnica:'portero',
+
+  desc:'Portero del Raimon Isla Remota en el manga de Atsushi Oba.',
+
+  locked:false,cost:18
+},
+
+// Instituto Umbrella
+{
+  id:'r370', nombre:'Joe Ingram', original:'Jo Ikegaki',
+  posicion:'Portero', tipo:'Fuego',
+  tiro:35,pase:48,defensa:72,especial:76,
+  hissatsu:['Atajo Tornado'],
+  desc:'Portero titular del Instituto Umbrella.',
+  locked:false,cost:110,
+  sprite:'assets/sprites/r370.webp'
 },
 {
-  id:'r369', nombre:'Rolland Bowlby', original:'Rolland Bowlby',
-  posicion:'Portero', tipo:'Fuego',
-  tiro:28,pase:46,defensa:66,especial:66,
-  hissatsu:['Parada ardiente'],tipoTecnica:'portero',
-  desc:'Portero del Raimon Isla Remota en el manga de Atsushi Oba.',
-  locked:false,cost:18
+  id:'r371', nombre:'Kendall Sefton', original:'Kendall Sefton',
+  posicion:'Defensa', tipo:'Viento',
+  tiro:42,pase:55,defensa:70,especial:67,
+  hissatsu:['Corte Giratorio'],
+  desc:'Defensa titular del Instituto Umbrella.',
+  locked:false,cost:105,
+  sprite:'assets/sprites/r371.webp'
 },
-];
+{
+  id:'r372', nombre:'Jason Strike', original:'Yasuchi Kikuchi',
+  posicion:'Defensa', tipo:'Fuego',
+  tiro:48,pase:58,defensa:69,especial:66,
+  hissatsu:['Robo Rápido'],
+  desc:'Defensa del Umbrella, muy aficionado al deporte y al entrenamiento físico.',
+  locked:false,cost:105,
+  sprite:'assets/sprites/r372.webp'
+},
+{
+  id:'r373', nombre:'Norman Porter', original:'Norman Porter',
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:40,pase:52,defensa:73,especial:68,
+  hissatsu:['Barrido Defensivo'],
+  desc:'Defensa titular del Instituto Umbrella.',
+  locked:false,cost:105,
+  sprite:'assets/sprites/r373.webp'
+},
+{
+  id:'r374', nombre:'Maxwell Claus', original:'Maxwell Claus',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:44,pase:54,defensa:71,especial:65,
+  hissatsu:['Giro Bobina'],
+  desc:'Defensa del Umbrella, conocido por su apodo Chops.',
+  locked:false,cost:105,
+  sprite:'assets/sprites/r374.webp'
+},
+{
+  id:'r375', nombre:'Bruce Chaney', original:'Bruce Chaney',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:55,pase:64,defensa:50,especial:62,
+  hissatsu:['Equilibrismo'],
+  desc:'Centrocampista titular del Instituto Umbrella.',
+  locked:false,cost:100,
+  sprite:'assets/sprites/r375.webp'
+},
+{
+  id:'r376', nombre:'Leroy Rhymes', original:'Leroy Rhymes',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:58,pase:68,defensa:53,especial:70,
+  hissatsu:['Equilibrismo'],
+  desc:'Centrocampista del Umbrella con buenas capacidades de control del balón.',
+  locked:false,cost:110,
+  sprite:'assets/sprites/r376.webp'
+},
+{
+  id:'r377', nombre:'Mildford Scott', original:'Mildford Scott',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:52,pase:61,defensa:54,especial:64,
+  hissatsu:['Escáner Ataque'],
+  desc:'Centrocampista titular del Instituto Umbrella.',
+  locked:false,cost:100,
+  sprite:'assets/sprites/r377.webp'
+},
+{
+  id:'r378', nombre:'Lou Edmonds', original:'Yo Idemae',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:70,pase:57,defensa:44,especial:72,
+  hissatsu:['Tiro Giratorio'],
+  desc:'Capitán del Instituto Umbrella y uno de sus principales jugadores.',
+  locked:false,cost:125,
+  sprite:'assets/sprites/r378.webp'
+},
+{
+  id:'r379', nombre:'Cameron Morefield', original:'Hidetsugu Yasunaga',
+  posicion:'Centrocampista', tipo:'Viento',
+  tiro:59,pase:67,defensa:52,especial:70,
+  hissatsu:['Entrada Huracán'],
+  desc:'Centrocampista titular del Umbrella y antiguo tenista de gran talento.',
+  locked:false,cost:110,
+  sprite:'assets/sprites/r379.webp'
+},
+{
+  id:'r380', nombre:'Greg Bernard', original:'Seiji Mizuguchi',
+  posicion:'Delantero', tipo:'Bosque',
+  tiro:67,pase:72,defensa:51,especial:70,
+  hissatsu:['Remate Serpiente'],
+  desc:'Delantero del Umbrella, conocido como Cyborg por sus pases tan precisos.',
+  locked:false,cost:120,
+  sprite:'assets/sprites/r380.webp'
+},
+{
+  id:'r381', nombre: 'Sam Idol', original:'Sam Idol',
+  posicion:'Portero', tipo:'Montaña',
+  tiro:21,pase:36,defensa:70,especial:70,
+  hissatsu:['Deslizamiento'],
+  desc:'Portero del Otaku.',
+  locked:false,cost:120,
+  sprite:'assets/sprites/r381.webp'
+},
+{
+  id:'r382', nombre: 'Light Nobel', original:'Light Nobel',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:25,pase:65,defensa:71,especial:68,
+  hissatsu:['Bola Falsa'],
+  desc:'Defensa del Otaku.',
+  locked:false,cost:120,
+  sprite:'assets/sprites/r382.webp'
+},
+{
+  id:'r383', nombre: 'Walter Valiant', original:'Walter Valiant',
+  posicion:'Centrocampista', tipo:'Fuego',
+  tiro:70,pase:70,defensa:60,especial:60,
+  hissatsu:['Regate Topo'],
+  desc:'Centrocampista del Otaku.',
+  locked:false,cost:120,
+  sprite:'assets/sprites/r383.webp'
+}
+]
+
+
