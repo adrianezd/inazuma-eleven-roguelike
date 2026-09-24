@@ -51,10 +51,15 @@ var WORLD_TOUR_RAIMON_BASE = wtSquad([
 // Fichajes que se unen solos durante el recorrido, como en la historia
 // real (a petición explícita): Jude Sharp llega al ganar a la Royal
 // Academy, Erik Eagle y Bobby Shearer al ganar al Kirkwood -- solo si
-// empezaste con el Raimon (con un equipo aleatorio no aplica).
+// empezaste con el Raimon (con un equipo aleatorio no aplica). El número
+// ya NO es su media fija: es un extra sobre la media actual de tu equipo
+// (worldTourTeamScore) en ese momento, a petición explícita ("jude tiene
+// que salir con más media cuando se una") -- así siempre llega siendo una
+// mejora de verdad, no un fichaje flojo si ya vas muy por encima del
+// número fijo de antes. Jude (fichaje "estrella") sube más que Erik/Bobby.
 var WORLD_TOUR_STORY_JOINS = {
-  royal: [['r04', 54, 'Jude Sharp']],
-  kirkwood: [['r10', 48, 'Erik Eagle'], ['r16', 45, 'Bobby Shearer']]
+  royal: [['r04', 8, 'Jude Sharp']],
+  kirkwood: [['r10', 4, 'Erik Eagle'], ['r16', 3, 'Bobby Shearer']]
 };
 // Personajes "especiales" (secundarios/de refuerzo, no del once fijo de
 // la temporada 1): Austin Hobbs, Shadow Cimmerian y Paul Peabody -- a
@@ -540,6 +545,13 @@ function renderWorldTourHome() {
 // reutiliza el motor de FutDraft/Liga tal cual.
 function worldTourBridgeFutdraft(stage) {
   var wt = G.worldTour;
+  // El aviso de "fulano se une al equipo" solo tiene sentido justo tras
+  // la victoria que lo trae -- antes se quedaba pegado en pantalla en
+  // TODOS los partidos siguientes hasta el próximo fichaje, a petición
+  // explícita ("el mensaje de jude sharp se une al equipo no tiene que
+  // quedarse para todos los partidos"). Se borra en cuanto empiezas el
+  // partido siguiente (Jugar/Simular/Saltar), que es cuando ya lo has visto.
+  wt.lastJoinMessage = null;
   var lineup = worldTourLineup();
   // Goleadores rivales reales del equipo de la etapa (no del pool
   // genérico de "no drafteados"), sin porteros -- a petición explícita
@@ -614,17 +626,33 @@ function finishWorldTourMatch() {
     var squadIds = wt.squad.map(function (p) { return p.id; });
     var available = stage.players.filter(function (p) { return squadIds.indexOf(p.id) === -1; });
     var options = available.slice().sort(function () { return Math.random() - 0.5; }).slice(0, wt.draftSize || 3);
+    // Los fichajes del draft ya no salen con la media fija de la etapa
+    // (quedaban flojísimos a mitad de recorrido, cuando tu equipo ya ha
+    // subido mucho más) -- ahora se reescalan a la media ACTUAL de tu
+    // equipo, con algo de variedad para que no sean todos exactamente
+    // iguales, a petición explícita ("tienen que tener más o menos la
+    // media del equipo actual que tengas"). Clones aparte (no se toca
+    // stage.players, que se reutiliza cada vez que se enseña esta etapa).
+    var myScore = worldTourTeamScore();
+    options = options.map(function (p) {
+      var ovr = Math.round(clamp(myScore + rand(-3, 6), 30, 99));
+      return wtFromRoster(p.id, ovr) || p;
+    });
     if (options.length) wt.pendingDraft = { stageId: stage.id, options: options };
     wt.stageIndex++;
     wt.lastLossMessage = null;
     // Fichajes que se unen solos, como en la historia real (solo con el
-    // Raimon) -- a petición explícita.
+    // Raimon) -- a petición explícita. Su media ya no es fija (ver
+    // WORLD_TOUR_STORY_JOINS): se calcula sobre tu media actual, tras
+    // aplicar ya la subida por la victoria de esta etapa.
     if (wt.isRaimon && WORLD_TOUR_STORY_JOINS[stage.id]) {
       var joinedNames = [];
+      var teamScoreForJoins = worldTourTeamScore();
       WORLD_TOUR_STORY_JOINS[stage.id].forEach(function (j) {
         var already = wt.squad.some(function (p) { return p.id === j[0]; });
         if (already) return;
-        var clone = wtFromRoster(j[0], j[1]);
+        var joinOvr = Math.round(clamp(teamScoreForJoins + j[1], 30, 99));
+        var clone = wtFromRoster(j[0], joinOvr);
         if (clone) { wt.squad.push(clone); joinedNames.push(j[2]); }
       });
       if (joinedNames.length) wt.lastJoinMessage = '🆕 ' + joinedNames.join(' y ') + ' se une' + (joinedNames.length > 1 ? 'n' : '') + ' al equipo.';
