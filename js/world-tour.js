@@ -104,14 +104,13 @@ var WORLD_TOUR_STAGES = [
     players: wtSquad([['r151', 61], ['r154', 62], ['r155', 63], ['r152', 58], ['r156', 60], ['r157', 59]])
   },
   {
-    // Ya no es la única excepción sin nombre real: Sam Idol, Light Nobel y
-    // Walter Valiant (r381-r383, con sprite propio) cubren portero/defensa/
-    // centro; Cursor y Comodín se quedan genéricos para completar el once
-    // (delantero y una segunda defensa), a petición explícita tras subir
-    // esos 3 jugadores nuevos al roster.
+    // Ya no es la única excepción sin nombre real: Sam Idol, Light Nobel,
+    // Walter Valiant (r381-r383, con sprite) y ahora también Gus Gamer,
+    // Mark Gambling (capitán) y Theodore Master (r384-r386, sin sprite --
+    // solo los datos) cubren portero/defensa/centro/delantero; Comodín se
+    // queda genérico para una segunda defensa, a petición explícita.
     id: 'otaku', name: 'Otaku', power: 45,
-    players: wtSquad([['r381', 50], ['r383', 52], ['r382', 48]]).concat([
-      wtPlayerGeneric('wt_otaku_3', 'Cursor', 'Delantero', 'Fuego', 53),
+    players: wtSquad([['r381', 50], ['r383', 52], ['r382', 48], ['r385', 53], ['r384', 51]]).concat([
       wtPlayerGeneric('wt_otaku_4', 'Comodín', 'Defensa', 'Montaña', 49)
     ])
   },

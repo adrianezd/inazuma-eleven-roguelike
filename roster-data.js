@@ -3252,7 +3252,34 @@ var ROSTER = [
   desc:'Centrocampista del Otaku.',
   locked:false,cost:120,
   sprite:'assets/sprites/r383.webp'
+},
+{
+  id:'r384', nombre:'Gus Gamer', original:'Gus Gamer',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:72,pase:55,defensa:38,especial:70,
+  hissatsu:['Modo Dios'],
+  desc:'Delantero del Otaku, de segundo curso.',
+  locked:false,cost:120
+},
+{
+  // "Aire" no es un tipo elemental válido de la app (Fuego/Bosque/Viento/
+  // Montaña) -- pasado a Viento, mismo criterio que el resto del roster.
+  id:'r385', nombre:'Mark Gambling', original:'Mark Gambling',
+  posicion:'Delantero', tipo:'Viento',
+  tiro:74,pase:58,defensa:40,especial:72,
+  hissatsu:['Combo Perfecto'],
+  desc:'Capitán del Otaku (Manga de Tenya Yabuno), de segundo curso.',
+  locked:false,cost:125
+},
+{
+  id:'r386', nombre:'Theodore Master', original:'Theodore Master',
+  posicion:'Delantero', tipo:'Bosque',
+  tiro:71,pase:56,defensa:39,especial:69,
+  hissatsu:['Doble Salto'],
+  desc:'Delantero del Otaku, de tercer curso.',
+  locked:false,cost:120
 }
+
 ]
 
 
