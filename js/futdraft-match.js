@@ -264,14 +264,20 @@ function finishFutDraftRegularTime() {
 var FUTDRAFT_LINE_POS = ['Portero', 'Defensa', 'Centrocampista', 'Delantero'];
 // Jugador "dueño" del balón ahora mismo -- de tu once real si es tu
 // posesión, o un nombre genérico del rival (no hay plantilla rival real
-// fuera de World Tour) si es la suya. Usado para las tarjetas/lesiones.
+// fuera de World Tour) si es la suya. Usado para las tarjetas/lesiones Y
+// (en modo puntitos) para decidir quién marca de verdad -- nunca un
+// jugador ya expulsado (live.sentOff), a petición explícita ("el jugador
+// [con roja] ya no puede meter gol porque no está jugando").
 function futDraftBallCarrierPlayer(live, poss) {
   if (poss.side !== 'me') return { nombre: 'Un jugador del ' + (live.oppSide ? live.oppSide.name : 'rival') };
   var lineup = (G.career && live.isCareer) ? G.career.lineup : G.futdraft.lineup;
   if (!lineup) return null;
+  var sentOff = live.sentOff || [];
+  var onPitch = sentOff.length ? lineup.filter(function (s) { return sentOff.indexOf(s.player.id) === -1; }) : lineup;
+  if (!onPitch.length) onPitch = lineup;
   var pos = FUTDRAFT_LINE_POS[poss.line];
-  var candidates = lineup.filter(function (s) { return s.pos === pos; });
-  var pick = (candidates.length ? candidates : lineup)[Math.floor(Math.random() * (candidates.length ? candidates.length : lineup.length))];
+  var candidates = onPitch.filter(function (s) { return s.pos === pos; });
+  var pick = (candidates.length ? candidates : onPitch)[Math.floor(Math.random() * (candidates.length ? candidates.length : onPitch.length))];
   return pick ? pick.player : null;
 }
 function futDraftAdvancePossession(live) {
@@ -301,7 +307,20 @@ function futDraftAdvancePossession(live) {
   var pressure = nextGoal ? clamp(1 - minutesToGoal / 8, 0, 1) : 0;
   var biasSide = pressure > 0 ? nextGoal.side : null;
   var attacking = p.side === biasSide;
-  var towardsGoal = Math.random() < (attacking ? (0.65 + pressure * 0.25) : 0.6);
+  // Roja mete lógica de verdad: el equipo con un jugador MÁS (menos
+  // rojas) ataca más -- a petición explícita ("si hay una roja, ataca más
+  // el equipo que tiene 1 jugador más"). redDiff > 0 = ventaja para "me"
+  // (el rival tiene más rojas), redDiff < 0 = ventaja para "opp".
+  if (!live.redCards) live.redCards = { me: 0, opp: 0 };
+  var redDiff = live.redCards.opp - live.redCards.me;
+  var manAdvantageSide = redDiff > 0 ? 'me' : (redDiff < 0 ? 'opp' : null);
+  var manAdvantageBonus = Math.min(Math.abs(redDiff), 2) * 0.08;
+  var advantaged = manAdvantageSide && p.side === manAdvantageSide;
+  var disadvantaged = manAdvantageSide && p.side !== manAdvantageSide;
+  var towardsGoalChance = attacking ? (0.65 + pressure * 0.25) : 0.6;
+  if (advantaged) towardsGoalChance += manAdvantageBonus;
+  if (disadvantaged) towardsGoalChance -= manAdvantageBonus;
+  var towardsGoal = Math.random() < clamp(towardsGoalChance, 0.15, 0.95);
   if (towardsGoal) p.line = clamp(p.line + (Math.random() < 0.5 ? -1 : 1), 0, 3);
   // Al perder el balón, pasa a la defensa (línea 1), nunca directo al
   // portero contrario -- a petición explícita ("el balón no puede ir de
@@ -309,8 +328,12 @@ function futDraftAdvancePossession(live) {
   // seguidas (justo antes de perderlo y justo al ganarlo) el balón
   // saltaba de una portería a la otra de golpe en el mismo tick.
   // Dentro de la ventana del gol casi no se pierde el balón -- que la
-  // jugada de ataque llegue a puerta en vez de cortarse a medias.
+  // jugada de ataque llegue a puerta en vez de cortarse a medias. El
+  // equipo en inferioridad pierde el balón más fácil, el que va con uno
+  // de más lo conserva mejor.
   var turnoverChance = inGoalWindow ? 0.02 : (p.line === 3 ? (attacking ? 0.06 : 0.22) : 0.09);
+  if (advantaged) turnoverChance = Math.max(0.01, turnoverChance - manAdvantageBonus);
+  if (disadvantaged) turnoverChance = Math.min(0.6, turnoverChance + manAdvantageBonus);
   if (Math.random() < turnoverChance) { p.side = p.side === 'me' ? 'opp' : 'me'; p.line = 1; }
 
   // Posesión real (a petición explícita, "mete posesión"): un tanto por
@@ -327,12 +350,46 @@ function futDraftAdvancePossession(live) {
   var scoreboardPlayer = futDraftBallCarrierPlayer(live, p);
   if (scoreboardPlayer && Math.random() < 0.012) {
     var isRed = Math.random() < 0.15;
-    live.cards.push({ side: p.side, minute: Math.round(live.minute), type: isRed ? 'red' : 'yellow', name: scoreboardPlayer.nombre });
+    live.cards.push({ side: p.side, minute: Math.round(live.minute), type: isRed ? 'red' : 'yellow', name: scoreboardPlayer.nombre, id: scoreboardPlayer.id || null });
+    if (isRed) {
+      live.redCards[p.side]++;
+      // BUG REAL arreglado: un jugador con roja seguía pudiendo "marcar"
+      // más tarde en el resumen (salía expulsado al 4' y metiendo gol al
+      // 80') -- a partir de aquí queda fuera de la lista de posibles
+      // goleadores/portadores de balón de su equipo (ver
+      // futDraftBallCarrierPlayer/live.sentOff). Solo se puede identificar
+      // de verdad en el lado "me" (el rival no tiene plantilla propia
+      // fuera de Modo Mundial); el "un jugador del rival" genérico no
+      // tiene id que excluir, así que no hace falta para el otro lado.
+      if (p.side === 'me' && scoreboardPlayer.id) {
+        live.sentOff = live.sentOff || [];
+        if (live.sentOff.indexOf(scoreboardPlayer.id) === -1) live.sentOff.push(scoreboardPlayer.id);
+      }
+    }
   } else if (scoreboardPlayer && Math.random() < 0.006) {
     live.cards.push({ side: p.side, minute: Math.round(live.minute), type: 'injury', name: scoreboardPlayer.nombre });
   }
 }
 function futDraftApplyGoalEvent(live, ev, isDots) {
+  // Más realista: el que mete el gol es el que de verdad tiene el balón
+  // justo en ese momento (el "último en tocarlo"), no un nombre sorteado
+  // aparte sin relación con la jugada -- a petición explícita ("haz que
+  // sea más real que el último que toque el balón sea el que meta gol").
+  // Solo se puede hacer de verdad en el lado "me" en modo puntitos (es
+  // donde hay plantilla real con posesión simulada jugador a jugador); el
+  // rival, fuera de Modo Mundial, no tiene plantilla propia. Ya excluye a
+  // los expulsados (live.sentOff, ver futDraftBallCarrierPlayer).
+  if (isDots && ev.side === 'me' && live.poss && live.poss.side === 'me') {
+    var carrier = futDraftBallCarrierPlayer(live, live.poss);
+    if (carrier && carrier.id) {
+      var assistPool = (G.career && live.isCareer ? G.career.lineup : G.futdraft.lineup).map(function (s) { return s.player; })
+        .filter(function (pl) { return pl.id !== carrier.id && (live.sentOff || []).indexOf(pl.id) === -1; });
+      ev.scorer = carrier;
+      ev.assist = (ev.assist && assistPool.some(function (pl) { return pl.id === ev.assist.id; }))
+        ? ev.assist
+        : (assistPool.length && Math.random() < 0.75 ? futDraftWeightedPick(assistPool, FUTDRAFT_ASSIST_WEIGHT) : null);
+    }
+  }
   if (ev.side === 'me') live.myGoals++; else live.oppGoals++;
   live.revealed.push(ev);
   live.lastGoalSide = ev.side;

@@ -463,6 +463,9 @@ function renderWorldTourLineup() {
   var formationBtns = futDraftAvailableFormations().map(function (ft) {
     return '<button class="btn-tiny' + (f.formation === ft.id ? ' active' : '') + '" onclick="setFutDraftFormation(\'' + ft.id + '\')">' + ft.name + '</button>';
   }).join('');
+  var styleOptionsHtml = CAREER_PLAY_STYLES.map(function (s) {
+    return '<option value="' + s.id + '"' + (s.id === worldTourPlayStyle(G.worldTour).id ? ' selected' : '') + '>' + s.name + '</option>';
+  }).join('');
   var captainHint = !captain
     ? 'Sin capitán elegido.'
     : 'Capitán: <strong>' + escapeHtml(captain.player.nombre) + '</strong> (' + (breakdown.captainBonus > 0 ? '+' : '') + breakdown.captainBonus + ' a la puntuación).';
@@ -493,6 +496,10 @@ function renderWorldTourLineup() {
         '<h3 style="margin-bottom:8px">Formación</h3>' +
         '<div class="view-toggle view-toggle-wrap">' + formationBtns + '</div>' +
         renderFutDraftLineupPitch(f) +
+      '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:8px">Estilo de juego</h3>' +
+        '<select class="select-field" onchange="actionSetWorldTourPlayStyle(this.value)">' + styleOptionsHtml + '</select>' +
       '</div>' +
       '<div class="panel center-text">' +
         '<h3 style="margin-bottom:8px">Bonificación de atributo</h3>' +
@@ -529,7 +536,7 @@ function renderWorldTourHome() {
       worldTourMatchupCardHtml(stage.name, 'Rival ' + (wt.stageIndex + 1)) +
       '<div class="panel">' +
         '<div class="match-mode-picker">' +
-          '<button class="match-mode-card" onclick="actionPlayWorldTourMatch()"><span class="match-mode-icon">⚽</span><strong>Jugar</strong><span class="dim small">Partido en vivo</span></button>' +
+          '<button class="match-mode-card" onclick="actionPlayWorldTourMatch()"><span class="match-mode-icon">⚽</span><strong>Ver partido</strong><span class="dim small">Partido en vivo</span></button>' +
           '<button class="match-mode-card" onclick="actionSimulateWorldTourMatch()"><span class="match-mode-icon">▶️</span><strong>Simular</strong><span class="dim small">Minuto a minuto</span></button>' +
           '<button class="match-mode-card" onclick="actionSkipWorldTourMatch()"><span class="match-mode-icon">⏭️</span><strong>Saltar</strong><span class="dim small">Resultado al momento</span></button>' +
         '</div>' +
@@ -543,6 +550,29 @@ function renderWorldTourHome() {
 // Las 3 formas de vivir el partido (mismo patrón que Jornada de Modo
 // Carrera): puentea G.futdraft con la plantilla del Modo Mundial y
 // reutiliza el motor de FutDraft/Liga tal cual.
+// Estilo de juego (muy defensiva/defensiva/equilibrado/ofensiva/muy
+// ofensiva), igual que Gestionar plantilla de Modo Carrera -- a petición
+// explícita ("haz que en modo mundial puedas configurar formación y
+// defensivo, muy defensivo, equilibrado, ofensivo... como en modo
+// carrera"). Reutiliza CAREER_PLAY_STYLES/CAREER_PLAY_STYLE_CONTRADICTION_DAMPEN
+// tal cual (misma escala, mismo criterio de sinergia con la formación).
+function worldTourPlayStyle(wt) {
+  return CAREER_PLAY_STYLES.find(function (s) { return s.id === wt.playStyle; }) || CAREER_PLAY_STYLES[2];
+}
+function worldTourPlayStyleModifiers(wt) {
+  var style = worldTourPlayStyle(wt);
+  var formation = FUTDRAFT_FORMATIONS.find(function (ft) { return ft.id === (wt.formationId || WORLD_TOUR_DEFAULT_FORMATION); }) || FUTDRAFT_FORMATIONS[0];
+  var styleLean = style.atk - style.def;
+  var formationLean = formation.atk - formation.def;
+  var aligned = styleLean === 0 || formationLean === 0 || (styleLean > 0) === (formationLean > 0);
+  var blend = aligned ? 1 : CAREER_PLAY_STYLE_CONTRADICTION_DAMPEN;
+  return { atk: 1 + (style.atk - 1) * blend, def: 1 + (style.def - 1) * blend };
+}
+window.actionSetWorldTourPlayStyle = function (id) {
+  if (!CAREER_PLAY_STYLES.some(function (s) { return s.id === id; })) return;
+  G.worldTour.playStyle = id;
+  render();
+};
 function worldTourBridgeFutdraft(stage) {
   var wt = G.worldTour;
   // El aviso de "fulano se une al equipo" solo tiene sentido justo tras
@@ -560,7 +590,8 @@ function worldTourBridgeFutdraft(stage) {
   // (wtPlayerGeneric, sin sprite) cuentan igual: tienen nombre propio de
   // ese equipo aunque no tengan cara.
   var oppPlayersOverride = stage ? stage.players.filter(function (p) { return p.posicion !== 'Portero'; }) : null;
-  G.futdraft = { lineup: lineup, squad: wt.squad.slice(), captainId: wt.captainId || null, formation: wt.formationId || WORLD_TOUR_DEFAULT_FORMATION, condition: 'ninguna', teamScoreOverride: futDraftTeamScore(lineup, wt.captainId || null), oppPlayersOverride: oppPlayersOverride && oppPlayersOverride.length ? oppPlayersOverride : null };
+  var styleMods = worldTourPlayStyleModifiers(wt);
+  G.futdraft = { lineup: lineup, squad: wt.squad.slice(), captainId: wt.captainId || null, formation: wt.formationId || WORLD_TOUR_DEFAULT_FORMATION, condition: 'ninguna', teamScoreOverride: futDraftTeamScore(lineup, wt.captainId || null), oppPlayersOverride: oppPlayersOverride && oppPlayersOverride.length ? oppPlayersOverride : null, styleAtkMult: styleMods.atk, styleDefMult: styleMods.def };
 }
 window.actionSimulateWorldTourMatch = function (visualMode) {
   var stage = worldTourStage();
@@ -629,13 +660,12 @@ function finishWorldTourMatch() {
     // Los fichajes del draft ya no salen con la media fija de la etapa
     // (quedaban flojísimos a mitad de recorrido, cuando tu equipo ya ha
     // subido mucho más) -- ahora se reescalan a la media ACTUAL de tu
-    // equipo, con algo de variedad para que no sean todos exactamente
-    // iguales, a petición explícita ("tienen que tener más o menos la
-    // media del equipo actual que tengas"). Clones aparte (no se toca
-    // stage.players, que se reutiliza cada vez que se enseña esta etapa).
+    // equipo, como mucho +2 por encima y como mínimo -4 por debajo, a
+    // petición explícita. Clones aparte (no se toca stage.players, que se
+    // reutiliza cada vez que se enseña esta etapa).
     var myScore = worldTourTeamScore();
     options = options.map(function (p) {
-      var ovr = Math.round(clamp(myScore + rand(-3, 6), 30, 99));
+      var ovr = Math.round(clamp(myScore + rand(-4, 2), 30, 99));
       return wtFromRoster(p.id, ovr) || p;
     });
     if (options.length) wt.pendingDraft = { stageId: stage.id, options: options };

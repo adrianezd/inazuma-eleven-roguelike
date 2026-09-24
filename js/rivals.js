@@ -90,6 +90,7 @@ var TEAM_SHIELD_FILES = {
   'Equipo Zero': 'zero.png',
   'Desesperdidos': 'desesperados.png',
   'Kirkwood': 'kirkwood.png',
+  'Equipo Ogro': 'ogro.png',
   'Cala Pirata': 'cala-pirata.png',
   'Flota Ixar': 'flota-ixar.png',
   'Dragones de Fuego': 'dragones-de-fuego.png',

@@ -493,6 +493,33 @@ function careerRecordStarterAppearances(c) {
   });
   careerApplySponsorElementPayout(c);
 }
+// Sanciones por roja de verdad, a petición explícita ("que haya rojas y
+// funcionen los sancionados y haya que quitarlos del 11 inicial"): se
+// llama al terminar CUALQUIER partido tuyo (Jornada/Copa/Champions/
+// Supercopa, todos comparten c.lineup/c.bench). Las sanciones que ya
+// venían de antes de este partido se dan por cumplidas (se han perdido
+// este partido, sentados en el banquillo por la sanción anterior) y se
+// liberan; las rojas de ESTE partido (live.sentOff, ver
+// futDraftAdvancePossession en js/futdraft-match.js) se añaden nuevas y
+// se apartan del once YA MISMO, con un suplente de la misma posición si
+// lo hay (si no, cualquiera) -- así ya no pueden salir de titulares en el
+// próximo partido hasta que se cumpla la sanción.
+function careerApplyRedCardSuspensions(c, live) {
+  c.suspendedIds = [];
+  var newRed = (live && live.sentOff) || [];
+  newRed.forEach(function (id) {
+    c.suspendedIds.push(id);
+    var lineupIdx = c.lineup.findIndex(function (s) { return s.player.id === id; });
+    if (lineupIdx === -1 || !c.bench.length) return;
+    var pos = c.lineup[lineupIdx].pos;
+    var benchIdx = c.bench.findIndex(function (p) { return p.posicion === pos; });
+    if (benchIdx === -1) benchIdx = 0;
+    var out = c.lineup[lineupIdx].player;
+    c.lineup[lineupIdx].player = c.bench[benchIdx];
+    c.bench[benchIdx] = out;
+    if (c.captainId === out.id) c.captainId = null;
+  });
+}
 // A petición explícita ("que tus jugadores suban puntos en base a lo que
 // van jugando, y no solo el entrenamiento... lo que está ahora de lo que
 // suben, divídelo entre lo que juegan siendo titulares y lo que suban en
@@ -978,6 +1005,13 @@ function careerFreshState(choices) {
     // vuelven solos en actionStartNewCareerSeason. No confundir con
     // loanedIds (cedidos ENTRANTES, de otro club al tuyo).
     loanedOutIds: [],
+    // Sancionados por roja (careerApplyRedCardSuspensions): se apartan
+    // solos del once nada más acabar el partido de la tarjeta, y no se
+    // pueden volver a meter de titular hasta que se cumpla la sanción (un
+    // partido, se libera solo al terminar el siguiente) -- a petición
+    // explícita ("que haya rojas y funcionen los sancionados y haya que
+    // quitarlos del 11 inicial").
+    suspendedIds: [],
     // Jugadores comprados (fichaje en propiedad) ESTA temporada: no se
     // pueden vender ni ceder hasta la que viene, a petición explícita --
     // se vacía en cada actionStartNewCareerSeason. Los cedidos entrantes
@@ -1079,6 +1113,7 @@ function careerSerialize(c) {
     bench: c.bench.map(function (p) { return p.id; }),
     loanedIds: c.loanedIds || [],
     loanedOutIds: c.loanedOutIds || [],
+    suspendedIds: c.suspendedIds || [],
     difficulty: c.difficulty || 'normal',
     negotiation: c.negotiation || 'duras',
     hideProdigy: !!c.hideProdigy, boardStyle: c.boardStyle || 'normal', ironman: !!c.ironman, marketActivity: c.marketActivity || 'baja',
@@ -1171,6 +1206,7 @@ function careerDeserialize(data) {
     budget: typeof data.budget === 'number' ? data.budget : CAREER_STARTING_BUDGET,
     loanedIds: data.loanedIds || [],
     loanedOutIds: data.loanedOutIds || [],
+    suspendedIds: data.suspendedIds || [],
     calendarView: data.calendarView,
     marketFilter: data.marketFilter || null, marketTypeFilter: data.marketTypeFilter || null, marketGrowthFilter: data.marketGrowthFilter || null, marketSearch: data.marketSearch || '', marketPriceMin: (typeof data.marketPriceMin === "number" ? data.marketPriceMin : null), marketPriceMax: (typeof data.marketPriceMax === "number" ? data.marketPriceMax : null),
     marketSort: data.marketSort, marketSortDir: data.marketSortDir, marketPage: data.marketPage || 0,
@@ -1600,6 +1636,13 @@ window.selectCareerPlayer = function (id) {
   } else {
     var benchIdxA = c.bench.findIndex(function (p) { return p.id === otherId; });
     var benchIdxB = c.bench.findIndex(function (p) { return p.id === id; });
+    var suspended = c.suspendedIds || [];
+    // Un sancionado por roja no se puede meter de titular -- a petición
+    // explícita ("que haya que quitarlos del 11 inicial"). Se deja
+    // seleccionado el otro (swapSelectedId ya apuntaba a él) para que se
+    // note que el toque no ha hecho nada, en vez de fallar en silencio.
+    if (lineupIdxA !== -1 && benchIdxB !== -1 && suspended.indexOf(id) !== -1) { render(); return; }
+    if (lineupIdxB !== -1 && benchIdxA !== -1 && suspended.indexOf(otherId) !== -1) { c.swapSelectedId = null; render(); return; }
     if (lineupIdxA !== -1 && benchIdxB !== -1) {
       var starterOut = c.lineup[lineupIdxA].player;
       c.lineup[lineupIdxA].player = c.bench[benchIdxB];
@@ -1688,9 +1731,11 @@ function renderCareerEquipo(c) {
   } else {
     captainHint = 'Capitán: <strong>' + escapeHtml(captain.player.nombre) + '</strong> (a la altura de la media del equipo, no suma ni resta).';
   }
+  var suspendedIds = c.suspendedIds || [];
   var benchHtml = c.bench.map(function (p) {
+    var suspended = suspendedIds.indexOf(p.id) !== -1;
     var cls = 'pitch-player futdraft-swappable' + (c.swapSelectedId === p.id ? ' selected' : '');
-    return '<div class="' + cls + '" onclick="selectCareerPlayer(\'' + p.id + '\')">' + careerPitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + '</span></div>';
+    return '<div class="' + cls + '" onclick="selectCareerPlayer(\'' + p.id + '\')">' + careerPitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + (suspended ? ' 🚫' : '') + '</span></div>';
   }).join('');
   var formationOptionsHtml = FUTDRAFT_FORMATIONS.map(function (f) {
     return '<option value="' + f.id + '"' + (f.id === c.formation ? ' selected' : '') + '>' + f.name + '</option>';
@@ -3272,6 +3317,25 @@ function careerRivalPower(name) {
   var p = teamPower({ name: name });
   return Math.round((p + target) / 2);
 }
+// Copa/Champions/Supercopa un poco más duras que la Liga en las
+// dificultades altas, a petición explícita ("haz que sea más complicado
+// ganar la copa (solo un pelín) y la champions y la supercopa, al menos
+// en difícil y muy difícil"): un extra sobre el rival SOLO en Difícil y
+// Muy difícil (en Fácil/Normal no cambia nada), pequeño en Copa, más
+// notable en Champions/Supercopa -- son las competiciones "de prestigio",
+// tiene sentido que cueste más ganarlas cuanto más exigente sea la
+// carrera.
+var CAREER_KNOCKOUT_DIFFICULTY_BONUS = {
+  cup: { facil: 0, normal: 0, dificil: 2, muy_dificil: 3 },
+  champions: { facil: 0, normal: 0, dificil: 5, muy_dificil: 7 },
+  supercopa: { facil: 0, normal: 0, dificil: 3, muy_dificil: 5 }
+};
+function careerKnockoutPower(basePower, competition) {
+  var c = G.career;
+  var bonusMap = CAREER_KNOCKOUT_DIFFICULTY_BONUS[competition];
+  var bonus = (c && bonusMap && bonusMap[c.difficulty]) || 0;
+  return Math.min(99, basePower + bonus);
+}
 
 // Estilo de juego de tu equipo (Gestionar plantilla), a petición
 // explícita: 4 niveles de Muy defensiva a Ofensiva, cada uno con su
@@ -4114,6 +4178,7 @@ function finishCareerMatchdayMatch() {
   c.lastMatchdayResult = { matchday: league.matchdayIndex + 1, oppName: oppName, myGoals: myGoals, oppGoals: oppGoals, winBonus: winBonus, youAreHome: youAreHome };
   c.jornadaAckPending = true;
   careerRecordStarterAppearances(c);
+  careerApplyRedCardSuspensions(c, live);
   league.matchdayIndex++;
   careerUpdateBestPosition(c);
   careerMaybeOpenMidseasonWindow(c);
@@ -4388,7 +4453,7 @@ function careerCupMaybeAwardChampion(c) {
     careerApplySponsorTrophyPayout(c);
   }
 }
-window.actionSimulateCareerCupMatch = function () {
+window.actionSimulateCareerCupMatch = function (visualMode) {
   var c = G.career;
   var cup = c.cup;
   var match = careerCupMyMatch(cup);
@@ -4404,7 +4469,7 @@ window.actionSimulateCareerCupMatch = function () {
   // contrario al que estoy jugando, un jugador que yo tengo en mi equipo").
   var careerStyleMods = careerPlayStyleModifiers(c);
   G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna', styleAtkMult: careerStyleMods.atk, styleDefMult: careerStyleMods.def, teamScoreOverride: careerMatchTeamScore(c) };
-  var sim = futDraftSimulateMatchCore(careerRivalPower(opp.name));
+  var sim = futDraftSimulateMatchCore(careerKnockoutPower(careerRivalPower(opp.name), 'cup'));
   G.futdraft.live = {
     oppSide: { name: opp.name }, modifier: sim.modifier,
     minute: 0, pending: sim.timeline.slice(), revealed: [],
@@ -4417,6 +4482,7 @@ window.actionSimulateCareerCupMatch = function () {
     inExtraTime: false, allowDraw: true, onFinish: finishCareerCupMatch,
     careerCupMatch: match,
     isCareer: true, youAreHome: true,
+    visualMode: visualMode || 'avatars',
     done: false
   };
   G.screen = 'futdraftLive';
@@ -4424,6 +4490,11 @@ window.actionSimulateCareerCupMatch = function () {
   render();
   futDraftLiveTick();
 };
+// "Jugar partido" (puntitos en vivo) en la Copa del Rey, que antes solo
+// tenía Simular/Saltar -- a petición explícita ("el jugar partido,
+// mételo también en todos los partidos del modo carrera, ahora no está
+// en la copa ni champions").
+window.actionPlayCareerCupMatch = function () { actionSimulateCareerCupMatch('dots'); };
 function finishCareerCupMatch() {
   var c = G.career;
   var cup = c.cup;
@@ -4437,6 +4508,7 @@ function finishCareerCupMatch() {
 
   var myEvents = live.revealed.filter(function (e) { return e.side === 'me'; });
   futDraftRecordGoalEvents(c.careerStats, myEvents, 'Tu equipo');
+  careerApplyRedCardSuspensions(c, live);
 
   var roundIdxAtElimination = cup.rounds.length - 1;
   careerCupAdvanceRound(cup);
@@ -4445,7 +4517,7 @@ function finishCareerCupMatch() {
   c.lastCupResult = { oppName: opp.name, myGoals: myGoals, oppGoals: oppGoals, playerWon: playerWon, penalty: penalty };
 
   G.futdraft.lastMatchResult = {
-    oppName: opp.name, oppShield: teamShieldPath(opp.name), oppPower: careerRivalPower(opp.name),
+    oppName: opp.name, oppShield: teamShieldPath(opp.name), oppPower: careerKnockoutPower(careerRivalPower(opp.name), 'cup'),
     myGoals: myGoals, oppGoals: oppGoals, playerWon: playerWon,
     timeline: live.revealed, modifier: live.modifier, isCareer: true, isCup: true, penalty: penalty, youAreHome: live.youAreHome
   };
@@ -4461,7 +4533,7 @@ window.actionSkipCareerCupMatch = function () {
   c.lastCupResult = null;
   var opp = careerCupOpponent(match);
   var myAtkDef = careerMyAtkDef(c);
-  var oppPower = careerRivalPower(opp.name);
+  var oppPower = careerKnockoutPower(careerRivalPower(opp.name), 'cup');
   var goles = careerSimulateMyMatchGoals(myAtkDef.atk, myAtkDef.def, oppPower, true);
   var myGoals = goles[0], oppGoals = goles[1];
   var penalty = myGoals === oppGoals ? careerCupPenaltyShootout(c, opp.name) : null;
@@ -4517,6 +4589,7 @@ function renderCareerCopa(c) {
       careerMatchupCardHtml(opp.name, roundNameForIndex(cup.rounds.length - 1, totalRounds)) +
       '<div class="panel center-text">' +
         '<div class="match-mode-picker">' +
+          '<button class="match-mode-card" onclick="actionPlayCareerCupMatch()"><span class="match-mode-icon">⚽</span><strong>Ver partido</strong><span class="dim small">Partido en vivo</span></button>' +
           '<button class="match-mode-card" onclick="actionSimulateCareerCupMatch()"><span class="match-mode-icon">▶️</span><strong>Simular</strong><span class="dim small">Minuto a minuto</span></button>' +
           '<button class="match-mode-card" onclick="actionSkipCareerCupMatch()"><span class="match-mode-icon">⏭️</span><strong>Saltar</strong><span class="dim small">Resultado al momento</span></button>' +
         '</div>' +
@@ -4742,7 +4815,7 @@ function careerChampionsMaybeAwardChampion(c) {
     c.supercopa = careerNewSupercopa();
   }
 }
-window.actionSimulateCareerChampionsMatch = function () {
+window.actionSimulateCareerChampionsMatch = function (visualMode) {
   var c = G.career;
   var champions = c.champions;
   if (!champions) return;
@@ -4758,7 +4831,7 @@ window.actionSimulateCareerChampionsMatch = function () {
   // contrario al que estoy jugando, un jugador que yo tengo en mi equipo").
   var careerStyleMods = careerPlayStyleModifiers(c);
   G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna', styleAtkMult: careerStyleMods.atk, styleDefMult: careerStyleMods.def, teamScoreOverride: careerMatchTeamScore(c) };
-  var sim = futDraftSimulateMatchCore(careerRivalPower(opp.name));
+  var sim = futDraftSimulateMatchCore(careerKnockoutPower(careerRivalPower(opp.name), 'champions'));
   G.futdraft.live = {
     oppSide: { name: opp.name }, modifier: sim.modifier,
     minute: 0, pending: sim.timeline.slice(), revealed: [],
@@ -4770,6 +4843,7 @@ window.actionSimulateCareerChampionsMatch = function () {
     inExtraTime: false, allowDraw: true, onFinish: finishCareerChampionsMatch,
     careerChampionsMatch: match, careerChampionsPhase: champions.phase,
     isCareer: true, youAreHome: true,
+    visualMode: visualMode || 'avatars',
     done: false
   };
   G.screen = 'futdraftLive';
@@ -4777,6 +4851,9 @@ window.actionSimulateCareerChampionsMatch = function () {
   render();
   futDraftLiveTick();
 };
+// "Jugar partido" en la Champions, que antes solo tenía un botón de
+// Simular (ni siquiera picker de 3) -- a petición explícita.
+window.actionPlayCareerChampionsMatch = function () { actionSimulateCareerChampionsMatch('dots'); };
 function finishCareerChampionsMatch() {
   var c = G.career;
   var champions = c.champions;
@@ -4787,12 +4864,13 @@ function finishCareerChampionsMatch() {
 
   var myEvents = live.revealed.filter(function (e) { return e.side === 'me'; });
   futDraftRecordGoalEvents(c.careerStats, myEvents, 'Tu equipo');
+  careerApplyRedCardSuspensions(c, live);
 
   if (live.careerChampionsPhase === 'group') {
     careerChampionsPlayMyGroupMatch(c, myGoals, oppGoals);
     c.lastChampionsResult = { oppName: opp.name, myGoals: myGoals, oppGoals: oppGoals, playerWon: myGoals > oppGoals, isGroup: true };
     G.futdraft.lastMatchResult = {
-      oppName: opp.name, oppShield: teamShieldPath(opp.name), oppPower: careerRivalPower(opp.name),
+      oppName: opp.name, oppShield: teamShieldPath(opp.name), oppPower: careerKnockoutPower(careerRivalPower(opp.name), 'champions'),
       myGoals: myGoals, oppGoals: oppGoals, playerWon: myGoals > oppGoals,
       timeline: live.revealed, modifier: live.modifier, isCareer: true, isChampions: true, isChampionsGroup: true, youAreHome: live.youAreHome
     };
@@ -4813,7 +4891,7 @@ function finishCareerChampionsMatch() {
   c.lastChampionsResult = { oppName: opp.name, myGoals: myGoals, oppGoals: oppGoals, playerWon: playerWon, penalty: penalty };
 
   G.futdraft.lastMatchResult = {
-    oppName: opp.name, oppShield: teamShieldPath(opp.name), oppPower: careerRivalPower(opp.name),
+    oppName: opp.name, oppShield: teamShieldPath(opp.name), oppPower: careerKnockoutPower(careerRivalPower(opp.name), 'champions'),
     myGoals: myGoals, oppGoals: oppGoals, playerWon: playerWon,
     timeline: live.revealed, modifier: live.modifier, isCareer: true, isChampions: true, penalty: penalty, youAreHome: live.youAreHome
   };
@@ -4829,7 +4907,7 @@ window.actionSkipCareerChampionsMatch = function () {
   if (!match) return;
   var opp = careerChampionsOpponent(match);
   var myAtkDef = careerMyAtkDef(c);
-  var oppPower = careerRivalPower(opp.name);
+  var oppPower = careerKnockoutPower(careerRivalPower(opp.name), 'champions');
   var goles = careerSimulateMyMatchGoals(myAtkDef.atk, myAtkDef.def, oppPower, true);
   var myGoals = goles[0], oppGoals = goles[1];
 
@@ -4923,9 +5001,10 @@ function renderCareerChampions(c) {
       groupActionHtml =
         careerMatchupCardHtml(groupOpp.name, 'Fase de grupos') +
         '<div class="panel center-text">' +
-          '<div class="btn-row" style="justify-content:center">' +
-            '<button class="btn btn-primary" onclick="actionSimulateCareerChampionsMatch()">▶ Simular partido</button>' +
-            '<button class="btn btn-skip" onclick="actionSkipCareerChampionsMatch()">⏭ Saltar</button>' +
+          '<div class="match-mode-picker">' +
+            '<button class="match-mode-card" onclick="actionPlayCareerChampionsMatch()"><span class="match-mode-icon">⚽</span><strong>Ver partido</strong><span class="dim small">Partido en vivo</span></button>' +
+            '<button class="match-mode-card" onclick="actionSimulateCareerChampionsMatch()"><span class="match-mode-icon">▶️</span><strong>Simular</strong><span class="dim small">Minuto a minuto</span></button>' +
+            '<button class="match-mode-card" onclick="actionSkipCareerChampionsMatch()"><span class="match-mode-icon">⏭️</span><strong>Saltar</strong><span class="dim small">Resultado al momento</span></button>' +
           '</div>' +
         '</div>';
     }
@@ -4947,9 +5026,10 @@ function renderCareerChampions(c) {
     actionHtml =
       careerMatchupCardHtml(opp.name, roundNameForIndex(champions.rounds.length - 1, totalRounds)) +
       '<div class="panel center-text">' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-primary" onclick="actionSimulateCareerChampionsMatch()">▶ Simular partido</button>' +
-          '<button class="btn btn-skip" onclick="actionSkipCareerChampionsMatch()">⏭ Saltar</button>' +
+        '<div class="match-mode-picker">' +
+          '<button class="match-mode-card" onclick="actionPlayCareerChampionsMatch()"><span class="match-mode-icon">⚽</span><strong>Ver partido</strong><span class="dim small">Partido en vivo</span></button>' +
+          '<button class="match-mode-card" onclick="actionSimulateCareerChampionsMatch()"><span class="match-mode-icon">▶️</span><strong>Simular</strong><span class="dim small">Minuto a minuto</span></button>' +
+          '<button class="match-mode-card" onclick="actionSkipCareerChampionsMatch()"><span class="match-mode-icon">⏭️</span><strong>Saltar</strong><span class="dim small">Resultado al momento</span></button>' +
         '</div>' +
       '</div>';
   } else {
@@ -4983,11 +5063,14 @@ function renderCareerChampions(c) {
 // partido de ida y vuelta"): 2 partidos (ida y vuelta) contra el rival
 // "jefe" más fuerte del juego (por TEAM_POWER), a una potencia FIJA muy
 // alta (CAREER_SUPERCOPA_POWER) que no depende de la dificultad elegida
-// -- "con mucho nivel" tiene que notarse siempre. Si empatáis a
-// agregado, se decide a penaltis (careerCupPenaltyShootout, genérica,
-// no específica de la Copa). No bloquea la Liga -- son solo 2 partidos,
-// se juegan cuando se quiera tras ganarla.
+// -- "con mucho nivel" tiene que notarse siempre. Por encima de eso, en
+// Difícil/Muy difícil se le suma el mismo extra que a la Champions
+// (careerKnockoutPower), a petición explícita. Si empatáis a agregado,
+// se decide a penaltis (careerCupPenaltyShootout, genérica, no
+// específica de la Copa). No bloquea la Liga -- son solo 2 partidos, se
+// juegan cuando se quiera tras ganarla.
 var CAREER_SUPERCOPA_POWER = 96;
+function careerSupercopaPower() { return careerKnockoutPower(CAREER_SUPERCOPA_POWER, 'supercopa'); }
 var CAREER_SUPERCOPA_WIN_BONUS = 9;
 function careerNewSupercopa() {
   var opponent = RIVAL_TEAM_BOSSES.slice().sort(function (a, b) { return teamPower({ name: b }) - teamPower({ name: a }); })[0];
@@ -5032,7 +5115,7 @@ function careerSupercopaResolveLeg(c, myGoals, oppGoals) {
     careerSupercopaMaybeAwardChampion(c);
   }
 }
-window.actionSimulateCareerSupercopaMatch = function () {
+window.actionSimulateCareerSupercopaMatch = function (visualMode) {
   var c = G.career;
   var sc = c.supercopa;
   if (!sc || sc.finished) return;
@@ -5040,7 +5123,7 @@ window.actionSimulateCareerSupercopaMatch = function () {
   c.savedFutdraft = G.futdraft;
   var careerStyleMods = careerPlayStyleModifiers(c);
   G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna', styleAtkMult: careerStyleMods.atk, styleDefMult: careerStyleMods.def, teamScoreOverride: careerMatchTeamScore(c) };
-  var sim = futDraftSimulateMatchCore(CAREER_SUPERCOPA_POWER);
+  var sim = futDraftSimulateMatchCore(careerSupercopaPower());
   G.futdraft.live = {
     oppSide: { name: sc.opponentName }, modifier: sim.modifier,
     minute: 0, pending: sim.timeline.slice(), revealed: [],
@@ -5049,6 +5132,7 @@ window.actionSimulateCareerSupercopaMatch = function () {
     inExtraTime: false, allowDraw: true, onFinish: finishCareerSupercopaMatch,
     careerSupercopaYouAreHome: youAreHome,
     isCareer: true, youAreHome: youAreHome,
+    visualMode: visualMode || 'avatars',
     done: false
   };
   G.screen = 'futdraftLive';
@@ -5056,15 +5140,18 @@ window.actionSimulateCareerSupercopaMatch = function () {
   render();
   futDraftLiveTick();
 };
+// "Jugar partido" en la Supercopa, misma petición que Copa/Champions.
+window.actionPlayCareerSupercopaMatch = function () { actionSimulateCareerSupercopaMatch('dots'); };
 function finishCareerSupercopaMatch() {
   var c = G.career;
   var live = G.futdraft.live;
   var myGoals = live.finalMyGoals, oppGoals = live.finalOppGoals;
   var myEvents = live.revealed.filter(function (e) { return e.side === 'me'; });
   futDraftRecordGoalEvents(c.careerStats, myEvents, 'Tu equipo');
+  careerApplyRedCardSuspensions(c, live);
   careerSupercopaResolveLeg(c, myGoals, oppGoals);
   G.futdraft.lastMatchResult = {
-    oppName: c.supercopa.opponentName, oppShield: teamShieldPath(c.supercopa.opponentName), oppPower: CAREER_SUPERCOPA_POWER,
+    oppName: c.supercopa.opponentName, oppShield: teamShieldPath(c.supercopa.opponentName), oppPower: careerSupercopaPower(),
     myGoals: myGoals, oppGoals: oppGoals, playerWon: myGoals > oppGoals,
     timeline: live.revealed, modifier: live.modifier, isCareer: true, isSupercopa: true, youAreHome: live.youAreHome
   };
@@ -5085,7 +5172,7 @@ window.actionSkipCareerSupercopaMatch = function () {
   if (!sc || sc.finished) return;
   var myAtkDef = careerMyAtkDef(c);
   var youAreHome = sc.legIndex === 0;
-  var goles = careerSimulateMyMatchGoals(myAtkDef.atk, myAtkDef.def, CAREER_SUPERCOPA_POWER, true);
+  var goles = careerSimulateMyMatchGoals(myAtkDef.atk, myAtkDef.def, careerSupercopaPower(), true);
   var myGoals = goles[0], oppGoals = goles[1];
   var myPlayers = c.lineup.map(function (s) { return s.player; });
   var events = [];
@@ -5118,9 +5205,10 @@ function renderCareerSupercopa(c) {
   } else {
     actionHtml = careerMatchupCardHtml(sc.opponentName, (sc.legIndex === 0 ? 'Ida' : 'Vuelta'), sc.legIndex === 0) +
       '<div class="panel center-text">' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-primary" onclick="actionSimulateCareerSupercopaMatch()">▶ Simular partido</button>' +
-          '<button class="btn btn-skip" onclick="actionSkipCareerSupercopaMatch()">⏭ Saltar</button>' +
+        '<div class="match-mode-picker">' +
+          '<button class="match-mode-card" onclick="actionPlayCareerSupercopaMatch()"><span class="match-mode-icon">⚽</span><strong>Ver partido</strong><span class="dim small">Partido en vivo</span></button>' +
+          '<button class="match-mode-card" onclick="actionSimulateCareerSupercopaMatch()"><span class="match-mode-icon">▶️</span><strong>Simular</strong><span class="dim small">Minuto a minuto</span></button>' +
+          '<button class="match-mode-card" onclick="actionSkipCareerSupercopaMatch()"><span class="match-mode-icon">⏭️</span><strong>Saltar</strong><span class="dim small">Resultado al momento</span></button>' +
         '</div>' +
       '</div>';
   }
@@ -5297,7 +5385,7 @@ function renderCareerJornada(c) {
       (seasonOver
         ? '<button class="btn btn-primary btn-block mt" onclick="actionStartNewCareerSeason()">Empezar temporada ' + (c.season + 1) + '</button>'
         : '<div class="match-mode-picker">' +
-            '<button class="match-mode-card" onclick="actionPlayCareerMatchday()"><span class="match-mode-icon">⚽</span><strong>Jugar</strong><span class="dim small">Partido en vivo</span></button>' +
+            '<button class="match-mode-card" onclick="actionPlayCareerMatchday()"><span class="match-mode-icon">⚽</span><strong>Ver partido</strong><span class="dim small">Partido en vivo</span></button>' +
             '<button class="match-mode-card" onclick="actionSimulateCareerMatchday()"><span class="match-mode-icon">▶️</span><strong>Simular</strong><span class="dim small">Minuto a minuto</span></button>' +
             '<button class="match-mode-card" onclick="actionSkipCareerMatchday()"><span class="match-mode-icon">⏭️</span><strong>Saltar</strong><span class="dim small">Resultado al momento</span></button>' +
           '</div>') +
