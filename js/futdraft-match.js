@@ -269,7 +269,21 @@ var FUTDRAFT_LINE_POS = ['Portero', 'Defensa', 'Centrocampista', 'Delantero'];
 // jugador ya expulsado (live.sentOff), a petición explícita ("el jugador
 // [con roja] ya no puede meter gol porque no está jugando").
 function futDraftBallCarrierPlayer(live, poss) {
-  if (poss.side !== 'me') return { nombre: 'Un jugador del ' + (live.oppSide ? live.oppSide.name : 'rival') };
+  if (poss.side !== 'me') {
+    // Nombre real del rival cuando hay plantilla real de verdad (Modo
+    // Mundial: oppPlayersOverride, ver worldTourBridgeFutdraft; Modo
+    // Carrera: oppGhostPool, la plantilla fantasma fija de la temporada)
+    // en vez de "Un jugador del Occult" siempre genérico -- a petición
+    // explícita (tras preguntar "por qué sale esto... pon jugadores").
+    var oppPool = (G.futdraft && (G.futdraft.oppPlayersOverride || G.futdraft.oppGhostPool)) || null;
+    if (oppPool && oppPool.length) {
+      var oppPos = FUTDRAFT_LINE_POS[poss.line];
+      var oppCandidates = oppPool.filter(function (pl) { return pl.posicion === oppPos; });
+      var oppPick = (oppCandidates.length ? oppCandidates : oppPool)[Math.floor(Math.random() * (oppCandidates.length ? oppCandidates.length : oppPool.length))];
+      if (oppPick) return oppPick;
+    }
+    return { nombre: 'Un jugador del ' + (live.oppSide ? live.oppSide.name : 'rival') };
+  }
   var lineup = (G.career && live.isCareer) ? G.career.lineup : G.futdraft.lineup;
   if (!lineup) return null;
   var sentOff = live.sentOff || [];
