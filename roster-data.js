@@ -3282,14 +3282,15 @@ var ROSTER = [
   locked:false,cost:120,
   sprite:'assets/sprites/r386.webp'
 },
-// Inazuma Kids FC (wiki: https://inazuma.fandom.com/es/wiki/Inazuma_Kids_FC),
+// Inazuma Kids FC (wiki: https://inazuma.fandom.com/es/wiki/Inazuma_Kids_FC).
 {
   id:'r387', nombre:'Herman Muller', original:'Herman Muller',
   posicion:'Portero', tipo:'Viento',
   tiro:20,pase:32,defensa:48,especial:46,
   hissatsu:['Despeje a presión'],tipoTecnica:'portero',
   desc:'Portero del Inazuma Kids FC, dorsal 1.',
-  locked:false,cost:16
+  locked:false,cost:16,
+  sprite:'assets/sprites/r387.webp'
 },
 {
   id:'r388', nombre:'Keth Claus', original:'Keth Claus',
@@ -3297,7 +3298,8 @@ var ROSTER = [
   tiro:22,pase:34,defensa:46,especial:38,
   hissatsu:[],
   desc:'Defensa del Inazuma Kids FC, dorsal 2.',
-  locked:false,cost:14
+  locked:false,cost:14,
+  sprite:'assets/sprites/r388.webp'
 },
 {
   id:'r389', nombre:'Robert Silver', original:'Robert Silver',
@@ -3305,7 +3307,8 @@ var ROSTER = [
   tiro:23,pase:33,defensa:47,especial:37,
   hissatsu:[],
   desc:'Defensa del Inazuma Kids FC, dorsal 3.',
-  locked:false,cost:14
+  locked:false,cost:14,
+  sprite:'assets/sprites/r389.webp'
 },
 {
   id:'r390', nombre:'Taylor Higgins', original:'Taylor Higgins',
@@ -3313,7 +3316,8 @@ var ROSTER = [
   tiro:28,pase:40,defensa:36,especial:38,
   hissatsu:[],
   desc:'Centrocampista del Inazuma Kids FC, dorsal 7.',
-  locked:false,cost:15
+  locked:false,cost:15,
+  sprite:'assets/sprites/r390.webp'
 },
 {
   id:'r391', nombre:'Jamie Cool', original:'Jamie Cool',
@@ -3321,7 +3325,8 @@ var ROSTER = [
   tiro:29,pase:41,defensa:35,especial:39,
   hissatsu:[],
   desc:'Centrocampista del Inazuma Kids FC, dorsal 8.',
-  locked:false,cost:15
+  locked:false,cost:15,
+  sprite:'assets/sprites/r391.webp'
 },
 {
   id:'r392', nombre:'Hans Randall', original:'Hans Randall',
@@ -3329,7 +3334,8 @@ var ROSTER = [
   tiro:44,pase:30,defensa:24,especial:42,
   hissatsu:['Acelerón','Tiro del cometa'],
   desc:'Delantero del Inazuma Kids FC, dorsal 9.',
-  locked:false,cost:18
+  locked:false,cost:18,
+  sprite:'assets/sprites/r392.webp'
 },
 {
   id:'r393', nombre:'Maddie Moonlight', original:'Maddie Moonlight',
@@ -3337,12 +3343,10 @@ var ROSTER = [
   tiro:46,pase:32,defensa:25,especial:44,
   hissatsu:['Tiro del cometa'],
   desc:'Capitana del Inazuma Kids FC, dorsal 11.',
-  locked:false,cost:20
+  locked:false,cost:20,
+  sprite:'assets/sprites/r393.webp'
 },
-// Instituto Kirkwood, primer anime (wiki: https://inazuma.fandom.com/es/wiki/Instituto_Kirkwood),
-// distintos de los hermanos Ash (r236-r238, de una saga posterior). Sin
-// sprite (no se han subido fotos para estos 6). Elemento 'Aire' de la
-// wiki pasado a Viento, igual que el resto del roster.
+// Instituto Kirkwood, primer anime (wiki: https://inazuma.fandom.com/es/wiki/Instituto_Kirkwood)
 {
   id:'r394', nombre:'Malcolm Night', original:'Malcolm Night',
   posicion:'Defensa', tipo:'Fuego',
