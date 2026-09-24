@@ -141,11 +141,12 @@ var WORLD_TOUR_STAGES = [
   },
   {
     // Rival final, tras el Zeus, a petición explícita -- el Equipo Ogro,
-    // el más fuerte de todos (ids r400-r410, once completo real, sin
-    // sprite todavía). Sin recorrido corto/completo por separado: SIEMPRE
-    // se llega hasta aquí (ver comentario de worldTourSetupDraftSize).
+    // el más fuerte de todos (ids r400-r407 nuevos + r45/r73/r74, que ya
+    // estaban en el roster con esos ids para Bash Lancer/Escavan Malice/
+    // Mystral Callous -- no se duplican). Sin recorrido corto/completo
+    // por separado: SIEMPRE se llega hasta aquí.
     id: 'ogro', name: 'Equipo Ogro', power: 82,
-    players: wtSquad([['r409', 83], ['r408', 81], ['r410', 80], ['r407', 78], ['r406', 77], ['r405', 76]])
+    players: wtSquad([['r45', 83], ['r73', 81], ['r74', 80], ['r407', 78], ['r406', 77], ['r405', 76]])
   }
 ];
 // Jugador genérico (solo el Otaku, que no tiene personajes con nombre

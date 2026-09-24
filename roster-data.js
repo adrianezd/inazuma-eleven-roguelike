@@ -3403,15 +3403,18 @@ var ROSTER = [
 },
 // Equipo Ogro (wiki: https://inazuma.fandom.com/es/wiki/Equipo_Ogro), el
 // rival más fuerte de todos -- rival final del Modo Mundial tras el Zeus.
-// Sin sprite (no se han subido fotos todavía). Elemento 'Aire' de la wiki
-// pasado a Viento, igual que el resto del roster.
+// Delantero, capitán (Bash Lancer, r45) y Mystral Callous (r74) ya
+// estaban en el roster con otros ids (personajes repetidos), así que no
+// se duplican aquí -- ver WORLD_TOUR_STAGES en world-tour.js. Elemento
+// 'Aire' de la wiki pasado a Viento, igual que el resto del roster.
 {
   id:'r400', nombre:'Lars Luceafăr', original:'Lars Luceafăr',
   posicion:'Portero', tipo:'Montaña',
   tiro:40,pase:60,defensa:92,especial:94,
   hissatsu:['Malla Eléctrica'],tipoTecnica:'portero',
   desc:'Portero del Equipo Ogro, dorsal 1.',
-  locked:true,cost:210
+  locked:true,cost:210,
+  sprite:'assets/sprites/r400.webp'
 },
 {
   id:'r401', nombre:'Bump Trungus', original:'Bump Trungus',
@@ -3419,7 +3422,8 @@ var ROSTER = [
   tiro:60,pase:65,defensa:90,especial:86,
   hissatsu:['Placaje Extremo'],
   desc:'Defensa del Equipo Ogro, dorsal 2.',
-  locked:true,cost:190
+  locked:true,cost:190,
+  sprite:'assets/sprites/r401.webp'
 },
 {
   id:'r402', nombre:'Lump Trungus', original:'Lump Trungus',
@@ -3427,7 +3431,8 @@ var ROSTER = [
   tiro:58,pase:64,defensa:89,especial:85,
   hissatsu:['Corte Diabólico'],
   desc:'Defensa del Equipo Ogro, dorsal 3.',
-  locked:true,cost:190
+  locked:true,cost:190,
+  sprite:'assets/sprites/r402.webp'
 },
 {
   id:'r403', nombre:'Radd Ischer', original:'Radd Ischer',
@@ -3435,7 +3440,8 @@ var ROSTER = [
   tiro:56,pase:63,defensa:87,especial:82,
   hissatsu:['Carga de Elefantes'],
   desc:'Defensa del Equipo Ogro, dorsal 4.',
-  locked:true,cost:180
+  locked:true,cost:180,
+  sprite:'assets/sprites/r403.webp'
 },
 {
   id:'r404', nombre:'Jynx Jenkins', original:'Jynx Jenkins',
@@ -3443,7 +3449,8 @@ var ROSTER = [
   tiro:57,pase:62,defensa:86,especial:81,
   hissatsu:['Corte Volcánico'],
   desc:'Defensa del Equipo Ogro, dorsal 5.',
-  locked:true,cost:180
+  locked:true,cost:180,
+  sprite:'assets/sprites/r404.webp'
 },
 {
   id:'r405', nombre:'Oni Triumvir', original:'Oni Triumvir',
@@ -3451,7 +3458,8 @@ var ROSTER = [
   tiro:70,pase:80,defensa:75,especial:88,
   hissatsu:['Gravitación'],
   desc:'Centrocampista del Equipo Ogro, dorsal 6.',
-  locked:true,cost:195
+  locked:true,cost:195,
+  sprite:'assets/sprites/r405.webp'
 },
 {
   id:'r406', nombre:'Drachen Gunther', original:'Drachen Gunther',
@@ -3459,7 +3467,8 @@ var ROSTER = [
   tiro:72,pase:82,defensa:74,especial:87,
   hissatsu:['Zona Sigma'],
   desc:'Centrocampista del Equipo Ogro, dorsal 7.',
-  locked:true,cost:195
+  locked:true,cost:195,
+  sprite:'assets/sprites/r406.webp'
 },
 {
   id:'r407', nombre:'Ichabod Stark', original:'Ichabod Stark',
@@ -3467,31 +3476,17 @@ var ROSTER = [
   tiro:74,pase:81,defensa:76,especial:90,
   hissatsu:['Diluvio Letal'],
   desc:'Centrocampista del Equipo Ogro, dorsal 8.',
-  locked:true,cost:200
+  locked:true,cost:200,
+  sprite:'assets/sprites/r407.webp'
 },
 {
-  id:'r408', nombre:'Escavan Malice', original:'Escavan Malice',
-  posicion:'Delantero', tipo:'Montaña',
-  tiro:92,pase:70,defensa:50,especial:96,
-  hissatsu:['Lluvia Letal'],
-  desc:'Delantero del Equipo Ogro, dorsal 9.',
-  locked:true,cost:220
-},
-{
-  id:'r409', nombre:'Bash Lancer', original:'Bash Lancer',
-  posicion:'Delantero', tipo:'Bosque',
-  tiro:96,pase:72,defensa:52,especial:98,
-  hissatsu:['Lanzada Letal'],
-  desc:'Capitán del Equipo Ogro, dorsal 10.',
-  locked:true,cost:230
-},
-{
-  id:'r410', nombre:'Mystral Callous', original:'Mystral Callous',
-  posicion:'Delantero', tipo:'Montaña',
-  tiro:94,pase:71,defensa:51,especial:97,
-  hissatsu:['Remate Letal'],
-  desc:'Delantero del Equipo Ogro, dorsal 11.',
-  locked:true,cost:225
+  id:'r408', nombre:'Xene B.', original:'Xene',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:90,pase:76,defensa:45,especial:90,
+  hissatsu:['Cañon de Meteoritos'],
+  desc:'El verdadero Xene que se hizo amigo de Mark',
+  locked:true,cost:400,
+  sprite:'assets/sprites/r408.webp'
 }
 
 ]
