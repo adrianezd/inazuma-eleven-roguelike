@@ -140,15 +140,24 @@ function renderFutDraftMatchResult() {
   // la izquierda (aquí y en el resumen de goles/asistencias), deshaciendo
   // lo que ya se veía bien durante el propio partido, un bug real
   // corregido a petición explícita.
+  // BUG REAL arreglado: esta pantalla de resultado (justo después de
+  // simular) solo miraba isCareer, así que un partido de Modo Mundial
+  // volvía SIEMPRE al escudo equipado en la config general y a "Tú" en
+  // vez de tu escudo/nombre de ahí (p.ej. Raimon), aunque durante el
+  // propio partido (renderFutDraftLive) sí saliera bien -- a petición
+  // explícita ("en modo mundial, aunque elija el raimon, los partidos
+  // salen con el escudo que yo tenga elegido en la configuración
+  // general"). Reutiliza el mismo criterio que el partido en vivo.
   var isCareer = r.isCareer && G.career;
-  var youShield = isCareer ? careerClubShieldPath(G.career) : getPlayerShieldPath();
-  var youName = isCareer ? careerClubDisplayName(G.career) : 'Tú';
+  var isWorldTour = r.isWorldTour && G.worldTour;
+  var youShield = isCareer ? careerClubShieldPath(G.career) : isWorldTour ? worldTourShieldPath() : getPlayerShieldPath();
+  var youName = isCareer ? careerClubDisplayName(G.career) : isWorldTour ? G.worldTour.teamName : 'Tú';
   var youAreHome = r.youAreHome !== false;
   var timelineHtml = (r.timeline && r.timeline.length)
     ? '<div class="panel">' +
         '<h3 style="margin-bottom:8px">Resumen del partido</h3>' +
         '<div class="futdraft-timeline">' +
-          r.timeline.map(function (ev) { return futDraftTimelineRowHtml(ev, r.oppName, youShield); }).join('') +
+          r.timeline.map(function (ev) { return futDraftTimelineRowHtml(ev, r.oppName, youShield, youAreHome); }).join('') +
         '</div>' +
       '</div>'
     : '<p class="dim small center-text">Partido sin goles en el tiempo reglamentario.</p>';

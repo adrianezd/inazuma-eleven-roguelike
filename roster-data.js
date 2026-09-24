@@ -447,7 +447,7 @@ var ROSTER = [
   {
     id: 'r45', nombre: 'Bash Lancer', original: "Baddap Sleep",
     posicion: 'Delantero', tipo: 'Bosque',
-    tiro: 86, pase: 81, defensa: 34, especial: 85,
+    tiro: 88, pase: 84, defensa: 34, especial: 85,
     hissatsu:['Lanza Letal'],tipoTecnica:'defensa',
     desc: 'Delantero y capitán de la Academia Ogro, con un estilo de juego agresivo y directo.',
     locked: true, cost:147
@@ -717,7 +717,7 @@ var ROSTER = [
     locked: true, cost:210
   },
   {
-    id: 'r79', nombre: 'Malcom Night', original: 'Malcom Night',
+    id: 'r79', nombre: 'Malcom Night Osc.', original: 'Malcom Night',
     posicion: 'Defensa', tipo: 'Bosque',
     tiro: 50, pase: 69, defensa: 80, especial: 80,
     hissatsu:['Corte Giratorio'],tipoTecnica:'defensa',
@@ -3410,7 +3410,7 @@ var ROSTER = [
 {
   id:'r400', nombre:'Lars Luceafăr', original:'Lars Luceafăr',
   posicion:'Portero', tipo:'Montaña',
-  tiro:40,pase:60,defensa:92,especial:94,
+  tiro:40,pase:60,defensa:86,especial:86,
   hissatsu:['Malla Eléctrica'],tipoTecnica:'portero',
   desc:'Portero del Equipo Ogro, dorsal 1.',
   locked:true,cost:210,
@@ -3487,6 +3487,15 @@ var ROSTER = [
   desc:'El verdadero Xene que se hizo amigo de Mark',
   locked:true,cost:400,
   sprite:'assets/sprites/r408.webp'
+}
+{
+  id:'r408', nombre:'Janus', original:'Janus',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:81,pase:86,defensa:75,especial:70,
+  hissatsu:['Cañon de Meteoritos'],
+  desc:'El verdadero Xene que se hizo amigo de Mark',
+  locked:true,cost:400,
+  sprite:'assets/sprites/r409.webp'
 }
 
 ]

@@ -524,15 +524,22 @@ function renderWorldTourHome() {
 // Las 3 formas de vivir el partido (mismo patrón que Jornada de Modo
 // Carrera): puentea G.futdraft con la plantilla del Modo Mundial y
 // reutiliza el motor de FutDraft/Liga tal cual.
-function worldTourBridgeFutdraft() {
+function worldTourBridgeFutdraft(stage) {
   var wt = G.worldTour;
   var lineup = worldTourLineup();
-  G.futdraft = { lineup: lineup, squad: wt.squad.slice(), captainId: wt.captainId || null, formation: wt.formationId || WORLD_TOUR_DEFAULT_FORMATION, condition: 'ninguna', teamScoreOverride: futDraftTeamScore(lineup, wt.captainId || null) };
+  // Goleadores rivales reales del equipo de la etapa (no del pool
+  // genérico de "no drafteados"), sin porteros -- a petición explícita
+  // ("los jugadores que te puedan meter gol en cada equipo, sean los de
+  // su propio equipo... menos los porteros"). Los rellenos genéricos
+  // (wtPlayerGeneric, sin sprite) cuentan igual: tienen nombre propio de
+  // ese equipo aunque no tengan cara.
+  var oppPlayersOverride = stage ? stage.players.filter(function (p) { return p.posicion !== 'Portero'; }) : null;
+  G.futdraft = { lineup: lineup, squad: wt.squad.slice(), captainId: wt.captainId || null, formation: wt.formationId || WORLD_TOUR_DEFAULT_FORMATION, condition: 'ninguna', teamScoreOverride: futDraftTeamScore(lineup, wt.captainId || null), oppPlayersOverride: oppPlayersOverride && oppPlayersOverride.length ? oppPlayersOverride : null };
 }
 window.actionSimulateWorldTourMatch = function (visualMode) {
   var stage = worldTourStage();
   if (!stage || G.worldTour.won) return;
-  worldTourBridgeFutdraft();
+  worldTourBridgeFutdraft(stage);
   var sim = futDraftSimulateMatchCore(stage.power);
   G.futdraft.live = {
     oppSide: { name: stage.name }, modifier: sim.modifier,
@@ -553,7 +560,7 @@ window.actionPlayWorldTourMatch = function () { actionSimulateWorldTourMatch('do
 window.actionSkipWorldTourMatch = function () {
   var stage = worldTourStage();
   if (!stage || G.worldTour.won) return;
-  worldTourBridgeFutdraft();
+  worldTourBridgeFutdraft(stage);
   var sim = futDraftSimulateMatchCore(stage.power);
   G.futdraft.live = { oppSide: { name: stage.name }, modifier: sim.modifier, myGoals: sim.myGoals, oppGoals: sim.oppGoals, finalMyGoals: sim.myGoals, finalOppGoals: sim.oppGoals, revealed: sim.timeline, myAtk: sim.myAtk, myDef: sim.myDef, effectiveOppPower: sim.effectiveOppPower, isWorldTour: true, youAreHome: true };
   finishWorldTourMatch();

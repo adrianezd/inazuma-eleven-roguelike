@@ -265,7 +265,7 @@ function finishLigaMatch() {
   f.lastMatchResult = {
     oppName: oppName, oppShield: teamShieldPath(oppName), oppPower: teamPower({ name: oppName }),
     myGoals: myGoals, oppGoals: oppGoals, playerWon: myGoals > oppGoals,
-    timeline: live.revealed, modifier: live.modifier, isLiga: true
+    timeline: live.revealed, modifier: live.modifier, isLiga: true, youAreHome: live.youAreHome
   };
   f.live = null;
   G.screen = 'futdraftMatchResult';

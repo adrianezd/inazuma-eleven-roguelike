@@ -170,7 +170,13 @@ function futDraftSimulateMatchCore(oppPower) {
   var myGoals = futDraftRandomGoals(futDraftExpectedGoals(myAtk, effectiveOppPower));
   var oppGoals = futDraftRandomGoals(futDraftExpectedGoals(effectiveOppPower, myDef));
   var myPlayers = f.lineup.map(function (s) { return s.player; });
-  var oppPlayers = futDraftUndraftedPool();
+  // BUG REAL arreglado: el Modo Mundial sacaba los goleadores rivales de
+  // un pool genérico de "no drafteados" de TODO el roster, así que un gol
+  // del Occult podía salir de cualquiera, no de sus propios jugadores
+  // reales (Talismán, Wolf...) -- a petición explícita. f.oppPlayersOverride
+  // lo pone worldTourBridgeFutdraft con el once real de la etapa (sin
+  // porteros, también a petición explícita) cuando lo hay.
+  var oppPlayers = f.oppPlayersOverride || futDraftUndraftedPool();
   var timeline = futDraftBuildTimeline(myGoals, oppGoals, myPlayers, oppPlayers);
   return { myGoals: myGoals, oppGoals: oppGoals, modifier: modifier, timeline: timeline, myAtk: myAtk, myDef: myDef, effectiveOppPower: effectiveOppPower };
 }
@@ -431,19 +437,39 @@ window.futDraftSkipLive = function () {
 // (tuyo o del pool fantasma del rival) y su asistencia si la hubo. En los
 // goles rivales se añade el nombre del equipo entre paréntesis, porque el
 // nombre del jugador fantasma no dice por sí solo para quién "juega".
-function futDraftTimelineRowHtml(ev, oppName, youShield) {
+function futDraftTimelineRowHtml(ev, oppName, youShield, youAreHome) {
   var isOpp = ev.side !== 'me';
   var shieldSrc = isOpp ? teamShieldPath(oppName) : (youShield || getPlayerShieldPath());
   var text = '<strong>' + escapeHtml(ev.scorer.nombre) + '</strong>' +
     (ev.assist ? ' <span class="dim">(asist. ' + escapeHtml(ev.assist.nombre) + ')</span>' : ' <span class="dim">(gol en solitario)</span>');
   if (isOpp) text += ' <span class="dim">· ' + escapeHtml(oppName) + '</span>';
-  // Los goles del rival se pintan en espejo (pegados a la derecha de la
-  // fila) para distinguirlos de un vistazo de los tuyos, que se quedan
-  // pegados a la izquierda como siempre -- a petición explícita.
-  var rowClass = 'futdraft-timeline-row' + (isOpp ? ' futdraft-timeline-row-opp' : '');
+  // BUG REAL arreglado: el gol se pintaba en espejo (a la derecha) solo
+  // según si era del rival, SIN mirar si el marcador de arriba te ponía a
+  // TI a la derecha (cuando juegas fuera de casa) -- así, de visitante,
+  // tus propios goles salían pegados a la izquierda igual que si fueras
+  // local, chocando con el marcador ("aunque soy visitante, los goles
+  // salen a la izquierda"). Ahora el lado espejo es el que NO aparece a
+  // la izquierda del marcador de verdad (el equipo local, youAreHome).
+  var mirror = youAreHome === false ? !isOpp : isOpp;
+  var rowClass = 'futdraft-timeline-row' + (mirror ? ' futdraft-timeline-row-opp' : '');
   return '<div class="' + rowClass + '"><span class="futdraft-timeline-minute">' + ev.minute + '\'</span><img class="futdraft-timeline-shield" src="' + escapeHtml(shieldSrc) + '" alt="">' + avatarHtml(ev.scorer) + '<span>' + text + '</span></div>';
 }
 
+// Escudo/nombre propios durante el partido: los de Modo Carrera o Modo
+// Mundial si vienen de ahí (careerClubShieldPath/worldTourShieldPath), no
+// el equipado en la config general de la web -- compartido entre el
+// marcador en vivo (renderFutDraftLive) y el resumen de goles (antes cada
+// uno lo calculaba por su cuenta, y el resumen se quedaba sin pasarlo,
+// bug real: "los goles que voy anotando, salen como si los hubiera
+// metido con otro escudo").
+function futDraftYouIdentity(live) {
+  var isCareer = live.isCareer && G.career;
+  var isWorldTour = live.isWorldTour && G.worldTour;
+  return {
+    shield: isCareer ? careerClubShieldPath(G.career) : isWorldTour ? worldTourShieldPath() : getPlayerShieldPath(),
+    name: isCareer ? careerClubDisplayName(G.career) : isWorldTour ? G.worldTour.teamName : 'Tú'
+  };
+}
 // Texto del indicador de minuto y filas del resumen, compartidos entre el
 // pintado completo y la actualización en sitio (futDraftLiveRefresh).
 function futDraftLiveIndicatorText(live) {
@@ -451,8 +477,10 @@ function futDraftLiveIndicatorText(live) {
 }
 function futDraftLiveLogHtml(live) {
   var oppName = live.oppSide.name;
+  var you = futDraftYouIdentity(live);
+  var youAreHome = live.youAreHome !== false;
   return live.revealed.slice().reverse().map(function (ev) {
-    return futDraftTimelineRowHtml(ev, oppName);
+    return futDraftTimelineRowHtml(ev, oppName, you.shield, youAreHome);
   }).join('');
 }
 // Cada tick del partido en vivo (cada ~150 ms) antes repintaba TODA la
@@ -738,10 +766,9 @@ function renderFutDraftLive() {
   // antes siempre salías a la izquierda aunque fueras visitante ("mientras
   // se está simulando el partido siempre soy local"), otro bug real,
   // corregidos los dos a la vez.
-  var isCareer = live.isCareer && G.career;
-  var isWorldTour = live.isWorldTour && G.worldTour;
-  var youShield = isCareer ? careerClubShieldPath(G.career) : isWorldTour ? worldTourShieldPath() : getPlayerShieldPath();
-  var youName = isCareer ? careerClubDisplayName(G.career) : isWorldTour ? G.worldTour.teamName : 'Tú';
+  var you = futDraftYouIdentity(live);
+  var youShield = you.shield;
+  var youName = you.name;
   var youAreHome = live.youAreHome !== false;
   var youSideHtml = '<div class="score-side"><img class="team-shield" src="' + escapeHtml(youShield) + '" alt=""><div class="score-name">' + escapeHtml(youName) + '</div><div class="score-num">' + live.myGoals + '</div></div>';
   var oppSideHtml = '<div class="score-side"><img class="team-shield" src="' + escapeHtml(teamShieldPath(oppName)) + '" alt=""><div class="score-name">' + escapeHtml(oppName) + '</div><div class="score-num">' + live.oppGoals + '</div></div>';

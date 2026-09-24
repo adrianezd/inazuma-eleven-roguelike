@@ -3379,9 +3379,21 @@ function careerTeamGhostPool(c, league, teamIdx) {
   league.ghostSquads = league.ghostSquads || {};
   if (league.ghostSquads[teamIdx]) return league.ghostSquads[teamIdx];
   var myIds = c.lineup.map(function (s) { return s.player.id; }).concat(c.bench.map(function (p) { return p.id; }));
-  var pool = ROSTER.filter(function (p) { return myIds.indexOf(p.id) === -1; });
+  // BUG REAL arreglado: cada equipo elegía sus 16 fantasma con un sorteo
+  // INDEPENDIENTE del resto de rivales, así que el mismo jugador (p.ej. un
+  // delantero real) podía tocarle en el sorteo a DOS equipos rivales
+  // distintos a la vez -- sus goles se repartían entre ambos y su "equipo"
+  // en el ranking de goleadores cambiaba de un partido a otro sin sentido
+  // ("el máximo goleador... lleva 15 goles con el Wild, pues si mete otro
+  // gol, cambia de equipo"). Ahora se lleva la cuenta de TODOS los ids ya
+  // usados por cualquier equipo esta temporada (league.ghostUsedIds) y se
+  // excluyen también, así que cada jugador pertenece a un único equipo
+  // fantasma fijo toda la temporada.
+  var usedIds = league.ghostUsedIds || (league.ghostUsedIds = myIds.slice());
+  var pool = ROSTER.filter(function (p) { return usedIds.indexOf(p.id) === -1; });
   var shuffled = pool.slice().sort(function () { return Math.random() - 0.5; });
   var squad = shuffled.slice(0, 16);
+  squad.forEach(function (p) { usedIds.push(p.id); });
   league.ghostSquads[teamIdx] = squad;
   return squad;
 }
