@@ -158,7 +158,14 @@ function wtPlayerGeneric(id, nombre, posicion, tipo, ovr) {
 // Cuánto sube la media de TODO tu equipo tras cada victoria (aparte del
 // jugador nuevo que fichas por el draft) -- a petición explícita ("tus
 // jugadores subirán un poquito de media").
-var WORLD_TOUR_WIN_BOOST = 1.2;
+// Subida de media por victoria: antes un fijo +1.2, ahora un rango de 2 a
+// 4 puntos por partido (sorteado cada vez), a petición explícita ("haz
+// que los jugadores suban de 2 a 4 puntos por partido"). wt.lastBoost
+// guarda el valor exacto de la última victoria para poder enseñarlo en
+// la pantalla del draft (antes era el mismo número siempre, ahora toca
+// recordarlo).
+var WORLD_TOUR_WIN_BOOST_MIN = 2;
+var WORLD_TOUR_WIN_BOOST_MAX = 4;
 var WORLD_TOUR_DEFAULT_FORMATION = '442';
 
 function worldTourRandomSquad() {
@@ -188,7 +195,7 @@ function worldTourRandomSquad() {
 // mejoras de las medias"): 'libre' te deja reintentar el mismo rival sin
 // más; 'duro' te manda otra vez al primer rival (Occult) al perder, pero
 // tu plantilla conserva todo lo ganado hasta entonces (media y fichajes).
-function worldTourSetupMode() { return G.worldTourSetupMode === 'duro' ? 'duro' : 'libre'; }
+function worldTourSetupMode() { return (G.worldTourSetupMode === 'duro' || G.worldTourSetupMode === 'dificil') ? G.worldTourSetupMode : 'libre'; }
 window.actionSetWorldTourSetupMode = function (mode) { G.worldTourSetupMode = mode; render(); };
 function worldTourSetupSpecials() { return G.worldTourSetupSpecials !== false; }
 window.actionSetWorldTourSpecials = function (on) { G.worldTourSetupSpecials = !!on; render(); };
@@ -259,8 +266,9 @@ function renderWorldTourSetup() {
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-tiny' + (mode === 'libre' ? ' active' : '') + '" onclick="actionSetWorldTourSetupMode(\'libre\')">Reintentar</button>' +
           '<button class="btn btn-tiny' + (mode === 'duro' ? ' active' : '') + '" onclick="actionSetWorldTourSetupMode(\'duro\')">Racha</button>' +
+          '<button class="btn btn-tiny' + (mode === 'dificil' ? ' active' : '') + '" onclick="actionSetWorldTourSetupMode(\'dificil\')">Difícil</button>' +
         '</div>' +
-        '<p class="dim small center-text mt">' + (mode === 'libre' ? 'Si pierdes, te quedas en el mismo rival y lo repites.' : 'Si pierdes, vuelves al Occult, pero tu plantilla conserva la media y los fichajes ganados.') + '</p>' +
+        '<p class="dim small center-text mt">' + (mode === 'libre' ? 'Si pierdes, te quedas en el mismo rival y lo repites.' : mode === 'duro' ? 'Si pierdes, vuelves al Occult, pero tu plantilla conserva la media y los fichajes ganados.' : 'Si pierdes, vuelves al Occult con la plantilla inicial de cero, sin ninguna mejora ni fichaje ganado.') + '</p>' +
       '</div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:8px" class="center-text">Draft</h3>' +
@@ -312,6 +320,12 @@ window.actionStartWorldTour = function () {
   });
   G.worldTour = {
     squad: squad,
+    // Plantilla inicial guardada tal cual (clones aparte, no referencias)
+    // para el modo Difícil: al perder, se vuelve a ESTA plantilla exacta,
+    // sin ninguna de las mejoras ni fichajes ganados -- a petición
+    // explícita ("un modo donde cuando pierdes, vuelves a empezar desde
+    // el Occult y sin las mejoras ni nada, como un modo difícil").
+    startingSquad: squad.map(function (p) { return Object.assign({}, p); }),
     isRaimon: !useRandom,
     teamName: useRandom ? ((G.worldTourSetupName || '').trim() || 'Tu Equipo') : 'Raimon',
     teamShieldName: useRandom ? (G.worldTourSetupShield || null) : null,
@@ -591,7 +605,9 @@ function finishWorldTourMatch() {
   var playerWon = penalty ? penalty.myGoals > penalty.oppGoals : myGoals > oppGoals;
 
   if (playerWon) {
-    wt.squad.forEach(function (p) { p.tiro += WORLD_TOUR_WIN_BOOST; p.pase += WORLD_TOUR_WIN_BOOST; p.defensa += WORLD_TOUR_WIN_BOOST; p.especial += WORLD_TOUR_WIN_BOOST; });
+    var boost = Math.round(rand(WORLD_TOUR_WIN_BOOST_MIN, WORLD_TOUR_WIN_BOOST_MAX) * 10) / 10;
+    wt.lastBoost = boost;
+    wt.squad.forEach(function (p) { p.tiro += boost; p.pase += boost; p.defensa += boost; p.especial += boost; });
     wt.cleared.push(stage.id);
     // No ofrecer en el draft a jugadores que ya tienes en la plantilla --
     // a petición explícita.
@@ -622,6 +638,17 @@ function finishWorldTourMatch() {
     // El evento aleatorio solo pasa al GANAR, nunca al perder -- a
     // petición explícita.
     worldTourRandomEvent(wt);
+  } else if (wt.mode === 'dificil') {
+    // Difícil: pierdes, vuelves al Occult con la plantilla inicial EXACTA
+    // (startingSquad, clonada de nuevo para no compartir referencias),
+    // perdiendo toda la media ganada y los fichajes del draft -- a
+    // petición explícita ("vuelves a empezar desde el Occult y sin las
+    // mejoras ni nada, como un modo difícil").
+    wt.stageIndex = 0;
+    wt.cleared = [];
+    wt.squad = wt.startingSquad.map(function (p) { return Object.assign({}, p); });
+    wt.pendingDraft = null;
+    wt.lastLossMessage = 'Derrota en modo Difícil: vuelves al Occult con la plantilla inicial, sin mejoras ni fichajes.';
   } else if (wt.mode === 'duro' && wt.stageIndex > 0) {
     // Racha: pierdes, vuelves al Occult -- pero la plantilla conserva
     // todo lo ganado (media y fichajes), a petición explícita.
@@ -690,7 +717,7 @@ function renderWorldTourDraft() {
     '<div class="screen">' +
       '<div class="panel center-text">' +
         '<h2 class="panel-title mb0">🎉 ¡Has ganado!</h2>' +
-        '<p class="dim small">Tu equipo sube +' + WORLD_TOUR_WIN_BOOST + ' de media. Elige a uno de estos jugadores para fichar:</p>' +
+        '<p class="dim small">Tu equipo sube +' + (wt.lastBoost || WORLD_TOUR_WIN_BOOST_MIN) + ' de media. Elige a uno de estos jugadores para fichar:</p>' +
       '</div>' +
       '<div class="panel">' + itemsHtml + '</div>' +
     '</div>'

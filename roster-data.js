@@ -3131,7 +3131,7 @@ var ROSTER = [
   id:'r370', nombre:'Joe Ingram', original:'Jo Ikegaki',
   posicion:'Portero', tipo:'Fuego',
   tiro:35,pase:48,defensa:72,especial:76,
-  hissatsu:['Atajo Tornado'],
+  hissatsu:['Atajo Tornado'],tipoTecnica:'portero',
   desc:'Portero titular del Instituto Umbrella.',
   locked:false,cost:110,
   sprite:'assets/sprites/r370.webp'
@@ -3140,7 +3140,7 @@ var ROSTER = [
   id:'r371', nombre:'Kendall Sefton', original:'Kendall Sefton',
   posicion:'Defensa', tipo:'Viento',
   tiro:42,pase:55,defensa:70,especial:67,
-  hissatsu:['Corte Giratorio'],
+  hissatsu:['Corte Giratorio'],tipoTecnica:'defensa',
   desc:'Defensa titular del Instituto Umbrella.',
   locked:false,cost:105,
   sprite:'assets/sprites/r371.webp'
@@ -3149,7 +3149,7 @@ var ROSTER = [
   id:'r372', nombre:'Jason Strike', original:'Yasuchi Kikuchi',
   posicion:'Defensa', tipo:'Fuego',
   tiro:48,pase:58,defensa:69,especial:66,
-  hissatsu:['Robo Rápido'],
+  hissatsu:['Robo Rápido'],tipoTecnica:'defensa',
   desc:'Defensa del Umbrella, muy aficionado al deporte y al entrenamiento físico.',
   locked:false,cost:105,
   sprite:'assets/sprites/r372.webp'
@@ -3158,7 +3158,7 @@ var ROSTER = [
   id:'r373', nombre:'Norman Porter', original:'Norman Porter',
   posicion:'Defensa', tipo:'Montaña',
   tiro:40,pase:52,defensa:73,especial:68,
-  hissatsu:['Barrido Defensivo'],
+  hissatsu:['Barrido Defensivo'],tipoTecnica:'defensa',
   desc:'Defensa titular del Instituto Umbrella.',
   locked:false,cost:105,
   sprite:'assets/sprites/r373.webp'
@@ -3167,7 +3167,7 @@ var ROSTER = [
   id:'r374', nombre:'Maxwell Claus', original:'Maxwell Claus',
   posicion:'Defensa', tipo:'Bosque',
   tiro:44,pase:54,defensa:71,especial:65,
-  hissatsu:['Giro Bobina'],
+  hissatsu:['Giro Bobina'],tipoTecnica:'defensa',
   desc:'Defensa del Umbrella, conocido por su apodo Chops.',
   locked:false,cost:105,
   sprite:'assets/sprites/r374.webp'
@@ -3176,7 +3176,7 @@ var ROSTER = [
   id:'r375', nombre:'Bruce Chaney', original:'Bruce Chaney',
   posicion:'Centrocampista', tipo:'Bosque',
   tiro:55,pase:64,defensa:50,especial:62,
-  hissatsu:['Equilibrismo'],
+  hissatsu:['Equilibrismo'],tipoTecnica:'regate',
   desc:'Centrocampista titular del Instituto Umbrella.',
   locked:false,cost:100,
   sprite:'assets/sprites/r375.webp'
@@ -3185,7 +3185,7 @@ var ROSTER = [
   id:'r376', nombre:'Leroy Rhymes', original:'Leroy Rhymes',
   posicion:'Centrocampista', tipo:'Viento',
   tiro:58,pase:68,defensa:53,especial:70,
-  hissatsu:['Equilibrismo'],
+  hissatsu:['Equilibrismo'],tipoTecnica:'regate',
   desc:'Centrocampista del Umbrella con buenas capacidades de control del balón.',
   locked:false,cost:110,
   sprite:'assets/sprites/r376.webp'
@@ -3194,7 +3194,7 @@ var ROSTER = [
   id:'r377', nombre:'Mildford Scott', original:'Mildford Scott',
   posicion:'Centrocampista', tipo:'Bosque',
   tiro:52,pase:61,defensa:54,especial:64,
-  hissatsu:['Escáner Ataque'],
+  hissatsu:['Escáner Ataque'],tipoTecnica:'regate',
   desc:'Centrocampista titular del Instituto Umbrella.',
   locked:false,cost:100,
   sprite:'assets/sprites/r377.webp'
@@ -3203,7 +3203,7 @@ var ROSTER = [
   id:'r378', nombre:'Lou Edmonds', original:'Yo Idemae',
   posicion:'Delantero', tipo:'Fuego',
   tiro:70,pase:57,defensa:44,especial:72,
-  hissatsu:['Tiro Giratorio'],
+  hissatsu:['Tiro Giratorio'],tipoTecnica:'tiro',
   desc:'Capitán del Instituto Umbrella y uno de sus principales jugadores.',
   locked:false,cost:125,
   sprite:'assets/sprites/r378.webp'
@@ -3212,7 +3212,7 @@ var ROSTER = [
   id:'r379', nombre:'Cameron Morefield', original:'Hidetsugu Yasunaga',
   posicion:'Centrocampista', tipo:'Viento',
   tiro:59,pase:67,defensa:52,especial:70,
-  hissatsu:['Entrada Huracán'],
+  hissatsu:['Entrada Huracán'],tipoTecnica:'regate',
   desc:'Centrocampista titular del Umbrella y antiguo tenista de gran talento.',
   locked:false,cost:110,
   sprite:'assets/sprites/r379.webp'
@@ -3221,7 +3221,7 @@ var ROSTER = [
   id:'r380', nombre:'Greg Bernard', original:'Seiji Mizuguchi',
   posicion:'Delantero', tipo:'Bosque',
   tiro:67,pase:72,defensa:51,especial:70,
-  hissatsu:['Remate Serpiente'],
+  hissatsu:['Remate Serpiente'],tipoTecnica:'tiro',
   desc:'Delantero del Umbrella, conocido como Cyborg por sus pases tan precisos.',
   locked:false,cost:120,
   sprite:'assets/sprites/r380.webp'
@@ -3230,7 +3230,7 @@ var ROSTER = [
   id:'r381', nombre: 'Sam Idol', original:'Sam Idol',
   posicion:'Portero', tipo:'Montaña',
   tiro:21,pase:36,defensa:70,especial:70,
-  hissatsu:['Deslizamiento'],
+  hissatsu:['Deslizamiento'],tipoTecnica:'portero',
   desc:'Portero del Otaku.',
   locked:false,cost:120,
   sprite:'assets/sprites/r381.webp'
@@ -3239,7 +3239,7 @@ var ROSTER = [
   id:'r382', nombre: 'Light Nobel', original:'Light Nobel',
   posicion:'Defensa', tipo:'Bosque',
   tiro:25,pase:65,defensa:71,especial:68,
-  hissatsu:['Bola Falsa'],
+  hissatsu:['Bola Falsa'],tipoTecnica:'defensa',
   desc:'Defensa del Otaku.',
   locked:false,cost:120,
   sprite:'assets/sprites/r382.webp'
@@ -3248,7 +3248,7 @@ var ROSTER = [
   id:'r383', nombre: 'Walter Valiant', original:'Walter Valiant',
   posicion:'Centrocampista', tipo:'Fuego',
   tiro:70,pase:70,defensa:60,especial:60,
-  hissatsu:['Regate Topo'],
+  hissatsu:['Regate Topo'],tipoTecnica:'regate',
   desc:'Centrocampista del Otaku.',
   locked:false,cost:120,
   sprite:'assets/sprites/r383.webp'
@@ -3257,7 +3257,7 @@ var ROSTER = [
   id:'r384', nombre:'Gus Gamer', original:'Gus Gamer',
   posicion:'Delantero', tipo:'Fuego',
   tiro:72,pase:55,defensa:38,especial:70,
-  hissatsu:['Modo Dios'],
+  hissatsu:['Bola Falsa'],tipoTecnica:'defensa',
   desc:'Delantero del Otaku, de segundo curso.',
   locked:false,cost:120,
   sprite:'assets/sprites/r384.webp'
@@ -3268,7 +3268,7 @@ var ROSTER = [
   id:'r385', nombre:'Mark Gambling', original:'Mark Gambling',
   posicion:'Delantero', tipo:'Viento',
   tiro:74,pase:58,defensa:40,especial:72,
-  hissatsu:['Combo Perfecto'],
+  hissatsu:['Combo Perfecto'],tipoTecnica:'tiro',
   desc:'Capitán del Otaku (Manga de Tenya Yabuno), de segundo curso.',
   locked:false,cost:125,
   sprite:'assets/sprites/r385.webp'
@@ -3277,7 +3277,7 @@ var ROSTER = [
   id:'r386', nombre:'Theodore Master', original:'Theodore Master',
   posicion:'Delantero', tipo:'Bosque',
   tiro:71,pase:56,defensa:39,especial:69,
-  hissatsu:['Doble Salto'],
+  hissatsu:['Doble Salto'],tipoTecnica:'tiro',
   desc:'Delantero del Otaku, de tercer curso.',
   locked:false,cost:120,
   sprite:'assets/sprites/r386.webp'
@@ -3286,7 +3286,7 @@ var ROSTER = [
 {
   id:'r387', nombre:'Herman Muller', original:'Herman Muller',
   posicion:'Portero', tipo:'Viento',
-  tiro:20,pase:32,defensa:48,especial:46,
+  tiro:28,pase:42,defensa:70,especial:72,
   hissatsu:['Despeje a presión'],tipoTecnica:'portero',
   desc:'Portero del Inazuma Kids FC, dorsal 1.',
   locked:false,cost:16,
@@ -3295,7 +3295,7 @@ var ROSTER = [
 {
   id:'r388', nombre:'Keth Claus', original:'Keth Claus',
   posicion:'Defensa', tipo:'Viento',
-  tiro:22,pase:34,defensa:46,especial:38,
+  tiro:32,pase:46,defensa:70,especial:60,
   hissatsu:[],
   desc:'Defensa del Inazuma Kids FC, dorsal 2.',
   locked:false,cost:14,
@@ -3304,7 +3304,7 @@ var ROSTER = [
 {
   id:'r389', nombre:'Robert Silver', original:'Robert Silver',
   posicion:'Defensa', tipo:'Viento',
-  tiro:23,pase:33,defensa:47,especial:37,
+  tiro:33,pase:45,defensa:71,especial:59,
   hissatsu:[],
   desc:'Defensa del Inazuma Kids FC, dorsal 3.',
   locked:false,cost:14,
@@ -3313,7 +3313,7 @@ var ROSTER = [
 {
   id:'r390', nombre:'Taylor Higgins', original:'Taylor Higgins',
   posicion:'Centrocampista', tipo:'Viento',
-  tiro:28,pase:40,defensa:36,especial:38,
+  tiro:40,pase:56,defensa:52,especial:58,
   hissatsu:[],
   desc:'Centrocampista del Inazuma Kids FC, dorsal 7.',
   locked:false,cost:15,
@@ -3322,7 +3322,7 @@ var ROSTER = [
 {
   id:'r391', nombre:'Jamie Cool', original:'Jamie Cool',
   posicion:'Centrocampista', tipo:'Viento',
-  tiro:29,pase:41,defensa:35,especial:39,
+  tiro:41,pase:58,defensa:51,especial:60,
   hissatsu:[],
   desc:'Centrocampista del Inazuma Kids FC, dorsal 8.',
   locked:false,cost:15,
@@ -3331,8 +3331,8 @@ var ROSTER = [
 {
   id:'r392', nombre:'Hans Randall', original:'Hans Randall',
   posicion:'Delantero', tipo:'Fuego',
-  tiro:44,pase:30,defensa:24,especial:42,
-  hissatsu:['Acelerón','Tiro del cometa'],
+  tiro:66,pase:44,defensa:36,especial:64,
+  hissatsu:['Acelerón','Tiro del cometa'],tipoTecnica:'tiro',
   desc:'Delantero del Inazuma Kids FC, dorsal 9.',
   locked:false,cost:18,
   sprite:'assets/sprites/r392.webp'
@@ -3340,8 +3340,8 @@ var ROSTER = [
 {
   id:'r393', nombre:'Maddie Moonlight', original:'Maddie Moonlight',
   posicion:'Delantero', tipo:'Bosque',
-  tiro:46,pase:32,defensa:25,especial:44,
-  hissatsu:['Tiro del cometa'],
+  tiro:68,pase:46,defensa:37,especial:66,
+  hissatsu:['Tiro del cometa'],tipoTecnica:'tiro',
   desc:'Capitana del Inazuma Kids FC, dorsal 11.',
   locked:false,cost:20,
   sprite:'assets/sprites/r393.webp'
@@ -3351,7 +3351,7 @@ var ROSTER = [
   id:'r394', nombre:'Malcolm Night', original:'Malcolm Night',
   posicion:'Defensa', tipo:'Fuego',
   tiro:50,pase:55,defensa:66,especial:60,
-  hissatsu:['Corte Giratorio'],
+  hissatsu:['Corte Giratorio'],tipoTecnica:'defensa',
   desc:'Defensa del Instituto Kirkwood, dorsal 2.',
   locked:false,cost:100,
   sprite:'assets/sprites/r394.webp'
@@ -3360,7 +3360,7 @@ var ROSTER = [
   id:'r395', nombre:'Alfred Meenan', original:'Alfred Meenan',
   posicion:'Defensa', tipo:'Bosque',
   tiro:48,pase:56,defensa:68,especial:58,
-  hissatsu:['Robo Rápido'],
+  hissatsu:['Robo Rápido'],tipoTecnica:'defensa',
   desc:'Defensa del Instituto Kirkwood, dorsal 3.',
   locked:false,cost:100,
   sprite:'assets/sprites/r395.webp'
@@ -3369,7 +3369,7 @@ var ROSTER = [
   id:'r396', nombre:'Ricky Clover', original:'Ricky Clover',
   posicion:'Defensa', tipo:'Montaña',
   tiro:52,pase:54,defensa:65,especial:59,
-  hissatsu:['Giro Bobina'],
+  hissatsu:['Giro Bobina'],tipoTecnica:'defensa',
   desc:'Defensa del Instituto Kirkwood, dorsal 5.',
   locked:false,cost:100,
   sprite:'assets/sprites/r396.webp'
@@ -3378,7 +3378,7 @@ var ROSTER = [
   id:'r397', nombre:'Marvin Murdock', original:'Marvin Murdock',
   posicion:'Delantero', tipo:'Fuego',
   tiro:70,pase:62,defensa:45,especial:72,
-  hissatsu:['Triángulo Z','Espejismo de Balón'],
+  hissatsu:['Triángulo Z','Espejismo de Balón'],tipoTecnica:'tiro',
   desc:'Capitán del Instituto Kirkwood, dorsal 9.',
   locked:false,cost:125,
   sprite:'assets/sprites/r397.webp'
@@ -3387,7 +3387,7 @@ var ROSTER = [
   id:'r398', nombre:'Thomas Murdock', original:'Thomas Murdock',
   posicion:'Delantero', tipo:'Viento',
   tiro:66,pase:58,defensa:42,especial:68,
-  hissatsu:['Tornado Inverso'],
+  hissatsu:['Tornado Inverso'],tipoTecnica:'tiro',
   desc:'Delantero del Instituto Kirkwood, dorsal 10, hermano de Marvin y Tyler.',
   locked:false,cost:115,
   sprite:'assets/sprites/r398.webp'
@@ -3396,7 +3396,7 @@ var ROSTER = [
   id:'r399', nombre:'Tyler Murdock', original:'Tyler Murdock',
   posicion:'Delantero', tipo:'Montaña',
   tiro:64,pase:57,defensa:43,especial:66,
-  hissatsu:['Tornado Inverso'],
+  hissatsu:['Tornado Inverso'],tipoTecnica:'tiro',
   desc:'Delantero del Instituto Kirkwood, dorsal 11, hermano de Marvin y Thomas.',
   locked:false,cost:110,
   sprite:'assets/sprites/r399.webp'
@@ -3420,7 +3420,7 @@ var ROSTER = [
   id:'r401', nombre:'Bump Trungus', original:'Bump Trungus',
   posicion:'Defensa', tipo:'Fuego',
   tiro:60,pase:65,defensa:90,especial:86,
-  hissatsu:['Placaje Extremo'],
+  hissatsu:['Placaje Extremo'],tipoTecnica:'defensa',
   desc:'Defensa del Equipo Ogro, dorsal 2.',
   locked:true,cost:190,
   sprite:'assets/sprites/r401.webp'
@@ -3429,7 +3429,7 @@ var ROSTER = [
   id:'r402', nombre:'Lump Trungus', original:'Lump Trungus',
   posicion:'Defensa', tipo:'Viento',
   tiro:58,pase:64,defensa:89,especial:85,
-  hissatsu:['Corte Diabólico'],
+  hissatsu:['Corte Diabólico'],tipoTecnica:'defensa',
   desc:'Defensa del Equipo Ogro, dorsal 3.',
   locked:true,cost:190,
   sprite:'assets/sprites/r402.webp'
@@ -3438,7 +3438,7 @@ var ROSTER = [
   id:'r403', nombre:'Radd Ischer', original:'Radd Ischer',
   posicion:'Defensa', tipo:'Bosque',
   tiro:56,pase:63,defensa:87,especial:82,
-  hissatsu:['Carga de Elefantes'],
+  hissatsu:['Carga de Elefantes'],tipoTecnica:'defensa',
   desc:'Defensa del Equipo Ogro, dorsal 4.',
   locked:true,cost:180,
   sprite:'assets/sprites/r403.webp'
@@ -3447,7 +3447,7 @@ var ROSTER = [
   id:'r404', nombre:'Jynx Jenkins', original:'Jynx Jenkins',
   posicion:'Defensa', tipo:'Bosque',
   tiro:57,pase:62,defensa:86,especial:81,
-  hissatsu:['Corte Volcánico'],
+  hissatsu:['Corte Volcánico'],tipoTecnica:'defensa',
   desc:'Defensa del Equipo Ogro, dorsal 5.',
   locked:true,cost:180,
   sprite:'assets/sprites/r404.webp'
@@ -3456,7 +3456,7 @@ var ROSTER = [
   id:'r405', nombre:'Oni Triumvir', original:'Oni Triumvir',
   posicion:'Centrocampista', tipo:'Bosque',
   tiro:70,pase:80,defensa:75,especial:88,
-  hissatsu:['Gravitación'],
+  hissatsu:['Gravitación'],tipoTecnica:'defensa',
   desc:'Centrocampista del Equipo Ogro, dorsal 6.',
   locked:true,cost:195,
   sprite:'assets/sprites/r405.webp'
@@ -3465,7 +3465,7 @@ var ROSTER = [
   id:'r406', nombre:'Drachen Gunther', original:'Drachen Gunther',
   posicion:'Centrocampista', tipo:'Fuego',
   tiro:72,pase:82,defensa:74,especial:87,
-  hissatsu:['Zona Sigma'],
+  hissatsu:['Zona Sigma'],tipoTecnica:'defensa',
   desc:'Centrocampista del Equipo Ogro, dorsal 7.',
   locked:true,cost:195,
   sprite:'assets/sprites/r406.webp'
@@ -3474,7 +3474,7 @@ var ROSTER = [
   id:'r407', nombre:'Ichabod Stark', original:'Ichabod Stark',
   posicion:'Centrocampista', tipo:'Montaña',
   tiro:74,pase:81,defensa:76,especial:90,
-  hissatsu:['Diluvio Letal'],
+  hissatsu:['Diluvio Letal'],tipoTecnica:'tiro',
   desc:'Centrocampista del Equipo Ogro, dorsal 8.',
   locked:true,cost:200,
   sprite:'assets/sprites/r407.webp'
@@ -3483,7 +3483,7 @@ var ROSTER = [
   id:'r408', nombre:'Xene B.', original:'Xene',
   posicion:'Delantero', tipo:'Fuego',
   tiro:90,pase:76,defensa:45,especial:90,
-  hissatsu:['Cañon de Meteoritos'],
+  hissatsu:['Cañon de Meteoritos'],tipoTecnica:'tiro',
   desc:'El verdadero Xene que se hizo amigo de Mark',
   locked:true,cost:400,
   sprite:'assets/sprites/r408.webp'
@@ -3491,8 +3491,8 @@ var ROSTER = [
 {
   id:'r409', nombre:'Janus', original:'Janus',
   posicion:'Centrocampista', tipo:'Bosque',
-  tiro:81,pase:86,defensa:75,especial:70,
-  hissatsu:['Astro Remate'],
+  tiro:81,pase:86,defensa:75,especial:83,
+  hissatsu:['Astro Remate'],tipoTecnica:'tiro',
   desc:'Un alienígena que se dedica a destrozar institutos.',
   locked:true,cost:400,
   sprite:'assets/sprites/r409.webp'
