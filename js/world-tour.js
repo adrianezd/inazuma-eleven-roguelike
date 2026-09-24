@@ -124,8 +124,12 @@ var WORLD_TOUR_STAGES = [
     players: wtSquad([['r167', 71], ['r168', 70], ['r169', 69], ['r165', 67], ['r166', 66], ['r164', 65]])
   },
   {
+    // Los hermanos Ash (r236-238, la plantilla fuerte de una saga
+    // posterior) más 6 jugadores reales del Kirkwood del primer anime
+    // (r394-399, sin sprite -- no se han subido fotos), a petición
+    // explícita tras subirlos al roster.
     id: 'kirkwood', name: 'Kirkwood', power: 73,
-    players: wtSquad([['r236', 74], ['r237', 72], ['r238', 71]])
+    players: wtSquad([['r236', 74], ['r237', 72], ['r238', 71], ['r397', 65], ['r398', 62], ['r399', 61], ['r394', 60], ['r395', 60], ['r396', 59]])
   },
   {
     id: 'zeus', name: 'Zeus', power: 76,

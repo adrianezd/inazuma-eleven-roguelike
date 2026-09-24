@@ -3283,8 +3283,6 @@ var ROSTER = [
   sprite:'assets/sprites/r386.webp'
 },
 // Inazuma Kids FC (wiki: https://inazuma.fandom.com/es/wiki/Inazuma_Kids_FC),
-// sin sprite (no se han subido fotos para estos 7). Elemento 'Aire' de la
-// wiki pasado a Viento, igual que el resto del roster.
 {
   id:'r387', nombre:'Herman Muller', original:'Herman Muller',
   posicion:'Portero', tipo:'Viento',
@@ -3340,6 +3338,58 @@ var ROSTER = [
   hissatsu:['Tiro del cometa'],
   desc:'Capitana del Inazuma Kids FC, dorsal 11.',
   locked:false,cost:20
+},
+// Instituto Kirkwood, primer anime (wiki: https://inazuma.fandom.com/es/wiki/Instituto_Kirkwood),
+// distintos de los hermanos Ash (r236-r238, de una saga posterior). Sin
+// sprite (no se han subido fotos para estos 6). Elemento 'Aire' de la
+// wiki pasado a Viento, igual que el resto del roster.
+{
+  id:'r394', nombre:'Malcolm Night', original:'Malcolm Night',
+  posicion:'Defensa', tipo:'Fuego',
+  tiro:50,pase:55,defensa:66,especial:60,
+  hissatsu:['Corte Giratorio'],
+  desc:'Defensa del Instituto Kirkwood, dorsal 2.',
+  locked:false,cost:100
+},
+{
+  id:'r395', nombre:'Alfred Meenan', original:'Alfred Meenan',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:48,pase:56,defensa:68,especial:58,
+  hissatsu:['Robo Rápido'],
+  desc:'Defensa del Instituto Kirkwood, dorsal 3.',
+  locked:false,cost:100
+},
+{
+  id:'r396', nombre:'Ricky Clover', original:'Ricky Clover',
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:52,pase:54,defensa:65,especial:59,
+  hissatsu:['Giro Bobina'],
+  desc:'Defensa del Instituto Kirkwood, dorsal 5.',
+  locked:false,cost:100
+},
+{
+  id:'r397', nombre:'Marvin Murdock', original:'Marvin Murdock',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:70,pase:62,defensa:45,especial:72,
+  hissatsu:['Triángulo Z','Espejismo de Balón'],
+  desc:'Capitán del Instituto Kirkwood, dorsal 9.',
+  locked:false,cost:125
+},
+{
+  id:'r398', nombre:'Thomas Murdock', original:'Thomas Murdock',
+  posicion:'Delantero', tipo:'Viento',
+  tiro:66,pase:58,defensa:42,especial:68,
+  hissatsu:['Tornado Inverso'],
+  desc:'Delantero del Instituto Kirkwood, dorsal 10, hermano de Marvin y Tyler.',
+  locked:false,cost:115
+},
+{
+  id:'r399', nombre:'Tyler Murdock', original:'Tyler Murdock',
+  posicion:'Delantero', tipo:'Montaña',
+  tiro:64,pase:57,defensa:43,especial:66,
+  hissatsu:['Tornado Inverso'],
+  desc:'Delantero del Instituto Kirkwood, dorsal 11, hermano de Marvin y Thomas.',
+  locked:false,cost:110
 }
 
 ]
