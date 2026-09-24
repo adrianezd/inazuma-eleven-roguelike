@@ -79,14 +79,11 @@ var WORLD_TOUR_STAGES = [
     players: wtSquad([['r82', 60], ['r81', 58], ['r80', 57], ['r94', 54], ['r98', 53], ['r95', 52]])
   },
   {
+    // Ya no es genérico del todo: 7 personajes reales del Inazuma Kids FC
+    // (ids r387-r393, sin sprite -- caen en iniciales como el resto del
+    // roster sin foto), a petición explícita tras subirlos.
     id: 'inazuma-kids', name: 'Inazuma Kids', power: 40,
-    players: [
-      wtPlayerGeneric('wt_kids_1', 'Kenji', 'Portero', 'Bosque', 42),
-      wtPlayerGeneric('wt_kids_2', 'Taro', 'Centrocampista', 'Viento', 44),
-      wtPlayerGeneric('wt_kids_3', 'Yuto', 'Delantero', 'Fuego', 45),
-      wtPlayerGeneric('wt_kids_4', 'Renji', 'Defensa', 'Montaña', 41),
-      wtPlayerGeneric('wt_kids_5', 'Sora', 'Defensa', 'Bosque', 40)
-    ]
+    players: wtSquad([['r387', 42], ['r393', 45], ['r392', 44], ['r390', 41], ['r388', 40], ['r389', 40]])
   },
   {
     id: 'wild', name: 'Wild', power: 53,
