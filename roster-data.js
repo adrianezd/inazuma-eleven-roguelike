@@ -3353,7 +3353,8 @@ var ROSTER = [
   tiro:50,pase:55,defensa:66,especial:60,
   hissatsu:['Corte Giratorio'],
   desc:'Defensa del Instituto Kirkwood, dorsal 2.',
-  locked:false,cost:100
+  locked:false,cost:100,
+  sprite:'assets/sprites/r394.webp'
 },
 {
   id:'r395', nombre:'Alfred Meenan', original:'Alfred Meenan',
@@ -3361,7 +3362,8 @@ var ROSTER = [
   tiro:48,pase:56,defensa:68,especial:58,
   hissatsu:['Robo Rápido'],
   desc:'Defensa del Instituto Kirkwood, dorsal 3.',
-  locked:false,cost:100
+  locked:false,cost:100,
+  sprite:'assets/sprites/r395.webp'
 },
 {
   id:'r396', nombre:'Ricky Clover', original:'Ricky Clover',
@@ -3369,7 +3371,8 @@ var ROSTER = [
   tiro:52,pase:54,defensa:65,especial:59,
   hissatsu:['Giro Bobina'],
   desc:'Defensa del Instituto Kirkwood, dorsal 5.',
-  locked:false,cost:100
+  locked:false,cost:100,
+  sprite:'assets/sprites/r396.webp'
 },
 {
   id:'r397', nombre:'Marvin Murdock', original:'Marvin Murdock',
@@ -3377,7 +3380,8 @@ var ROSTER = [
   tiro:70,pase:62,defensa:45,especial:72,
   hissatsu:['Triángulo Z','Espejismo de Balón'],
   desc:'Capitán del Instituto Kirkwood, dorsal 9.',
-  locked:false,cost:125
+  locked:false,cost:125,
+  sprite:'assets/sprites/r397.webp'
 },
 {
   id:'r398', nombre:'Thomas Murdock', original:'Thomas Murdock',
@@ -3385,7 +3389,8 @@ var ROSTER = [
   tiro:66,pase:58,defensa:42,especial:68,
   hissatsu:['Tornado Inverso'],
   desc:'Delantero del Instituto Kirkwood, dorsal 10, hermano de Marvin y Tyler.',
-  locked:false,cost:115
+  locked:false,cost:115,
+  sprite:'assets/sprites/r398.webp'
 },
 {
   id:'r399', nombre:'Tyler Murdock', original:'Tyler Murdock',
@@ -3393,7 +3398,8 @@ var ROSTER = [
   tiro:64,pase:57,defensa:43,especial:66,
   hissatsu:['Tornado Inverso'],
   desc:'Delantero del Instituto Kirkwood, dorsal 11, hermano de Marvin y Thomas.',
-  locked:false,cost:110
+  locked:false,cost:110,
+  sprite:'assets/sprites/r399.webp'
 }
 
 ]
