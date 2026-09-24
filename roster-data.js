@@ -3259,7 +3259,8 @@ var ROSTER = [
   tiro:72,pase:55,defensa:38,especial:70,
   hissatsu:['Modo Dios'],
   desc:'Delantero del Otaku, de segundo curso.',
-  locked:false,cost:120
+  locked:false,cost:120,
+  sprite:'assets/sprites/r384.webp'
 },
 {
   // "Aire" no es un tipo elemental válido de la app (Fuego/Bosque/Viento/
@@ -3269,7 +3270,8 @@ var ROSTER = [
   tiro:74,pase:58,defensa:40,especial:72,
   hissatsu:['Combo Perfecto'],
   desc:'Capitán del Otaku (Manga de Tenya Yabuno), de segundo curso.',
-  locked:false,cost:125
+  locked:false,cost:125,
+  sprite:'assets/sprites/r385.webp'
 },
 {
   id:'r386', nombre:'Theodore Master', original:'Theodore Master',
@@ -3277,7 +3279,8 @@ var ROSTER = [
   tiro:71,pase:56,defensa:39,especial:69,
   hissatsu:['Doble Salto'],
   desc:'Delantero del Otaku, de tercer curso.',
-  locked:false,cost:120
+  locked:false,cost:120,
+  sprite:'assets/sprites/r386.webp'
 }
 
 ]

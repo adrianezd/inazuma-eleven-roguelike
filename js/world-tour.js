@@ -105,12 +105,12 @@ var WORLD_TOUR_STAGES = [
   },
   {
     // Ya no es la única excepción sin nombre real: Sam Idol, Light Nobel,
-    // Walter Valiant (r381-r383, con sprite) y ahora también Gus Gamer,
-    // Mark Gambling (capitán) y Theodore Master (r384-r386, sin sprite --
-    // solo los datos) cubren portero/defensa/centro/delantero; Comodín se
-    // queda genérico para una segunda defensa, a petición explícita.
+    // Walter Valiant (r381-r383) y Gus Gamer, Mark Gambling (capitán) y
+    // Theodore Master (r384-r386), todos con sprite propio, cubren
+    // portero/defensa/centro/delantero; Comodín se queda genérico para
+    // una segunda defensa, a petición explícita.
     id: 'otaku', name: 'Otaku', power: 45,
-    players: wtSquad([['r381', 50], ['r383', 52], ['r382', 48], ['r385', 53], ['r384', 51]]).concat([
+    players: wtSquad([['r381', 50], ['r383', 52], ['r382', 48], ['r385', 53], ['r384', 51], ['r386', 50]]).concat([
       wtPlayerGeneric('wt_otaku_4', 'Comodín', 'Defensa', 'Montaña', 49)
     ])
   },
