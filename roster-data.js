@@ -3487,13 +3487,13 @@ var ROSTER = [
   desc:'El verdadero Xene que se hizo amigo de Mark',
   locked:true,cost:400,
   sprite:'assets/sprites/r408.webp'
-}
+},
 {
-  id:'r408', nombre:'Janus', original:'Janus',
+  id:'r409', nombre:'Janus', original:'Janus',
   posicion:'Centrocampista', tipo:'Bosque',
   tiro:81,pase:86,defensa:75,especial:70,
-  hissatsu:['Cañon de Meteoritos'],
-  desc:'El verdadero Xene que se hizo amigo de Mark',
+  hissatsu:['Astro Remate'],
+  desc:'Un alienígena que se dedica a destrozar institutos.',
   locked:true,cost:400,
   sprite:'assets/sprites/r409.webp'
 }
