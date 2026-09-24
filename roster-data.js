@@ -3400,6 +3400,98 @@ var ROSTER = [
   desc:'Delantero del Instituto Kirkwood, dorsal 11, hermano de Marvin y Thomas.',
   locked:false,cost:110,
   sprite:'assets/sprites/r399.webp'
+},
+// Equipo Ogro (wiki: https://inazuma.fandom.com/es/wiki/Equipo_Ogro), el
+// rival más fuerte de todos -- rival final del Modo Mundial tras el Zeus.
+// Sin sprite (no se han subido fotos todavía). Elemento 'Aire' de la wiki
+// pasado a Viento, igual que el resto del roster.
+{
+  id:'r400', nombre:'Lars Luceafăr', original:'Lars Luceafăr',
+  posicion:'Portero', tipo:'Montaña',
+  tiro:40,pase:60,defensa:92,especial:94,
+  hissatsu:['Malla Eléctrica'],tipoTecnica:'portero',
+  desc:'Portero del Equipo Ogro, dorsal 1.',
+  locked:true,cost:210
+},
+{
+  id:'r401', nombre:'Bump Trungus', original:'Bump Trungus',
+  posicion:'Defensa', tipo:'Fuego',
+  tiro:60,pase:65,defensa:90,especial:86,
+  hissatsu:['Placaje Extremo'],
+  desc:'Defensa del Equipo Ogro, dorsal 2.',
+  locked:true,cost:190
+},
+{
+  id:'r402', nombre:'Lump Trungus', original:'Lump Trungus',
+  posicion:'Defensa', tipo:'Viento',
+  tiro:58,pase:64,defensa:89,especial:85,
+  hissatsu:['Corte Diabólico'],
+  desc:'Defensa del Equipo Ogro, dorsal 3.',
+  locked:true,cost:190
+},
+{
+  id:'r403', nombre:'Radd Ischer', original:'Radd Ischer',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:56,pase:63,defensa:87,especial:82,
+  hissatsu:['Carga de Elefantes'],
+  desc:'Defensa del Equipo Ogro, dorsal 4.',
+  locked:true,cost:180
+},
+{
+  id:'r404', nombre:'Jynx Jenkins', original:'Jynx Jenkins',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:57,pase:62,defensa:86,especial:81,
+  hissatsu:['Corte Volcánico'],
+  desc:'Defensa del Equipo Ogro, dorsal 5.',
+  locked:true,cost:180
+},
+{
+  id:'r405', nombre:'Oni Triumvir', original:'Oni Triumvir',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:70,pase:80,defensa:75,especial:88,
+  hissatsu:['Gravitación'],
+  desc:'Centrocampista del Equipo Ogro, dorsal 6.',
+  locked:true,cost:195
+},
+{
+  id:'r406', nombre:'Drachen Gunther', original:'Drachen Gunther',
+  posicion:'Centrocampista', tipo:'Fuego',
+  tiro:72,pase:82,defensa:74,especial:87,
+  hissatsu:['Zona Sigma'],
+  desc:'Centrocampista del Equipo Ogro, dorsal 7.',
+  locked:true,cost:195
+},
+{
+  id:'r407', nombre:'Ichabod Stark', original:'Ichabod Stark',
+  posicion:'Centrocampista', tipo:'Montaña',
+  tiro:74,pase:81,defensa:76,especial:90,
+  hissatsu:['Diluvio Letal'],
+  desc:'Centrocampista del Equipo Ogro, dorsal 8.',
+  locked:true,cost:200
+},
+{
+  id:'r408', nombre:'Escavan Malice', original:'Escavan Malice',
+  posicion:'Delantero', tipo:'Montaña',
+  tiro:92,pase:70,defensa:50,especial:96,
+  hissatsu:['Lluvia Letal'],
+  desc:'Delantero del Equipo Ogro, dorsal 9.',
+  locked:true,cost:220
+},
+{
+  id:'r409', nombre:'Bash Lancer', original:'Bash Lancer',
+  posicion:'Delantero', tipo:'Bosque',
+  tiro:96,pase:72,defensa:52,especial:98,
+  hissatsu:['Lanzada Letal'],
+  desc:'Capitán del Equipo Ogro, dorsal 10.',
+  locked:true,cost:230
+},
+{
+  id:'r410', nombre:'Mystral Callous', original:'Mystral Callous',
+  posicion:'Delantero', tipo:'Montaña',
+  tiro:94,pase:71,defensa:51,especial:97,
+  hissatsu:['Remate Letal'],
+  desc:'Delantero del Equipo Ogro, dorsal 11.',
+  locked:true,cost:225
 }
 
 ]

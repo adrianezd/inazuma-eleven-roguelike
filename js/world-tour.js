@@ -62,17 +62,21 @@ var WORLD_TOUR_STORY_JOINS = {
 // banquillo del Raimon.
 var WORLD_TOUR_RAIMON_SPECIALS = wtSquad([['r09', 46], ['r39', 45], ['r41', 44]]);
 
-// 7 equipos de Inazuma Eleven 1, en el orden real del torneo Fútbol
-// Frontier (Occult primero, Kirkwood el más fuerte al final). Todos los
-// jugadores son reales del roster (Occult y Wild tienen su once completo
-// ya cargado -- ver roster-data.js ids r80-r101 y r83-r93; Umbrella tiene
-// su once real completo, ids r370-r380; Brain, Otaku, Royal Academy, Zeus
+// Equipos de Inazuma Eleven 1, en el orden real del torneo Fútbol
+// Frontier (Occult primero) más el Equipo Ogro como rival final tras el
+// Zeus, a petición explícita. Todos los jugadores son reales del roster
+// (Occult y Wild tienen su once completo ya cargado -- ver roster-data.js
+// ids r80-r101 y r83-r93; Umbrella y el Equipo Ogro tienen su once real
+// completo, ids r370-r380 y r400-r410; Brain, Otaku, Royal Academy, Zeus
 // y Kirkwood tienen los que aparecen con su nombre real en el roster,
 // menos de 11 en algunos casos, rellenados con jugadores genéricos sin
 // cara para completar el once).
 // Orden corregido a petición explícita, con los amistosos y equipos que
 // faltaban: Occult, Inazuma Kids (amistoso), Wild, Umbrella (amistoso),
-// Brain, Otaku, Royal Academy, Shuriken, Farm, Kirkwood y Zeus al final.
+// Brain, Otaku, Royal Academy, Shuriken, Farm, Kirkwood, Zeus y el Equipo
+// Ogro al final. SIEMPRE se juega el recorrido entero (sin elección de
+// corto/completo, a petición explícita: "no pongas dos modos... son
+// iguales").
 var WORLD_TOUR_STAGES = [
   {
     id: 'occult', name: 'Occult', power: 48,
@@ -134,6 +138,14 @@ var WORLD_TOUR_STAGES = [
   {
     id: 'zeus', name: 'Zeus', power: 76,
     players: wtSquad([['r20', 77], ['r109', 75], ['r102', 73], ['r105', 72], ['r51', 71], ['r243', 74]])
+  },
+  {
+    // Rival final, tras el Zeus, a petición explícita -- el Equipo Ogro,
+    // el más fuerte de todos (ids r400-r410, once completo real, sin
+    // sprite todavía). Sin recorrido corto/completo por separado: SIEMPRE
+    // se llega hasta aquí (ver comentario de worldTourSetupDraftSize).
+    id: 'ogro', name: 'Equipo Ogro', power: 82,
+    players: wtSquad([['r409', 83], ['r408', 81], ['r410', 80], ['r407', 78], ['r406', 77], ['r405', 76]])
   }
 ];
 // Jugador genérico (solo el Otaku, que no tiene personajes con nombre
@@ -179,15 +191,16 @@ function worldTourSetupMode() { return G.worldTourSetupMode === 'duro' ? 'duro' 
 window.actionSetWorldTourSetupMode = function (mode) { G.worldTourSetupMode = mode; render(); };
 function worldTourSetupSpecials() { return G.worldTourSetupSpecials !== false; }
 window.actionSetWorldTourSpecials = function (on) { G.worldTourSetupSpecials = !!on; render(); };
-// 3 opciones más al empezar, a petición explícita: cuántas etapas jugar
-// (corto = las 5 primeras, hasta la Royal Academy; completo = las 11),
-// tamaño del draft (1 de 3, más control, o 1 de 5, más variedad) y modo
-// Leyenda (los rivales suben de fuerza cada vez que completas el
-// recorrido -- se cuenta en localStorage, independiente de cada partida).
+// 2 opciones más al empezar, a petición explícita: tamaño del draft (1 de
+// 3, más control, o 1 de 5, más variedad) y modo Leyenda (los rivales
+// suben de fuerza cada vez que completas el recorrido -- se cuenta en
+// localStorage, independiente de cada partida). Antes también se podía
+// elegir un recorrido corto (hasta el Brain) o completo (hasta el Zeus),
+// pero a petición explícita ("no pongas dos modos... son iguales") ya no
+// hay elección: SIEMPRE se juega el recorrido completo, con el Ogro
+// (equipo final) al terminar el Zeus.
 var WORLD_TOUR_LEGEND_KEY = 'worldTourRogue_legendWins';
 function worldTourLegendWins() { try { return parseInt(localStorage.getItem(WORLD_TOUR_LEGEND_KEY), 10) || 0; } catch (e) { return 0; } }
-function worldTourSetupStageCount() { return G.worldTourSetupStageCount === 5 ? 5 : 11; }
-window.actionSetWorldTourStageCount = function (n) { G.worldTourSetupStageCount = n; render(); };
 function worldTourSetupDraftSize() { return G.worldTourSetupDraftSize === 5 ? 5 : 3; }
 window.actionSetWorldTourDraftSize = function (n) { G.worldTourSetupDraftSize = n; render(); };
 function worldTourSetupLegend() { return !!G.worldTourSetupLegend; }
@@ -249,14 +262,6 @@ function renderWorldTourSetup() {
         '<p class="dim small center-text mt">' + (mode === 'libre' ? 'Si pierdes, te quedas en el mismo rival y lo repites.' : 'Si pierdes, vuelves al Occult, pero tu plantilla conserva la media y los fichajes ganados.') + '</p>' +
       '</div>' +
       '<div class="panel">' +
-        '<h3 style="margin-bottom:8px" class="center-text">Recorrido</h3>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-tiny' + (worldTourSetupStageCount() === 5 ? ' active' : '') + '" onclick="actionSetWorldTourStageCount(5)">Corto (5)</button>' +
-          '<button class="btn btn-tiny' + (worldTourSetupStageCount() === 11 ? ' active' : '') + '" onclick="actionSetWorldTourStageCount(11)">Completo (11)</button>' +
-        '</div>' +
-        '<p class="dim small center-text mt">' + (worldTourSetupStageCount() === 5 ? 'Hasta el Brain, sin Royal Academy ni los rivales finales.' : 'Los 11 equipos, hasta el Zeus.') + '</p>' +
-      '</div>' +
-      '<div class="panel">' +
         '<h3 style="margin-bottom:8px" class="center-text">Draft</h3>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-tiny' + (worldTourSetupDraftSize() === 3 ? ' active' : '') + '" onclick="actionSetWorldTourDraftSize(3)">1 de 3</button>' +
@@ -295,13 +300,13 @@ window.actionStartWorldTour = function () {
   var useRandom = worldTourSetupSquadType() === 'random';
   var squad = useRandom ? worldTourRandomSquad() : WORLD_TOUR_RAIMON_BASE.map(function (p) { return Object.assign({}, p); });
   if (!useRandom && worldTourSetupSpecials()) squad = squad.concat(WORLD_TOUR_RAIMON_SPECIALS.map(function (p) { return Object.assign({}, p); }));
-  var stageCount = worldTourSetupStageCount();
   var legend = worldTourSetupLegend();
   var legendBoost = legend ? worldTourLegendWins() * 3 : 0;
   // Modo Leyenda: los rivales suben de fuerza según cuántos recorridos
   // completos llevas ya terminados (contador en localStorage, no en esta
   // partida) -- clonado aparte para no tocar nunca la potencia base.
-  var stages = (stageCount === 5 ? WORLD_TOUR_STAGES.slice(0, 5) : WORLD_TOUR_STAGES.slice()).map(function (st) {
+  // Siempre el recorrido completo (ver comentario de arriba).
+  var stages = WORLD_TOUR_STAGES.slice().map(function (st) {
     return legendBoost ? Object.assign({}, st, { power: Math.min(99, st.power + legendBoost) }) : st;
   });
   G.worldTour = {
@@ -484,7 +489,7 @@ function renderWorldTourHome() {
     return '<div class="screen">' +
       '<div class="panel center-text">' +
         '<h2 class="panel-title mb0">🏆 ¡Recorrido completo!</h2>' +
-        '<p class="dim small">Has ganado a los 7 equipos de Inazuma Eleven 1. Media final del equipo: <strong style="color:var(--accent-2)">' + worldTourTeamScore() + '</strong> / 100.</p>' +
+        '<p class="dim small">Has ganado a todos los equipos, incluido el Equipo Ogro. Media final del equipo: <strong style="color:var(--accent-2)">' + worldTourTeamScore() + '</strong> / 100.</p>' +
       '</div>' +
       '<div class="panel">' + renderFutDraftPitch(wt.squad.slice(0, 11), wt.formationId || WORLD_TOUR_DEFAULT_FORMATION, false) + '</div>' +
       '<div class="panel center-text"><button class="btn btn-primary btn-block" onclick="actionGoWorldTour()">Repetir</button><button class="btn btn-outline btn-block mt" onclick="actionBackToMenu()">Menú</button></div>' +
@@ -602,12 +607,9 @@ function finishWorldTourMatch() {
     }
     if (wt.stageIndex >= wt.stages.length) {
       wt.won = true;
-      // Modo Leyenda: solo cuenta si completaste el recorrido COMPLETO
-      // (11), no el corto -- así el contador siempre refleja "cuántas
-      // veces has terminado del todo".
-      if (wt.stages.length >= WORLD_TOUR_STAGES.length) {
-        try { localStorage.setItem(WORLD_TOUR_LEGEND_KEY, String(worldTourLegendWins() + 1)); } catch (e) {}
-      }
+      // Modo Leyenda: se cuenta cada vez que se termina el recorrido
+      // entero (siempre completo ahora, ver comentario de arriba).
+      try { localStorage.setItem(WORLD_TOUR_LEGEND_KEY, String(worldTourLegendWins() + 1)); } catch (e) {}
     }
     // El evento aleatorio solo pasa al GANAR, nunca al perder -- a
     // petición explícita.
