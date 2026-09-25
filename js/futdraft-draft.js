@@ -78,6 +78,9 @@ function coachIntensityName(id) { return (CAREER_INTENSITIES[id] || CAREER_INTEN
 // multiplicadores de su intensidad (y de su estilo, si el modo no deja
 // elegir estilo, como FutDraft/Liga). Si se juega con un estilo elegido
 // que coincide con el del entrenador (Modo Mundial), sus puntos suben un 25%.
+// Los efectos extra (intensidad, físico, estilo propio del entrenador) se
+// suavizan para que sumen sin disparar la diferencia entre equipos.
+function tacticDamp(m, k) { return 1 + (m - 1) * k; }
 function coachEffect(coach, chosenStyleId) {
   if (!coach) return { atkPts: 0, defPts: 0, atkMult: 1, defMult: 1 };
   var style = CAREER_PLAY_STYLES.find(function (s) { return s.id === coach.estilo; }) || { atk: 1, def: 1 };
@@ -85,8 +88,8 @@ function coachEffect(coach, chosenStyleId) {
   var pts = 1 + (chosenStyleId && chosenStyleId === coach.estilo ? 0.25 : 0);
   return {
     atkPts: coach.atk * pts, defPts: coach.def * pts,
-    atkMult: (chosenStyleId ? 1 : style.atk) * inten.atk,
-    defMult: (chosenStyleId ? 1 : style.def) * inten.def
+    atkMult: tacticDamp(chosenStyleId ? 1 : style.atk, 0.4) * tacticDamp(inten.atk, 0.5),
+    defMult: tacticDamp(chosenStyleId ? 1 : style.def, 0.4) * tacticDamp(inten.def, 0.5)
   };
 }
 function coachAvatarHtml(coach) {
@@ -111,8 +114,8 @@ function futDraftTacticsMods(t, includeStyle) {
   var inten = CAREER_INTENSITY_BENEFIT[t.intensity] || CAREER_INTENSITY_BENEFIT.media;
   var foul = CAREER_FOUL_BENEFIT[t.foul] || CAREER_FOUL_BENEFIT.medio;
   return {
-    atk: style.atk * inten.atk * foul.atk,
-    def: style.def * inten.def * foul.def,
+    atk: style.atk * tacticDamp(inten.atk, 0.6) * tacticDamp(foul.atk, 0.6),
+    def: style.def * tacticDamp(inten.def, 0.6) * tacticDamp(foul.def, 0.6),
     injury: (CAREER_INTENSITIES[t.intensity] || CAREER_INTENSITIES.media).mult,
     foul: (CAREER_FOUL_STYLES[t.foul] || CAREER_FOUL_STYLES.medio).mult
   };
