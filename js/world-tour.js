@@ -526,7 +526,7 @@ function renderWorldTourHome() {
         '<h2 class="panel-title mb0">🏆 ¡Recorrido completo!</h2>' +
         '<p class="dim small">Has ganado a todos los equipos, incluido el Equipo Ogro. Media final del equipo: <strong style="color:var(--accent-2)">' + worldTourTeamScore() + '</strong> / 100.</p>' +
       '</div>' +
-      '<div class="panel">' + renderFutDraftPitch(wt.squad.slice(0, 11), wt.formationId || WORLD_TOUR_DEFAULT_FORMATION, false) + '</div>' +
+      '<div class="panel">' + renderFutDraftPitch(wt.squad.slice(0, 11), wt.formationId || WORLD_TOUR_DEFAULT_FORMATION, false, coachById(wt.coachId) || null) + '</div>' +
       '<div class="panel center-text"><button class="btn btn-primary btn-block" onclick="actionGoWorldTour()">Repetir</button><button class="btn btn-outline btn-block mt" onclick="actionBackToMenu()">Menú</button></div>' +
     '</div>';
   }
@@ -550,7 +550,7 @@ function renderWorldTourHome() {
         '</div>' +
         '<button class="btn btn-outline btn-block mt" onclick="actionGoWorldTourLineup()">Alineación</button>' +
       '</div>' +
-      '<div class="panel"><h3 style="margin-bottom:8px">Tu once</h3>' + renderFutDraftPitch(wt.squad.slice(0, 11), wt.formationId || WORLD_TOUR_DEFAULT_FORMATION, false) + '</div>' +
+      '<div class="panel"><h3 style="margin-bottom:8px">Tu once</h3>' + renderFutDraftPitch(wt.squad.slice(0, 11), wt.formationId || WORLD_TOUR_DEFAULT_FORMATION, false, coachById(wt.coachId) || null) + '</div>' +
     '</div>'
   );
 }

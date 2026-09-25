@@ -602,7 +602,10 @@ function assignFutDraftFormation(squad, formation) {
 // para que se vea de un vistazo cuánto queda de cada línea. Se usa solo
 // durante el draft (vista previa, aún sin cambios posibles) -- la
 // pantalla de equipo usa renderFutDraftLineupPitch, que sí es editable.
-function renderFutDraftPitch(squad, formationId, showEmptySlots) {
+function pitchCoachHtml(coach) {
+  return coach ? '<div class="pitch-coach" title="Entrenador: ' + escapeHtml(coach.nombre) + '">' + coachAvatarHtml(coach) + '<span class="pitch-player-name">' + escapeHtml(coach.nombre) + '</span></div>' : '';
+}
+function renderFutDraftPitch(squad, formationId, showEmptySlots, coach) {
   var formation = FUTDRAFT_FORMATIONS.find(function (f) { return f.id === formationId; });
   var rows = assignFutDraftFormation(squad, formation);
   var rowsHtml = rows.map(function (row) {
@@ -619,7 +622,7 @@ function renderFutDraftPitch(squad, formationId, showEmptySlots) {
     }
     return '<div class="pitch-row">' + itemsHtml + '</div>';
   }).join('');
-  return '<div class="pitch pitch-11">' + rowsHtml + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div>';
+  return '<div class="pitch pitch-11">' + rowsHtml + pitchCoachHtml(coach !== undefined ? coach : (G.futdraft && G.futdraft.coach)) + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div>';
 }
 
 // Campo de la pantalla de equipo: cada titular es clicable para hacer
@@ -659,7 +662,7 @@ function renderFutDraftLineupPitch(f) {
     }).join('');
     return '<div class="pitch-row">' + itemsHtml + '</div>';
   }).join('');
-  return '<div class="pitch pitch-11">' + rowsHtml + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div>';
+  return '<div class="pitch pitch-11">' + rowsHtml + pitchCoachHtml(G.futdraft && G.futdraft.coach) + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div>';
 }
 
 window.setFutDraftFormation = function (id) {
@@ -861,7 +864,7 @@ function futDraftSharedPitchHtml(formation, lineup, captainId) {
     }).join('');
     return '<div class="pitch-row">' + itemsHtml + '</div>';
   }).join('');
-  return '<div class="pitch pitch-11">' + rowsHtml + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div>';
+  return '<div class="pitch pitch-11">' + rowsHtml + pitchCoachHtml(G.futdraft && G.futdraft.coach) + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div>';
 }
 function renderFutDraftSharedSquad() {
   var summary = G.futdraftSharedSquad;
@@ -1278,7 +1281,7 @@ function renderFutDraftVsPick() {
         '<p class="dim small">Elige tu ' + currentPos + '. ' + hint + '</p></div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:8px">Tu plantilla</h3>' +
-        renderFutDraftPitch(squad.slice(0, FUTDRAFT_SQUAD_SIZE), s.formationId, true) +
+        renderFutDraftPitch(squad.slice(0, FUTDRAFT_SQUAD_SIZE), s.formationId, true, null) +
         (squad.length > FUTDRAFT_SQUAD_SIZE ? '<p class="dim small mt">Banquillo: ' + squad.slice(FUTDRAFT_SQUAD_SIZE).map(function (p) { return escapeHtml(p.nombre); }).join(', ') + '</p>' : '') +
       '</div>' +
       '<div class="panel"><h3 style="margin-bottom:8px">Elige uno</h3><div class="card-grid">' + optionsHtml + '</div></div>' +
