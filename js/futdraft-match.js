@@ -370,7 +370,8 @@ function futDraftAdvancePossession(live) {
   // igual que siempre.
   var redMult = typeof live.redCardFreqMult === 'number' ? live.redCardFreqMult : 1;
   var injuryMult = typeof live.injuryFreqMult === 'number' ? live.injuryFreqMult : 1;
-  if (scoreboardPlayer && Math.random() < 0.0102) {
+  var yellowMult = typeof live.yellowFreqMult === 'number' ? live.yellowFreqMult : 1;
+  if (scoreboardPlayer && Math.random() < 0.0102 * yellowMult) {
     live.cards.push({ side: p.side, minute: Math.round(live.minute), type: 'yellow', name: scoreboardPlayer.nombre, id: scoreboardPlayer.id || null });
   } else if (scoreboardPlayer && redMult > 0 && Math.random() < 0.0018 * redMult) {
     live.cards.push({ side: p.side, minute: Math.round(live.minute), type: 'red', name: scoreboardPlayer.nombre, id: scoreboardPlayer.id || null });

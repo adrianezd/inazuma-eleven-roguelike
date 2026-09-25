@@ -978,8 +978,28 @@ var CAREER_EVENT_FREQ = {
   alto: { name: 'Alto', mult: 2.5 }
 };
 var CAREER_EVENT_FREQ_ORDER = ['desactivado', 'bajo', 'alto'];
-function careerInjuryFreqMult(c) { return (CAREER_EVENT_FREQ[c.injuryFreq] || CAREER_EVENT_FREQ.bajo).mult; }
-function careerRedCardFreqMult(c) { return (CAREER_EVENT_FREQ[c.redCardFreq] || CAREER_EVENT_FREQ.bajo).mult; }
+// Estilo de juego "físico" y intensidad de entrenamiento/juego, elegidos en
+// Mi equipo (solo si hay lesiones o rojas activadas), a petición explícita:
+// un estilo más brusco te saca más tarjetas (amarillas y rojas), una
+// intensidad más alta lesiona más. Multiplican la frecuencia elegida al
+// crear la carrera (desactivado sigue siendo desactivado).
+var CAREER_FOUL_STYLES = {
+  leve: { name: 'Leve', mult: 0.5 },
+  medio: { name: 'Medio', mult: 1 },
+  brusco: { name: 'Brusco', mult: 1.8 }
+};
+var CAREER_INTENSITIES = {
+  baja: { name: 'Baja', mult: 0.5 },
+  media: { name: 'Media', mult: 1 },
+  alta: { name: 'Alta', mult: 1.8 }
+};
+function careerFoulMult(c) { return (CAREER_FOUL_STYLES[c.foulStyle] || CAREER_FOUL_STYLES.medio).mult; }
+function careerIntensityMult(c) { return (CAREER_INTENSITIES[c.intensity] || CAREER_INTENSITIES.media).mult; }
+function careerInjuryFreqMult(c) { return (CAREER_EVENT_FREQ[c.injuryFreq] || CAREER_EVENT_FREQ.bajo).mult * careerIntensityMult(c); }
+function careerRedCardFreqMult(c) { return (CAREER_EVENT_FREQ[c.redCardFreq] || CAREER_EVENT_FREQ.bajo).mult * careerFoulMult(c); }
+function careerYellowFreqMult(c) { return careerFoulMult(c); }
+window.actionSetCareerFoulStyle = function (id) { if (!CAREER_FOUL_STYLES[id]) return; G.career.foulStyle = id; render(); };
+window.actionSetCareerIntensity = function (id) { if (!CAREER_INTENSITIES[id]) return; G.career.intensity = id; render(); };
 function careerMaxSigningsPerDay(c) { return careerMarketActivity(c).maxSignings; }
 function careerNewMarketWindow(phase, totalDays) {
   return { open: true, phase: phase, dayIndex: 1, totalDays: totalDays, offersToday: {}, signingsToday: 0 };
@@ -1104,6 +1124,8 @@ function careerFreshState(choices) {
     // Mercado de invierno activable/desactivable al crear la carrera, a
     // petición explícita -- el de pretemporada siempre está activo.
     winterMarket: choices.winterMarket !== false,
+    foulStyle: 'medio',
+    intensity: 'media',
     injuryFreq: CAREER_EVENT_FREQ[choices.injuryFreq] ? choices.injuryFreq : 'bajo',
     redCardFreq: CAREER_EVENT_FREQ[choices.redCardFreq] ? choices.redCardFreq : 'bajo',
     division: division,
@@ -1240,7 +1262,7 @@ function careerSerialize(c) {
     suspendedIds: c.suspendedIds || [], injuries: c.injuries || [], boostedIds: c.boostedIds || [],
     difficulty: c.difficulty || 'normal',
     negotiation: c.negotiation || 'duras',
-    hideProdigy: !!c.hideProdigy, boardStyle: c.boardStyle || 'normal', ironman: !!c.ironman, marketActivity: c.marketActivity || 'baja', winterMarket: c.winterMarket !== false, injuryFreq: c.injuryFreq || 'bajo', redCardFreq: c.redCardFreq || 'bajo', seasonFilter: c.seasonFilter || TEAM_SEASON_ORDER.slice(),
+    hideProdigy: !!c.hideProdigy, boardStyle: c.boardStyle || 'normal', ironman: !!c.ironman, marketActivity: c.marketActivity || 'baja', winterMarket: c.winterMarket !== false, injuryFreq: c.injuryFreq || 'bajo', foulStyle: c.foulStyle || 'medio', intensity: c.intensity || 'media', redCardFreq: c.redCardFreq || 'bajo', seasonFilter: c.seasonFilter || TEAM_SEASON_ORDER.slice(),
     division: c.division || 2,
     divisionTeams: c.divisionTeams,
     league: c.league,
@@ -1321,7 +1343,7 @@ function careerDeserialize(data) {
     // ahí).
     difficulty: CAREER_DIFFICULTY_TIERS[data.difficulty] ? data.difficulty : 'normal',
     negotiation: CAREER_NEGOTIATION_MODES[data.negotiation] ? data.negotiation : 'duras',
-    hideProdigy: !!data.hideProdigy, boardStyle: data.boardStyle || 'normal', ironman: !!data.ironman, marketActivity: data.marketActivity || 'baja', winterMarket: data.winterMarket !== false, injuryFreq: data.injuryFreq || 'bajo', redCardFreq: data.redCardFreq || 'bajo', seasonFilter: data.seasonFilter || TEAM_SEASON_ORDER.slice(),
+    hideProdigy: !!data.hideProdigy, boardStyle: data.boardStyle || 'normal', ironman: !!data.ironman, marketActivity: data.marketActivity || 'baja', winterMarket: data.winterMarket !== false, injuryFreq: data.injuryFreq || 'bajo', foulStyle: data.foulStyle || 'medio', intensity: data.intensity || 'media', redCardFreq: data.redCardFreq || 'bajo', seasonFilter: data.seasonFilter || TEAM_SEASON_ORDER.slice(),
     division: data.division || 1,
     divisionTeams: data.divisionTeams || careerInitialDivisionTeams(),
     league: data.league,
@@ -1906,6 +1928,21 @@ function careerElementCounts(c) {
   return counts;
 }
 
+// Menú de estilo físico e intensidad (solo aparece con rojas/lesiones
+// activadas): cada desplegable actúa sobre su propio suceso.
+function careerRiskPanelHtml(c) {
+  var redOn = c.redCardFreq !== 'desactivado', injOn = c.injuryFreq !== 'desactivado';
+  if (!redOn && !injOn) return '';
+  function opts(map, current) {
+    return Object.keys(map).map(function (k) { return '<option value="' + k + '"' + (k === current ? ' selected' : '') + '>' + map[k].name + '</option>'; }).join('');
+  }
+  return '<div class="panel">' +
+    (redOn ? '<h3 style="margin-bottom:4px">Estilo físico</h3><p class="dim small">Más brusco, más tarjetas (amarillas y rojas). Más leve, menos.</p>' +
+      '<select class="select-field" onchange="actionSetCareerFoulStyle(this.value)">' + opts(CAREER_FOUL_STYLES, c.foulStyle || 'medio') + '</select>' : '') +
+    (injOn ? '<h3 style="margin:' + (redOn ? '12px' : '0') + ' 0 4px">Intensidad</h3><p class="dim small">Más intensidad, más riesgo de lesión. Menos, menos.</p>' +
+      '<select class="select-field" onchange="actionSetCareerIntensity(this.value)">' + opts(CAREER_INTENSITIES, c.intensity || 'media') + '</select>' : '') +
+  '</div>';
+}
 function renderCareerEquipo(c) {
   var breakdown = careerScoreBreakdown(c.lineup, c.captainId);
   var captain = c.captainId ? c.lineup.find(function (s) { return s.player.id === c.captainId; }) : null;
@@ -1954,6 +1991,7 @@ function renderCareerEquipo(c) {
       '<h3 style="margin-bottom:8px">Estilo de juego</h3>' +
       '<select class="select-field" onchange="actionSetCareerPlayStyle(this.value)">' + styleOptionsHtml + '</select>' +
     '</div>' +
+    careerRiskPanelHtml(c) +
     '<div class="panel">' + renderCareerLineupPitch(c) + '</div>' +
     '<div class="panel center-text">' +
       '<h3 style="margin-bottom:8px">Bonificación de atributo (once titular)</h3>' +
@@ -3833,9 +3871,25 @@ function careerBoardComputeTarget(c) {
   return clamp(rank + margin, 2, n - 3);
 }
 function careerEnsureBoard(c) {
-  if (!c.board) c.board = { targetPosition: careerBoardComputeTarget(c), confidence: CAREER_BOARD_START_CONFIDENCE, midWarning: false };
+  if (!c.board) {
+    c.board = { targetPosition: careerBoardComputeTarget(c), confidence: CAREER_BOARD_START_CONFIDENCE, midWarning: false, startBudget: c.budget, objectives: [] };
+    careerRollBoardObjectives(c);
+  } else if (!c.board.objectives) {
+    // Partidas de antes: el objetivo extra único pasa a la lista nueva.
+    c.board.objectives = c.board.extraObjective ? [Object.assign({ reward: 5, penalty: 5 }, c.board.extraObjective)] : [];
+    c.board.extraObjective = null;
+    if (c.board.startBudget === undefined) c.board.startBudget = c.budget;
+  }
   return c.board;
 }
+// Sube la confianza de la directiva (tope 100) por un trofeo o un objetivo
+// cumplido a mitad de temporada, a petición explícita ("que cuando ganas
+// trofeo o cumples objetivos también vaya subiendo de nuevo").
+function careerBoardBoost(c, amount) {
+  var board = careerEnsureBoard(c);
+  board.confidence = clamp(board.confidence + amount, 0, 100);
+}
+var CAREER_BOARD_TROPHY_BOOST = { cup: 4, champions: 8, supercopa: 3 };
 function careerBoardMidseasonReview(c) {
   var board = careerEnsureBoard(c);
   var half = Math.floor(c.league.schedule.length / 2);
@@ -3869,10 +3923,15 @@ function careerBoardSeasonReview(c, position) {
   var delta = diff <= 0 ? Math.round(10 / style.deltaMult) : Math.round((diff <= 2 ? -3 : (diff <= 5 ? -8 : -15)) * style.deltaMult);
   var n = c.league.teamNames.length;
   if (c.division === 1 && position > n - CAREER_PROMOTION_SPOTS) delta -= Math.round(5 * style.deltaMult);
-  var objectiveResult = careerBoardObjectiveMet(c, board);
-  if (objectiveResult) delta += objectiveResult.met ? 5 : -5;
+  // Objetivos extra: los ya cobrados a mitad de temporada no se cuentan dos
+  // veces; los cumplidos ahora suman su premio, los fallados restan.
+  var objectiveResults = careerBoardObjectivesStatus(c, board);
+  objectiveResults.forEach(function (r) {
+    if (r.obj.claimed) return;
+    delta += r.met ? r.obj.reward : -r.obj.penalty;
+  });
   board.confidence = clamp(before + delta, 0, 100);
-  c.lastBoardReview = { position: position, target: board.targetPosition, delta: delta, before: before, after: board.confidence, fired: board.confidence <= 0, objective: objectiveResult };
+  c.lastBoardReview = { position: position, target: board.targetPosition, delta: delta, before: before, after: board.confidence, fired: board.confidence <= 0, objectives: objectiveResults.map(function (r) { return { met: r.met, label: r.label, type: r.obj.type, reward: r.obj.reward, claimed: !!r.obj.claimed }; }) };
   if (board.confidence <= 0) careerBoardFire(c, position);
   return c.lastBoardReview;
 }
@@ -3887,10 +3946,9 @@ function renderCareerBoardPanel(c) {
     '<p class="dim small">Objetivo de la temporada: acabar en el puesto <strong>' + board.targetPosition + 'º</strong> o mejor' + (position === null ? '' : ' (ahora vas ' + position + 'º)') + '. ' + status + '</p>' +
     '<div class="sponsor-progress-track"><div class="sponsor-progress-fill" style="width:' + conf + '%;background:' + color + '"></div></div>' +
     '<p class="dim small">Confianza: <strong style="color:' + color + '">' + conf + ' / 100</strong>. Si llega a 0, te despiden.</p>' +
-    (board.extraObjective ? (function () {
-      var r = careerBoardObjectiveMet(c, board);
-      return '<p class="dim small">Objetivo extra: ' + r.label + ' ' + (r.met ? '✅' : '❌') + '</p>';
-    })() : '') +
+    careerBoardObjectivesStatus(c, board).map(function (r) {
+      return '<p class="dim small">' + careerObjectiveIcon(r.obj.type) + ' ' + r.label + ' ' + (r.met ? '✅' : '⏳') + ' <span style="opacity:.7">(+' + r.obj.reward + ' / -' + r.obj.penalty + ')</span></p>';
+    }).join('') +
   '</div>';
 }
 function renderCareerFired(c) {
@@ -4218,35 +4276,93 @@ function careerApplyPromotionRelegation(c) {
   // más objetivos en directiva al ascender, como usar jugadores de algún
   // elemento, usar jugadores de la cantera"): se sortea al ascender y se
   // renueva cada temporada mientras sigas en Primera.
-  if (c.division === 1) careerRollBoardObjective(c);
-  else if (c.board) c.board.extraObjective = null;
+  // (los objetivos extra ya se sortean solos cada temporada, ver careerEnsureBoard)
 }
-// Sortea un objetivo nuevo (mitad y mitad elemento/cantera). El de
-// elemento pide un tipo al azar que ya tengas representado en la
-// plantilla (para que sea posible, no una petición imposible). Se
-// evalúa en careerBoardSeasonReview mirando el ONCE TITULAR actual.
-function careerRollBoardObjective(c) {
-  var board = careerEnsureBoard(c);
-  if (Math.random() < 0.5) {
-    var squadTypes = (c.lineup.map(function (s) { return s.player; }).concat(c.bench)).map(function (p) { return p.tipo; });
-    var tipo = choice(TYPES.filter(function (t) { return squadTypes.indexOf(t) !== -1; })) || choice(TYPES);
-    board.extraObjective = { type: 'element', element: tipo, required: 4 };
-  } else {
-    board.extraObjective = { type: 'academy', required: 2 };
+// Objetivos extra de la directiva, a petición explícita ("que no siempre sea
+// quedar en una posición, que haya más, como ganar trofeos, hacer jugar a
+// gente de la cantera... y más que se te ocurran"): cada temporada salen 2
+// en Segunda y 3 en Primera, de tipos distintos. Cada uno tiene premio de
+// confianza si se cumple y castigo si no (obj.reward/obj.penalty). Los que
+// se pueden cumplir antes de acabar (goles, victorias, Copa, Champions) se
+// cobran en cuanto se cumplen (careerBoardClaimObjectives); el resto se
+// mira al acabar la Liga (careerBoardSeasonReview).
+function careerObjectiveIcon(type) {
+  return { element: '🔥', academy: '🌱', cup: '🏆', cupSemi: '🏅', champions: '⭐', championsKO: '🌍', goals: '⚽', wins: '💪', defense: '🧱', scorer: '👟', savings: '💰' }[type] || '🎯';
+}
+function careerRollBoardObjectives(c) {
+  var board = c.board;
+  var n = c.league.schedule.length;
+  var squadTypes = (c.lineup.map(function (s) { return s.player; }).concat(c.bench)).map(function (p) { return p.tipo; });
+  var tipo = choice(TYPES.filter(function (t) { return squadTypes.indexOf(t) !== -1; })) || choice(TYPES);
+  var pool = [
+    { type: 'element', element: tipo, required: 4, reward: 5, penalty: 5 },
+    { type: 'academy', required: 2, reward: 5, penalty: 5 },
+    { type: 'cup', reward: 8, penalty: 3 },
+    { type: 'cupSemi', reward: 4, penalty: 3 },
+    { type: 'goals', target: Math.round(n * 1.6), reward: 5, penalty: 4 },
+    { type: 'wins', target: Math.round(n * 0.5), reward: 5, penalty: 4 },
+    { type: 'defense', target: Math.round(n * 1.0), reward: 5, penalty: 4 },
+    { type: 'scorer', reward: 5, penalty: 3 },
+    { type: 'savings', reward: 4, penalty: 3 }
+  ];
+  if (c.division === 1 && (c.champions || c.qualifiedForChampionsNextSeason)) {
+    pool.push({ type: 'championsKO', reward: 6, penalty: 4 });
+    pool.push({ type: 'champions', reward: 10, penalty: 3 });
   }
+  pool.sort(function () { return Math.random() - 0.5; });
+  board.objectives = pool.slice(0, c.division === 1 ? 3 : 2);
 }
-// Comprueba el objetivo extra sobre el ONCE TITULAR de ahora mismo (al
-// evaluar la temporada) -- devuelve null si no hay objetivo activo.
-function careerBoardObjectiveMet(c, board) {
-  var obj = board.extraObjective;
-  if (!obj) return null;
+// Estado de cada objetivo AHORA MISMO (para el panel, la revisión de fin
+// de temporada y el cobro anticipado).
+function careerBoardObjectivesStatus(c, board) {
+  return (board.objectives || []).map(function (obj) { return careerBoardObjectiveMet(c, obj); });
+}
+function careerBoardObjectiveMet(c, obj) {
+  var me = c.league.table[0];
   if (obj.type === 'element') {
     var count = c.lineup.filter(function (s) { return s.player.tipo === obj.element; }).length;
     return { obj: obj, count: count, met: count >= obj.required, label: 'usar ' + obj.required + '+ titulares de tipo ' + obj.element + ' (llevas ' + count + ')' };
   }
-  var academyIds = c.academyPromotedIds || [];
-  var count2 = c.lineup.filter(function (s) { return academyIds.indexOf(s.player.id) !== -1; }).length;
-  return { obj: obj, count: count2, met: count2 >= obj.required, label: 'usar ' + obj.required + '+ titulares de cantera (llevas ' + count2 + ')' };
+  if (obj.type === 'academy') {
+    var academyIds = c.academyPromotedIds || [];
+    var count2 = c.lineup.filter(function (s) { return academyIds.indexOf(s.player.id) !== -1; }).length;
+    return { obj: obj, count: count2, met: count2 >= obj.required, label: 'usar ' + obj.required + '+ titulares de cantera (llevas ' + count2 + ')' };
+  }
+  if (obj.type === 'goals') return { obj: obj, count: me.gf, met: me.gf >= obj.target, label: 'marcar ' + obj.target + ' goles en Liga (llevas ' + me.gf + ')' };
+  if (obj.type === 'wins') return { obj: obj, count: me.pg, met: me.pg >= obj.target, label: 'ganar ' + obj.target + ' partidos de Liga (llevas ' + me.pg + ')' };
+  if (obj.type === 'defense') return { obj: obj, count: me.gc, met: me.gc <= obj.target && me.pj >= c.league.schedule.length, label: 'encajar ' + obj.target + ' goles o menos en Liga (llevas ' + me.gc + ')' };
+  if (obj.type === 'savings') {
+    var start = c.board && c.board.startBudget !== undefined ? c.board.startBudget : c.budget;
+    return { obj: obj, count: c.budget, met: c.budget >= start, label: 'acabar la temporada con al menos ' + start + ' M€ (ahora ' + c.budget + ')' };
+  }
+  if (obj.type === 'scorer') {
+    var scorers = Object.keys(c.league.stats.scorers).map(function (k) { return c.league.stats.scorers[k]; });
+    var best = scorers.reduce(function (a, b) { return b.count > a ? b.count : a; }, 0);
+    var mine = scorers.filter(function (e) { return e.team === 'Tu equipo'; }).reduce(function (a, b) { return b.count > a ? b.count : a; }, 0);
+    return { obj: obj, count: mine, met: mine > 0 && mine >= best, label: 'que un jugador tuyo sea el máximo goleador de la Liga (el tuyo lleva ' + mine + ', el mejor ' + best + ')' };
+  }
+  var totalRounds = Math.log2(c.cup.size);
+  var reached = c.cup.eliminated ? c.cup.eliminatedRound : c.cup.rounds.length - 1;
+  var champ = careerCupChampion(c.cup);
+  if (obj.type === 'cup') return { obj: obj, count: 0, met: !!(champ && champ.isPlayer), label: 'ganar la Copa del Rey' };
+  if (obj.type === 'cupSemi') return { obj: obj, count: reached, met: reached >= totalRounds - 2 || !!(champ && champ.isPlayer), label: 'llegar a semifinales de la Copa del Rey' };
+  var ch = c.champions;
+  if (obj.type === 'championsKO') return { obj: obj, count: 0, met: !!(ch && ch.phase === 'knockout' && !ch.eliminatedInGroup), label: 'pasar la fase de grupos de la Champions' };
+  if (obj.type === 'champions') { var cc = ch && careerChampionsChampion(ch); return { obj: obj, count: 0, met: !!(cc && cc.isPlayer), label: 'ganar la Champions League' }; }
+  return { obj: obj, count: 0, met: false, label: obj.type };
+}
+// Cobra ya los objetivos que se pueden cumplir antes de acabar la temporada
+// (goles, victorias, Copa, Champions): se llama tras cada partido. Una vez
+// cobrado (obj.claimed) no vuelve a contar en la revisión final.
+var CAREER_BOARD_CLAIMABLE = ['goals', 'wins', 'cup', 'cupSemi', 'championsKO', 'champions'];
+function careerBoardClaimObjectives(c) {
+  var board = careerEnsureBoard(c);
+  careerBoardObjectivesStatus(c, board).forEach(function (r) {
+    if (r.met && !r.obj.claimed && CAREER_BOARD_CLAIMABLE.indexOf(r.obj.type) !== -1) {
+      r.obj.claimed = true;
+      careerBoardBoost(c, r.obj.reward);
+    }
+  });
 }
 
 // Resuelve todos los partidos de la jornada actual que NO sean el tuyo
@@ -4346,6 +4462,7 @@ window.actionSkipCareerMatchday = function () {
   careerUpdateBestPosition(c);
   careerMaybeOpenMidseasonWindow(c);
   careerBoardMidseasonReview(c);
+  careerBoardClaimObjectives(c);
   careerMaybeAwardLeagueFinish(c);
   render();
 };
@@ -4392,7 +4509,7 @@ window.actionSimulateCareerMatchday = function (visualMode) {
     myAtk: sim.myAtk, myDef: sim.myDef, effectiveOppPower: sim.effectiveOppPower,
     inExtraTime: false, allowDraw: true, onFinish: finishCareerMatchdayMatch,
     careerFixture: { idx: myFixtureIdx, youAreHome: youAreHome, oppIdx: oppIdx },
-    isCareer: true, youAreHome: youAreHome, redCardFreqMult: careerRedCardFreqMult(c), injuryFreqMult: careerInjuryFreqMult(c),
+    isCareer: true, youAreHome: youAreHome, redCardFreqMult: careerRedCardFreqMult(c), injuryFreqMult: careerInjuryFreqMult(c), yellowFreqMult: careerYellowFreqMult(c),
     visualMode: visualMode || 'avatars',
     done: false
   };
@@ -4447,6 +4564,7 @@ function finishCareerMatchdayMatch() {
   careerUpdateBestPosition(c);
   careerMaybeOpenMidseasonWindow(c);
   careerBoardMidseasonReview(c);
+  careerBoardClaimObjectives(c);
   careerMaybeAwardLeagueFinish(c);
 
   G.futdraft.lastMatchResult = {
@@ -4716,6 +4834,7 @@ function careerCupMaybeAwardChampion(c) {
   if (champion.isPlayer) {
     c.budget = Math.round((c.budget + CAREER_CUP_WIN_BONUS) * 10) / 10;
     c.cupsWon = (c.cupsWon || 0) + 1;
+    careerBoardBoost(c, CAREER_BOARD_TROPHY_BOOST.cup);
     var cupPoints = careerAwardSpiritPoints(CAREER_CUP_WIN_POINTS * (c.division === 1 ? 2 : 1));
     careerTriggerTrophyPopup('Copa del Rey', cupPoints);
     careerApplySponsorTrophyPayout(c);
@@ -4749,7 +4868,7 @@ window.actionSimulateCareerCupMatch = function (visualMode) {
     // resumida (careerCupPenaltyShootout).
     inExtraTime: false, allowDraw: true, onFinish: finishCareerCupMatch,
     careerCupMatch: match,
-    isCareer: true, youAreHome: true, redCardFreqMult: careerRedCardFreqMult(c), injuryFreqMult: careerInjuryFreqMult(c),
+    isCareer: true, youAreHome: true, redCardFreqMult: careerRedCardFreqMult(c), injuryFreqMult: careerInjuryFreqMult(c), yellowFreqMult: careerYellowFreqMult(c),
     visualMode: visualMode || 'avatars',
     done: false
   };
@@ -5121,6 +5240,7 @@ function careerChampionsMaybeAwardChampion(c) {
   if (champion.isPlayer) {
     c.budget = Math.round((c.budget + CAREER_CHAMPIONS_WIN_BONUS) * 10) / 10;
     c.championsWon = (c.championsWon || 0) + 1;
+    careerBoardBoost(c, CAREER_BOARD_TROPHY_BOOST.champions);
     var championsPoints = careerAwardSpiritPoints(CAREER_CHAMPIONS_WIN_POINTS);
     careerTriggerTrophyPopup('Champions League', championsPoints);
     careerApplySponsorTrophyPayout(c);
@@ -5160,7 +5280,7 @@ window.actionSimulateCareerChampionsMatch = function (visualMode) {
     // desempatar sí o sí, ver finishCareerChampionsMatch.
     inExtraTime: false, allowDraw: true, onFinish: finishCareerChampionsMatch,
     careerChampionsMatch: match, careerChampionsPhase: champions.phase,
-    isCareer: true, youAreHome: champions.phase === 'group' ? true : careerChampionsYouAreHome(champions, match), redCardFreqMult: careerRedCardFreqMult(c), injuryFreqMult: careerInjuryFreqMult(c),
+    isCareer: true, youAreHome: champions.phase === 'group' ? true : careerChampionsYouAreHome(champions, match), redCardFreqMult: careerRedCardFreqMult(c), injuryFreqMult: careerInjuryFreqMult(c), yellowFreqMult: careerYellowFreqMult(c),
     visualMode: visualMode || 'avatars',
     done: false
   };
@@ -5410,6 +5530,7 @@ function careerSupercopaMaybeAwardChampion(c) {
   if (sc.won) {
     c.budget = Math.round((c.budget + CAREER_SUPERCOPA_WIN_BONUS) * 10) / 10;
     c.supercopasWon = (c.supercopasWon || 0) + 1;
+    careerBoardBoost(c, CAREER_BOARD_TROPHY_BOOST.supercopa);
     careerTriggerTrophyPopup('Supercopa');
     careerApplySponsorTrophyPayout(c);
   }
@@ -5453,7 +5574,7 @@ window.actionSimulateCareerSupercopaMatch = function (visualMode) {
     myAtk: sim.myAtk, myDef: sim.myDef, effectiveOppPower: sim.effectiveOppPower,
     inExtraTime: false, allowDraw: true, onFinish: finishCareerSupercopaMatch,
     careerSupercopaYouAreHome: youAreHome,
-    isCareer: true, youAreHome: youAreHome, redCardFreqMult: careerRedCardFreqMult(c), injuryFreqMult: careerInjuryFreqMult(c),
+    isCareer: true, youAreHome: youAreHome, redCardFreqMult: careerRedCardFreqMult(c), injuryFreqMult: careerInjuryFreqMult(c), yellowFreqMult: careerYellowFreqMult(c),
     visualMode: visualMode || 'avatars',
     done: false
   };
@@ -5585,9 +5706,9 @@ function careerSeasonSummaryHtml(c) {
     : '';
   // Objetivo extra de la directiva (elemento/cantera), solo en Primera --
   // a petición explícita ("mete más objetivos en directiva al ascender").
-  var objectiveBadge = (boardReview && boardReview.objective)
-    ? careerSeasonBadgeHtml(boardReview.objective.obj.type === 'element' ? '🔥' : '🌱', 'Objetivo extra', (boardReview.objective.met ? 'Cumplido' : 'No cumplido') + ': ' + boardReview.objective.label, boardReview.objective.met ? 'season-badge-good' : 'season-badge-bad')
-    : '';
+  var objectiveBadge = (boardReview && boardReview.objectives ? boardReview.objectives : []).map(function (o) {
+    return careerSeasonBadgeHtml(careerObjectiveIcon(o.type), 'Objetivo extra', (o.met ? 'Cumplido' : 'No cumplido') + ': ' + o.label, o.met ? 'season-badge-good' : 'season-badge-bad');
+  }).join('');
   var sponsorBadges = c.activeSponsor
     ? careerSeasonBadgeHtml('🤝', 'Patrocinador: ' + c.activeSponsor.label, '+' + c.activeSponsor.totalEarned + ' M€', 'season-badge-gold')
     : '';
