@@ -1041,6 +1041,12 @@ var CAREER_INCOMING_OFFERS_MIN_PER_DAY = 1;
 var CAREER_INCOMING_OFFERS_MAX_PER_DAY = 3;
 var CAREER_INCOMING_OFFER_VARIANCE = 0.2;
 var CAREER_INCOMING_OFFER_DAYS = 2;
+// Club que hace la oferta (un rival real de tu liga, con su escudo), a
+// petición explícita ("que te diga de qué equipo te llegan las ofertas").
+function careerOfferClub(c) {
+  var rivals = c.league.teamNames.slice(1);
+  return rivals.length ? choice(rivals) : null;
+}
 function careerGenerateIncomingOffers(c) {
   var w = c.marketWindow;
   if (!w || !w.open) return;
@@ -1063,6 +1069,7 @@ function careerGenerateIncomingOffers(c) {
       id: uid(),
       playerId: p.id,
       mode: mode,
+      club: careerOfferClub(c),
       amount: Math.max(0.1, Math.round(asking * variance * 10) / 10),
       dayReceived: w.dayIndex,
       expiresOnDay: w.dayIndex + CAREER_INCOMING_OFFER_DAYS
@@ -3044,6 +3051,8 @@ function renderCareerIncomingOffers(c) {
     if (!p) return '';
     var daysLeft = o.expiresOnDay - (w ? w.dayIndex : o.expiresOnDay);
     var value = careerPlayerValue(p);
+    if (!o.club) o.club = careerOfferClub(c);
+    var clubHtml = o.club ? '<div class="dim small" style="display:flex;align-items:center;gap:6px;margin:2px 0"><img class="futdraft-timeline-shield" src="' + escapeHtml(teamShieldPath(o.club)) + '" alt="">Oferta de <strong>' + escapeHtml(o.club) + '</strong></div>' : '';
     return '<div class="career-offer-card">' +
       '<div class="career-offer-head">' + careerMediaBadgeHtml(p) + avatarHtml(p) +
         // Posición + elemento junto al nombre, a petición explícita
@@ -3053,6 +3062,7 @@ function renderCareerIncomingOffers(c) {
         '<span class="career-offer-name">' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + ' <span title="' + escapeHtml(p.tipo) + '">' + getTypeSymbol(p.tipo).replace(/22px/g, '16px') + '</span></span>' +
         '<span class="dim small">' + (o.mode === 'loan' ? 'cesión' : 'compra') + ' · caduca en ' + daysLeft + ' día' + (daysLeft === 1 ? '' : 's') + '</span>' +
       '</div>' +
+      clubHtml +
       '<div class="career-offer-prices">' +
         '<span class="dim">Precio mercado: <strong>' + value + ' M€</strong></span>' +
         '<span class="dim">Te ofrecen: <strong style="color:var(--accent-2)">' + o.amount + ' M€</strong></span>' +
