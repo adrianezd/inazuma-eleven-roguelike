@@ -20,6 +20,7 @@ var APP_PATCH_NOTES = [
       'Modo Carrera: 5 huecos de guardado, resumen de temporada con campeón, trofeos, mejor jugador, revelación y balance económico, y récords del club.',
       'Los penaltis se ven lanzamiento a lanzamiento en Carrera y Modo Mundial, también en la Supercopa.',
       'Copa de 64 equipos, goleadores de Copa y Champions, y directiva rediseñada.',
+      'App instalable: añade el juego a la pantalla de inicio (iPhone: compartir, Añadir a pantalla de inicio) y funciona sin conexión tras la primera visita.',
       'Menú: botón Continuar carrera con el resumen de tu club, y botón Novedades.',
       'Champions: cruces de ida y vuelta rediseñados con casillas de cada partido y el global.',
       'Cansancio en Modo Carrera: los titulares se cansan cada jornada y bajan de media; rota a los cansados con un botón.',
