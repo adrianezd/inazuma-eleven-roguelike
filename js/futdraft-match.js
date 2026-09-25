@@ -362,26 +362,41 @@ function futDraftAdvancePossession(live) {
   // en live.cards para enseñarlos en el resumen de debajo del marcador.
   if (!live.cards) live.cards = [];
   var scoreboardPlayer = futDraftBallCarrierPlayer(live, p);
-  if (scoreboardPlayer && Math.random() < 0.012) {
-    var isRed = Math.random() < 0.15;
-    live.cards.push({ side: p.side, minute: Math.round(live.minute), type: isRed ? 'red' : 'yellow', name: scoreboardPlayer.nombre, id: scoreboardPlayer.id || null });
-    if (isRed) {
-      live.redCards[p.side]++;
-      // BUG REAL arreglado: un jugador con roja seguía pudiendo "marcar"
-      // más tarde en el resumen (salía expulsado al 4' y metiendo gol al
-      // 80') -- a partir de aquí queda fuera de la lista de posibles
-      // goleadores/portadores de balón de su equipo (ver
-      // futDraftBallCarrierPlayer/live.sentOff). Solo se puede identificar
-      // de verdad en el lado "me" (el rival no tiene plantilla propia
-      // fuera de Modo Mundial); el "un jugador del rival" genérico no
-      // tiene id que excluir, así que no hace falta para el otro lado.
-      if (p.side === 'me' && scoreboardPlayer.id) {
-        live.sentOff = live.sentOff || [];
-        if (live.sentOff.indexOf(scoreboardPlayer.id) === -1) live.sentOff.push(scoreboardPlayer.id);
-      }
+  // Rojas y lesiones con frecuencia independiente (live.redCardFreqMult/
+  // live.injuryFreqMult, puestos por los puentes de Modo Carrera según
+  // c.redCardFreq/c.injuryFreq -- 1 en el resto de modos, sin cambios), a
+  // petición explícita ("el modificador de lesiones y de sanciones, son
+  // dos cosas diferentes"). La amarilla no tiene ajuste propio, se queda
+  // igual que siempre.
+  var redMult = typeof live.redCardFreqMult === 'number' ? live.redCardFreqMult : 1;
+  var injuryMult = typeof live.injuryFreqMult === 'number' ? live.injuryFreqMult : 1;
+  if (scoreboardPlayer && Math.random() < 0.0102) {
+    live.cards.push({ side: p.side, minute: Math.round(live.minute), type: 'yellow', name: scoreboardPlayer.nombre, id: scoreboardPlayer.id || null });
+  } else if (scoreboardPlayer && redMult > 0 && Math.random() < 0.0018 * redMult) {
+    live.cards.push({ side: p.side, minute: Math.round(live.minute), type: 'red', name: scoreboardPlayer.nombre, id: scoreboardPlayer.id || null });
+    live.redCards[p.side]++;
+    // BUG REAL arreglado: un jugador con roja seguía pudiendo "marcar"
+    // más tarde en el resumen (salía expulsado al 4' y metiendo gol al
+    // 80') -- a partir de aquí queda fuera de la lista de posibles
+    // goleadores/portadores de balón de su equipo (ver
+    // futDraftBallCarrierPlayer/live.sentOff). Solo se puede identificar
+    // de verdad en el lado "me" (el rival no tiene plantilla propia
+    // fuera de Modo Mundial); el "un jugador del rival" genérico no
+    // tiene id que excluir, así que no hace falta para el otro lado.
+    if (p.side === 'me' && scoreboardPlayer.id) {
+      live.sentOff = live.sentOff || [];
+      if (live.sentOff.indexOf(scoreboardPlayer.id) === -1) live.sentOff.push(scoreboardPlayer.id);
     }
-  } else if (scoreboardPlayer && Math.random() < 0.006) {
-    live.cards.push({ side: p.side, minute: Math.round(live.minute), type: 'injury', name: scoreboardPlayer.nombre });
+  } else if (scoreboardPlayer && injuryMult > 0 && Math.random() < 0.006 * injuryMult) {
+    live.cards.push({ side: p.side, minute: Math.round(live.minute), type: 'injury', name: scoreboardPlayer.nombre, id: scoreboardPlayer.id || null });
+    // Lesión con consecuencia real en Modo Carrera (careerApplyInjuries,
+    // igual que las rojas): se guarda aquí el id para poder apartar al
+    // jugador del once nada más acabar el partido, a petición explícita
+    // ("tienes que hacer cambios en la plantilla").
+    if (p.side === 'me' && scoreboardPlayer.id) {
+      live.injured = live.injured || [];
+      live.injured.push(scoreboardPlayer.id);
+    }
   }
 }
 function futDraftApplyGoalEvent(live, ev, isDots) {

@@ -249,11 +249,15 @@ function positionIconPath(pos) {
 // todavía, el navegador dispara "onerror" y se cae a las iniciales de
 // siempre sin romper nada -- así puedes ir soltando sprites de uno en uno
 // sin tener que tocar roster-data.js cada vez.
-function avatarHtml(p) {
+// extraClass (opcional): clases de más en el span exterior -- usado por
+// Modo Carrera para el aura de los jugadores potenciados (ver
+// careerAvatarHtml/actionBoostCareerPlayer), a petición explícita
+// ("tienen un aura alrededor del círculo").
+function avatarHtml(p, extraClass) {
   var spritePath = p.sprite || ('assets/sprites/' + p.id + '.png');
   var sprite = '<img class="avatar-sprite" src="' + escapeHtml(spritePath) + '" alt="" loading="lazy" ' +
     'onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'\';">';
-  return '<span class="avatar type-bg-' + p.tipo.toLowerCase().replace('ñ', 'n') + '" aria-hidden="true">' +
+  return '<span class="avatar type-bg-' + p.tipo.toLowerCase().replace('ñ', 'n') + (extraClass ? ' ' + extraClass : '') + '" aria-hidden="true">' +
     sprite +
     '<span class="avatar-initials" style="display:none">' + initials(p.nombre) + '</span>' +
     '<span class="avatar-pos-badge"><img src="' + escapeHtml(positionIconPath(p.posicion)) + '" alt="' + escapeHtml(p.posicion) + '" onerror="this.parentElement.style.display=\'none\';"></span>' +

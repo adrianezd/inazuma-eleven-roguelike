@@ -504,21 +504,52 @@ function careerRecordStarterAppearances(c) {
 // se apartan del once YA MISMO, con un suplente de la misma posición si
 // lo hay (si no, cualquiera) -- así ya no pueden salir de titulares en el
 // próximo partido hasta que se cumpla la sanción.
+// Aparta a un titular al banquillo por sanción o lesión (mismo mecanismo
+// para las dos, un suplente de su misma posición si lo hay, si no
+// cualquiera) -- compartido entre careerApplyRedCardSuspensions
+// (sanciones) y careerApplyInjuries (lesiones, ver más abajo).
+function careerBenchPlayer(c, id) {
+  var lineupIdx = c.lineup.findIndex(function (s) { return s.player.id === id; });
+  if (lineupIdx === -1 || !c.bench.length) return;
+  var pos = c.lineup[lineupIdx].pos;
+  var benchIdx = c.bench.findIndex(function (p) { return p.posicion === pos; });
+  if (benchIdx === -1) benchIdx = 0;
+  var out = c.lineup[lineupIdx].player;
+  c.lineup[lineupIdx].player = c.bench[benchIdx];
+  c.bench[benchIdx] = out;
+  if (c.captainId === out.id) c.captainId = null;
+}
 function careerApplyRedCardSuspensions(c, live) {
   c.suspendedIds = [];
   var newRed = (live && live.sentOff) || [];
   newRed.forEach(function (id) {
     c.suspendedIds.push(id);
-    var lineupIdx = c.lineup.findIndex(function (s) { return s.player.id === id; });
-    if (lineupIdx === -1 || !c.bench.length) return;
-    var pos = c.lineup[lineupIdx].pos;
-    var benchIdx = c.bench.findIndex(function (p) { return p.posicion === pos; });
-    if (benchIdx === -1) benchIdx = 0;
-    var out = c.lineup[lineupIdx].player;
-    c.lineup[lineupIdx].player = c.bench[benchIdx];
-    c.bench[benchIdx] = out;
-    if (c.captainId === out.id) c.captainId = null;
+    careerBenchPlayer(c, id);
   });
+  careerApplyInjuries(c, live);
+}
+// Lesiones con consecuencia real, a petición explícita ("si hay rojas o
+// lesiones, lógicamente luego tienes jugadores que no pueden jugar
+// durante una o varias jornadas y tienes que hacer cambios en la
+// plantilla"): a diferencia de la roja (siempre 1 partido), la lesión
+// dura entre 1 y 3 partidos (careerInjuryDuration), sorteados al
+// lesionarse -- se van descontando en cada partido tuyo que se juega
+// (Jornada/Copa/Champions/Supercopa, todos llaman a esta función) hasta
+// llegar a 0, momento en el que el jugador queda libre otra vez.
+function careerInjuryDuration() { return 1 + Math.floor(Math.random() * 3); }
+function careerApplyInjuries(c, live) {
+  c.injuries = (c.injuries || []).map(function (inj) { return { id: inj.id, matchesLeft: inj.matchesLeft - 1 }; }).filter(function (inj) { return inj.matchesLeft > 0; });
+  var newInjured = (live && live.injured) || [];
+  newInjured.forEach(function (id) {
+    if (c.injuries.some(function (inj) { return inj.id === id; })) return;
+    c.injuries.push({ id: id, matchesLeft: careerInjuryDuration() });
+    careerBenchPlayer(c, id);
+  });
+}
+// Ids sancionados O lesionados ahora mismo -- no se pueden meter de
+// titular (ver selectCareerPlayer) hasta que se cumpla lo que toque.
+function careerUnavailableIds(c) {
+  return (c.suspendedIds || []).concat((c.injuries || []).map(function (inj) { return inj.id; }));
 }
 // A petición explícita ("que tus jugadores suban puntos en base a lo que
 // van jugando, y no solo el entrenamiento... lo que está ahora de lo que
@@ -669,13 +700,36 @@ function careerPickNamesFromPool(pool, count, used) {
 // ese modo carrera"). Se marca como "ya usado" desde el principio, antes
 // de repartir nada, igual que el propio careerPickNamesFromPool evita
 // que las dos divisiones se pisen equipos entre sí.
-function careerInitialDivisionTeams(excludeName) {
+// Filtro de temporada/juego (c.seasonFilter, elegido al crear la
+// carrera), a petición explícita: solo entran en el sorteo los equipos
+// de las temporadas marcadas (TEAM_SEASON) -- los sin temporada conocida
+// (p.ej. 'Tormenta de Géminis', hueco en la clasificación) NUNCA se
+// filtran, para no perderlos por un olvido. Si el filtro deja muy pocos
+// equipos para completar las dos divisiones (35 en total), se rellena
+// con el resto del pool sin filtrar en vez de romper el reparto -- mejor
+// algún equipo "de más" que una carrera con menos rivales de la cuenta.
+function careerSeasonFilteredPool(pool, seasonFilter) {
+  if (!seasonFilter || seasonFilter.length >= TEAM_SEASON_ORDER.length) return pool;
+  var filtered = pool.filter(function (name) {
+    var season = TEAM_SEASON[name];
+    return !season || seasonFilter.indexOf(season) !== -1;
+  });
+  return filtered;
+}
+function careerInitialDivisionTeams(excludeName, seasonFilter) {
   var used = {};
   if (excludeName) used[excludeName] = true;
-  var div2 = careerPickNamesFromPool(RIVAL_TEAM_BOSSES, CAREER_DIVISION2_BOSS_COUNT, used)
-    .concat(careerPickNamesFromPool(RIVAL_TEAM_NAMES, CAREER_DIVISION2_NORMAL_COUNT, used));
-  var div1 = careerPickNamesFromPool(RIVAL_TEAM_BOSSES, CAREER_DIVISION1_BOSS_COUNT, used)
-    .concat(careerPickNamesFromPool(RIVAL_TEAM_NAMES, CAREER_DIVISION1_NORMAL_COUNT, used));
+  var bossPool = careerSeasonFilteredPool(RIVAL_TEAM_BOSSES, seasonFilter);
+  var namePool = careerSeasonFilteredPool(RIVAL_TEAM_NAMES, seasonFilter);
+  function pick(pool, fallbackPool, count) {
+    var picked = careerPickNamesFromPool(pool, Math.min(count, pool.length), used);
+    if (picked.length < count) picked = picked.concat(careerPickNamesFromPool(fallbackPool, count - picked.length, used));
+    return picked;
+  }
+  var div2 = pick(bossPool, RIVAL_TEAM_BOSSES, CAREER_DIVISION2_BOSS_COUNT)
+    .concat(pick(namePool, RIVAL_TEAM_NAMES, CAREER_DIVISION2_NORMAL_COUNT));
+  var div1 = pick(bossPool, RIVAL_TEAM_BOSSES, CAREER_DIVISION1_BOSS_COUNT)
+    .concat(pick(namePool, RIVAL_TEAM_NAMES, CAREER_DIVISION1_NORMAL_COUNT));
   return { 1: div1, 2: div2 };
 }
 
@@ -875,6 +929,21 @@ var CAREER_MARKET_ACTIVITY = {
   alta: { name: 'Alta', offersMin: 3, offersMax: 5, maxSignings: 4 }
 };
 function careerMarketActivity(c) { return CAREER_MARKET_ACTIVITY[c.marketActivity] || CAREER_MARKET_ACTIVITY.baja; }
+// Frecuencia de lesiones y de rojas, elegidas por separado al crear la
+// carrera (c.injuryFreq/c.redCardFreq), a petición explícita ("el
+// modificador de lesiones y de sanciones... dos ajustes separados"):
+// multiplican la probabilidad base de cada suceso en cada tick del modo
+// puntitos (ver futDraftAdvancePossession) -- 'desactivado' las quita
+// del todo, 'alto' las hace bastante más frecuentes que hasta ahora
+// ('bajo', el comportamiento de siempre).
+var CAREER_EVENT_FREQ = {
+  desactivado: { name: 'Desactivado', mult: 0 },
+  bajo: { name: 'Bajo', mult: 1 },
+  alto: { name: 'Alto', mult: 2.5 }
+};
+var CAREER_EVENT_FREQ_ORDER = ['desactivado', 'bajo', 'alto'];
+function careerInjuryFreqMult(c) { return (CAREER_EVENT_FREQ[c.injuryFreq] || CAREER_EVENT_FREQ.bajo).mult; }
+function careerRedCardFreqMult(c) { return (CAREER_EVENT_FREQ[c.redCardFreq] || CAREER_EVENT_FREQ.bajo).mult; }
 function careerMaxSigningsPerDay(c) { return careerMarketActivity(c).maxSignings; }
 function careerNewMarketWindow(phase, totalDays) {
   return { open: true, phase: phase, dayIndex: 1, totalDays: totalDays, offersToday: {}, signingsToday: 0 };
@@ -959,7 +1028,12 @@ function careerFreshState(choices) {
   // carrera (ver careerInitialDivisionTeams).
   var clubName = (choices.clubName || '').trim() || 'Tu Equipo';
   var clubShieldName = choices.clubShieldName || null;
-  var divisionTeams = careerInitialDivisionTeams(clubShieldName);
+  // Filtro de temporada/juego (ver careerSeasonFilteredPool): array de
+  // claves de TEAM_SEASON_ORDER, todas seleccionadas por defecto (sin
+  // filtro real). Fijo toda la partida, como el resto de opciones de
+  // creación.
+  var seasonFilter = (Array.isArray(choices.seasonFilter) && choices.seasonFilter.length) ? choices.seasonFilter.filter(function (s) { return TEAM_SEASON_ORDER.indexOf(s) !== -1; }) : TEAM_SEASON_ORDER.slice();
+  var divisionTeams = careerInitialDivisionTeams(clubShieldName, seasonFilter);
   var state = {
     tab: 'equipo',
     season: 1,
@@ -994,8 +1068,11 @@ function careerFreshState(choices) {
     // Mercado de invierno activable/desactivable al crear la carrera, a
     // petición explícita -- el de pretemporada siempre está activo.
     winterMarket: choices.winterMarket !== false,
+    injuryFreq: CAREER_EVENT_FREQ[choices.injuryFreq] ? choices.injuryFreq : 'bajo',
+    redCardFreq: CAREER_EVENT_FREQ[choices.redCardFreq] ? choices.redCardFreq : 'bajo',
     division: division,
     divisionTeams: divisionTeams,
+    seasonFilter: seasonFilter,
     league: careerBuildLeague(division, divisionTeams),
     lastMatchdayResult: null,
     // A petición explícita ("deja el partido anterior con el resultado...
@@ -1018,6 +1095,11 @@ function careerFreshState(choices) {
     // explícita ("que haya rojas y funcionen los sancionados y haya que
     // quitarlos del 11 inicial").
     suspendedIds: [],
+    // Lesionados (careerApplyInjuries), cada uno con los partidos que le
+    // quedan de baja (1-3, sorteados al lesionarse) -- misma idea que las
+    // sanciones pero con duración variable, a petición explícita.
+    injuries: [],
+    boostedIds: [],
     // Jugadores comprados (fichaje en propiedad) ESTA temporada: no se
     // pueden vender ni ceder hasta la que viene, a petición explícita --
     // se vacía en cada actionStartNewCareerSeason. Los cedidos entrantes
@@ -1119,10 +1201,10 @@ function careerSerialize(c) {
     bench: c.bench.map(function (p) { return p.id; }),
     loanedIds: c.loanedIds || [],
     loanedOutIds: c.loanedOutIds || [],
-    suspendedIds: c.suspendedIds || [],
+    suspendedIds: c.suspendedIds || [], injuries: c.injuries || [], boostedIds: c.boostedIds || [],
     difficulty: c.difficulty || 'normal',
     negotiation: c.negotiation || 'duras',
-    hideProdigy: !!c.hideProdigy, boardStyle: c.boardStyle || 'normal', ironman: !!c.ironman, marketActivity: c.marketActivity || 'baja', winterMarket: c.winterMarket !== false,
+    hideProdigy: !!c.hideProdigy, boardStyle: c.boardStyle || 'normal', ironman: !!c.ironman, marketActivity: c.marketActivity || 'baja', winterMarket: c.winterMarket !== false, injuryFreq: c.injuryFreq || 'bajo', redCardFreq: c.redCardFreq || 'bajo', seasonFilter: c.seasonFilter || TEAM_SEASON_ORDER.slice(),
     division: c.division || 2,
     divisionTeams: c.divisionTeams,
     league: c.league,
@@ -1203,7 +1285,7 @@ function careerDeserialize(data) {
     // ahí).
     difficulty: CAREER_DIFFICULTY_TIERS[data.difficulty] ? data.difficulty : 'normal',
     negotiation: CAREER_NEGOTIATION_MODES[data.negotiation] ? data.negotiation : 'duras',
-    hideProdigy: !!data.hideProdigy, boardStyle: data.boardStyle || 'normal', ironman: !!data.ironman, marketActivity: data.marketActivity || 'baja', winterMarket: data.winterMarket !== false,
+    hideProdigy: !!data.hideProdigy, boardStyle: data.boardStyle || 'normal', ironman: !!data.ironman, marketActivity: data.marketActivity || 'baja', winterMarket: data.winterMarket !== false, injuryFreq: data.injuryFreq || 'bajo', redCardFreq: data.redCardFreq || 'bajo', seasonFilter: data.seasonFilter || TEAM_SEASON_ORDER.slice(),
     division: data.division || 1,
     divisionTeams: data.divisionTeams || careerInitialDivisionTeams(),
     league: data.league,
@@ -1212,7 +1294,7 @@ function careerDeserialize(data) {
     budget: typeof data.budget === 'number' ? data.budget : CAREER_STARTING_BUDGET,
     loanedIds: data.loanedIds || [],
     loanedOutIds: data.loanedOutIds || [],
-    suspendedIds: data.suspendedIds || [],
+    suspendedIds: data.suspendedIds || [], injuries: data.injuries || [], boostedIds: data.boostedIds || [],
     calendarView: data.calendarView,
     marketFilter: data.marketFilter || null, marketTypeFilter: data.marketTypeFilter || null, marketGrowthFilter: data.marketGrowthFilter || null, marketSearch: data.marketSearch || '', marketPriceMin: (typeof data.marketPriceMin === "number" ? data.marketPriceMin : null), marketPriceMax: (typeof data.marketPriceMax === "number" ? data.marketPriceMax : null),
     marketSort: data.marketSort, marketSortDir: data.marketSortDir, marketPage: data.marketPage || 0,
@@ -1317,7 +1399,7 @@ function actionGoCareerMode() {
 // este punto.
 window.actionNewCareerInSlot = function (slot) {
   G.careerSetupSlot = slot;
-  G.careerSetupChoices = { difficulty: 'normal', budget: CAREER_STARTING_BUDGET, negotiation: 'duras', clubName: '', clubShieldName: null, hideProdigy: false, shieldsExpanded: false, squadMode: 'default', startDivision: 2, boardStyle: 'normal', ironman: false, marketActivity: 'baja', winterMarket: true };
+  G.careerSetupChoices = { difficulty: 'normal', budget: CAREER_STARTING_BUDGET, negotiation: 'duras', clubName: '', clubShieldName: null, hideProdigy: false, shieldsExpanded: false, squadMode: 'default', startDivision: 2, boardStyle: 'normal', ironman: false, marketActivity: 'baja', winterMarket: true, seasonFilter: TEAM_SEASON_ORDER.slice(), injuryFreq: 'bajo', redCardFreq: 'bajo' };
   G.screen = 'careerSetup';
   render();
 };
@@ -1372,6 +1454,30 @@ window.actionSetCareerSetupMarketActivity = function (id) {
 };
 window.actionSetCareerSetupWinterMarket = function (on) {
   G.careerSetupChoices.winterMarket = !!on;
+  render();
+};
+window.actionSetCareerSetupInjuryFreq = function (f) {
+  if (!CAREER_EVENT_FREQ[f]) return;
+  G.careerSetupChoices.injuryFreq = f;
+  render();
+};
+window.actionSetCareerSetupRedCardFreq = function (f) {
+  if (!CAREER_EVENT_FREQ[f]) return;
+  G.careerSetupChoices.redCardFreq = f;
+  render();
+};
+window.actionToggleCareerSetupSeason = function (s) {
+  if (TEAM_SEASON_ORDER.indexOf(s) === -1) return;
+  var ch = G.careerSetupChoices;
+  var current = Array.isArray(ch.seasonFilter) ? ch.seasonFilter.slice() : TEAM_SEASON_ORDER.slice();
+  var idx = current.indexOf(s);
+  if (idx !== -1) {
+    if (current.length === 1) return; // al menos 1 temporada seleccionada siempre
+    current.splice(idx, 1);
+  } else {
+    current.push(s);
+  }
+  ch.seasonFilter = current;
   render();
 };
 window.actionSetCareerSetupDifficulty = function (tier) {
@@ -1520,6 +1626,34 @@ function renderCareerSetup() {
         '</div>' +
       '</div>' +
       '<div class="panel">' +
+        '<h3 style="margin-bottom:4px">Temporadas de rivales</h3>' +
+        '<p class="dim small">Qué temporadas/juegos pueden salir como equipos rivales (mínimo 1). Los equipos sin temporada conocida entran siempre igual.</p>' +
+        '<div class="btn-row mt">' +
+          TEAM_SEASON_ORDER.map(function (s) {
+            var active = (choices.seasonFilter || TEAM_SEASON_ORDER).indexOf(s) !== -1;
+            return '<button class="btn btn-tiny' + (active ? ' active' : '') + '" onclick="actionToggleCareerSetupSeason(\'' + s + '\')">' + TEAM_SEASON_LABELS[s] + '</button>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:4px">Frecuencia de lesiones</h3>' +
+        '<p class="dim small">Un jugador lesionado se aparta del once una o varias jornadas, igual que uno expulsado.</p>' +
+        '<div class="btn-row mt">' +
+          CAREER_EVENT_FREQ_ORDER.map(function (f) {
+            return '<button class="btn btn-tiny' + ((choices.injuryFreq || 'bajo') === f ? ' active' : '') + '" onclick="actionSetCareerSetupInjuryFreq(\'' + f + '\')">' + CAREER_EVENT_FREQ[f].name + '</button>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:4px">Frecuencia de rojas</h3>' +
+        '<p class="dim small">El expulsado no puede jugar de titular hasta cumplir un partido de sanción.</p>' +
+        '<div class="btn-row mt">' +
+          CAREER_EVENT_FREQ_ORDER.map(function (f) {
+            return '<button class="btn btn-tiny' + ((choices.redCardFreq || 'bajo') === f ? ' active' : '') + '" onclick="actionSetCareerSetupRedCardFreq(\'' + f + '\')">' + CAREER_EVENT_FREQ[f].name + '</button>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+      '<div class="panel">' +
         '<h3 style="margin-bottom:4px">Mercado de invierno</h3>' +
         '<p class="dim small">Ventana de fichajes a mitad de temporada (jornada ' + CAREER_MIDSEASON_AT_MATCHDAY + '), aparte de la de pretemporada (que siempre está activa).</p>' +
         '<div class="btn-row mt">' +
@@ -1654,7 +1788,7 @@ window.selectCareerPlayer = function (id) {
   } else {
     var benchIdxA = c.bench.findIndex(function (p) { return p.id === otherId; });
     var benchIdxB = c.bench.findIndex(function (p) { return p.id === id; });
-    var suspended = c.suspendedIds || [];
+    var suspended = careerUnavailableIds(c);
     // Un sancionado por roja no se puede meter de titular -- a petición
     // explícita ("que haya que quitarlos del 11 inicial"). Se deja
     // seleccionado el otro (swapSelectedId ya apuntaba a él) para que se
@@ -1716,7 +1850,7 @@ function renderCareerLineupPitch(c) {
         (outOfPosition ? ' futdraft-out-of-position' : '');
       var badge = c.captainId === p.id ? '<span class="futdraft-captain-badge" title="Capitán">👑</span>' : '';
       var nameSuffix = outOfPosition ? ' <span class="dim">(' + p.posicion + ')</span>' : '';
-      return '<div class="' + cls + '" onclick="selectCareerPlayer(\'' + p.id + '\')">' + badge + careerPitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + nameSuffix + '</span></div>';
+      return '<div class="' + cls + '" onclick="selectCareerPlayer(\'' + p.id + '\')">' + badge + careerPitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + careerAvatarHtml(c, p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + nameSuffix + '</span></div>';
     }).join('');
     return '<div class="pitch-row">' + itemsHtml + '</div>';
   }).join('');
@@ -1750,10 +1884,13 @@ function renderCareerEquipo(c) {
     captainHint = 'Capitán: <strong>' + escapeHtml(captain.player.nombre) + '</strong> (a la altura de la media del equipo, no suma ni resta).';
   }
   var suspendedIds = c.suspendedIds || [];
+  var injuries = c.injuries || [];
   var benchHtml = c.bench.map(function (p) {
     var suspended = suspendedIds.indexOf(p.id) !== -1;
+    var injury = injuries.find(function (inj) { return inj.id === p.id; });
+    var tag = suspended ? ' 🚫' : (injury ? ' 🤕 (' + injury.matchesLeft + ')' : '');
     var cls = 'pitch-player futdraft-swappable' + (c.swapSelectedId === p.id ? ' selected' : '');
-    return '<div class="' + cls + '" onclick="selectCareerPlayer(\'' + p.id + '\')">' + careerPitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + avatarHtml(p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + (suspended ? ' 🚫' : '') + '</span></div>';
+    return '<div class="' + cls + '" onclick="selectCareerPlayer(\'' + p.id + '\')">' + careerPitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + careerAvatarHtml(c, p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + tag + '</span></div>';
   }).join('');
   var formationOptionsHtml = FUTDRAFT_FORMATIONS.map(function (f) {
     return '<option value="' + f.id + '"' + (f.id === c.formation ? ' selected' : '') + '>' + f.name + '</option>';
@@ -1990,6 +2127,47 @@ window.actionSetCareerPlayStyle = function (id) {
   c.playStyle = id;
   render();
 };
+// ===== Potenciar jugadores =====
+// A petición explícita: cuando un jugador llega a 100 de media, se le puede
+// dar +5 por 20 M€ (máximo 5 jugadores potenciados en toda la carrera), y
+// se le nota con un aura dorada alrededor del círculo. Se guarda en
+// c.boostedIds y el +5 va a su progresión (c.playerProgression), así que
+// cuenta en todo igual que lo que sube por entrenamiento.
+var CAREER_BOOST_COST = 20;
+var CAREER_BOOST_MIN_SCORE = 100;
+var CAREER_BOOST_MAX_PLAYERS = 5;
+var CAREER_BOOST_AMOUNT = 5;
+function careerIsBoosted(c, p) { return (c.boostedIds || []).indexOf(p.id) !== -1; }
+function careerAvatarHtml(c, p) { return avatarHtml(p, careerIsBoosted(c, p) ? 'avatar-boosted' : ''); }
+function boostTagHtml(c, p) { return careerIsBoosted(c, p) ? ' <span class="player-tag player-tag-new" title="Potenciado +' + CAREER_BOOST_AMOUNT + '">⚡ +' + CAREER_BOOST_AMOUNT + '</span>' : ''; }
+window.actionBoostCareerPlayer = function (id) {
+  var c = G.career;
+  c.boostedIds = c.boostedIds || [];
+  var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
+  var p = all.find(function (x) { return x.id === id; });
+  if (!p || careerIsBoosted(c, p)) return;
+  if (c.boostedIds.length >= CAREER_BOOST_MAX_PLAYERS) { c.plantillaMessage = 'Ya has potenciado a ' + CAREER_BOOST_MAX_PLAYERS + ' jugadores, el máximo.'; render(); return; }
+  if (careerPlayerScore(p) < CAREER_BOOST_MIN_SCORE) { c.plantillaMessage = p.nombre + ' aún no llega a ' + CAREER_BOOST_MIN_SCORE + ' de media.'; render(); return; }
+  if (c.budget < CAREER_BOOST_COST) { c.plantillaMessage = 'No tienes ' + CAREER_BOOST_COST + ' M€ para potenciarlo.'; render(); return; }
+  c.budget = Math.round((c.budget - CAREER_BOOST_COST) * 10) / 10;
+  c.playerProgression = c.playerProgression || {};
+  c.playerProgression[p.id] = (c.playerProgression[p.id] || 0) + CAREER_BOOST_AMOUNT;
+  c.boostedIds.push(p.id);
+  c.plantillaMessage = p.nombre + ' potenciado: +' + CAREER_BOOST_AMOUNT + ' de media.';
+  render();
+};
+function careerBoostPanelHtml(c) {
+  var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
+  var used = (c.boostedIds || []).length;
+  var eligible = all.filter(function (p) { return !careerIsBoosted(c, p) && careerPlayerScore(p) >= CAREER_BOOST_MIN_SCORE; });
+  var rows = eligible.map(function (p) {
+    return '<div class="futdraft-timeline-row">' + careerAvatarHtml(c, p) + '<span>' + escapeHtml(p.nombre) + ' <span class="dim">' + Math.round(careerPlayerScore(p)) + '</span></span>' +
+      '<button class="btn btn-tiny" style="margin-left:auto" ' + (used >= CAREER_BOOST_MAX_PLAYERS || c.budget < CAREER_BOOST_COST ? 'disabled' : '') + ' onclick="actionBoostCareerPlayer(\'' + p.id + '\')">+' + CAREER_BOOST_AMOUNT + ' por ' + CAREER_BOOST_COST + ' M€</button></div>';
+  }).join('');
+  return '<div class="panel"><h3 style="margin-bottom:4px">Potenciar</h3>' +
+    '<p class="dim small">Jugadores con ' + CAREER_BOOST_MIN_SCORE + ' o más de media: +' + CAREER_BOOST_AMOUNT + ' por ' + CAREER_BOOST_COST + ' M€. Potenciados: <strong>' + used + ' / ' + CAREER_BOOST_MAX_PLAYERS + '</strong>.</p>' +
+    (rows ? '<div class="futdraft-timeline mt">' + rows + '</div>' : '<p class="dim small center-text">Nadie llega aún a ' + CAREER_BOOST_MIN_SCORE + '.</p>') + '</div>';
+}
 function renderCareerPlantilla(c) {
   var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
   var rawTotal = all.reduce(function (sum, p) { return sum + careerPlayerValue(p); }, 0);
@@ -2025,8 +2203,8 @@ function renderCareerPlantilla(c) {
       (isLoaned ? ' <span class="player-tag player-tag-loan" title="Cedido a ti: no es tuyo">Cedido</span>' : '') +
       (isBought ? ' <span class="player-tag player-tag-new" title="Fichado esta temporada: no se puede mover hasta la que viene">Nuevo</span>' : '') +
       (hasOffer ? ' <span class="player-tag player-tag-offer" title="Tienes una oferta por él, mira Mercado">Oferta</span>' : '');
-    return '<div class="futdraft-timeline-row">' + careerMediaBadgeHtml(p) + avatarHtml(p) +
-      '<span>' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + ' ' + careerGrowthArrowHtml(careerPlayerGrowthTier(c, p), c.hideProdigy) + tagsHtml + '</span>' +
+    return '<div class="futdraft-timeline-row">' + careerMediaBadgeHtml(p) + careerAvatarHtml(c, p) +
+      '<span>' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + ' ' + careerGrowthArrowHtml(careerPlayerGrowthTier(c, p), c.hideProdigy) + tagsHtml + boostTagHtml(c, p) + '</span>' +
       '<strong style="margin-left:auto;white-space:nowrap;color:var(--accent-2)">' + careerPlayerValue(p) + ' M€</strong>' +
       actionsHtml +
     '</div>';
@@ -2043,7 +2221,7 @@ function renderCareerPlantilla(c) {
         '<button class="btn btn-tiny" onclick="actionToggleCareerPlantillaSortDir()">' + (sortDir === -1 ? '⬇ Mayor a menor' : '⬆ Menor a mayor') + '</button>' +
       '</div>' +
       '<div class="futdraft-timeline mt">' + (rowsHtml || '<p class="dim small center-text">Nadie con ese filtro.</p>') + '</div>' +
-    '</div>'
+    '</div>' + careerBoostPanelHtml(c)
   );
 }
 
@@ -4177,7 +4355,7 @@ window.actionSimulateCareerMatchday = function (visualMode) {
     myAtk: sim.myAtk, myDef: sim.myDef, effectiveOppPower: sim.effectiveOppPower,
     inExtraTime: false, allowDraw: true, onFinish: finishCareerMatchdayMatch,
     careerFixture: { idx: myFixtureIdx, youAreHome: youAreHome, oppIdx: oppIdx },
-    isCareer: true, youAreHome: youAreHome,
+    isCareer: true, youAreHome: youAreHome, redCardFreqMult: careerRedCardFreqMult(c), injuryFreqMult: careerInjuryFreqMult(c),
     visualMode: visualMode || 'avatars',
     done: false
   };
@@ -4534,7 +4712,7 @@ window.actionSimulateCareerCupMatch = function (visualMode) {
     // resumida (careerCupPenaltyShootout).
     inExtraTime: false, allowDraw: true, onFinish: finishCareerCupMatch,
     careerCupMatch: match,
-    isCareer: true, youAreHome: true,
+    isCareer: true, youAreHome: true, redCardFreqMult: careerRedCardFreqMult(c), injuryFreqMult: careerInjuryFreqMult(c),
     visualMode: visualMode || 'avatars',
     done: false
   };
@@ -4904,7 +5082,7 @@ window.actionSimulateCareerChampionsMatch = function (visualMode) {
     // desempatar sí o sí, ver finishCareerChampionsMatch.
     inExtraTime: false, allowDraw: true, onFinish: finishCareerChampionsMatch,
     careerChampionsMatch: match, careerChampionsPhase: champions.phase,
-    isCareer: true, youAreHome: true,
+    isCareer: true, youAreHome: true, redCardFreqMult: careerRedCardFreqMult(c), injuryFreqMult: careerInjuryFreqMult(c),
     visualMode: visualMode || 'avatars',
     done: false
   };
@@ -5206,7 +5384,7 @@ window.actionSimulateCareerSupercopaMatch = function (visualMode) {
     myAtk: sim.myAtk, myDef: sim.myDef, effectiveOppPower: sim.effectiveOppPower,
     inExtraTime: false, allowDraw: true, onFinish: finishCareerSupercopaMatch,
     careerSupercopaYouAreHome: youAreHome,
-    isCareer: true, youAreHome: youAreHome,
+    isCareer: true, youAreHome: youAreHome, redCardFreqMult: careerRedCardFreqMult(c), injuryFreqMult: careerInjuryFreqMult(c),
     visualMode: visualMode || 'avatars',
     done: false
   };

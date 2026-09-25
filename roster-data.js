@@ -82,6 +82,50 @@ var RIVAL_TEAM_BOSSES = [
   'Chispas Perfectas', 'Artemisa de Mr.YI'
 ];
 
+// A qué temporada/juego de la franquicia pertenece cada equipo rival, a
+// petición explícita ("un filtro para el modo carrera para que tú
+// selecciones de que juegos elegir los equipos"): temp1/temp2/temp3
+// (anime original), go1/go2/go3 (Inazuma Eleven GO), ares (Ares no
+// Tenbin), orion (Orion no Kokuin), vr (Victory Road). Clasificación
+// dada directamente por el usuario equipo a equipo -- los que no
+// aparecen aquí (p.ej. 'Tormenta de Géminis', sin respuesta) se tratan
+// como sin temporada conocida y NUNCA se filtran, para no perder equipos
+// por un hueco en la clasificación. Ver careerSeasonFilteredPool.
+var TEAM_SEASON = {
+  'Academia Ogre': 'temp3', 'Academia Universal': 'go1', 'Alius Masters': 'temp2',
+  'Alpino': 'temp2', 'Artemisa de Mr.YI': 'orion', 'Barcelona Orb': 'ares',
+  'Big Waves': 'temp3', 'Brain': 'temp1', 'Cala Pirata': 'go1',
+  'Campeones Raimon': 'vr', 'Caos': 'temp2', 'Chispas Perfectas': 'orion',
+  'Chrono Storm': 'go2', 'Colina Verde': 'ares', 'Desesperdidos': 'go2',
+  'Dinastía Galáctica': 'go3', 'Dragon Link': 'go1', 'Dragones de Fuego': 'temp3',
+  'Earth Eleven': 'go3', 'Eclipse de Orión': 'orion', 'El Dorado 01': 'go2',
+  'El Dorado 02': 'go2', 'El Dorado 03': 'go2', 'Élite Omega': 'go2',
+  'Emperadores Oscuros': 'temp2', 'Épsilon': 'temp2', 'Equipo Zero': 'go1',
+  'Falam Medius': 'go3', 'Farm': 'temp1', 'Fauxshore': 'temp2',
+  'Fertilia': 'go3', 'Flota Ixar': 'go3', 'Galanes Electrizantes': 'temp3',
+  'Gar': 'go2', 'Genesis': 'temp2', 'Gir': 'go2',
+  'Guardianes de La Reina': 'orion', 'Inazuma Japon': 'temp3', 'Inazuma Japon GO': 'go2',
+  'Instituto Alius': 'go2', 'Instituto Plenilunio': 'ares', 'Kirkwood': 'temp1',
+  'Leones del desierto': 'temp3', 'Los arions': 'go2', 'Los Cuatro Magníficos': 'temp3',
+  'Los Emperadores': 'temp3', 'Magmavis': 'go3', 'Mar de Árboles': 'temp2',
+  'Mar de Luna': 'go1', 'Mary Times': 'temp2', 'Neo Japón': 'temp3',
+  'Northbright': 'vr', 'Occult': 'temp1', 'Orfeo': 'temp3',
+  'Os Reis': 'temp3', 'Otaku': 'temp1', 'Pequeños Gigantes': 'temp3',
+  'Polvo de Diamante': 'temp2', 'Prominence': 'temp2', 'Protocolo Omega': 'go2',
+  'Protocolo Omega 2.0': 'go2', 'Protocolo Omega 3.0': 'go2', 'Ragnah': 'go2',
+  'Raimon Inakuni': 'ares', 'Resistencia Japon': 'temp2', 'Resistencia Japón GO': 'go2',
+  'Royal Academy': 'temp1', 'Sallys': 'temp1', 'Shuriken': 'temp1',
+  'Tarjeteros': 'temp3', 'Twinford': 'vr', 'Umbrella': 'temp1',
+  'Unicorn': 'temp3', 'Veteranos Inazuma': 'temp1', 'Wild': 'temp1',
+  'Zanark Domain': 'go2', 'Zeus': 'temp1'
+};
+var TEAM_SEASON_LABELS = {
+  temp1: 'Temporada 1', temp2: 'Temporada 2', temp3: 'Temporada 3',
+  go1: 'GO 1', go2: 'GO 2', go3: 'GO 3',
+  ares: 'Ares no Tenbin', orion: 'Orion no Kokuin', vr: 'Victory Road'
+};
+var TEAM_SEASON_ORDER = ['temp1', 'temp2', 'temp3', 'go1', 'go2', 'go3', 'ares', 'orion', 'vr'];
+
 // Puntuación de "fuerza" de cada equipo (1-100), usada para que la CPU
 // resuelva enfrentamientos entre rivales (torneo, FutDraft) con más sentido
 // que un dado puro: cuanto más alta, más gana. Son valores de partida

@@ -926,6 +926,15 @@ a { color: var(--accent); }
   justify-content: center;
   box-shadow: inset 0 0 0 1px rgba(0,0,0,0.15);
 }
+/* Aura de jugador potenciado (Modo Carrera, +5 por 20M al llegar a 100
+   de media, ver actionBoostCareerPlayer) -- anillo dorado animado
+   alrededor del círculo, a petición explícita ("tienen un aura alrededor
+   del círculo"). */
+.avatar-boosted { box-shadow: inset 0 0 0 1px rgba(0,0,0,0.15), 0 0 0 3px #ffd447, 0 0 10px 3px rgba(255,212,71,0.85); animation: avatarBoostedGlow 1.6s ease-in-out infinite; }
+@keyframes avatarBoostedGlow {
+  0%, 100% { box-shadow: inset 0 0 0 1px rgba(0,0,0,0.15), 0 0 0 3px #ffd447, 0 0 10px 3px rgba(255,212,71,0.85); }
+  50% { box-shadow: inset 0 0 0 1px rgba(0,0,0,0.15), 0 0 0 3px #fff2b8, 0 0 16px 6px rgba(255,212,71,1); }
+}
 .avatar-initials {
   font-family: 'Oswald', sans-serif;
   font-weight: 700;
