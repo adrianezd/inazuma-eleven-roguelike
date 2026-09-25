@@ -64,7 +64,7 @@ var RIVAL_TEAM_NAMES = [
   'Cala Pirata', 'Sallys', 'Leones del desierto',
   'Academia Universal', 'Instituto Plenilunio',
   'Raimon Inakuni', 'Mary Times', 'Mar de Luna', 'Farm', 'Fauxshore',
-  'Neo Raimon', 'Los arions', 'Mar de Árboles', 'Fertilia', 'Magmavis', 'Colina Verde', 'Barcelona Orb', 'Twinford', 'Northbright', 'Campeones Raimon'
+  'Neo Raimon', 'Raimon GO', 'Los arions', 'Mar de Árboles', 'Fertilia', 'Magmavis', 'Colina Verde', 'Barcelona Orb', 'Twinford', 'Northbright', 'Campeones Raimon'
 ];
 
 var RIVAL_TEAM_BOSSES = [
@@ -115,7 +115,7 @@ var TEAM_SEASON = {
   'Protocolo Omega 2.0': 'go2', 'Protocolo Omega 3.0': 'go2', 'Ragnah': 'go2',
   'Raimon Inakuni': 'ares', 'Resistencia Japon': 'temp2', 'Resistencia Japón GO': 'go2',
   'Royal Academy': 'temp1', 'Sallys': 'temp1', 'Shuriken': 'temp1',
-  'Tarjeteros': 'temp3', 'Tormenta de Géminis': 'temp2', 'Ángeles Oscuros': 'temp3', 'Neo Raimon': 'temp1', 'FFI Estrellas': 'temp3', 'Twinford': 'vr', 'Umbrella': 'temp1',
+  'Tarjeteros': 'temp3', 'Tormenta de Géminis': 'temp2', 'Ángeles Oscuros': 'temp3', 'Neo Raimon': 'temp1', 'FFI Estrellas': 'temp3', 'Raimon GO': 'go1', 'Twinford': 'vr', 'Umbrella': 'temp1',
   'Unicorn': 'temp3', 'Veteranos Inazuma': 'temp1', 'Wild': 'temp1',
   'Zanark Domain': 'go2', 'Zeus': 'temp1'
 };
@@ -159,7 +159,7 @@ var TEAM_POWER = {
   'Élite Omega': 93, 'Galanes Electrizantes':70, 'Los Cuatro Magníficos': 70,
   'Chispas Perfectas': 85, 'Artemisa de Mr.YI': 90,
   // Añadidos por el usuario (escudo y media dados por él)
-  'Ángeles Oscuros': 85, 'FFI Estrellas': 80, 'Neo Raimon': 75
+  'Ángeles Oscuros': 85, 'FFI Estrellas': 80, 'Neo Raimon': 75, 'Raimon GO': 70
 };
 
 
@@ -691,7 +691,7 @@ var ROSTER = [
     locked: true, cost: 99999
   },
   {
-    id: 'r70', equipo:null, nombre: 'WonderBot', original: 'WonderBot',
+    id: 'r70', equipo:'Los arions', nombre: 'WonderBot', original: 'WonderBot',
     posicion: 'Portero', tipo: 'Montaña',
     tiro: 20, pase: 40, defensa: 90, especial: 80,
     hissatsu:['Defensa Automática'],tipoTecnica:'defensa',
@@ -747,7 +747,7 @@ var ROSTER = [
     locked: true, cost:163
   },
   {
-    id: 'r77', equipo:null, nombre: 'Tezcat', original: 'Shuu',
+    id: 'r77', equipo:'Equipo Zero', nombre: 'Tezcat', original: 'Shuu',
     posicion: 'Delantero', tipo: 'Bosque',
     tiro: 83, pase: 81, defensa: 34, especial: 85,
     hissatsu:['Ceniza Negra'],tipoTecnica:'tiro',
@@ -1211,7 +1211,7 @@ var ROSTER = [
     desc: 'Defensa de Tormenta de Géminis',
     locked: false, cost:134
   },
-  {id: 'r133', equipo:null, nombre: 'Wanli Chang-Cheng', original: 'Wanli',
+  {id: 'r133', equipo:'Raimon GO', nombre: 'Wanli Chang-Cheng', original: 'Wanli',
     posicion: 'Defensa', tipo: 'Montaña',
     tiro: 45, pase: 66, defensa: 83, especial: 76,
     hissatsu:['Muralla de Atlantis'],tipoTecnica:'defensa',

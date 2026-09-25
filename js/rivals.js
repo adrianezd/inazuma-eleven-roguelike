@@ -119,6 +119,7 @@ var TEAM_SHIELD_FILES = {
   'Ángeles Oscuros': 'angeles-oscuros.webp',
   'FFI Estrellas': 'ffi-all-stars.webp',
   'Neo Raimon': 'neo-raimon.webp',
+  'Raimon GO': 'raimon-go.webp',
   'Inazuma Japon GO': 'inazuma-japon-go.webp',
   'Instituto Alius': 'instituto-alius.webp',
   'Mar de Luna': 'mar-de-luna.webp',
