@@ -3563,8 +3563,8 @@ var ROSTER = [
 // muy_ofensiva), a petición explícita. Se eligen en los drafts (FutDraft y
 // Liga) y en el Modo Mundial (por defecto Hillman con el Raimon).
 var COACHES = [
-  { id: 'c01', nombre: 'Hillman', original: 'Michiya Kudou', equipo: 'Equipo Ogro', atk: 2, def: 3, intensidad: 'media', estilo: 'equilibrado', desc: 'El entrenador del Raimon, tranquilo y estratega.' },
-  { id: 'c02', nombre: 'Comandante Hillman', original: 'Fuyuka Kudou', equipo: 'Raimon', atk: 3, def: 2, intensidad: 'alta', estilo: 'ofensiva', desc: 'Directora deportiva del Raimon, apuesta por el ataque.' },
+  { id: 'c01', nombre: 'Hillman', original: 'Michiya Kudou', equipo: 'Raimon', atk: 2, def: 3, intensidad: 'media', estilo: 'equilibrado', desc: 'El entrenador del Raimon, tranquilo y estratega.' },
+  { id: 'c02', nombre: 'Comandante Hillman', original: 'Fuyuka Kudou', equipo: 'Equipo Ogro', atk: 3, def: 2, intensidad: 'alta', estilo: 'ofensiva', desc: 'Directora deportiva del Raimon, apuesta por el ataque.' },
   { id: 'c03', nombre: 'Ray Dark', original: 'Reiji Kageyama', equipo: 'Royal Academy', atk: 4, def: 2, intensidad: 'alta', estilo: 'muy_ofensiva', desc: 'Estratega implacable que lo arriesga todo al ataque.' },
   { id: 'c04', nombre: 'Elzes Killard', original: 'Elzes Killard', equipo: 'Neo Raimon', atk: 3, def: 3, intensidad: 'alta', estilo: 'ofensiva', desc: 'Director del Genesis, exige rendimiento máximo.' },
   { id: 'c05', nombre: 'Zoolan Rice', original: 'Zoolan Rice', equipo: 'Zoolan Team', atk: 2, def: 4, intensidad: 'baja', estilo: 'defensiva', desc: 'Prefiere un equipo cerrado y sin riesgos.' },

@@ -506,8 +506,8 @@ function renderWorldTourLineup() {
       '</div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:4px">Entrenador</h3>' +
-        '<p class="dim small">Suma ataque y defensa, y con su intensidad. Si tu estilo de juego coincide con el suyo, sus puntos suben un 25%.</p>' +
-        COACHES.map(function (co) { return coachCardHtml(co, G.worldTour.coachId === co.id, "actionSetWorldTourCoach('" + co.id + "')"); }).join('') +
+        '<p class="dim small">Suma ataque y defensa, y con su intensidad.</p>' +
+        (coachById(G.worldTour.coachId) ? coachCardHtml(coachById(G.worldTour.coachId), true, '') : '') +
       '</div>' +
       '<div class="panel center-text">' +
         '<h3 style="margin-bottom:8px">Bonificación de atributo</h3>' +
