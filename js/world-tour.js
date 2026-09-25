@@ -495,26 +495,28 @@ function renderWorldTourLineup() {
         '<p class="dim small">' + captainHint + '</p>' +
         '<button class="btn btn-tiny' + (f.pickingCaptain ? ' active' : '') + '" onclick="toggleFutDraftCaptainMode()">' + (f.pickingCaptain ? 'Toca un titular…' : 'Elegir capitán 👑') + '</button>' +
       '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:8px">Formación</h3>' +
-        '<div class="view-toggle view-toggle-wrap">' + formationBtns + '</div>' +
-        renderFutDraftLineupPitch(f) +
-      '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:8px">Estilo de juego</h3>' +
-        '<select class="select-field" onchange="actionSetWorldTourPlayStyle(this.value)">' + styleOptionsHtml + '</select>' +
-      '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:4px">Entrenador</h3>' +
-        '<p class="dim small">Suma ataque y defensa, y con su intensidad.</p>' +
-        (coachById(G.worldTour.coachId) ? coachCardHtml(coachById(G.worldTour.coachId), true, '') : '') +
-      '</div>' +
-      tacticsPanelHtml({ foul: G.worldTour.foulStyle || 'medio', intensity: G.worldTour.intensity || 'media' }, 'actionSetWorldTourTactic', false) +
-      '<div class="panel center-text">' +
-        '<h3 style="margin-bottom:8px">Bonificación de atributo</h3>' +
-        '<div>' + elementCountsHtml + '</div>' +
-      '</div>' +
-      benchHtml +
+      tacTabsHtml() +
+      (G.tacTab === 'tactica'
+        ? '<div class="panel">' +
+            '<h3 style="margin-bottom:8px">Estilo de juego</h3>' +
+            '<select class="select-field" onchange="actionSetWorldTourPlayStyle(this.value)">' + styleOptionsHtml + '</select>' +
+          '</div>' +
+          '<div class="panel">' +
+            '<h3 style="margin-bottom:4px">Entrenador</h3>' +
+            '<p class="dim small">Suma ataque y defensa, y con su intensidad.</p>' +
+            (coachById(G.worldTour.coachId) ? coachCardHtml(coachById(G.worldTour.coachId), true, '') : '') +
+          '</div>' +
+          tacticsPanelHtml({ foul: G.worldTour.foulStyle || 'medio', intensity: G.worldTour.intensity || 'media' }, 'actionSetWorldTourTactic', false)
+        : '<div class="panel">' +
+            '<h3 style="margin-bottom:8px">Formación</h3>' +
+            '<div class="view-toggle view-toggle-wrap">' + formationBtns + '</div>' +
+            renderFutDraftLineupPitch(f) +
+          '</div>' +
+          benchHtml +
+          '<div class="panel center-text">' +
+            '<h3 style="margin-bottom:8px">Bonificación de atributo</h3>' +
+            '<div>' + elementCountsHtml + '</div>' +
+          '</div>') +
     '</div>'
   );
 }

@@ -142,6 +142,17 @@ window.actionSetFutDraftTactic = function (key, val) {
   f.tactics[key] = val;
   render();
 };
+// Pestañas Alineación / Táctica compartidas por FutDraft, Liga, Modo Mundial
+// y FutDraft 2 jugadores: el entrenador y la táctica van en su propia
+// pestaña y el banquillo queda siempre justo debajo del once.
+window.actionSetTacTab = function (tab) { G.tacTab = tab === 'tactica' ? 'tactica' : 'alineacion'; render(); };
+function tacTabsHtml() {
+  var t = G.tacTab === 'tactica' ? 'tactica' : 'alineacion';
+  return '<div class="view-toggle" style="margin:8px 0">' +
+    '<button class="btn-tiny' + (t === 'alineacion' ? ' active' : '') + '" onclick="actionSetTacTab(\'alineacion\')">Alineación</button>' +
+    '<button class="btn-tiny' + (t === 'tactica' ? ' active' : '') + '" onclick="actionSetTacTab(\'tactica\')">Táctica</button>' +
+  '</div>';
+}
 function futDraftCoachOptions() {
   return COACHES.slice().sort(function () { return Math.random() - 0.5; }).slice(0, 3);
 }
@@ -832,19 +843,20 @@ function renderFutDraftTeam() {
         '<p class="dim small">' + captainHint + '</p>' +
         '<button class="btn btn-tiny' + (f.pickingCaptain ? ' active' : '') + '" onclick="toggleFutDraftCaptainMode()">' + (f.pickingCaptain ? 'Toca un titular…' : 'Elegir capitán 👑') + '</button>' +
       '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:8px">Formación</h3>' +
-        '<div class="view-toggle view-toggle-wrap">' + formationBtns + '</div>' +
-        renderFutDraftLineupPitch(f) +
-        '<p class="dim small" style="margin-top:8px">Un jugador fuera de su posición real baja la puntuación del equipo. Tener 4 o más titulares del mismo tipo elemental la sube.</p>' +
-      '</div>' +
-      '<div class="panel center-text">' +
-        '<h3 style="margin-bottom:8px">Bonificación de atributo (once titular)</h3>' +
-        '<div>' + elementCountsHtml + '</div>' +
-      '</div>' +
-      benchHtml +
-      futDraftCoachPanelHtml(f) +
-      tacticsPanelHtml(f.tactics || { style: 'equilibrado', foul: 'medio', intensity: 'media' }, 'actionSetFutDraftTactic', true) +
+      tacTabsHtml() +
+      (G.tacTab === 'tactica'
+        ? futDraftCoachPanelHtml(f) + tacticsPanelHtml(f.tactics || { style: 'equilibrado', foul: 'medio', intensity: 'media' }, 'actionSetFutDraftTactic', true)
+        : '<div class="panel">' +
+            '<h3 style="margin-bottom:8px">Formación</h3>' +
+            '<div class="view-toggle view-toggle-wrap">' + formationBtns + '</div>' +
+            renderFutDraftLineupPitch(f) +
+            '<p class="dim small" style="margin-top:8px">Un jugador fuera de su posición real baja la puntuación del equipo. Tener 4 o más titulares del mismo tipo elemental la sube.</p>' +
+          '</div>' +
+          benchHtml +
+          '<div class="panel center-text">' +
+            '<h3 style="margin-bottom:8px">Bonificación de atributo (once titular)</h3>' +
+            '<div>' + elementCountsHtml + '</div>' +
+          '</div>') +
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionShareFutDraftSquad()">Compartir 🔗</button>' +
         (G.futdraftShareMessage ? '<p class="dim small">' + escapeHtml(G.futdraftShareMessage) + '</p>' : '') +
@@ -1390,11 +1402,12 @@ function renderFutDraftVsPrep() {
         '<p class="dim small">Toca a dos jugadores para cambiarlos (titulares entre sí o titular por suplente) y elige formación. Puntuación: <strong style="color:var(--accent-2)">' + total + '</strong> / 100</p>' +
         '<button class="btn btn-tiny' + (s.pickingCaptain ? ' active' : '') + '" onclick="actionToggleFutDraftVsCaptain()">' + (s.pickingCaptain ? 'Toca un titular…' : (capId ? 'Cambiar capitán 👑' : 'Elegir capitán 👑')) + '</button>' +
       '</div>' +
-      '<div class="panel"><h3 style="margin-bottom:8px">Formación</h3><div class="view-toggle view-toggle-wrap">' + formationBtns + '</div>' +
-        '<div class="pitch pitch-11">' + rowsHtml + pitchCoachHtml(s.coachBy[side]) + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div></div>' +
-      vsCoachPanelHtml(s, side) +
-      tacticsPanelHtml(s.tacticsBy[side], 'actionSetFutDraftVsTactic', true) +
-      '<div class="panel"><h3 style="margin-bottom:4px">Banquillo</h3><div class="pitch-row" style="justify-content:center">' + bench.map(function (p) { return slotHtml(p, false); }).join('') + '</div></div>' +
+      tacTabsHtml() +
+      (G.tacTab === 'tactica'
+        ? vsCoachPanelHtml(s, side) + tacticsPanelHtml(s.tacticsBy[side], 'actionSetFutDraftVsTactic', true)
+        : '<div class="panel"><h3 style="margin-bottom:8px">Formación</h3><div class="view-toggle view-toggle-wrap">' + formationBtns + '</div>' +
+          '<div class="pitch pitch-11">' + rowsHtml + pitchCoachHtml(s.coachBy[side]) + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div></div>' +
+          '<div class="panel"><h3 style="margin-bottom:4px">Banquillo</h3><div class="pitch-row" style="justify-content:center">' + bench.map(function (p) { return slotHtml(p, false); }).join('') + '</div></div>') +
       '<button class="btn btn-primary btn-block mt" onclick="actionConfirmFutDraftVsPrep()">' + (last ? 'Listo' : 'Listo, turno del 2') + '</button>' +
     '</div>'
   );

@@ -2062,13 +2062,13 @@ function renderCareerEquipo(c) {
     '</div>' +
 
     '<div class="panel">' + renderCareerLineupPitch(c) + '</div>' +
-    '<div class="panel center-text">' +
-      '<h3 style="margin-bottom:8px">Bonificación de atributo (once titular)</h3>' +
-      '<div>' + elementCountsHtml + '</div>' +
-    '</div>' +
     '<div class="panel">' +
       '<h3 style="margin-bottom:4px">Banquillo</h3>' +
       '<div class="pitch-row" style="justify-content:center">' + benchHtml + '</div>' +
+    '</div>' +
+    '<div class="panel center-text">' +
+      '<h3 style="margin-bottom:8px">Bonificación de atributo (once titular)</h3>' +
+      '<div>' + elementCountsHtml + '</div>' +
     '</div>'
   );
 }
