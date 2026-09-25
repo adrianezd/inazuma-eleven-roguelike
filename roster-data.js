@@ -282,7 +282,7 @@ var ROSTER = [
     locked: true, cost:142
   },
   {
-    id: 'r15', equipo:'Raimon', nombre: 'Jordan Greenway', original: 'Midorikawa Ryuuji',
+    id: 'r15', equipo:'Inazuma Japon', nombre: 'Jordan Greenway', original: 'Midorikawa Ryuuji',
     posicion: 'Centrocampista', tipo: 'Bosque',
     tiro: 75, pase: 78, defensa: 74, especial: 77,
     hissatsu:['Puerta Astral'],tipoTecnica:'tiro',
@@ -555,7 +555,7 @@ var ROSTER = [
     locked: true, cost:121
   },
   {
-    id: 'r53', equipo:null, nombre: 'Bellatrix', original: 'Reina Yagami',
+    id: 'r53', equipo:'Genesis', nombre: 'Bellatrix', original: 'Reina Yagami',
     posicion: 'Centrocampista', tipo: 'Viento',
     tiro: 77, pase: 77, defensa: 64, especial: 75,
     hissatsu:['Pinguino Espacial'],tipoTecnica:'regate',
@@ -1039,7 +1039,7 @@ var ROSTER = [
     locked: false, cost:126
   },
   {
-    id: 'r112', equipo:null, nombre: 'Kiburn', original: 'Kim Powell',
+    id: 'r112', equipo:'Genesis', nombre: 'Kiburn', original: 'Kim Powell',
     posicion: 'Defensa', tipo: 'Fuego',
     tiro: 44, pase: 70, defensa: 80, especial: 76,
     hissatsu:['Gravitación'],tipoTecnica:'defensa',
@@ -1047,7 +1047,7 @@ var ROSTER = [
     locked: false, cost:128
   },
   {
-    id: 'r113', equipo:null, nombre: 'Zohen', original: 'Zack Cummings',
+    id: 'r113', equipo:'Genesis', nombre: 'Zohen', original: 'Zack Cummings',
     posicion: 'Defensa', tipo: 'Montaña',
     tiro: 42, pase: 69, defensa: 80, especial: 70,
     hissatsu:['Robo Planeta'],tipoTecnica:'defensa',
@@ -1055,7 +1055,7 @@ var ROSTER = [
     locked: false, cost:126
   },
   {
-    id: 'r114', equipo:null, nombre: 'Hauser', original: 'Hunt Mercer',
+    id: 'r114', equipo:'Genesis', nombre: 'Hauser', original: 'Hunt Mercer',
     posicion: 'Defensa', tipo: 'Montaña',
     tiro: 40, pase: 69, defensa: 76, especial: 72,
     hissatsu:['Superarmadillo'],tipoTecnica:'defensa',
@@ -1071,7 +1071,7 @@ var ROSTER = [
     locked: false, cost:131
   },
   {
-    id: 'r116', equipo:null, nombre: 'Kiwill', original: 'Katie Brown',
+    id: 'r116', equipo:'Genesis', nombre: 'Kiwill', original: 'Katie Brown',
     posicion: 'Centrocampista', tipo: 'Viento',
     tiro: 65, pase: 75, defensa: 78, especial: 76,
     hissatsu:['Finta Bumerán'],tipoTecnica:'regate',
@@ -1079,7 +1079,7 @@ var ROSTER = [
     locked: false, cost:126
   },
   {
-    id: 'r117', equipo:null, nombre: 'Ark', original: 'Ashton Malone',
+    id: 'r117', equipo:'Genesis', nombre: 'Ark', original: 'Ashton Malone',
     posicion: 'Centrocampista', tipo: 'Bosque',
     tiro: 70, pase: 70, defensa: 65, especial: 80,
     hissatsu:['Cañón de Meteoritos'],tipoTecnica:'tiro',
@@ -3526,7 +3526,7 @@ var ROSTER = [
   sprite:'assets/sprites/r407.webp'
 },
 {
-  id:'r408', equipo:null, nombre:'Xene B.', original:'Xene',
+  id:'r408', equipo:'Genesis', nombre:'Xene B.', original:'Xene',
   posicion:'Delantero', tipo:'Fuego',
   tiro:90,pase:76,defensa:45,especial:90,
   hissatsu:['Cañon de Meteoritos'],tipoTecnica:'tiro',
@@ -3535,7 +3535,7 @@ var ROSTER = [
   sprite:'assets/sprites/r408.webp'
 },
 {
-  id:'r409', equipo:null, nombre:'Janus', original:'Janus',
+  id:'r409', equipo:'Tormenta de Géminis', nombre:'Janus', original:'Janus',
   posicion:'Centrocampista', tipo:'Bosque',
   tiro:81,pase:86,defensa:75,especial:83,
   hissatsu:['Astro Remate'],tipoTecnica:'tiro',
