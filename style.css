@@ -1906,10 +1906,10 @@ body { padding-bottom: calc(var(--safe-b) + 72px); }
 .board-chip { background: rgba(255,212,71,0.15); border: 1px solid rgba(255,212,71,0.4); color: #ffd447; border-radius: 999px; padding: 3px 11px; font-size: 0.75rem; }
 /* ===== Estilo de juego (Mi equipo) ===== */
 .style-card .select-field { margin-top: 6px; }
-.style-stats { display: flex; gap: 8px; margin-top: 10px; }
-.style-stats > div { flex: 1; background: var(--bg-alt); border: 1px solid var(--border); border-radius: 12px; padding: 8px; text-align: center; }
+.style-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 8px; margin-top: 10px; }
+.style-stats > div { background: var(--bg-alt); border: 1px solid var(--border); border-radius: 12px; padding: 8px; text-align: center; }
 .style-stats span { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); }
-.style-stats strong { font-family: 'Oswald', sans-serif; font-size: 1.2rem; }
+.style-stats strong { font-family: 'Oswald', sans-serif; font-size: 1.05rem; overflow-wrap: anywhere; }
 
 /* ===== Entrenadores ===== */
 .coach-card { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; margin-top: 8px; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--border); background: var(--bg-alt); color: var(--text); cursor: pointer; font: inherit; }

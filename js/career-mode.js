@@ -5015,6 +5015,7 @@ function careerCupSettleRemaining(cup) {
   while (!careerCupChampion(cup)) careerCupAdvanceRound(cup);
 }
 function careerCupPenaltyShootout(c, oppName) {
+  if (G.futdraft && G.futdraft.live && G.futdraft.live.penaltyResult) return G.futdraft.live.penaltyResult;
   var myScore = careerMatchTeamScore(c);
   var diff = myScore - careerRivalPower(oppName);
   var myChance = futDraftPenaltyShotChance(diff);
@@ -5096,6 +5097,7 @@ function finishCareerCupMatch() {
   var match = live.careerCupMatch;
   var opp = careerCupOpponent(match);
   var myGoals = live.finalMyGoals, oppGoals = live.finalOppGoals;
+  if (futDraftLivePenaltyGate(live, opp.name, careerMatchTeamScore(c) - careerRivalPower(opp.name), myGoals === oppGoals, finishCareerCupMatch)) return;
   var penalty = myGoals === oppGoals ? careerCupPenaltyShootout(c, opp.name) : null;
   var playerWon = penalty ? penalty.myGoals > penalty.oppGoals : myGoals > oppGoals;
   match.winner = playerWon ? (match.a.isPlayer ? match.a : match.b) : (match.a.isPlayer ? match.b : match.a);
@@ -5510,6 +5512,10 @@ function finishCareerChampionsMatch() {
   var match = live.careerChampionsMatch;
   var opp = careerChampionsOpponent(match);
   var myGoals = live.finalMyGoals, oppGoals = live.finalOppGoals;
+  if (live.careerChampionsPhase !== 'group' && careerChampionsLeg(champions, match) === 2) {
+    var champTied = (myGoals + (match.leg1 ? match.leg1.myGoals : 0)) === (oppGoals + (match.leg1 ? match.leg1.oppGoals : 0));
+    if (futDraftLivePenaltyGate(live, opp.name, careerMatchTeamScore(c) - careerRivalPower(opp.name), champTied, finishCareerChampionsMatch)) return;
+  }
 
   var myEvents = live.revealed.filter(function (e) { return e.side === 'me'; });
   futDraftRecordGoalEvents(c.careerStats, myEvents, 'Tu equipo');

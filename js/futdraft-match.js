@@ -989,9 +989,46 @@ window.futDraftSkipPenalty = function () {
   render();
 };
 
+// Tanda VISIBLE (lanzamiento a lanzamiento, como en FutDraft) para los
+// partidos en vivo de Carrera y Modo Mundial que acaban empatados: antes el
+// resultado de la tanda aparecía de golpe. Al acabar, guarda el resultado
+// en live.penaltyResult y vuelve a llamar a la función de fin de partido.
+function futDraftLivePenaltyGate(live, oppName, diff, tied, refinish) {
+  if (!tied || live.penaltyResult) return false;
+  var f = G.futdraft;
+  var myChance = futDraftPenaltyShotChance(diff);
+  var rivalChance = futDraftPenaltyShotChance(-diff);
+  var myPlayers = f.lineup.map(function (s) { return s.player; });
+  var oppPlayers = (f.oppGhostPool && f.oppGhostPool.length ? f.oppGhostPool : (f.oppPlayersOverride && f.oppPlayersOverride.length ? f.oppPlayersOverride : futDraftUndraftedPool()));
+  var attempts = [], mg = 0, rg = 0, round = 1;
+  while (true) {
+    var ms = Math.random() < myChance; if (ms) mg++;
+    attempts.push({ side: 'me', round: round, player: futDraftGoalEvent(myPlayers).scorer, scored: ms });
+    var rs = Math.random() < rivalChance; if (rs) rg++;
+    attempts.push({ side: 'opp', round: round, player: futDraftGoalEvent(oppPlayers).scorer, scored: rs });
+    if (round >= PENALTY_MODE_ROUNDS && mg !== rg) break;
+    round++;
+  }
+  f.penalty = {
+    playerGoals: 0, rivalGoals: 0, pending: attempts, revealed: [],
+    oppName: oppName, oppShield: teamShieldPath(oppName), done: false,
+    onDone: function (res) { live.penaltyResult = res; refinish(); }
+  };
+  G.screen = 'futdraftPenalty';
+  render();
+  futDraftPenaltyTick();
+  return true;
+}
+
 function finishFutDraftPenaltyShootout() {
   var f = G.futdraft;
   var p = f.penalty;
+  if (p.onDone) {
+    var cb = p.onDone;
+    f.penalty = null;
+    cb({ myGoals: p.playerGoals, oppGoals: p.rivalGoals });
+    return;
+  }
   var match = f.pendingMatch;
   var oppSide = f.pendingOppSide;
   var regular = f.pendingRegularResult;

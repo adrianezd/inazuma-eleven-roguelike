@@ -639,6 +639,7 @@ window.actionSkipWorldTourMatch = function () {
 // que la Copa del Rey de Modo Carrera, careerCupPenaltyShootout), sin
 // pantalla de tanda completa, para no salirse del flujo de 3 botones.
 function worldTourPenaltyShootout(oppPower) {
+  if (G.futdraft && G.futdraft.live && G.futdraft.live.penaltyResult) return G.futdraft.live.penaltyResult;
   var myScore = worldTourTeamScore();
   var diff = myScore - oppPower;
   var myChance = futDraftPenaltyShotChance(diff);
@@ -657,6 +658,7 @@ function finishWorldTourMatch() {
   var stage = worldTourStage();
   var live = G.futdraft.live;
   var myGoals = live.finalMyGoals, oppGoals = live.finalOppGoals;
+  if (futDraftLivePenaltyGate(live, stage.name || (G.futdraft.oppName) || 'Rival', worldTourTeamScore() - stage.power, myGoals === oppGoals, finishWorldTourMatch)) return;
   var penalty = myGoals === oppGoals ? worldTourPenaltyShootout(stage.power) : null;
   var playerWon = penalty ? penalty.myGoals > penalty.oppGoals : myGoals > oppGoals;
 
