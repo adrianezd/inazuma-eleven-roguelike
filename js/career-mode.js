@@ -5010,6 +5010,22 @@ function careerChampionsStageLabel(c) {
   return roundNameForIndex(champions.rounds.length - 1, Math.log2(CAREER_CHAMPIONS_KNOCKOUT_SIZE));
 }
 function renderCareerChampions(c) {
+  // Mismo arreglo que la Copa (careerCupResultBannerHtml): tarjeta con
+  // escudos en vez de texto plano al saltar el partido -- calculada ANTES
+  // del check de bloqueo, porque resolver tu partido (sobre todo si era
+  // el último de esta ronda) deja la pestaña bloqueada hasta la próxima
+  // jornada de Champions AL INSTANTE, y el resultado se quedaba sin
+  // enseñarse nunca (se saltaba entero el resto de esta función) -- bug
+  // real ("cuando simulo o salto, no me da el resultado, me va ya a la
+  // siguiente jornada de liga").
+  var lastResultHtml = '';
+  if (c.lastChampionsResult) {
+    var lr = c.lastChampionsResult;
+    var lrLabel = lr.playerWon ? '🏆 Ganaste' : (lr.isGroup && lr.myGoals === lr.oppGoals ? '🤝 Empate' : '❌ Perdiste');
+    lastResultHtml = '<p class="dim small">Último resultado: ' + lrLabel + ' contra ' + escapeHtml(lr.oppName) + '</p>' +
+      careerMatchResultCardHtml(lr.oppName, lr.myGoals, lr.oppGoals, null, true) +
+      (lr.penalty ? '<p class="dim small center-text">(penaltis ' + lr.penalty.myGoals + '-' + lr.penalty.oppGoals + ')</p>' : '');
+  }
   if (careerChampionsLocked(c)) {
     var championsRoundIdx = c.champions ? careerChampionsRoundIndex(c) : 0;
     var nextChampionsMatchday = CAREER_CHAMPIONS_ROUND_MATCHDAYS[championsRoundIdx] !== undefined ? CAREER_CHAMPIONS_ROUND_MATCHDAYS[championsRoundIdx] : CAREER_CHAMPIONS_ROUND_MATCHDAYS[CAREER_CHAMPIONS_ROUND_MATCHDAYS.length - 1];
@@ -5021,19 +5037,9 @@ function renderCareerChampions(c) {
     return '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Champions League</h3>' +
       '<p class="dim small">' + lockedMsg + '</p>' +
-    '</div>';
+    '</div>' + lastResultHtml;
   }
   var champions = c.champions;
-  // Mismo arreglo que la Copa (careerCupResultBannerHtml): tarjeta con
-  // escudos en vez de texto plano al saltar el partido.
-  var lastResultHtml = '';
-  if (c.lastChampionsResult) {
-    var lr = c.lastChampionsResult;
-    var lrLabel = lr.playerWon ? '🏆 Ganaste' : (lr.isGroup && lr.myGoals === lr.oppGoals ? '🤝 Empate' : '❌ Perdiste');
-    lastResultHtml = '<p class="dim small">Último resultado: ' + lrLabel + ' contra ' + escapeHtml(lr.oppName) + '</p>' +
-      careerMatchResultCardHtml(lr.oppName, lr.myGoals, lr.oppGoals, null, true) +
-      (lr.penalty ? '<p class="dim small center-text">(penaltis ' + lr.penalty.myGoals + '-' + lr.penalty.oppGoals + ')</p>' : '');
-  }
   var headerHtml =
     '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Champions League</h3>' +
