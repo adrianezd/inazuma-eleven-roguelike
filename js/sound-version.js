@@ -21,6 +21,7 @@ var APP_PATCH_NOTES = [
       'Los penaltis se ven lanzamiento a lanzamiento en Carrera y Modo Mundial, también en la Supercopa.',
       'Copa de 64 equipos, goleadores de Copa y Champions, y directiva rediseñada.',
       'Menú: botón Continuar carrera con el resumen de tu club, y botón Novedades.',
+      'Champions: cruces de ida y vuelta rediseñados con casillas de cada partido y el global.',
       'Cansancio en Modo Carrera: los titulares se cansan cada jornada y bajan de media; rota a los cansados con un botón.',
       'Animaciones suaves al cambiar de pantalla y al marcar, y ajustes para móvil.'
     ]

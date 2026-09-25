@@ -1978,3 +1978,19 @@ body { padding-bottom: calc(var(--safe-b) + 72px); }
 .continue-stats span { font-size: 0.68rem; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,0.08); color: var(--text-dim); }
 .continue-go { font-size: 1.3rem; color: var(--accent-2); }
 .menu-patch-btn { position: relative; top: auto; right: auto; display: inline-flex; margin: 10px auto 0; }
+
+.tie-panel { background: linear-gradient(150deg, rgba(60,110,200,0.18), var(--panel)); border: 1px solid var(--border); border-radius: 16px; padding: 12px; margin-bottom: 10px; }
+.tie-round { text-align: center; font-family: 'Oswald', sans-serif; font-size: 1.05rem; letter-spacing: 0.04em; color: var(--accent-2); margin-bottom: 10px; }
+.tie-legs { display: flex; align-items: stretch; justify-content: center; gap: 8px; }
+.tie-leg { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 6px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-alt); min-width: 0; }
+.tie-leg span { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); }
+.tie-leg strong { font-family: 'Oswald', sans-serif; font-size: 1.2rem; }
+.tie-leg em { font-style: normal; font-size: 0.7rem; color: var(--text-dim); }
+.tie-leg-now { border-color: var(--accent-2); background: rgba(255,176,32,0.12); }
+.tie-leg-done { border-color: #2f9e6b; background: rgba(47,158,107,0.14); }
+.tie-leg-wait { opacity: 0.55; }
+.tie-sep { align-self: center; color: var(--text-dim); font-size: 0.8rem; }
+.tie-agg { text-align: center; margin-top: 8px; font-size: 0.78rem; color: var(--text-dim); }
+.tie-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 8px; }
+.tie-chip { font-size: 0.72rem; padding: 3px 10px; border-radius: 999px; background: rgba(255,255,255,0.08); color: var(--text-dim); }
+.tie-chip-gold { background: rgba(255,176,32,0.18); color: var(--accent-2); }

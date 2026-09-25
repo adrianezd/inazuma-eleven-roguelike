@@ -3377,6 +3377,24 @@ function careerMatchupTeamStatsHtml(league, idx) {
     ligaFormHtml(row.form) +
   '</div>';
 }
+// Cruce de Champions a doble partido: tarjeta con la ronda, dos casillas
+// (ida y vuelta, con local o visitante y marcador) y el global.
+function careerChampionsTieHtml(champions, match, roundName) {
+  var leg = careerChampionsLeg(champions, match);
+  if (!leg) {
+    return '<div class="tie-panel"><div class="tie-round">' + escapeHtml(roundName) + '</div><div class="tie-legs"><div class="tie-leg tie-leg-now"><span>Partido único</span><strong>Campo neutral</strong></div></div></div>';
+  }
+  var l1 = match.leg1;
+  function legCell(name, state, place, score) {
+    return '<div class="tie-leg tie-leg-' + state + '"><span>' + name + '</span><strong>' + score + '</strong><em>' + place + '</em></div>';
+  }
+  var ida = legCell('Ida', l1 ? 'done' : 'now', 'En casa', l1 ? l1.myGoals + ' - ' + l1.oppGoals : 'Por jugar');
+  var vuelta = legCell('Vuelta', l1 ? 'now' : 'wait', 'Fuera', 'Por jugar');
+  return '<div class="tie-panel"><div class="tie-round">' + escapeHtml(roundName) + '</div>' +
+    '<div class="tie-legs">' + ida + '<div class="tie-sep">&#9654;</div>' + vuelta + '</div>' +
+    (l1 ? '<div class="tie-agg">Global tras la ida: ' + l1.myGoals + ' - ' + l1.oppGoals + '</div>' : '') +
+  '</div>';
+}
 function careerMatchupCardHtml(oppName, contextLabel, youAreHome, league, oppIdx) {
   var youSideHtml =
     '<div class="matchup-side">' +
@@ -5701,9 +5719,11 @@ function renderCareerChampions(c) {
     var lrLabel = lr.playerWon ? '🏆 Ganaste' : (lr.isGroup && lr.myGoals === lr.oppGoals ? '🤝 Empate' : '❌ Perdiste');
     lastResultHtml = '<p class="dim small">Último resultado: ' + lrLabel + ' contra ' + escapeHtml(lr.oppName) + '</p>' +
       careerMatchResultCardHtml(lr.oppName, lr.myGoals, lr.oppGoals, null, lr.leg !== 2) +
-      (lr.leg === 1 ? '<p class="dim small center-text">Ida. Falta la vuelta.</p>' : '') +
-      (lr.agg ? '<p class="dim small center-text">Global: ' + lr.agg.my + ' - ' + lr.agg.opp + '</p>' : '') +
-      (lr.penalty ? '<p class="dim small center-text">(penaltis ' + lr.penalty.myGoals + '-' + lr.penalty.oppGoals + ')</p>' : '');
+      '<div class="tie-chips">' +
+        (lr.leg === 1 ? '<span class="tie-chip">Ida jugada, falta la vuelta</span>' : '') +
+        (lr.agg ? '<span class="tie-chip tie-chip-gold">Global ' + lr.agg.my + ' - ' + lr.agg.opp + '</span>' : '') +
+        (lr.penalty ? '<span class="tie-chip">Penaltis ' + lr.penalty.myGoals + ' - ' + lr.penalty.oppGoals + '</span>' : '') +
+      '</div>';
   }
   if (careerChampionsLocked(c)) {
     var championsRoundIdx = c.champions ? careerChampionsRoundIndex(c) : 0;
@@ -5778,7 +5798,8 @@ function renderCareerChampions(c) {
   } else if (myMatch) {
     var opp = careerChampionsOpponent(myMatch);
     actionHtml =
-      careerMatchupCardHtml(opp.name, roundNameForIndex(champions.rounds.length - 1, totalRounds) + (careerChampionsLeg(champions, myMatch) ? (careerChampionsLeg(champions, myMatch) === 1 ? ' · Ida' : ' · Vuelta (ida ' + myMatch.leg1.myGoals + '-' + myMatch.leg1.oppGoals + ')') : ''), careerChampionsYouAreHome(champions, myMatch)) +
+      careerChampionsTieHtml(champions, myMatch, roundNameForIndex(champions.rounds.length - 1, totalRounds)) +
+      careerMatchupCardHtml(opp.name, roundNameForIndex(champions.rounds.length - 1, totalRounds), careerChampionsYouAreHome(champions, myMatch)) +
       '<div class="panel center-text">' +
         '<div class="match-mode-picker">' +
           '<button class="match-mode-card" onclick="actionPlayCareerChampionsMatch()"><span class="match-mode-icon">⚽</span><strong>Ver partido</strong><span class="dim small">Partido en vivo</span></button>' +
