@@ -750,11 +750,14 @@ var CAREER_STARTING_BUDGET = 2;
 // Fácil y Normal un pelín más altos (antes 63/79), a petición explícita
 // ("sube un pelin la dificultad de facil y normal") -- Difícil y Muy
 // difícil se quedan igual.
+// Difícil/Muy difícil subidos un poco más (antes 87/91), a petición
+// explícita ("sube dificultad en dificil y muy dificil") -- Fácil/Normal
+// sin tocar.
 var CAREER_DIFFICULTY_TIERS = {
   facil: { name: 'Fácil', rivalLevelTarget: 67 },
   normal: { name: 'Normal', rivalLevelTarget: 82 },
-  dificil: { name: 'Difícil', rivalLevelTarget: 87 },
-  muy_dificil: { name: 'Muy difícil', rivalLevelTarget: 91 }
+  dificil: { name: 'Difícil', rivalLevelTarget: 90 },
+  muy_dificil: { name: 'Muy difícil', rivalLevelTarget: 95 }
 };
 var CAREER_DIFFICULTY_ORDER = ['facil', 'normal', 'dificil', 'muy_dificil'];
 var CAREER_NEGOTIATION_MODES = {
@@ -988,6 +991,9 @@ function careerFreshState(choices) {
     // Actividad de mercado (baja/alta, ver CAREER_MARKET_ACTIVITY) -- igual
     // de fija toda la partida, elegida al crear la carrera.
     marketActivity: CAREER_MARKET_ACTIVITY[choices.marketActivity] ? choices.marketActivity : 'baja',
+    // Mercado de invierno activable/desactivable al crear la carrera, a
+    // petición explícita -- el de pretemporada siempre está activo.
+    winterMarket: choices.winterMarket !== false,
     division: division,
     divisionTeams: divisionTeams,
     league: careerBuildLeague(division, divisionTeams),
@@ -1116,7 +1122,7 @@ function careerSerialize(c) {
     suspendedIds: c.suspendedIds || [],
     difficulty: c.difficulty || 'normal',
     negotiation: c.negotiation || 'duras',
-    hideProdigy: !!c.hideProdigy, boardStyle: c.boardStyle || 'normal', ironman: !!c.ironman, marketActivity: c.marketActivity || 'baja',
+    hideProdigy: !!c.hideProdigy, boardStyle: c.boardStyle || 'normal', ironman: !!c.ironman, marketActivity: c.marketActivity || 'baja', winterMarket: c.winterMarket !== false,
     division: c.division || 2,
     divisionTeams: c.divisionTeams,
     league: c.league,
@@ -1197,7 +1203,7 @@ function careerDeserialize(data) {
     // ahí).
     difficulty: CAREER_DIFFICULTY_TIERS[data.difficulty] ? data.difficulty : 'normal',
     negotiation: CAREER_NEGOTIATION_MODES[data.negotiation] ? data.negotiation : 'duras',
-    hideProdigy: !!data.hideProdigy, boardStyle: data.boardStyle || 'normal', ironman: !!data.ironman, marketActivity: data.marketActivity || 'baja',
+    hideProdigy: !!data.hideProdigy, boardStyle: data.boardStyle || 'normal', ironman: !!data.ironman, marketActivity: data.marketActivity || 'baja', winterMarket: data.winterMarket !== false,
     division: data.division || 1,
     divisionTeams: data.divisionTeams || careerInitialDivisionTeams(),
     league: data.league,
@@ -1311,7 +1317,7 @@ function actionGoCareerMode() {
 // este punto.
 window.actionNewCareerInSlot = function (slot) {
   G.careerSetupSlot = slot;
-  G.careerSetupChoices = { difficulty: 'normal', budget: CAREER_STARTING_BUDGET, negotiation: 'duras', clubName: '', clubShieldName: null, hideProdigy: false, shieldsExpanded: false, squadMode: 'default', startDivision: 2, boardStyle: 'normal', ironman: false, marketActivity: 'baja' };
+  G.careerSetupChoices = { difficulty: 'normal', budget: CAREER_STARTING_BUDGET, negotiation: 'duras', clubName: '', clubShieldName: null, hideProdigy: false, shieldsExpanded: false, squadMode: 'default', startDivision: 2, boardStyle: 'normal', ironman: false, marketActivity: 'baja', winterMarket: true };
   G.screen = 'careerSetup';
   render();
 };
@@ -1362,6 +1368,10 @@ window.actionSetCareerSetupIronman = function (on) {
 window.actionSetCareerSetupMarketActivity = function (id) {
   if (!CAREER_MARKET_ACTIVITY[id]) return;
   G.careerSetupChoices.marketActivity = id;
+  render();
+};
+window.actionSetCareerSetupWinterMarket = function (on) {
+  G.careerSetupChoices.winterMarket = !!on;
   render();
 };
 window.actionSetCareerSetupDifficulty = function (tier) {
@@ -1507,6 +1517,14 @@ function renderCareerSetup() {
           Object.keys(CAREER_MARKET_ACTIVITY).map(function (id) {
             return '<button class="btn btn-tiny' + ((choices.marketActivity || 'baja') === id ? ' active' : '') + '" onclick="actionSetCareerSetupMarketActivity(\'' + id + '\')">' + CAREER_MARKET_ACTIVITY[id].name + '</button>';
           }).join('') +
+        '</div>' +
+      '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:4px">Mercado de invierno</h3>' +
+        '<p class="dim small">Ventana de fichajes a mitad de temporada (jornada ' + CAREER_MIDSEASON_AT_MATCHDAY + '), aparte de la de pretemporada (que siempre está activa).</p>' +
+        '<div class="btn-row mt">' +
+          '<button class="btn btn-tiny' + (choices.winterMarket !== false ? ' active' : '') + '" onclick="actionSetCareerSetupWinterMarket(true)">Activado</button>' +
+          '<button class="btn btn-tiny' + (choices.winterMarket === false ? ' active' : '') + '" onclick="actionSetCareerSetupWinterMarket(false)">Desactivado</button>' +
         '</div>' +
       '</div>' +
       '<div class="panel">' +
@@ -2792,9 +2810,11 @@ function renderCareerMercado(c) {
   if (c.counterNegotiation) return renderCareerCounterNegotiation(c);
   var w = c.marketWindow;
   if (!w || !w.open) {
-    var closedMsg = c.league.matchdayIndex < CAREER_MIDSEASON_AT_MATCHDAY
-      ? ('El mercado reabrirá tras la jornada ' + CAREER_MIDSEASON_AT_MATCHDAY + ' (llevas ' + c.league.matchdayIndex + ').')
-      : 'El mercado reabrirá al empezar la próxima temporada.';
+    var closedMsg = (c.winterMarket === false && c.league.matchdayIndex < CAREER_MIDSEASON_AT_MATCHDAY)
+      ? 'El mercado de invierno está desactivado en esta carrera. El mercado reabrirá al empezar la próxima temporada.'
+      : c.league.matchdayIndex < CAREER_MIDSEASON_AT_MATCHDAY
+        ? ('El mercado reabrirá tras la jornada ' + CAREER_MIDSEASON_AT_MATCHDAY + ' (llevas ' + c.league.matchdayIndex + ').')
+        : 'El mercado reabrirá al empezar la próxima temporada.';
     return '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Mercado cerrado</h3>' +
       '<p class="dim small">' + closedMsg + '</p>' +
@@ -3455,8 +3475,32 @@ function careerTeamGhostPool(c, league, teamIdx) {
   // fantasma fijo toda la temporada.
   var usedIds = league.ghostUsedIds || (league.ghostUsedIds = myIds.slice());
   var pool = ROSTER.filter(function (p) { return usedIds.indexOf(p.id) === -1; });
-  var shuffled = pool.slice().sort(function () { return Math.random() - 0.5; });
-  var squad = shuffled.slice(0, 16);
+  // BUG REAL arreglado: los 16 fantasma salían de un sorteo TOTALMENTE
+  // libre por posición (podía tocarle a un rival 0 delanteros, o 8), así
+  // que sus goles se repartían entre muchos más jugadores de los que le
+  // tocaría a un once de verdad -- eso diluía mucho a su máximo goleador
+  // frente al tuyo (con solo 2 delanteros de verdad, concentras tus goles
+  // en menos gente), y explica que "me vuelvo a llevar todos los
+  // premios" incluso quedando lejos en Liga. Ahora cada plantilla
+  // fantasma tiene una forma realista (2 porteros, 5 defensas, 5
+  // centrocampistas, 4 delanteros), así que un rival concentra sus goles
+  // en sus pocos delanteros reales, como haría un equipo de verdad.
+  var GHOST_SHAPE = { Portero: 2, Defensa: 5, Centrocampista: 5, Delantero: 4 };
+  var byPos = { Portero: [], Defensa: [], Centrocampista: [], Delantero: [] };
+  pool.forEach(function (p) { if (byPos[p.posicion]) byPos[p.posicion].push(p); });
+  Object.keys(byPos).forEach(function (pos) { byPos[pos].sort(function () { return Math.random() - 0.5; }); });
+  var squad = [];
+  Object.keys(GHOST_SHAPE).forEach(function (pos) {
+    squad = squad.concat(byPos[pos].slice(0, GHOST_SHAPE[pos]));
+  });
+  // Si a algún equipo le faltan jugadores de una posición (pool ya muy
+  // esquilmado a estas alturas de la temporada), se rellena con lo que
+  // quede de cualquier posición para no quedarse con menos de 16.
+  if (squad.length < 16) {
+    var chosenIds = squad.map(function (p) { return p.id; });
+    var leftovers = pool.filter(function (p) { return chosenIds.indexOf(p.id) === -1; }).sort(function () { return Math.random() - 0.5; });
+    squad = squad.concat(leftovers.slice(0, 16 - squad.length));
+  }
   squad.forEach(function (p) { usedIds.push(p.id); });
   league.ghostSquads[teamIdx] = squad;
   return squad;
@@ -4033,6 +4077,11 @@ function careerAwardWinBonus(c, myGoals, oppGoals) {
 // jornada CAREER_MIDSEASON_AT_MATCHDAY), la abre -- se llama después de
 // cada jornada jugada, en los dos caminos (Saltar y Simular).
 function careerMaybeOpenMidseasonWindow(c) {
+  // Mercado de invierno opcional (c.winterMarket, elegido al crear la
+  // carrera), a petición explícita -- si está desactivado, la ventana de
+  // mitad de temporada simplemente no se abre (el de pretemporada, al
+  // empezar cada año, sigue igual siempre).
+  if (c.winterMarket === false) return;
   if (c.league.matchdayIndex === CAREER_MIDSEASON_AT_MATCHDAY && (!c.marketWindow || !c.marketWindow.open)) {
     c.marketWindow = careerNewMarketWindow('midseason', CAREER_MIDSEASON_DAYS);
     c.incomingOffers = [];
@@ -4344,7 +4393,11 @@ window.actionStartNewCareerSeason = function () {
 // para saber qué jornada le toca.
 var CAREER_CUP_SIZE = 32;
 var CAREER_CUP_ROUND_MATCHDAYS = [4, 9, 14, 19, 24];
-var CAREER_CUP_WIN_BONUS = 3;
+// Bajado (antes 3/12/9), a petición explícita ("baja premios por
+// títulos"): ganar era demasiado rentable en dinero además de en
+// prestigio -- se mantiene la insignia/Puntos de Espíritu igual, solo el
+// presupuesto en M€ baja.
+var CAREER_CUP_WIN_BONUS = 2;
 function careerNewCup() {
   var bracket = generateTournamentBracket(CAREER_CUP_SIZE);
   var round1 = [];
@@ -4559,12 +4612,21 @@ window.actionSkipCareerCupMatch = function () {
 // sin enseñar nunca el resultado que se acababa de jugar, un bug real
 // ("le doy a saltar partido, no me dice el resultado... quiero que me
 // lo muestres"). Se limpia solo al jugar el siguiente cruce tuyo.
+// BUG REAL arreglado: al saltar un partido de Copa/Champions (sin
+// jugarlo en vivo ni verlo simulado), el resultado se enseñaba en texto
+// plano ("5 - 3", sin escudos ni tarjeta) en vez de la misma tarjeta
+// bonita con escudos que ya usa Liga (careerMatchResultCardHtml) -- a
+// petición explícita ("pone directamente 5-3 con números así feos, no
+// sale chulo como cuando juegas un partido de liga"). Reutiliza esa misma
+// función; la Copa siempre se juega en casa (youAreHome true, fijo).
 function careerCupResultBannerHtml(c) {
   var r = c.lastCupResult;
   if (!r) return '';
   var label = r.playerWon ? '🏆 Ganaste' : '❌ Perdiste';
-  var scoreText = r.myGoals + ' - ' + r.oppGoals + (r.penalty ? ' (penaltis ' + r.penalty.myGoals + '-' + r.penalty.oppGoals + ')' : '');
-  return '<div class="panel center-text"><h3 style="margin-bottom:4px">' + label + ' contra ' + escapeHtml(r.oppName) + '</h3><p class="dim small">' + scoreText + '</p></div>';
+  var penaltyText = r.penalty ? ' (penaltis ' + r.penalty.myGoals + '-' + r.penalty.oppGoals + ')' : '';
+  return '<div class="panel center-text"><h3 style="margin-bottom:4px">' + label + ' contra ' + escapeHtml(r.oppName) + '</h3></div>' +
+    careerMatchResultCardHtml(r.oppName, r.myGoals, r.oppGoals, null, true) +
+    (penaltyText ? '<p class="dim small center-text">' + penaltyText + '</p>' : '');
 }
 function renderCareerCopa(c) {
   var cup = c.cup;
@@ -4659,7 +4721,7 @@ var CAREER_CHAMPIONS_KNOCKOUT_SIZE = 16;
 // no hace falta un algoritmo de círculo para un grupo tan pequeño.
 var CAREER_CHAMPIONS_GROUP_FIXTURE_PATTERN = [[[0, 1], [2, 3]], [[0, 2], [1, 3]], [[0, 3], [1, 2]]];
 var CAREER_CHAMPIONS_ROUND_MATCHDAYS = [5, 10, 15, 20, 26, 30, 34];
-var CAREER_CHAMPIONS_WIN_BONUS = 12;
+var CAREER_CHAMPIONS_WIN_BONUS = 8;
 function careerNewChampions() {
   var bracket = generateTournamentBracket(CAREER_CHAMPIONS_SIZE);
   var teams = bracket.slots.map(function (s) { return { isPlayer: s.isPlayer, name: s.name, tier: s.tier, pts: 0, gf: 0, ga: 0, played: 0 }; });
@@ -4962,14 +5024,21 @@ function renderCareerChampions(c) {
     '</div>';
   }
   var champions = c.champions;
+  // Mismo arreglo que la Copa (careerCupResultBannerHtml): tarjeta con
+  // escudos en vez de texto plano al saltar el partido.
+  var lastResultHtml = '';
+  if (c.lastChampionsResult) {
+    var lr = c.lastChampionsResult;
+    var lrLabel = lr.playerWon ? '🏆 Ganaste' : (lr.isGroup && lr.myGoals === lr.oppGoals ? '🤝 Empate' : '❌ Perdiste');
+    lastResultHtml = '<p class="dim small">Último resultado: ' + lrLabel + ' contra ' + escapeHtml(lr.oppName) + '</p>' +
+      careerMatchResultCardHtml(lr.oppName, lr.myGoals, lr.oppGoals, null, true) +
+      (lr.penalty ? '<p class="dim small center-text">(penaltis ' + lr.penalty.myGoals + '-' + lr.penalty.oppGoals + ')</p>' : '');
+  }
   var headerHtml =
     '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Champions League</h3>' +
       '<p class="dim small">32 equipos, 8 grupos de 4 y luego octavos de eliminación directa, como en la vida real. Champions ganadas en la carrera: <strong style="color:var(--accent-2)">' + (c.championsWon || 0) + '</strong>.</p>' +
-      (c.lastChampionsResult
-        ? '<p class="dim small">Último resultado: Tú ' + c.lastChampionsResult.myGoals + ' - ' + c.lastChampionsResult.oppGoals + ' ' + escapeHtml(c.lastChampionsResult.oppName) + (c.lastChampionsResult.penalty ? ' (penaltis ' + c.lastChampionsResult.penalty.myGoals + '-' + c.lastChampionsResult.penalty.oppGoals + ')' : '') + ', ' + (c.lastChampionsResult.playerWon ? 'ganaste' : (c.lastChampionsResult.isGroup && c.lastChampionsResult.myGoals === c.lastChampionsResult.oppGoals ? 'empate' : 'perdiste')) + '.</p>'
-        : '') +
-    '</div>';
+    '</div>' + lastResultHtml;
 
   // Fase de grupos: tabla de tu grupo (mismo estilo que la tabla de Liga)
   // + tu partido de esta jornada de grupo si toca.
@@ -5071,7 +5140,7 @@ function renderCareerChampions(c) {
 // juegan cuando se quiera tras ganarla.
 var CAREER_SUPERCOPA_POWER = 96;
 function careerSupercopaPower() { return careerKnockoutPower(CAREER_SUPERCOPA_POWER, 'supercopa'); }
-var CAREER_SUPERCOPA_WIN_BONUS = 9;
+var CAREER_SUPERCOPA_WIN_BONUS = 6;
 function careerNewSupercopa() {
   var opponent = RIVAL_TEAM_BOSSES.slice().sort(function (a, b) { return teamPower({ name: b }) - teamPower({ name: a }); })[0];
   return { opponentName: opponent, legIndex: 0, legResults: [null, null], finished: false, won: false, rewardClaimed: false };
