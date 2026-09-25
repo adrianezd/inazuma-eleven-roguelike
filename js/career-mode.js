@@ -3680,7 +3680,6 @@ function renderCareerCompeticiones(c) {
   CAREER_LIGA_VIEWS.forEach(function (v) {
     items.push({ name: v.name, active: sub === 'liga' && view === v.id, onclick: "actionSetCareerLigaView('" + v.id + "')" });
   });
-  items.push({ name: 'Máximos goleadores', active: !!c.showTopScorers, onclick: 'actionToggleCareerTopScorers()' });
   var scrollHtml = '<div class="career-tabs-scroll competiciones-scroll">' +
     items.map(function (it) { return '<button class="btn btn-tiny' + (it.active ? ' active' : '') + '" onclick="' + it.onclick + '">' + it.name + '</button>'; }).join('') +
   '</div>';
@@ -3719,7 +3718,7 @@ function renderCareerLigaSection(c) {
       (view === 'forma' ? '<p class="dim small">Una racha de 3 victorias o derrotas seguidas da un empujón (o un bajón) de forma al siguiente partido.</p>' : '') +
     '</div>';
   if (view === 'calendario') return headerHtml + renderCareerCalendario(c);
-  var topScorersHtml = c.showTopScorers ? renderTopScorersAssistsPanel(league.stats, 'Goleadores y asistentes de esta temporada', true) : '';
+  var topScorersHtml = '';
   return headerHtml + (topScorersHtml || '') + renderCareerLigaTable(c, view);
 }
 
