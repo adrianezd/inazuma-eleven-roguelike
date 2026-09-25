@@ -3189,11 +3189,21 @@ function renderCareerIncomingOffers(c) {
       '</div>' +
     '</div>';
   }).join('');
+  var offersOpen = !(c.marketFolded && c.marketFolded.offers);
   return '<div class="panel">' +
-    '<h3 style="margin-bottom:4px">Ofertas recibidas</h3>' +
-    (atMinSquad ? '<p class="dim small" style="color:var(--danger)">' + escapeHtml(blockedTitle) + '</p>' : '') +
-    rowsHtml +
+    foldHeaderHtml('Ofertas recibidas', 'offers', offersOpen) +
+    (offersOpen ? (atMinSquad ? '<p class="dim small" style="color:var(--danger)">' + escapeHtml(blockedTitle) + '</p>' : '') + rowsHtml : '') +
   '</div>';
+}
+// Cabecera plegable con flecha (Mercado): abierta muestra la flecha hacia abajo, plegada hacia la derecha.
+window.actionToggleMarketFold = function (key) {
+  var c = G.career;
+  c.marketFolded = c.marketFolded || {};
+  c.marketFolded[key] = !c.marketFolded[key];
+  render();
+};
+function foldHeaderHtml(title, key, open) {
+  return '<button class="fold-head" onclick="actionToggleMarketFold('' + key + '')" aria-expanded="' + open + '"><h3>' + title + '</h3><span class="fold-arrow' + (open ? ' open' : '') + '">&#9656;</span></button>';
 }
 
 function careerCoachPrice(co) { return (co.atk + co.def) * 6; }
@@ -3216,8 +3226,9 @@ function careerCoachMarketHtml(c) {
       '<button class="btn btn-tiny" style="margin-left:auto" ' + (c.budget < price ? 'disabled' : '') + ' onclick="actionCareerHireCoach(\'' + co.id + '\')">' + price + ' M€</button></div>';
   }).join('');
   var cur = coachById(c.coachId);
-  return '<div class="panel"><h3 style="margin-bottom:4px">Entrenadores</h3>' +
-    '<p class="dim small">Contratar a uno nuevo sustituye a ' + (cur ? escapeHtml(cur.nombre) : 'tu entrenador actual') + '.</p>' + rows + '</div>';
+  var open = !(c.marketFolded && c.marketFolded.coaches);
+  return '<div class="panel">' + foldHeaderHtml('Entrenadores', 'coaches', open) +
+    (open ? '<p class="dim small">Contratar a uno nuevo sustituye a ' + (cur ? escapeHtml(cur.nombre) : 'tu entrenador actual') + '.</p>' + rows : '') + '</div>';
 }
 function renderCareerMercado(c) {
   if (c.negotiation) return renderCareerNegotiation(c);
