@@ -3203,7 +3203,7 @@ window.actionToggleMarketFold = function (key) {
   render();
 };
 function foldHeaderHtml(title, key, open) {
-  return '<button class="fold-head" onclick="actionToggleMarketFold('' + key + '')" aria-expanded="' + open + '"><h3>' + title + '</h3><span class="fold-arrow' + (open ? ' open' : '') + '">&#9656;</span></button>';
+  return '<button class="fold-head" onclick="actionToggleMarketFold(\'' + key + '\')" aria-expanded="' + open + '"><h3>' + title + '</h3><span class="fold-arrow' + (open ? ' open' : '') + '">&#9656;</span></button>';
 }
 
 function careerCoachPrice(co) { return (co.atk + co.def) * 6; }
