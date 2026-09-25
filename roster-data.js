@@ -3563,16 +3563,16 @@ var ROSTER = [
 // muy_ofensiva), a petición explícita. Se eligen en los drafts (FutDraft y
 // Liga) y en el Modo Mundial (por defecto Hillman con el Raimon).
 var COACHES = [
-  { id: 'c01', nombre: 'Hillman', original: 'Michiya Kudou', equipo: 'Raimon', atk: 2, def: 3, intensidad: 'media', estilo: 'equilibrado', desc: 'El entrenador del Raimon, tranquilo y estratega.' },
-  { id: 'c02', nombre: 'Comandante Hillman', original: 'Fuyuka Kudou', equipo: 'Equipo Ogro', atk: 3, def: 2, intensidad: 'alta', estilo: 'ofensiva', desc: 'Directora deportiva del Raimon, apuesta por el ataque.' },
-  { id: 'c03', nombre: 'Ray Dark', original: 'Reiji Kageyama', equipo: 'Royal Academy', atk: 4, def: 2, intensidad: 'alta', estilo: 'muy_ofensiva', desc: 'Estratega implacable que lo arriesga todo al ataque.' },
+  { id: 'c01', nombre: 'Hillman', original: 'Michiya Kudou', equipo: 'Raimon', atk: 3, def: 3, intensidad: 'media', estilo: 'equilibrado', desc: 'El entrenador del Raimon, tranquilo y estratega.' },
+  { id: 'c02', nombre: 'Comandante Hillman', original: 'Fuyuka Kudou', equipo: 'Equipo Ogro', atk: 4, def: 2, intensidad: 'alta', estilo: 'ofensiva', desc: 'Directora deportiva del Raimon, apuesta por el ataque.' },
+  { id: 'c03', nombre: 'Ray Dark', original: 'Reiji Kageyama', equipo: 'Royal Academy', atk: 3, def: 2, intensidad: 'alta', estilo: 'muy_ofensiva', desc: 'Estratega implacable que lo arriesga todo al ataque.' },
   { id: 'c04', nombre: 'Elzes Killard', original: 'Elzes Killard', equipo: 'Neo Raimon', atk: 3, def: 3, intensidad: 'alta', estilo: 'ofensiva', desc: 'Director del Genesis, exige rendimiento máximo.' },
   { id: 'c05', nombre: 'Zoolan Rice', original: 'Zoolan Rice', equipo: 'Zoolan Team', atk: 2, def: 4, intensidad: 'baja', estilo: 'defensiva', desc: 'Prefiere un equipo cerrado y sin riesgos.' },
-  { id: 'c06', nombre: 'Mr. D', original: 'Mr. D', equipo: 'Orfeo', atk: 3, def: 3, intensidad: 'alta', estilo: 'equilibrado', desc: 'Frío y calculador, dirige con mano de hierro.' },
+  { id: 'c06', nombre: 'Mr. D', original: 'Mr. D', equipo: 'Orfeo', atk: 2, def: 4, intensidad: 'alta', estilo: 'defensivo', desc: 'Frío y calculador, dirige con mano de hierro.' },
   { id: 'c07', nombre: 'Astero Black', original: 'Ray Dark', equipo: 'Earth Eleven', atk: 4, def: 3, intensidad: 'alta', estilo: 'muy_ofensiva', desc: 'Ray Dark, el líder oscuro que lo sacrifica todo por ganar.' },
-  { id: 'c08', nombre: 'David Evans', original: 'Daisuke Endou', equipo: 'Pequeños Gigantes', atk: 2, def: 2, intensidad: 'media', estilo: 'equilibrado', desc: 'El entrenador de Inazuma Japón, siempre optimista.' },
-  { id: 'c09', nombre: 'Hekyll Jyde', original: 'Hekyll Jyde', equipo: 'Sallys', atk: 3, def: 2, intensidad: 'media', estilo: 'ofensiva', desc: 'Entrenador ambicioso que apuesta por el ataque.' },
-  { id: 'c10', nombre: 'Stewart Vanguard', original: 'Stewart Vanguard', equipo: 'Sallys', atk: 2, def: 4, intensidad: 'baja', estilo: 'defensiva', desc: 'Estratega prudente que prioriza no encajar.' },
-  { id: 'c11', nombre: 'Nerina Hartland', original: 'Nerina Hartland', equipo: 'Sallys', atk: 3, def: 3, intensidad: 'media', estilo: 'equilibrado', desc: 'Entrenadora equilibrada que cuida cada detalle.' },
+  { id: 'c08', nombre: 'David Evans', original: 'Daisuke Endou', equipo: 'Pequeños Gigantes', atk: 3, def: 3, intensidad: 'media', estilo: 'equilibrado', desc: 'El entrenador de Inazuma Japón, siempre optimista.' },
+  { id: 'c09', nombre: 'Hekyll Jyde', original: 'Hekyll Jyde', equipo: 'Occult', atk: 2, def: 1, intensidad: 'media', estilo: 'ofensiva', desc: 'Entrenador ambicioso que apuesta por el ataque.' },
+  { id: 'c10', nombre: 'Stewart Vanguard', original: 'Stewart Vanguard', equipo: 'Servicio Secreto', atk: 2, def: 2, intensidad: 'baja', estilo: 'defensiva', desc: 'Estratega prudente que prioriza no encajar.' },
+  { id: 'c11', nombre: 'Nerina Hartland', original: 'Nerina Hartland', equipo: 'Sallys', atk: 2, def: 2, intensidad: 'media', estilo: 'equilibrado', desc: 'Entrenadora equilibrada que cuida cada detalle.' },
 
 ];

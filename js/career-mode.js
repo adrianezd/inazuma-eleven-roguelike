@@ -3129,6 +3129,29 @@ function renderCareerIncomingOffers(c) {
   '</div>';
 }
 
+function careerCoachPrice(co) { return (co.atk + co.def) * 6; }
+window.actionCareerHireCoach = function (id) {
+  var c = G.career, co = coachById(id);
+  if (!co || id === c.coachId) return;
+  var price = careerCoachPrice(co);
+  if (c.budget < price) { c.marketMessage = 'No tienes ' + price + ' M€ para contratar a ' + co.nombre + '.'; render(); return; }
+  c.budget = Math.round((c.budget - price) * 10) / 10;
+  c.coachId = id;
+  c.marketMessage = 'Has contratado a ' + co.nombre + ' por ' + price + ' M€.';
+  render();
+};
+function careerCoachMarketHtml(c) {
+  var rows = COACHES.filter(function (co) { return co.id !== c.coachId; }).map(function (co) {
+    var price = careerCoachPrice(co);
+    return '<div class="coach-card" style="cursor:default">' + coachAvatarHtml(co) +
+      '<span class="coach-info"><strong>' + escapeHtml(co.nombre) + '</strong><span class="dim small">' + escapeHtml(co.equipo) + '</span>' +
+      '<span class="coach-stats"><span>Ataque +' + co.atk + '</span><span>Defensa +' + co.def + '</span><span>Intensidad ' + escapeHtml(coachIntensityName(co.intensidad).toLowerCase()) + '</span><span>' + escapeHtml(coachStyleName(co.estilo)) + '</span></span></span>' +
+      '<button class="btn btn-tiny" style="margin-left:auto" ' + (c.budget < price ? 'disabled' : '') + ' onclick="actionCareerHireCoach('' + co.id + '')">' + price + ' M€</button></div>';
+  }).join('');
+  var cur = coachById(c.coachId);
+  return '<div class="panel"><h3 style="margin-bottom:4px">Entrenadores</h3>' +
+    '<p class="dim small">Contratar a uno nuevo sustituye a ' + (cur ? escapeHtml(cur.nombre) : 'tu entrenador actual') + '.</p>' + rows + '</div>';
+}
 function renderCareerMercado(c) {
   if (c.negotiation) return renderCareerNegotiation(c);
   if (c.counterNegotiation) return renderCareerCounterNegotiation(c);
@@ -3212,6 +3235,7 @@ function renderCareerMercado(c) {
   return (
     windowBannerHtml +
     incomingOffersHtml +
+    careerCoachMarketHtml(c) +
     '<div class="panel">' +
       '<h3 style="margin-bottom:4px">Mercado</h3>' +
       '<p class="dim small">Presupuesto disponible: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong> · Cedidos: <strong>' + careerLoanCount(c) + ' / ' + CAREER_MAX_LOANS_IN + '</strong></p>' +
