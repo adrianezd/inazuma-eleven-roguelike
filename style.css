@@ -1955,3 +1955,5 @@ body { padding-bottom: calc(var(--safe-b) + 72px); }
 .record-row strong { text-align: right; overflow-wrap: anywhere; }
 
 .patch-toggle { right: calc(58px + var(--safe-r)); }
+
+.tired-chip { display: inline-block; font-size: 0.5rem; padding: 1px 4px; border-radius: 999px; background: rgba(230,120,40,0.85); color: #fff; vertical-align: middle; }

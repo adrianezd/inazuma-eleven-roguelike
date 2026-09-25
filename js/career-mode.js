@@ -370,8 +370,51 @@ var CAREER_SCORE_MAX = 120;
 function careerPlayerScore(p) {
   var c = G.career;
   var delta = (c && c.playerProgression && c.playerProgression[p.id]) || 0;
-  return clamp(futDraftPlayerScore(p) + delta, 30, CAREER_SCORE_MAX);
+  return clamp(futDraftPlayerScore(p) + delta - careerFatiguePenalty(c, p.id), 30, CAREER_SCORE_MAX);
 }
+// Cansancio (0 a 100) de tu plantilla: los titulares se cansan cada jornada
+// de Liga (más con intensidad alta o con la plantilla corta, porque hay
+// pocos suplentes disponibles), los suplentes descansan. A partir de 50 baja
+// la media del jugador, hasta -5. Se resetea al empezar cada temporada.
+var CAREER_FATIGUE_TIRED_AT = 50;
+function careerFatigueOf(c, id) { return (c && c.fatigue && c.fatigue[id]) || 0; }
+function careerFatiguePenalty(c, id) {
+  var f = careerFatigueOf(c, id);
+  return f > CAREER_FATIGUE_TIRED_AT ? Math.round(Math.min(5, (f - CAREER_FATIGUE_TIRED_AT) / 10) * 2) / 2 : 0;
+}
+function careerUpdateFatigue(c) {
+  c.fatigue = c.fatigue || {};
+  var unavailable = careerUnavailableIds(c);
+  var ready = c.lineup.map(function (s) { return s.player; }).concat(c.bench).filter(function (p) { return unavailable.indexOf(p.id) === -1; });
+  var shortSquad = ready.length < 14 ? 1.4 : 1;
+  var intenBoost = c.intensity === 'alta' ? 1.4 : (c.intensity === 'baja' ? 0.7 : 1);
+  var starterIds = c.lineup.map(function (s) { return s.player.id; });
+  c.lineup.forEach(function (s) {
+    c.fatigue[s.player.id] = Math.min(100, careerFatigueOf(c, s.player.id) + Math.round(11 * intenBoost * shortSquad));
+  });
+  c.bench.forEach(function (p) {
+    c.fatigue[p.id] = Math.max(0, careerFatigueOf(c, p.id) - 20);
+  });
+  Object.keys(c.fatigue).forEach(function (id) { if (starterIds.indexOf(id) === -1 && !c.bench.some(function (p) { return p.id === id; })) delete c.fatigue[id]; });
+}
+window.actionCareerRotateTired = function () {
+  var c = G.career, n = 0;
+  var unavailable = careerUnavailableIds(c);
+  c.lineup.forEach(function (slot) {
+    if (careerFatigueOf(c, slot.player.id) < CAREER_FATIGUE_TIRED_AT + 5) return;
+    var best = null;
+    c.bench.forEach(function (b) {
+      if (b.posicion !== slot.player.posicion || unavailable.indexOf(b.id) !== -1 || careerFatigueOf(c, b.id) > 35) return;
+      if (!best || careerPlayerScore(b) > careerPlayerScore(best)) best = b;
+    });
+    if (!best) return;
+    c.bench.splice(c.bench.indexOf(best), 1, slot.player);
+    slot.player = best;
+    n++;
+  });
+  c.rotateMessage = n ? 'Has rotado a ' + n + ' jugador' + (n === 1 ? '' : 'es') + ' cansado' + (n === 1 ? '' : 's') + '.' : 'No hay suplentes descansados de la misma posición.';
+  render();
+};
 
 // Mismo cálculo que futDraftScoreBreakdown (capitán/sinergia/fuera de
 // posición), pero con careerPlayerScore en vez de futDraftPlayerScore como
@@ -541,6 +584,7 @@ function careerRecordStarterAppearances(c) {
     c.seasonAppearances[s.player.id] = (c.seasonAppearances[s.player.id] || 0) + 1;
   });
   careerApplySponsorElementPayout(c);
+  careerUpdateFatigue(c);
 }
 // Sanciones por roja de verdad, a petición explícita ("que haya rojas y
 // funcionen los sancionados y haya que quitarlos del 11 inicial"): se
@@ -1257,6 +1301,7 @@ function careerFreshState(choices) {
     // careerRecordStarterAppearances/careerApplySquadGrowthSplit -- vacío
     // en una partida nueva, se reinicia cada actionStartNewCareerSeason.
     seasonAppearances: {},
+    fatigue: {},
     // Patrocinador de esta temporada (pestaña Patrocinadores): ninguno
     // firmado todavía, ofertas nuevas se generan la primera vez que se
     // abre la pestaña (renderCareerPatrocinadores).
@@ -1371,6 +1416,7 @@ function careerSerialize(c) {
     supercopasWon: c.supercopasWon || 0,
     ligaTitlesWon: c.ligaTitlesWon || 0,
     seasonAppearances: c.seasonAppearances || {},
+    fatigue: c.fatigue || {},
     sponsorOffers: c.sponsorOffers || null,
     activeSponsor: c.activeSponsor || null,
     seasonHistory: c.seasonHistory || [],
@@ -1467,6 +1513,7 @@ function careerDeserialize(data) {
     supercopasWon: data.supercopasWon || 0,
     ligaTitlesWon: data.ligaTitlesWon || 0,
     seasonAppearances: data.seasonAppearances || {},
+    fatigue: data.fatigue || {},
     sponsorOffers: data.sponsorOffers || null,
     activeSponsor: data.activeSponsor || null,
     sponsorMessage: null,
@@ -1980,7 +2027,7 @@ function renderCareerLineupPitch(c) {
         (c.swapSelectedId === p.id ? ' selected' : '') +
         (outOfPosition ? ' futdraft-out-of-position' : '');
       var badge = c.captainId === p.id ? '<span class="futdraft-captain-badge" title="Capitán">👑</span>' : '';
-      var nameSuffix = outOfPosition ? ' <span class="dim">(' + p.posicion + ')</span>' : '';
+      var nameSuffix = (outOfPosition ? ' <span class="dim">(' + p.posicion + ')</span>' : '') + (careerFatigueOf(c, p.id) >= CAREER_FATIGUE_TIRED_AT ? ' <span class="tired-chip">Cansado</span>' : '');
       return '<div class="' + cls + '" onclick="selectCareerPlayer(\'' + p.id + '\')">' + badge + careerPitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + careerAvatarHtml(c, p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + nameSuffix + '</span></div>';
     }).join('');
     return '<div class="pitch-row">' + itemsHtml + '</div>';
@@ -2056,6 +2103,8 @@ function renderCareerEquipo(c) {
     '<div class="panel center-text">' +
       '<p class="dim small">Puntuación de equipo: <strong style="color:var(--accent-2)">' + breakdown.total + '</strong> / 100</p>' +
       '<p class="dim small">' + captainHint + '</p>' +
+      '<button class="btn btn-tiny" onclick="actionCareerRotateTired()">Rotar cansados</button> ' +
+      (c.rotateMessage ? '<p class="dim small">' + escapeHtml(c.rotateMessage) + '</p>' : '') +
       '<button class="btn btn-tiny' + (c.pickingCaptain ? ' active' : '') + '" onclick="toggleCareerCaptainMode()">' + (c.pickingCaptain ? 'Toca un titular…' : 'Elegir capitán 👑') + '</button>' +
     '</div>' +
     '<div class="panel">' +
@@ -4838,6 +4887,7 @@ window.actionStartNewCareerSeason = function () {
   careerRecordSeasonHistory(c);
   c.season = (c.season || 1) + 1;
   c.seasonStartBudget = c.budget;
+  c.fatigue = {};
   // El patrocinador dura solo 1 temporada -- toca elegir uno nuevo cada
   // vez (renderCareerPatrocinadores genera ofertas frescas la próxima
   // vez que se entre en la pestaña).
