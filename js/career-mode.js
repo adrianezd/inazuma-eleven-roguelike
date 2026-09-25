@@ -1417,6 +1417,7 @@ function careerSerialize(c) {
     ligaTitlesWon: c.ligaTitlesWon || 0,
     seasonAppearances: c.seasonAppearances || {},
     fatigue: c.fatigue || {},
+    coachId: c.coachId || null,
     sponsorOffers: c.sponsorOffers || null,
     activeSponsor: c.activeSponsor || null,
     seasonHistory: c.seasonHistory || [],
@@ -3225,11 +3226,35 @@ window.actionCareerHireCoach = function (id) {
   if (!co || id === c.coachId) return;
   var price = careerCoachPrice(co);
   if (c.budget < price) { c.marketMessage = 'No tienes ' + price + ' M€ para contratar a ' + co.nombre + '.'; render(); return; }
-  c.budget = Math.round((c.budget - price) * 10) / 10;
-  c.coachId = id;
-  c.justHired = true; c.marketMessage = 'Has contratado a ' + co.nombre + ' por ' + price + ' M€.';
+  c.coachConfirm = id;
   render();
 };
+window.actionCancelHireCoach = function () { G.career.coachConfirm = null; render(); };
+window.actionConfirmHireCoach = function () {
+  var c = G.career, co = coachById(c.coachConfirm);
+  c.coachConfirm = null;
+  if (!co) { render(); return; }
+  var price = careerCoachPrice(co);
+  if (c.budget < price) { c.marketMessage = 'No tienes ' + price + ' M€ para contratar a ' + co.nombre + '.'; render(); return; }
+  c.budget = Math.round((c.budget - price) * 10) / 10;
+  c.coachId = co.id;
+  c.marketMessage = 'Has contratado a ' + co.nombre + ' por ' + price + ' M€.';
+  render();
+};
+function careerHireConfirmHtml(c) {
+  var co = coachById(c.coachConfirm), cur = coachById(c.coachId);
+  if (!co) return '';
+  return '<div class="modal-overlay" onclick="actionCancelHireCoach()">' +
+    '<div class="jugador-trophy-card" onclick="event.stopPropagation()" style="max-width:340px">' +
+      '<h3 style="margin-bottom:8px">Contratar entrenador</h3>' +
+      '<p class="dim small">¿Seguro que quieres gastar <strong style="color:var(--accent-2)">' + careerCoachPrice(co) + ' M€</strong> en <strong>' + escapeHtml(co.nombre) + '</strong> y reemplazar a ' + (cur ? '<strong>' + escapeHtml(cur.nombre) + '</strong>' : 'tu entrenador actual') + '?</p>' +
+      '<div style="display:flex;gap:8px;margin-top:12px">' +
+        '<button class="btn btn-primary" style="flex:1" onclick="actionConfirmHireCoach()">Contratar</button>' +
+        '<button class="btn btn-outline" style="flex:1" onclick="actionCancelHireCoach()">Cancelar</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
 function careerCoachMarketHtml(c) {
   var rows = COACHES.filter(function (co) { return co.id !== c.coachId; }).map(function (co) {
     var price = careerCoachPrice(co);
@@ -3240,7 +3265,7 @@ function careerCoachMarketHtml(c) {
   }).join('');
   var cur = coachById(c.coachId);
   var open = !(c.marketFolded && c.marketFolded.coaches);
-  return '<div class="panel' + (open ? ' fold-open' : '') + '">' + foldHeaderHtml('Entrenadores', 'coaches', open, rows ? COACHES.length - 1 : 0, open ? '' : 'Toca para ver') +
+  return careerHireConfirmHtml(c) + '<div class="panel' + (open ? ' fold-open' : '') + '">' + foldHeaderHtml('Entrenadores', 'coaches', open, rows ? COACHES.length - 1 : 0, open ? '' : 'Toca para ver') +
     (open ? '<p class="dim small">Contratar a uno nuevo sustituye a ' + (cur ? escapeHtml(cur.nombre) : 'tu entrenador actual') + '.</p>' + rows : '') + '</div>';
 }
 function renderCareerMercado(c) {
