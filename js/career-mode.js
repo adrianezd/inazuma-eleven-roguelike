@@ -193,7 +193,16 @@ function renderCareerEstilo(c) {
   }).join('');
   var redOn = c.redCardFreq !== 'desactivado', injOn = c.injuryFreq !== 'desactivado';
   var foul = CAREER_FOUL_BENEFIT[c.foulStyle || 'medio'], inten = CAREER_INTENSITY_BENEFIT[c.intensity || 'media'];
-  var html = '<div class="panel style-card">' +
+  var coach = coachById(c.coachId);
+  var html = coach ? '<div class="panel style-card">' +
+    '<h3 style="margin-bottom:2px">Entrenador</h3>' +
+    '<div class="coach-card selected" style="cursor:default">' + coachAvatarHtml(coach) +
+      '<span class="coach-info"><strong>' + escapeHtml(coach.nombre) + '</strong><span class="dim small">' + escapeHtml(coach.equipo) + '</span></span></div>' +
+    '<p class="dim small" style="margin-top:8px">' + escapeHtml(coach.desc) + '</p>' +
+    '<div class="style-stats"><div><span>Ataque</span><strong>+' + coach.atk + '</strong></div><div><span>Defensa</span><strong>+' + coach.def + '</strong></div><div><span>Intensidad</span><strong>' + escapeHtml(coachIntensityName(coach.intensidad)) + '</strong></div><div><span>Estilo</span><strong>' + escapeHtml(coachStyleName(coach.estilo)) + '</strong></div></div>' +
+    '<p class="dim small">Si tu estilo de juego coincide con el suyo, sus puntos de ataque y defensa suben un 25%.</p>' +
+  '</div>' : '';
+  html += '<div class="panel style-card">' +
     '<h3 style="margin-bottom:2px">Estilo de juego</h3>' +
     '<p class="dim small">Cambia cuánto ataca y cuánto defiende tu equipo, en todos los partidos.</p>' +
     '<select class="select-field" onchange="actionSetCareerPlayStyle(this.value)">' + styleOptionsHtml + '</select>' +
@@ -1187,6 +1196,7 @@ function careerFreshState(choices) {
     winterMarket: choices.winterMarket !== false,
     foulStyle: 'medio',
     intensity: 'media',
+    coachId: COACHES[Math.floor(Math.random() * COACHES.length)].id,
     injuryFreq: CAREER_EVENT_FREQ[choices.injuryFreq] ? choices.injuryFreq : 'bajo',
     redCardFreq: CAREER_EVENT_FREQ[choices.redCardFreq] ? choices.redCardFreq : 'bajo',
     division: division,
@@ -1404,7 +1414,7 @@ function careerDeserialize(data) {
     // ahí).
     difficulty: CAREER_DIFFICULTY_TIERS[data.difficulty] ? data.difficulty : 'normal',
     negotiation: CAREER_NEGOTIATION_MODES[data.negotiation] ? data.negotiation : 'duras',
-    hideProdigy: !!data.hideProdigy, boardStyle: data.boardStyle || 'normal', ironman: !!data.ironman, marketActivity: data.marketActivity || 'baja', winterMarket: data.winterMarket !== false, injuryFreq: data.injuryFreq || 'bajo', foulStyle: data.foulStyle || 'medio', intensity: data.intensity || 'media', redCardFreq: data.redCardFreq || 'bajo', seasonFilter: data.seasonFilter || TEAM_SEASON_ORDER.slice(),
+    hideProdigy: !!data.hideProdigy, boardStyle: data.boardStyle || 'normal', ironman: !!data.ironman, marketActivity: data.marketActivity || 'baja', winterMarket: data.winterMarket !== false, injuryFreq: data.injuryFreq || 'bajo', foulStyle: data.foulStyle || 'medio', intensity: data.intensity || 'media', coachId: (coachById(data.coachId) ? data.coachId : COACHES[Math.floor(Math.random() * COACHES.length)].id), redCardFreq: data.redCardFreq || 'bajo', seasonFilter: data.seasonFilter || TEAM_SEASON_ORDER.slice(),
     division: data.division || 1,
     divisionTeams: data.divisionTeams || careerInitialDivisionTeams(),
     league: data.league,
@@ -1973,7 +1983,9 @@ function renderCareerLineupPitch(c) {
     }).join('');
     return '<div class="pitch-row">' + itemsHtml + '</div>';
   }).join('');
-  return '<div class="pitch pitch-11">' + rowsHtml + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div>';
+  var coach = coachById(c.coachId);
+  var coachHtml = coach ? '<div class="pitch-coach" title="Entrenador: ' + escapeHtml(coach.nombre) + '">' + coachAvatarHtml(coach) + '<span class="pitch-player-name">' + escapeHtml(coach.nombre) + '</span></div>' : '';
+  return '<div class="pitch pitch-11">' + rowsHtml + coachHtml + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div>';
 }
 
 // Mismo truco que futDraftElementCounts (FutDraft), pero sobre c.lineup
@@ -3707,7 +3719,8 @@ function careerPlayStyleModifiers(c) {
   var aligned = styleLean === 0 || formationLean === 0 || (styleLean > 0) === (formationLean > 0);
   var blend = aligned ? 1 : CAREER_PLAY_STYLE_CONTRADICTION_DAMPEN;
   var risk = careerRiskBenefit(c);
-  return { atk: (1 + (style.atk - 1) * blend) * risk.atk, def: (1 + (style.def - 1) * blend) * risk.def, aligned: aligned };
+  var cfx = coachEffect(coachById(c.coachId), style.id);
+  return { atk: (1 + (style.atk - 1) * blend) * risk.atk * (1 + cfx.atkPts / 100) * cfx.atkMult, def: (1 + (style.def - 1) * blend) * risk.def * (1 + cfx.defPts / 100) * cfx.defMult, aligned: aligned };
 }
 // Ataque/defensa de TU equipo para resolver un partido de verdad
 // (Jornada/Copa/Champions, camino "Saltar" -- el camino "Simular" hace

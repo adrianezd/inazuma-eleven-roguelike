@@ -90,7 +90,7 @@ function coachEffect(coach, chosenStyleId) {
   };
 }
 function coachAvatarHtml(coach) {
-  return '<span class="coach-avatar" aria-hidden="true">' + escapeHtml(initials(coach.nombre)) + '</span>';
+  return '<span class="coach-avatar" aria-hidden="true"><img src="assets/sprites/' + coach.id + '.webp" alt="" onerror="this.remove()">' + escapeHtml(initials(coach.nombre)) + '</span>';
 }
 function coachCardHtml(coach, selected, onclick) {
   return '<button class="coach-card' + (selected ? ' selected' : '') + '" onclick="' + onclick + '">' +
