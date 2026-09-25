@@ -3146,7 +3146,7 @@ function careerCoachMarketHtml(c) {
     return '<div class="coach-card" style="cursor:default">' + coachAvatarHtml(co) +
       '<span class="coach-info"><strong>' + escapeHtml(co.nombre) + '</strong><span class="dim small">' + escapeHtml(co.equipo) + '</span>' +
       '<span class="coach-stats"><span>Ataque +' + co.atk + '</span><span>Defensa +' + co.def + '</span><span>Intensidad ' + escapeHtml(coachIntensityName(co.intensidad).toLowerCase()) + '</span><span>' + escapeHtml(coachStyleName(co.estilo)) + '</span></span></span>' +
-      '<button class="btn btn-tiny" style="margin-left:auto" ' + (c.budget < price ? 'disabled' : '') + ' onclick="actionCareerHireCoach('' + co.id + '')">' + price + ' M€</button></div>';
+      '<button class="btn btn-tiny" style="margin-left:auto" ' + (c.budget < price ? 'disabled' : '') + ' onclick="actionCareerHireCoach(\'' + co.id + '\')">' + price + ' M€</button></div>';
   }).join('');
   var cur = coachById(c.coachId);
   return '<div class="panel"><h3 style="margin-bottom:4px">Entrenadores</h3>' +
