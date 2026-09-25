@@ -204,7 +204,7 @@ function renderMenu() {
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
-        '<p class="currency-display" style="margin:0">' + spiritIcon() + ' ' + m.points + ' Puntos de Espíritu</p>' +
+        '<button class="menu-patch-btn" onclick="actionOpenPatchNotes()" aria-label="Parches y novedades" title="Parches y novedades">&#128196;</button>' + '<p class="currency-display" style="margin:0">' + spiritIcon() + ' ' + m.points + ' Puntos de Espíritu</p>' +
       '</div>' +
       '<div class="menu-section-title">Destacados</div>' +
       '<div class="menu-grid">' +

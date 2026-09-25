@@ -1957,4 +1957,8 @@ body { padding-bottom: calc(var(--safe-b) + 72px); }
 .patch-toggle { right: calc(58px + var(--safe-r)); }
 
 .tired-chip { display: inline-block; font-size: 0.5rem; padding: 1px 4px; border-radius: 999px; background: rgba(230,120,40,0.85); color: #fff; vertical-align: middle; }
-@media (max-width: 560px) { .site-header { padding-top: calc(54px + var(--safe-t)); } }
+
+
+#themeToggle { display: none; }
+.menu-patch-btn { position: absolute; top: 8px; right: 8px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); background: var(--panel-2); color: var(--text); font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+.panel:has(> .menu-patch-btn) { position: relative; }
