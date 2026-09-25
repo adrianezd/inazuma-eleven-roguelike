@@ -2006,3 +2006,6 @@ button.fold-head { display: flex; align-items: center; gap: 10px; width: 100%; p
 button.fold-head.open .fold-arrow { transform: rotate(0deg); background: rgba(255,176,32,0.16); border-color: var(--accent-2); }
 button.fold-head:active .fold-arrow { transform: scale(0.9); }
 .panel:has(> button.fold-head.open) { border-left: 3px solid var(--accent-2); }
+button.fold-head { -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent; text-transform: none; letter-spacing: normal; height: auto; }
+button.fold-head .fold-arrow svg { display: block; }
+.panel.fold-open { border-left: 3px solid var(--accent-2); }

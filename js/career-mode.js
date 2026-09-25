@@ -3190,7 +3190,7 @@ function renderCareerIncomingOffers(c) {
     '</div>';
   }).join('');
   var offersOpen = !(c.marketFolded && c.marketFolded.offers);
-  return '<div class="panel">' +
+  return '<div class="panel' + (offersOpen ? ' fold-open' : '') + '">' +
     foldHeaderHtml('Ofertas recibidas', 'offers', offersOpen, offers.length, offersOpen ? '' : 'Toca para ver') +
     (offersOpen ? (atMinSquad ? '<p class="dim small" style="color:var(--danger)">' + escapeHtml(blockedTitle) + '</p>' : '') + rowsHtml : '') +
   '</div>';
@@ -3232,7 +3232,7 @@ function careerCoachMarketHtml(c) {
   }).join('');
   var cur = coachById(c.coachId);
   var open = !(c.marketFolded && c.marketFolded.coaches);
-  return '<div class="panel">' + foldHeaderHtml('Entrenadores', 'coaches', open, rows ? COACHES.length - 1 : 0, open ? '' : 'Toca para ver') +
+  return '<div class="panel' + (open ? ' fold-open' : '') + '">' + foldHeaderHtml('Entrenadores', 'coaches', open, rows ? COACHES.length - 1 : 0, open ? '' : 'Toca para ver') +
     (open ? '<p class="dim small">Contratar a uno nuevo sustituye a ' + (cur ? escapeHtml(cur.nombre) : 'tu entrenador actual') + '.</p>' + rows : '') + '</div>';
 }
 function renderCareerMercado(c) {
