@@ -10,8 +10,19 @@
 
 // Sube este número (y añade una entrada arriba de APP_PATCH_NOTES) cada
 // vez que se publique una ronda de cambios que merezca avisarse.
-var APP_VERSION = '1.0.1';
+var APP_VERSION = '1.1.0';
 var APP_PATCH_NOTES = [
+  {
+    version: '1.1.0',
+    items: [
+      'Entrenadores: cada uno con equipo, ataque, defensa, intensidad y estilo. Se eligen en FutDraft, Liga y FutDraft 2 jugadores; en Modo Mundial es Hillman con el Raimon; en Modo Carrera te toca uno al azar y puedes fichar otros en el mercado.',
+      'Pestaña Táctica en todos los modos: estilo de juego, estilo físico e intensidad. Pulsa al entrenador en el campo para abrirla.',
+      'Modo Carrera: 5 huecos de guardado, resumen de temporada con campeón, trofeos, mejor jugador, revelación y balance económico, y récords del club.',
+      'Los penaltis se ven lanzamiento a lanzamiento en Carrera y Modo Mundial, también en la Supercopa.',
+      'Copa de 64 equipos, goleadores de Copa y Champions, y directiva rediseñada.',
+      'Animaciones suaves al cambiar de pantalla y al marcar, y ajustes para móvil.'
+    ]
+  },
   {
     version: '1.0.1',
     items: [
@@ -83,16 +94,20 @@ window.actionToggleSound = function () {
 };
 
 // ===== Aviso de "Parches" al cargar =====
+window.actionOpenPatchNotes = function () { G.showPatchNotes = true; render(); };
 function renderPatchNotesModal() {
   var latest = APP_PATCH_NOTES[0];
+  var older = APP_PATCH_NOTES.slice(1, 3).map(function (n) {
+    return '<p class="dim small" style="margin:8px 0 2px"><strong>Versión ' + escapeHtml(n.version) + '</strong></p><ul class="dim small" style="text-align:left;padding-left:18px;margin:0">' + n.items.map(function (t) { return '<li>' + escapeHtml(t) + '</li>'; }).join('') + '</ul>';
+  }).join('');
   return '<div class="modal-overlay" onclick="actionDismissPatchNotes()">' +
-    '<div class="jugador-trophy-card" onclick="event.stopPropagation()" style="max-width:340px">' +
+    '<div class="jugador-trophy-card" onclick="event.stopPropagation()" style="max-width:340px;max-height:80vh;overflow-y:auto">' +
       '<div class="jugador-trophy-icon">📣</div>' +
       '<h3 style="margin-bottom:4px">Versión ' + escapeHtml(APP_VERSION) + '</h3>' +
       '<p class="dim small" style="margin-bottom:6px">Parches y novedades:</p>' +
       '<ul class="dim small" style="text-align:left;padding-left:18px;margin:0 0 8px">' +
         latest.items.map(function (t) { return '<li>' + escapeHtml(t) + '</li>'; }).join('') +
-      '</ul>' +
+      '</ul>' + older +
       '<button class="btn btn-primary btn-block mt" onclick="actionDismissPatchNotes()">Aceptar</button>' +
     '</div>' +
   '</div>';

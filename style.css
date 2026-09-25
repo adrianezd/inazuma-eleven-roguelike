@@ -1953,3 +1953,5 @@ body { padding-bottom: calc(var(--safe-b) + 72px); }
 .record-row:last-child { border-bottom: none; }
 .record-row span { color: var(--text-dim); }
 .record-row strong { text-align: right; overflow-wrap: anywhere; }
+
+.patch-toggle { right: calc(58px + var(--safe-r)); }
