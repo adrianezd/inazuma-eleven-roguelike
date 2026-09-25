@@ -1525,7 +1525,22 @@ function careerDeserialize(data) {
 // Guarda el estado ACTUAL (G.career) en el hueco activo
 // (G.careerActiveSlot) -- llamado solo a mano, con el botón "Guardar"
 // de la cabecera de Modo Carrera (ver actionSaveCareerNow), nunca solo.
+function careerLastSlot() { try { var s = parseInt(localStorage.getItem('inazumaRoguelike_career_lastSlot'), 10); return s >= 1 && s <= CAREER_SLOT_COUNT ? s : null; } catch (e) { return null; } }
+function careerRememberSlot(slot) { try { localStorage.setItem('inazumaRoguelike_career_lastSlot', String(slot)); } catch (e) {} }
+function careerContinueCardHtml() {
+  var slot = careerLastSlot();
+  var sum = slot ? careerSlotSummary(slot) : null;
+  if (!sum) return '';
+  var shield = sum.clubShieldName ? teamShieldPath(sum.clubShieldName) : getPlayerShieldPath();
+  return '<button class="continue-card" onclick="actionLoadCareerFromSlot(' + slot + ')">' +
+    '<img class="team-shield" src="' + escapeHtml(shield) + '" alt="">' +
+    '<span class="continue-info"><span class="continue-label">Continuar carrera</span>' +
+      '<strong>' + escapeHtml(sum.clubName) + '</strong>' +
+      '<span class="continue-stats"><span>Temporada ' + sum.season + '</span><span>Jornada ' + sum.matchday + ' de ' + sum.totalMatchdays + '</span><span>' + sum.budget + ' M€</span></span>' +
+    '</span><span class="continue-go">&#9654;</span></button>';
+}
 function saveCareerToSlot(slot) {
+  careerRememberSlot(slot);
   if (!G.career || typeof localStorage === 'undefined') return false;
   try { localStorage.setItem(careerSlotKey(slot), JSON.stringify(careerSerialize(G.career))); return true; } catch (e) { return false; }
 }
@@ -1864,6 +1879,7 @@ window.actionLoadCareerFromSlot = function (slot) {
   if (!data) return;
   G.career = data;
   G.careerActiveSlot = slot;
+  careerRememberSlot(slot);
   G.screen = 'careerMode';
   render();
 };

@@ -204,8 +204,9 @@ function renderMenu() {
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
-        '<button class="menu-patch-btn" onclick="actionOpenPatchNotes()" aria-label="Parches y novedades" title="Parches y novedades">&#128196;</button>' + '<p class="currency-display" style="margin:0">' + spiritIcon() + ' ' + m.points + ' Puntos de Espíritu</p>' +
+        '<button class="menu-patch-btn' + (G.meta.lastSeenVersion !== APP_VERSION ? ' has-new' : '') + '" onclick="actionOpenPatchNotes()" aria-label="Parches y novedades" title="Parches y novedades"><span>&#128227;</span><em>Novedades</em></button>' + '<p class="currency-display" style="margin:0">' + spiritIcon() + ' ' + m.points + ' Puntos de Espíritu</p>' +
       '</div>' +
+      careerContinueCardHtml() +
       '<div class="menu-section-title">Destacados</div>' +
       '<div class="menu-grid">' +
         menuTile('🏆', 'Modo Carrera', 'Dirige tu club temporada a temporada', 'actionGoCareerMode()', 'menu-tile-hero menu-tile-gold') +

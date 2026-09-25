@@ -1960,5 +1960,21 @@ body { padding-bottom: calc(var(--safe-b) + 72px); }
 
 
 #themeToggle { display: none; }
-.menu-patch-btn { position: absolute; top: 8px; right: 8px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); background: var(--panel-2); color: var(--text); font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+
 .panel:has(> .menu-patch-btn) { position: relative; }
+
+.menu-patch-btn { position: absolute; top: 8px; right: 8px; display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px 0 9px; border-radius: 999px; border: 1px solid var(--accent-2); background: linear-gradient(140deg, rgba(255,176,32,0.22), rgba(255,176,32,0.06)); color: var(--accent-2); font: inherit; font-size: 0.74rem; cursor: pointer; box-shadow: 0 2px 10px rgba(255,176,32,0.15); transition: transform 0.12s ease; }
+.menu-patch-btn span { font-size: 0.95rem; line-height: 1; }
+.menu-patch-btn em { font-style: normal; font-weight: 600; letter-spacing: 0.03em; }
+.menu-patch-btn:active { transform: scale(0.95); }
+.menu-patch-btn.has-new::after { content: ''; position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; border-radius: 50%; background: #ff4d4d; box-shadow: 0 0 0 2px var(--panel); }
+.continue-card { display: flex; align-items: center; gap: 14px; width: 100%; margin: 14px 0 4px; padding: 14px; text-align: left; border-radius: 18px; border: 1px solid var(--accent-2); background: linear-gradient(135deg, rgba(255,176,32,0.2), var(--panel)); color: var(--text); font: inherit; cursor: pointer; transition: transform 0.12s ease; }
+.continue-card:active { transform: scale(0.98); }
+.continue-card .team-shield { width: 52px; height: 52px; flex-shrink: 0; }
+.continue-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.continue-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-2); }
+.continue-info strong { font-family: 'Oswald', sans-serif; font-size: 1.15rem; overflow-wrap: anywhere; }
+.continue-stats { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.continue-stats span { font-size: 0.68rem; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,0.08); color: var(--text-dim); }
+.continue-go { font-size: 1.3rem; color: var(--accent-2); }
+.menu-patch-btn { position: relative; top: auto; right: auto; display: inline-flex; margin: 10px auto 0; }
