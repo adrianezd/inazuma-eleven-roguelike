@@ -3568,8 +3568,8 @@ var COACHES = [
   { id: 'c03', nombre: 'Ray Dark', original: 'Reiji Kageyama', equipo: 'Royal Academy', atk: 4, def: 2, intensidad: 'alta', estilo: 'muy_ofensiva', desc: 'Estratega implacable que lo arriesga todo al ataque.' },
   { id: 'c04', nombre: 'Elzes Killard', original: 'Elzes Killard', equipo: 'Neo Raimon', atk: 3, def: 3, intensidad: 'alta', estilo: 'ofensiva', desc: 'Director del Genesis, exige rendimiento máximo.' },
   { id: 'c05', nombre: 'Zoolan Rice', original: 'Zoolan Rice', equipo: 'Zoolan Team', atk: 2, def: 4, intensidad: 'baja', estilo: 'defensiva', desc: 'Prefiere un equipo cerrado y sin riesgos.' },
-  { id: 'c06', nombre: 'Mr. D', original: 'Mr. D', equipo: 'Academia Alius', atk: 3, def: 3, intensidad: 'alta', estilo: 'equilibrado', desc: 'Frío y calculador, dirige con mano de hierro.' },
-  { id: 'c07', nombre: 'Astero Black', original: 'Ray Dark', equipo: 'Academia Ogre', atk: 4, def: 3, intensidad: 'alta', estilo: 'muy_ofensiva', desc: 'Ray Dark, el líder oscuro que lo sacrifica todo por ganar.' },
-  { id: 'c08', nombre: 'Endou Daisuke', original: 'Daisuke Endou', equipo: 'Inazuma Japón', atk: 2, def: 2, intensidad: 'media', estilo: 'equilibrado', desc: 'El entrenador de Inazuma Japón, siempre optimista.' },
-  { id: 'c09', nombre: 'Kidou Yuuto', original: 'Yuuto Kidou', equipo: 'Inazuma Japón', atk: 3, def: 3, intensidad: 'media', estilo: 'ofensiva', desc: 'El genio estratega, ahora en el banquillo.' }
+  { id: 'c06', nombre: 'Mr. D', original: 'Mr. D', equipo: 'Orfeo', atk: 3, def: 3, intensidad: 'alta', estilo: 'equilibrado', desc: 'Frío y calculador, dirige con mano de hierro.' },
+  { id: 'c07', nombre: 'Astero Black', original: 'Ray Dark', equipo: 'Earth Eleven', atk: 4, def: 3, intensidad: 'alta', estilo: 'muy_ofensiva', desc: 'Ray Dark, el líder oscuro que lo sacrifica todo por ganar.' },
+  { id: 'c08', nombre: 'David Evans', original: 'Daisuke Endou', equipo: 'Pequeños Gigantes', atk: 2, def: 2, intensidad: 'media', estilo: 'equilibrado', desc: 'El entrenador de Inazuma Japón, siempre optimista.' },
+
 ];
