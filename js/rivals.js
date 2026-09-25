@@ -120,6 +120,8 @@ var TEAM_SHIELD_FILES = {
   'FFI Estrellas': 'ffi-all-stars.webp',
   'Neo Raimon': 'neo-raimon.webp',
   'Raimon GO': 'raimon-go.webp',
+  'Zoolan Team': 'zoolan-team.webp',
+  'Claustro Sagrado': 'claustro-sagrado.webp',
   'Inazuma Japon GO': 'inazuma-japon-go.webp',
   'Instituto Alius': 'instituto-alius.webp',
   'Mar de Luna': 'mar-de-luna.webp',
