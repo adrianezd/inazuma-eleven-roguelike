@@ -64,7 +64,7 @@ var RIVAL_TEAM_NAMES = [
   'Cala Pirata', 'Sallys', 'Leones del desierto',
   'Academia Universal', 'Instituto Plenilunio',
   'Raimon Inakuni', 'Mary Times', 'Mar de Luna', 'Farm', 'Fauxshore',
-  'Neo Raimon', 'Raimon GO', 'Zoolan Team', 'Claustro Sagrado', 'Los arions', 'Mar de Árboles', 'Fertilia', 'Magmavis', 'Colina Verde', 'Barcelona Orb', 'Twinford', 'Northbright', 'Campeones Raimon'
+  'Neo Raimon', 'Raimon GO', 'Zoolan Team', 'Claustro Sagrado', 'Royal Academy GO', 'Instituto Espejismo', 'Poderosa Fe', 'Los arions', 'Mar de Árboles', 'Fertilia', 'Magmavis', 'Colina Verde', 'Barcelona Orb', 'Twinford', 'Northbright', 'Campeones Raimon'
 ];
 
 var RIVAL_TEAM_BOSSES = [
@@ -159,7 +159,8 @@ var TEAM_POWER = {
   'Élite Omega': 93, 'Galanes Electrizantes':70, 'Los Cuatro Magníficos': 70,
   'Chispas Perfectas': 85, 'Artemisa de Mr.YI': 90,
   // Añadidos por el usuario (escudo y media dados por él)
-  'Ángeles Oscuros': 85, 'FFI Estrellas': 80, 'Neo Raimon': 75, 'Raimon GO': 70, 'Zoolan Team': 60, 'Claustro Sagrado': 60
+  'Ángeles Oscuros': 85, 'FFI Estrellas': 80, 'Neo Raimon': 75, 'Raimon GO': 70, 'Zoolan Team': 60, 'Claustro Sagrado': 60,
+  'Royal Academy GO': 60, 'Instituto Espejismo': 63, 'Poderosa Fe': 60
 };
 
 
@@ -2024,7 +2025,7 @@ var ROSTER = [
   locked:true,cost:215
 },
 {
-  id:'r233', equipo:'Colegio Poderosa', nombre:'Infinity Beyond', original:'Infinity Beyond', sprite:'assets/sprites/r233.webp',
+  id:'r233', equipo:'Poderosa Fe', nombre:'Infinity Beyond', original:'Infinity Beyond', sprite:'assets/sprites/r233.webp',
   posicion:'Delantero', tipo:'Fuego',
   tiro:82,pase:70,defensa:40,especial:80,
   hissatsu:['Remate de Gaia'],tipoTecnica:'tiro',
@@ -2032,7 +2033,7 @@ var ROSTER = [
   locked:true,cost:205
 },
 {
-  id:'r234', equipo:'Colegio Poderosa', nombre:'Maxim Millennium', original:'Maxim Millennium', sprite:'assets/sprites/r234.webp',
+  id:'r234', equipo:'Poderosa Fe', nombre:'Maxim Millennium', original:'Maxim Millennium', sprite:'assets/sprites/r234.webp',
   posicion:'Centrocampista', tipo:'Bosque',
   tiro:80,pase:74,defensa:52,especial:78,
   hissatsu:['Remate Misil'],tipoTecnica:'tiro',
