@@ -229,13 +229,14 @@ function renderCareerEstilo(c) {
 }
 window.actionSetCareerClubTab = function (id) { G.career.clubTab = id; render(); };
 function renderCareerClubGroup(c) {
-  var valid = ['entrenamiento', 'mercado', 'patrocinadores'];
+  var valid = ['entrenamiento', 'mercado', 'patrocinadores', 'noticias'];
   var sub = valid.indexOf(c.clubTab) !== -1 ? c.clubTab : 'entrenamiento';
   return careerSubTabsHtml([
     { name: 'Entrenamiento', active: sub === 'entrenamiento', onclick: "actionSetCareerClubTab('entrenamiento')" },
     { name: 'Mercado', active: sub === 'mercado', onclick: "actionSetCareerClubTab('mercado')" },
-    { name: 'Patrocinadores', active: sub === 'patrocinadores', onclick: "actionSetCareerClubTab('patrocinadores')" }
-  ]) + (sub === 'mercado' ? renderCareerMercado(c) : sub === 'patrocinadores' ? renderCareerPatrocinadores(c) : renderCareerEntrenamiento(c));
+    { name: 'Patrocinadores', active: sub === 'patrocinadores', onclick: "actionSetCareerClubTab('patrocinadores')" },
+    { name: 'Noticias', active: sub === 'noticias', onclick: "actionSetCareerClubTab('noticias')" }
+  ]) + (sub === 'noticias' ? careerNewsHtml(c) : sub === 'mercado' ? renderCareerMercado(c) : sub === 'patrocinadores' ? renderCareerPatrocinadores(c) : renderCareerEntrenamiento(c));
 }
 window.actionSetCareerAjustesTab = function (id) { G.career.ajustesTab = id; render(); };
 function renderCareerAjustesGroup(c) {
@@ -1108,6 +1109,41 @@ function careerYellowFreqMult(c) { return careerFoulMult(c); }
 window.actionSetCareerFoulStyle = function (id) { if (!CAREER_FOUL_STYLES[id]) return; G.career.foulStyle = id; render(); };
 window.actionSetCareerIntensity = function (id) { if (!CAREER_INTENSITIES[id]) return; G.career.intensity = id; render(); };
 function careerMaxSigningsPerDay(c) { return careerMarketActivity(c).maxSignings; }
+// Noticias de fichajes entre otros clubes (solo ambiente, no cambian las plantillas):
+// se generan al abrir cada ventana y con cada día que avanza el mercado.
+var CAREER_NEWS_MAX = 40;
+function careerGenerateNews(c, count) {
+  c.news = c.news || [];
+  var myName = careerClubDisplayName(c);
+  var teams = (typeof RIVAL_TEAM_NAMES !== 'undefined' ? RIVAL_TEAM_NAMES : []).filter(function (n) { return n !== myName; });
+  if (teams.length < 2) return;
+  var pool = ROSTER.filter(function (p) { return !careerIsSquadPlayer(c, p.id) && p.equipo; });
+  var phase = c.marketWindow ? c.marketWindow.phase : 'preseason';
+  for (var i = 0; i < count && pool.length; i++) {
+    var p = pool[Math.floor(Math.random() * pool.length)];
+    var from = p.equipo;
+    var to = teams[Math.floor(Math.random() * teams.length)];
+    if (to === from) to = teams[(teams.indexOf(to) + 1) % teams.length];
+    var loan = Math.random() < 0.25;
+    var fee = Math.max(0.1, Math.round(careerPlayerValue(p) * (loan ? 0.33 : (0.8 + Math.random() * 0.6)) * 10) / 10);
+    c.news.unshift({ id: 'n' + Date.now() + '_' + i, season: c.season || 1, phase: phase, playerId: p.id, from: from, to: to, fee: fee, loan: loan });
+  }
+  if (c.news.length > CAREER_NEWS_MAX) c.news.length = CAREER_NEWS_MAX;
+}
+function careerNewsHtml(c) {
+  if (!c.news || !c.news.length) careerGenerateNews(c, 6);
+  var phaseName = { preseason: 'Pretemporada', midseason: 'Mercado de invierno' };
+  var rows = c.news.map(function (n) {
+    var p = ROSTER.find(function (x) { return x.id === n.playerId; });
+    if (!p) return '';
+    return '<div class="news-row">' + avatarHtml(p) +
+      '<div class="news-main"><div class="news-title">' + escapeHtml(p.nombre) + (n.loan ? ' llega cedido' : ' ficha') + ' por ' + escapeHtml(n.to) + '</div>' +
+        '<div class="news-route"><img src="' + escapeHtml(teamShieldPath(n.from)) + '" alt="">' + escapeHtml(n.from) + ' <span>&#9654;</span> <img src="' + escapeHtml(teamShieldPath(n.to)) + '" alt="">' + escapeHtml(n.to) + '</div>' +
+        '<div class="news-meta">Temporada ' + n.season + ', ' + (phaseName[n.phase] || 'Mercado') + '</div></div>' +
+      '<span class="news-fee">' + n.fee + ' M€</span></div>';
+  }).join('');
+  return '<div class="panel"><h3 style="margin-bottom:4px">Noticias de fichajes</h3><p class="dim small">Lo que hacen los demás clubes en el mercado.</p>' + rows + '</div>';
+}
 function careerNewMarketWindow(phase, totalDays) {
   return { open: true, phase: phase, dayIndex: 1, totalDays: totalDays, offersToday: {}, signingsToday: 0 };
 }
@@ -1418,6 +1454,7 @@ function careerSerialize(c) {
     seasonAppearances: c.seasonAppearances || {},
     fatigue: c.fatigue || {},
     coachId: c.coachId || null,
+    news: c.news || [],
     sponsorOffers: c.sponsorOffers || null,
     activeSponsor: c.activeSponsor || null,
     seasonHistory: c.seasonHistory || [],
@@ -1470,6 +1507,7 @@ function careerDeserialize(data) {
     jornadaAckPending: !!data.jornadaAckPending,
     budget: typeof data.budget === 'number' ? data.budget : CAREER_STARTING_BUDGET,
     seasonStartBudget: typeof data.seasonStartBudget === 'number' ? data.seasonStartBudget : null,
+    news: data.news || [],
     loanedIds: data.loanedIds || [],
     loanedOutIds: data.loanedOutIds || [],
     suspendedIds: data.suspendedIds || [], injuries: data.injuries || [], boostedIds: data.boostedIds || [],
@@ -3094,6 +3132,7 @@ window.actionAdvanceCareerMarketDay = function () {
     w.open = false;
     c.incomingOffers = [];
   } else {
+    careerGenerateNews(c, 2);
     c.incomingOffers = (c.incomingOffers || []).filter(function (o) { return w.dayIndex <= o.expiresOnDay; });
     careerGenerateIncomingOffers(c);
   }
@@ -4778,6 +4817,7 @@ function careerMaybeOpenMidseasonWindow(c) {
   if (c.winterMarket === false) return;
   if (c.league.matchdayIndex === CAREER_MIDSEASON_AT_MATCHDAY && (!c.marketWindow || !c.marketWindow.open)) {
     c.marketWindow = careerNewMarketWindow('midseason', CAREER_MIDSEASON_DAYS);
+    careerGenerateNews(c, 5);
     c.incomingOffers = [];
     careerGenerateIncomingOffers(c);
   }
@@ -5030,6 +5070,7 @@ window.actionStartNewCareerSeason = function () {
   careerEnsureBoard(c).confidence = prevConfidence;
   c.lastBoardReview = null;
   c.marketWindow = careerNewMarketWindow('preseason', CAREER_PRESEASON_DAYS);
+  careerGenerateNews(c, 5);
   c.incomingOffers = [];
   c.boughtThisSeasonIds = []; // temporada nueva: ya se pueden volver a mover
   careerGenerateIncomingOffers(c);

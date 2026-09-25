@@ -2026,3 +2026,13 @@ button.fold-head .fold-arrow svg { display: block; }
 .screen > *:nth-child(n+9) { animation-delay: 0.24s; }
 .btn-tiny, .career-tabs-scroll button { transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease; }
 @media (prefers-reduced-motion: reduce) { .fx-layer, .fx-goal-flash { display: none; } }
+
+.news-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.news-row:last-child { border-bottom: none; }
+.news-main { flex: 1; min-width: 0; }
+.news-title { font-weight: 600; font-size: 0.88rem; overflow-wrap: anywhere; }
+.news-route { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-size: 0.74rem; color: var(--text-dim); margin-top: 2px; }
+.news-route img { width: 16px; height: 16px; object-fit: contain; }
+.news-route span { color: var(--accent-2); font-size: 0.6rem; }
+.news-meta { font-size: 0.68rem; color: var(--text-dim); margin-top: 2px; }
+.news-fee { flex: 0 0 auto; padding: 3px 9px; border-radius: 999px; background: rgba(255,176,32,0.16); color: var(--accent-2); font-size: 0.76rem; font-weight: 700; }

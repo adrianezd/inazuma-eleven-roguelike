@@ -21,6 +21,8 @@ var APP_PATCH_NOTES = [
       'Los penaltis se ven lanzamiento a lanzamiento en Carrera y Modo Mundial, también en la Supercopa.',
       'Copa de 64 equipos, goleadores de Copa y Champions, y directiva rediseñada.',
       'App instalable: añade el juego a la pantalla de inicio (iPhone: compartir, Añadir a pantalla de inicio) y funciona sin conexión tras la primera visita.',
+      'Carrera: pestaña Noticias en Club con los fichajes de otros clubes. Puntitos más vivos: se mueven todos menos los porteros, y de visitante juegas a la derecha.',
+      'Confeti y destello al marcar y al ganar trofeos.',
       'Mi perfil en el menú: partidos, victorias, goles y títulos de todos los modos.',
       'Menú: botón Continuar carrera con el resumen de tu club, y botón Novedades.',
       'Champions: cruces de ida y vuelta rediseñados con casillas de cada partido y el global.',
