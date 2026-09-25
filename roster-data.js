@@ -115,7 +115,7 @@ var TEAM_SEASON = {
   'Protocolo Omega 2.0': 'go2', 'Protocolo Omega 3.0': 'go2', 'Ragnah': 'go2',
   'Raimon Inakuni': 'ares', 'Resistencia Japon': 'temp2', 'Resistencia Japón GO': 'go2',
   'Royal Academy': 'temp1', 'Sallys': 'temp1', 'Shuriken': 'temp1',
-  'Tarjeteros': 'temp3', 'Tormenta de Géminis': 'temp2', 'Ángeles Oscuros': 'temp3', 'Neo Raimon': 'temp1', 'FFI Estrellas': 'temp3', 'Raimon GO': 'go1', 'Twinford': 'vr', 'Umbrella': 'temp1',
+  'Tarjeteros': 'temp3', 'Tormenta de Géminis': 'temp2', 'Ángeles Oscuros': 'temp3', 'Neo Raimon': 'temp1', 'FFI Estrellas': 'temp3', 'Raimon GO': 'go1', 'Zoolan Team': 'temp3', 'Claustro Sagrado': 'temp2', 'Twinford': 'vr', 'Umbrella': 'temp1',
   'Unicorn': 'temp3', 'Veteranos Inazuma': 'temp1', 'Wild': 'temp1',
   'Zanark Domain': 'go2', 'Zeus': 'temp1'
 };
@@ -531,7 +531,7 @@ var ROSTER = [
     locked: false, cost:71
   },
   {
-    id: 'r50', equipo:null, nombre: 'Isaac Glass', original: 'Kazuto Megane', sprite: 'assets/sprites/r50.webp',
+    id: 'r50', equipo:'Inazuma Japon', nombre: 'Isaac Glass', original: 'Kazuto Megane', sprite: 'assets/sprites/r50.webp',
     posicion: 'Delantero', tipo: 'Bosque',
     tiro: 69, pase: 62, defensa: 36, especial: 70,
     hissatsu:['Remate Gafas v2'],tipoTecnica:'tiro',
@@ -547,7 +547,7 @@ var ROSTER = [
     locked: true, cost:163
   },
   {
-    id: 'r52', equipo:null, nombre: 'Tori Vanguard', original: 'Zaizen Touko',
+    id: 'r52', equipo:'Raimon', nombre: 'Tori Vanguard', original: 'Zaizen Touko',
     posicion: 'Centrocampista', tipo: 'Viento',
     tiro: 58, pase: 62, defensa: 74, especial: 72,
     hissatsu:['Torre Inexpugnable'],tipoTecnica:'defensa',
@@ -579,7 +579,7 @@ var ROSTER = [
     locked: true, cost:137
   },
   {
-    id: 'r56', equipo:null, nombre: 'Suzette Hartland', original: 'Urabe Rika',
+    id: 'r56', equipo:'Raimon', nombre: 'Suzette Hartland', original: 'Urabe Rika',
     posicion: 'Delantero', tipo: 'Bosque',
     tiro: 70, pase: 54, defensa: 38, especial: 70,
     hissatsu:['Torre de Osaka'],tipoTecnica:'defensa',
@@ -1165,7 +1165,7 @@ var ROSTER = [
     locked: false, cost:128
   },
   {
-    id: 'r127', equipo:null, nombre: 'Julio Acuto', original: 'Demonio Strada',
+    id: 'r127', equipo:'Orfeo', nombre: 'Julio Acuto', original: 'Demonio Strada',
     posicion: 'Centrocampista', tipo: 'Fuego',
     tiro: 78, pase: 82, defensa: 73, especial: 85,
     hissatsu:['Pinguino Emperador X'],tipoTecnica:'regate',
@@ -1516,7 +1516,7 @@ var ROSTER = [
 },
 
 {
-  id:'r171', equipo:null, nombre:'Saggy', original:'Sagamineta', sprite:'assets/sprites/r171.webp',
+  id:'r171', equipo:'Neo Raimon', nombre:'Saggy', original:'Sagamineta', sprite:'assets/sprites/r171.webp',
   posicion:'Delantero', tipo:'Bosque',
   tiro:78,pase:77,defensa:60,especial:84,
   hissatsu:['Remate Misil'],tipoTecnica:'tiro',
@@ -1764,7 +1764,7 @@ var ROSTER = [
   locked:true,cost:200
 },
 {
-  id:'r202', equipo:null, nombre:'Flora', original:'Flora', sprite:'assets/sprites/r202.webp',
+  id:'r202', equipo:'Desesperdidos', nombre:'Flora', original:'Flora', sprite:'assets/sprites/r202.webp',
   posicion:'Delantero', tipo:'Viento',
   tiro:91,pase:79,defensa:42,especial:91,
   hissatsu:['Tiro Supermasivo V2'],tipoTecnica:'tiro',
