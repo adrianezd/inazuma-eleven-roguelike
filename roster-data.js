@@ -3574,5 +3574,6 @@ var COACHES = [
   { id: 'c09', nombre: 'Hekyll Jyde', original: 'Hekyll Jyde', equipo: 'Occult', atk: 2, def: 1, intensidad: 'media', estilo: 'ofensiva', desc: 'Entrenador ambicioso que apuesta por el ataque.' },
   { id: 'c10', nombre: 'Stewart Vanguard', original: 'Stewart Vanguard', equipo: 'Servicio Secreto', atk: 2, def: 2, intensidad: 'baja', estilo: 'defensiva', desc: 'Estratega prudente que prioriza no encajar.' },
   { id: 'c11', nombre: 'Nerina Hartland', original: 'Nerina Hartland', equipo: 'Sallys', atk: 2, def: 2, intensidad: 'media', estilo: 'equilibrado', desc: 'Entrenadora equilibrada que cuida cada detalle.' },
+  { id: 'c12', nombre: 'Percival Travis', original: 'Percival Travis', equipo: 'Inazuma Japón', atk: 3, def: 3, intensidad: 'media', estilo: 'equilibrado', desc: 'Entrenador de Inazuma Japón, serio y disciplinado.' }
 
 ];
