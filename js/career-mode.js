@@ -3751,7 +3751,17 @@ function careerTeamGhostPool(c, league, teamIdx) {
   // excluyen también, así que cada jugador pertenece a un único equipo
   // fantasma fijo toda la temporada.
   var usedIds = league.ghostUsedIds || (league.ghostUsedIds = myIds.slice());
-  var pool = ROSTER.filter(function (p) { return usedIds.indexOf(p.id) === -1; });
+  // Jugadores REALES del equipo (campo equipo del roster), a petición
+  // explícita ("que los rivales de Carrera empiecen a usar sus jugadores
+  // reales por equipo"): un rival con plantilla propia marca con los suyos
+  // (Genesis con Xene, Nero...). Los que no llegan a los 16 se rellenan
+  // con jugadores de equipos que NO juegan esta liga (así nunca se le
+  // roba a otro rival un jugador suyo) y con la misma forma de once.
+  var teamName = league.teamNames[teamIdx];
+  var realPlayers = ROSTER.filter(function (p) { return p.equipo === teamName && usedIds.indexOf(p.id) === -1; }).slice(0, 16);
+  var leagueTeams = {};
+  league.teamNames.forEach(function (n) { leagueTeams[n] = true; });
+  var pool = ROSTER.filter(function (p) { return usedIds.indexOf(p.id) === -1 && !leagueTeams[p.equipo] && realPlayers.indexOf(p) === -1; });
   // BUG REAL arreglado: los 16 fantasma salían de un sorteo TOTALMENTE
   // libre por posición (podía tocarle a un rival 0 delanteros, o 8), así
   // que sus goles se repartían entre muchos más jugadores de los que le
@@ -3766,9 +3776,10 @@ function careerTeamGhostPool(c, league, teamIdx) {
   var byPos = { Portero: [], Defensa: [], Centrocampista: [], Delantero: [] };
   pool.forEach(function (p) { if (byPos[p.posicion]) byPos[p.posicion].push(p); });
   Object.keys(byPos).forEach(function (pos) { byPos[pos].sort(function () { return Math.random() - 0.5; }); });
-  var squad = [];
+  var squad = realPlayers.slice();
   Object.keys(GHOST_SHAPE).forEach(function (pos) {
-    squad = squad.concat(byPos[pos].slice(0, GHOST_SHAPE[pos]));
+    var have = realPlayers.filter(function (p) { return p.posicion === pos; }).length;
+    squad = squad.concat(byPos[pos].slice(0, Math.max(0, GHOST_SHAPE[pos] - have)));
   });
   // Si a algún equipo le faltan jugadores de una posición (pool ya muy
   // esquilmado a estas alturas de la temporada), se rellena con lo que

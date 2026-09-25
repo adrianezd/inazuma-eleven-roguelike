@@ -3454,7 +3454,7 @@ var ROSTER = [
 // se duplican aquí -- ver WORLD_TOUR_STAGES en world-tour.js. Elemento
 // 'Aire' de la wiki pasado a Viento, igual que el resto del roster.
 {
-  id:'r400', equipo:'Equipo Ogro', nombre:'Lars Luceafăr', original:'Lars Luceafăr',
+  id:'r400', equipo:'Academia Ogre', nombre:'Lars Luceafăr', original:'Lars Luceafăr',
   posicion:'Portero', tipo:'Montaña',
   tiro:40,pase:60,defensa:86,especial:86,
   hissatsu:['Malla Eléctrica'],tipoTecnica:'portero',
@@ -3463,7 +3463,7 @@ var ROSTER = [
   sprite:'assets/sprites/r400.webp'
 },
 {
-  id:'r401', equipo:'Equipo Ogro', nombre:'Bump Trungus', original:'Bump Trungus',
+  id:'r401', equipo:'Academia Ogre', nombre:'Bump Trungus', original:'Bump Trungus',
   posicion:'Defensa', tipo:'Fuego',
   tiro:60,pase:65,defensa:90,especial:86,
   hissatsu:['Placaje Extremo'],tipoTecnica:'defensa',
@@ -3472,7 +3472,7 @@ var ROSTER = [
   sprite:'assets/sprites/r401.webp'
 },
 {
-  id:'r402', equipo:'Equipo Ogro', nombre:'Lump Trungus', original:'Lump Trungus',
+  id:'r402', equipo:'Academia Ogre', nombre:'Lump Trungus', original:'Lump Trungus',
   posicion:'Defensa', tipo:'Viento',
   tiro:58,pase:64,defensa:89,especial:85,
   hissatsu:['Corte Diabólico'],tipoTecnica:'defensa',
@@ -3481,7 +3481,7 @@ var ROSTER = [
   sprite:'assets/sprites/r402.webp'
 },
 {
-  id:'r403', equipo:'Equipo Ogro', nombre:'Radd Ischer', original:'Radd Ischer',
+  id:'r403', equipo:'Academia Ogre', nombre:'Radd Ischer', original:'Radd Ischer',
   posicion:'Defensa', tipo:'Bosque',
   tiro:56,pase:63,defensa:87,especial:82,
   hissatsu:['Carga de Elefantes'],tipoTecnica:'defensa',
@@ -3490,7 +3490,7 @@ var ROSTER = [
   sprite:'assets/sprites/r403.webp'
 },
 {
-  id:'r404', equipo:'Equipo Ogro', nombre:'Jynx Jenkins', original:'Jynx Jenkins',
+  id:'r404', equipo:'Academia Ogre', nombre:'Jynx Jenkins', original:'Jynx Jenkins',
   posicion:'Defensa', tipo:'Bosque',
   tiro:57,pase:62,defensa:86,especial:81,
   hissatsu:['Corte Volcánico'],tipoTecnica:'defensa',
@@ -3499,7 +3499,7 @@ var ROSTER = [
   sprite:'assets/sprites/r404.webp'
 },
 {
-  id:'r405', equipo:'Equipo Ogro', nombre:'Oni Triumvir', original:'Oni Triumvir',
+  id:'r405', equipo:'Academia Ogre', nombre:'Oni Triumvir', original:'Oni Triumvir',
   posicion:'Centrocampista', tipo:'Bosque',
   tiro:70,pase:80,defensa:75,especial:88,
   hissatsu:['Gravitación'],tipoTecnica:'defensa',
@@ -3508,7 +3508,7 @@ var ROSTER = [
   sprite:'assets/sprites/r405.webp'
 },
 {
-  id:'r406', equipo:'Equipo Ogro', nombre:'Drachen Gunther', original:'Drachen Gunther',
+  id:'r406', equipo:'Academia Ogre', nombre:'Drachen Gunther', original:'Drachen Gunther',
   posicion:'Centrocampista', tipo:'Fuego',
   tiro:72,pase:82,defensa:74,especial:87,
   hissatsu:['Zona Sigma'],tipoTecnica:'defensa',
@@ -3517,7 +3517,7 @@ var ROSTER = [
   sprite:'assets/sprites/r406.webp'
 },
 {
-  id:'r407', equipo:'Equipo Ogro', nombre:'Ichabod Stark', original:'Ichabod Stark',
+  id:'r407', equipo:'Academia Ogre', nombre:'Ichabod Stark', original:'Ichabod Stark',
   posicion:'Centrocampista', tipo:'Montaña',
   tiro:74,pase:81,defensa:76,especial:90,
   hissatsu:['Diluvio Letal'],tipoTecnica:'tiro',
