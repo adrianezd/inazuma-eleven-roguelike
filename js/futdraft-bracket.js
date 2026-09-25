@@ -195,6 +195,7 @@ function renderFutDraftMatchResult() {
           : r.isLiga
             ? '<button class="btn btn-primary btn-block mt" onclick="continueLigaMatchday()">Ver jornada</button>'
             : '<button class="btn btn-primary btn-block mt" onclick="continueFutDraftMatch()">' + (r.playerWon ? 'Continuar' : 'Ver resultado') + '</button>') +
+      (r.isCareer && G.careerEventNotice ? renderCareerEventNotice() : '') +
     '</div>'
   );
 }
