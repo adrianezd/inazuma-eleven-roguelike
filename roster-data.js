@@ -3543,6 +3543,15 @@ var ROSTER = [
   desc:'Un alienígena que se dedica a destrozar institutos.',
   locked:true,cost:400,
   sprite:'assets/sprites/r409.webp'
+},
+{
+  id:'r410', equipo:'Neo Raimon', nombre:'Zak Wallside', original:'Zak Wallside',
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:16,pase:70,defensa:80,especial:70,
+  hissatsu:['El muro'],tipoTecnica:'defensa',
+  desc:'Hermano de Jack y aprendiz.',
+  locked:true,cost:100,
+  sprite:'assets/sprites/r410.webp'
 }
 
 ]

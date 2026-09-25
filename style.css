@@ -1872,3 +1872,41 @@ body { padding-bottom: calc(var(--safe-b) + 72px); }
 .menu-tile-gold { background: linear-gradient(140deg, rgba(255,212,71,0.2), rgba(255,212,71,0.03)); border-color: rgba(255,212,71,0.4); }
 .menu-tile:disabled { opacity: 0.45; cursor: not-allowed; }
 .menu-tile:disabled:hover { transform: none; border-color: var(--border); }
+
+/* ===== Directiva (Modo Carrera) ===== */
+.board-card { background: linear-gradient(160deg, var(--panel-2), var(--panel)); border: 1px solid var(--border); border-radius: 18px; padding: 16px; margin-bottom: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
+.board-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+.board-kicker { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); }
+.board-title { font-family: 'Oswald', sans-serif; font-size: 1.35rem; }
+.board-score { font-family: 'Oswald', sans-serif; font-size: 2.4rem; line-height: 1; }
+.board-score small { font-size: 0.9rem; color: var(--text-dim); margin-left: 2px; }
+.tier-safe { --tier: #3ddc97; } .tier-ok { --tier: #ffd447; } .tier-warn { --tier: #ff9f43; } .tier-bad { --tier: #ff5d6c; }
+.board-score.tier-safe, .board-score.tier-ok, .board-score.tier-warn, .board-score.tier-bad { color: var(--tier); }
+.board-meter { position: relative; height: 14px; border-radius: 8px; background: rgba(255,255,255,0.08); margin-top: 12px; overflow: hidden; }
+.board-meter > span { display: block; height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--tier), color-mix(in srgb, var(--tier) 60%, #fff)); transition: width .6s ease; }
+.board-meter > i { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(0,0,0,0.45); }
+.board-scale { display: flex; justify-content: space-between; font-size: 0.62rem; color: var(--text-dim); margin-top: 4px; }
+.board-note { font-size: 0.72rem; color: var(--text-dim); margin: 10px 0 0; }
+.board-section { font-family: 'Oswald', sans-serif; font-size: 0.85rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); margin: 16px 0 8px; }
+.board-obj { background: var(--bg-alt); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+.board-obj-done { border-color: rgba(61,220,151,0.55); background: linear-gradient(160deg, rgba(61,220,151,0.10), var(--bg-alt)); }
+.board-obj-risk { border-color: rgba(255,93,108,0.5); }
+.board-obj-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.board-obj-title { font-weight: 600; font-size: 0.9rem; }
+.board-pill { font-size: 0.68rem; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+.pill-run { background: rgba(255,255,255,0.08); color: var(--text-dim); }
+.pill-done { background: rgba(61,220,151,0.2); color: #3ddc97; }
+.board-bar { height: 8px; border-radius: 5px; background: rgba(255,255,255,0.08); margin: 8px 0 6px; overflow: hidden; }
+.board-bar > span { display: block; height: 100%; border-radius: 5px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .6s ease; }
+.board-obj-done .board-bar > span { background: linear-gradient(90deg, #2bb673, #3ddc97); }
+.board-obj-risk .board-bar > span { background: linear-gradient(90deg, #ff9f43, #ff5d6c); }
+.board-obj-bottom { display: flex; justify-content: space-between; gap: 8px; font-size: 0.72rem; color: var(--text-dim); }
+.board-obj-reward { white-space: nowrap; opacity: 0.85; }
+.board-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.board-chip { background: rgba(255,212,71,0.15); border: 1px solid rgba(255,212,71,0.4); color: #ffd447; border-radius: 999px; padding: 3px 11px; font-size: 0.75rem; }
+/* ===== Estilo de juego (Mi equipo) ===== */
+.style-card .select-field { margin-top: 6px; }
+.style-stats { display: flex; gap: 8px; margin-top: 10px; }
+.style-stats > div { flex: 1; background: var(--bg-alt); border: 1px solid var(--border); border-radius: 12px; padding: 8px; text-align: center; }
+.style-stats span { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); }
+.style-stats strong { font-family: 'Oswald', sans-serif; font-size: 1.2rem; }
