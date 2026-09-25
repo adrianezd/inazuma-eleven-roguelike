@@ -345,6 +345,9 @@ window.actionStartWorldTour = function () {
     pendingEvent: null,
     won: false,
     mode: worldTourSetupMode(),
+    // Entrenador por defecto: Hillman con el Raimon, uno al azar con un
+    // equipo aleatorio (se puede cambiar en Alineación).
+    coachId: !useRandom ? 'c01' : COACHES[Math.floor(Math.random() * COACHES.length)].id,
     lastLossMessage: null,
     lastJoinMessage: null
   };
@@ -501,6 +504,11 @@ function renderWorldTourLineup() {
         '<h3 style="margin-bottom:8px">Estilo de juego</h3>' +
         '<select class="select-field" onchange="actionSetWorldTourPlayStyle(this.value)">' + styleOptionsHtml + '</select>' +
       '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:4px">Entrenador</h3>' +
+        '<p class="dim small">Suma ataque y defensa, y con su intensidad. Si tu estilo de juego coincide con el suyo, sus puntos suben un 25%.</p>' +
+        COACHES.map(function (co) { return coachCardHtml(co, G.worldTour.coachId === co.id, "actionSetWorldTourCoach('" + co.id + "')"); }).join('') +
+      '</div>' +
       '<div class="panel center-text">' +
         '<h3 style="margin-bottom:8px">Bonificación de atributo</h3>' +
         '<div>' + elementCountsHtml + '</div>' +
@@ -568,6 +576,11 @@ function worldTourPlayStyleModifiers(wt) {
   var blend = aligned ? 1 : CAREER_PLAY_STYLE_CONTRADICTION_DAMPEN;
   return { atk: 1 + (style.atk - 1) * blend, def: 1 + (style.def - 1) * blend };
 }
+window.actionSetWorldTourCoach = function (id) {
+  if (!coachById(id)) return;
+  G.worldTour.coachId = id;
+  render();
+};
 window.actionSetWorldTourPlayStyle = function (id) {
   if (!CAREER_PLAY_STYLES.some(function (s) { return s.id === id; })) return;
   G.worldTour.playStyle = id;
@@ -591,7 +604,7 @@ function worldTourBridgeFutdraft(stage) {
   // ese equipo aunque no tengan cara.
   var oppPlayersOverride = stage ? stage.players.filter(function (p) { return p.posicion !== 'Portero'; }) : null;
   var styleMods = worldTourPlayStyleModifiers(wt);
-  G.futdraft = { lineup: lineup, squad: wt.squad.slice(), captainId: wt.captainId || null, formation: wt.formationId || WORLD_TOUR_DEFAULT_FORMATION, condition: 'ninguna', teamScoreOverride: futDraftTeamScore(lineup, wt.captainId || null), oppPlayersOverride: oppPlayersOverride && oppPlayersOverride.length ? oppPlayersOverride : null, styleAtkMult: styleMods.atk, styleDefMult: styleMods.def };
+  G.futdraft = { coach: coachById(wt.coachId), coachChosenStyle: wt.playStyle || 'equilibrado', lineup: lineup, squad: wt.squad.slice(), captainId: wt.captainId || null, formation: wt.formationId || WORLD_TOUR_DEFAULT_FORMATION, condition: 'ninguna', teamScoreOverride: futDraftTeamScore(lineup, wt.captainId || null), oppPlayersOverride: oppPlayersOverride && oppPlayersOverride.length ? oppPlayersOverride : null, styleAtkMult: styleMods.atk, styleDefMult: styleMods.def };
 }
 window.actionSimulateWorldTourMatch = function (visualMode) {
   var stage = worldTourStage();

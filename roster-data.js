@@ -3556,4 +3556,16 @@ var ROSTER = [
 
 ]
 
-
+// Entrenadores (prueba con 5 conocidos, sin imagen): pertenecen a un equipo y
+// dan un pequeño bonus numérico de ataque y de defensa (puntos sobre la
+// escala 0-100 del partido), más su propia intensidad (baja/media/alta) y
+// estilo de juego (muy_defensiva, defensiva, equilibrado, ofensiva,
+// muy_ofensiva), a petición explícita. Se eligen en los drafts (FutDraft y
+// Liga) y en el Modo Mundial (por defecto Hillman con el Raimon).
+var COACHES = [
+  { id: 'c01', nombre: 'Hillman', original: 'Michiya Kudou', equipo: 'Raimon', atk: 2, def: 3, intensidad: 'media', estilo: 'equilibrado', desc: 'El entrenador del Raimon, tranquilo y estratega.' },
+  { id: 'c02', nombre: 'Celia Hills', original: 'Fuyuka Kudou', equipo: 'Raimon', atk: 3, def: 2, intensidad: 'alta', estilo: 'ofensiva', desc: 'Directora deportiva del Raimon, apuesta por el ataque.' },
+  { id: 'c03', nombre: 'Kageyama', original: 'Reiji Kageyama', equipo: 'Emperadores Oscuros', atk: 4, def: 2, intensidad: 'alta', estilo: 'muy_ofensiva', desc: 'Estratega implacable que lo arriesga todo al ataque.' },
+  { id: 'c04', nombre: 'Seijirou Kira', original: 'Seijirou Kira', equipo: 'Genesis', atk: 3, def: 3, intensidad: 'alta', estilo: 'ofensiva', desc: 'Director del Genesis, exige rendimiento máximo.' },
+  { id: 'c05', nombre: 'Zoolan Rice', original: 'Zoolan Rice', equipo: 'Zoolan Team', atk: 2, def: 4, intensidad: 'baja', estilo: 'defensiva', desc: 'Prefiere un equipo cerrado y sin riesgos.' }
+];

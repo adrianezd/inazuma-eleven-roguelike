@@ -70,6 +70,54 @@ var FUTDRAFT_FORMATIONS = [
 // golpe -- se elige una vez al principio (antes de draftear, en los dos
 // modos) y esas mismas son las que luego se pueden alternar en la
 // pantalla de equipo. Clásico ofrece 4, Libre ofrece 3.
+// ===== Entrenadores =====
+function coachById(id) { return (typeof COACHES !== 'undefined' ? COACHES : []).find(function (c) { return c.id === id; }) || null; }
+function coachStyleName(id) { var s = CAREER_PLAY_STYLES.find(function (x) { return x.id === id; }); return s ? s.name : id; }
+function coachIntensityName(id) { return (CAREER_INTENSITIES[id] || CAREER_INTENSITIES.media).name; }
+// Efecto de un entrenador en un partido: puntos de ataque/defensa más los
+// multiplicadores de su intensidad (y de su estilo, si el modo no deja
+// elegir estilo, como FutDraft/Liga). Si se juega con un estilo elegido
+// que coincide con el del entrenador (Modo Mundial), sus puntos suben un 25%.
+function coachEffect(coach, chosenStyleId) {
+  if (!coach) return { atkPts: 0, defPts: 0, atkMult: 1, defMult: 1 };
+  var style = CAREER_PLAY_STYLES.find(function (s) { return s.id === coach.estilo; }) || { atk: 1, def: 1 };
+  var inten = CAREER_INTENSITY_BENEFIT[coach.intensidad] || CAREER_INTENSITY_BENEFIT.media;
+  var pts = 1 + (chosenStyleId && chosenStyleId === coach.estilo ? 0.25 : 0);
+  return {
+    atkPts: coach.atk * pts, defPts: coach.def * pts,
+    atkMult: (chosenStyleId ? 1 : style.atk) * inten.atk,
+    defMult: (chosenStyleId ? 1 : style.def) * inten.def
+  };
+}
+function coachAvatarHtml(coach) {
+  return '<span class="coach-avatar" aria-hidden="true">' + escapeHtml(initials(coach.nombre)) + '</span>';
+}
+function coachCardHtml(coach, selected, onclick) {
+  return '<button class="coach-card' + (selected ? ' selected' : '') + '" onclick="' + onclick + '">' +
+    coachAvatarHtml(coach) +
+    '<span class="coach-info"><strong>' + escapeHtml(coach.nombre) + '</strong>' +
+      '<span class="dim small">' + escapeHtml(coach.equipo) + '</span>' +
+      '<span class="coach-stats"><span>Ataque +' + coach.atk + '</span><span>Defensa +' + coach.def + '</span><span>Intensidad ' + escapeHtml(coachIntensityName(coach.intensidad).toLowerCase()) + '</span><span>' + escapeHtml(coachStyleName(coach.estilo)) + '</span></span>' +
+    '</span>' +
+  '</button>';
+}
+function futDraftCoachOptions() {
+  return COACHES.slice().sort(function () { return Math.random() - 0.5; }).slice(0, 3);
+}
+window.actionPickFutDraftCoach = function (id) {
+  var f = G.futdraft;
+  f.coach = id ? coachById(id) : null;
+  render();
+};
+function futDraftCoachPanelHtml(f) {
+  if (!f.coachOptions) f.coachOptions = futDraftCoachOptions();
+  return '<div class="panel">' +
+    '<h3 style="margin-bottom:4px">Entrenador</h3>' +
+    '<p class="dim small">Elige uno de estos tres: suma ataque y defensa, y su intensidad y estilo cuentan en todos tus partidos.</p>' +
+    f.coachOptions.map(function (co) { return coachCardHtml(co, f.coach && f.coach.id === co.id, "actionPickFutDraftCoach('" + co.id + "')"); }).join('') +
+    '<button class="btn btn-tiny mt' + (!f.coach ? ' active' : '') + '" onclick="actionPickFutDraftCoach(null)">Sin entrenador</button>' +
+  '</div>';
+}
 function pickFutDraftFormationChoices(n) {
   var shuffled = FUTDRAFT_FORMATIONS.slice().sort(function () { return Math.random() - 0.5; });
   return shuffled.slice(0, n).map(function (f) { return f.id; });
@@ -745,6 +793,7 @@ function renderFutDraftTeam() {
         '<div>' + elementCountsHtml + '</div>' +
       '</div>' +
       benchHtml +
+      futDraftCoachPanelHtml(f) +
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionShareFutDraftSquad()">Compartir 🔗</button>' +
         (G.futdraftShareMessage ? '<p class="dim small">' + escapeHtml(G.futdraftShareMessage) + '</p>' : '') +

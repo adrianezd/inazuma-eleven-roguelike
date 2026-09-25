@@ -166,6 +166,13 @@ function futDraftSimulateMatchCore(oppPower) {
   var styleDefMult = typeof f.styleDefMult === 'number' ? f.styleDefMult : 1;
   var myAtk = score * formation.atk * mods.bothMult * mods.myAtkMult * styleAtkMult;
   var myDef = score * formation.def * mods.bothMult * mods.myDefMult * styleDefMult;
+  // Entrenador (f.coach, ver COACHES/coachEffect): puntos de ataque y defensa
+  // más los multiplicadores de su intensidad y estilo.
+  if (f.coach) {
+    var coachFx = coachEffect(f.coach, f.coachChosenStyle || null);
+    myAtk = myAtk * coachFx.atkMult + coachFx.atkPts;
+    myDef = myDef * coachFx.defMult + coachFx.defPts;
+  }
   var effectiveOppPower = oppPower * mods.bothMult;
   var myGoals = futDraftRandomGoals(futDraftExpectedGoals(myAtk, effectiveOppPower));
   var oppGoals = futDraftRandomGoals(futDraftExpectedGoals(effectiveOppPower, myDef));
