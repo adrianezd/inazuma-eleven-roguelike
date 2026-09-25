@@ -509,6 +509,7 @@ function renderWorldTourLineup() {
         '<p class="dim small">Suma ataque y defensa, y con su intensidad.</p>' +
         (coachById(G.worldTour.coachId) ? coachCardHtml(coachById(G.worldTour.coachId), true, '') : '') +
       '</div>' +
+      tacticsPanelHtml({ foul: G.worldTour.foulStyle || 'medio', intensity: G.worldTour.intensity || 'media' }, 'actionSetWorldTourTactic', false) +
       '<div class="panel center-text">' +
         '<h3 style="margin-bottom:8px">Bonificación de atributo</h3>' +
         '<div>' + elementCountsHtml + '</div>' +
@@ -581,6 +582,11 @@ window.actionSetWorldTourCoach = function (id) {
   G.worldTour.coachId = id;
   render();
 };
+window.actionSetWorldTourTactic = function (key, val) {
+  var wt = G.worldTour;
+  if (key === 'foul') wt.foulStyle = val; else if (key === 'intensity') wt.intensity = val;
+  render();
+};
 window.actionSetWorldTourPlayStyle = function (id) {
   if (!CAREER_PLAY_STYLES.some(function (s) { return s.id === id; })) return;
   G.worldTour.playStyle = id;
@@ -604,7 +610,7 @@ function worldTourBridgeFutdraft(stage) {
   // ese equipo aunque no tengan cara.
   var oppPlayersOverride = stage ? stage.players.filter(function (p) { return p.posicion !== 'Portero'; }) : null;
   var styleMods = worldTourPlayStyleModifiers(wt);
-  G.futdraft = { coach: coachById(wt.coachId), coachChosenStyle: wt.playStyle || 'equilibrado', lineup: lineup, squad: wt.squad.slice(), captainId: wt.captainId || null, formation: wt.formationId || WORLD_TOUR_DEFAULT_FORMATION, condition: 'ninguna', teamScoreOverride: futDraftTeamScore(lineup, wt.captainId || null), oppPlayersOverride: oppPlayersOverride && oppPlayersOverride.length ? oppPlayersOverride : null, styleAtkMult: styleMods.atk, styleDefMult: styleMods.def };
+  G.futdraft = { coach: coachById(wt.coachId), coachChosenStyle: wt.playStyle || 'equilibrado', lineup: lineup, squad: wt.squad.slice(), captainId: wt.captainId || null, formation: wt.formationId || WORLD_TOUR_DEFAULT_FORMATION, condition: 'ninguna', tactics: { foul: wt.foulStyle || 'medio', intensity: wt.intensity || 'media' }, teamScoreOverride: futDraftTeamScore(lineup, wt.captainId || null), oppPlayersOverride: oppPlayersOverride && oppPlayersOverride.length ? oppPlayersOverride : null, styleAtkMult: styleMods.atk, styleDefMult: styleMods.def };
 }
 window.actionSimulateWorldTourMatch = function (visualMode) {
   var stage = worldTourStage();

@@ -101,6 +101,44 @@ function coachCardHtml(coach, selected, onclick) {
     '</span>' +
   '</button>';
 }
+// ===== Táctica (estilo de juego, estilo físico e intensidad) fuera de Carrera =====
+// Para FutDraft y Liga (f.tactics) y Modo Mundial (wt.intensity/wt.foulStyle):
+// mismos estilos y beneficios/riesgos que en Modo Carrera. Devuelve
+// multiplicadores de ataque/defensa y de frecuencia de tarjetas y lesiones.
+function futDraftTacticsMods(t, includeStyle) {
+  t = t || {};
+  var style = includeStyle ? (CAREER_PLAY_STYLES.find(function (s) { return s.id === t.style; }) || { atk: 1, def: 1 }) : { atk: 1, def: 1 };
+  var inten = CAREER_INTENSITY_BENEFIT[t.intensity] || CAREER_INTENSITY_BENEFIT.media;
+  var foul = CAREER_FOUL_BENEFIT[t.foul] || CAREER_FOUL_BENEFIT.medio;
+  return {
+    atk: style.atk * inten.atk * foul.atk,
+    def: style.def * inten.def * foul.def,
+    injury: (CAREER_INTENSITIES[t.intensity] || CAREER_INTENSITIES.media).mult,
+    foul: (CAREER_FOUL_STYLES[t.foul] || CAREER_FOUL_STYLES.medio).mult
+  };
+}
+function tacticsPanelHtml(t, handler, withStyle) {
+  function opts(map, cur) {
+    return Object.keys(map).map(function (k) { return '<option value="' + k + '"' + (k === cur ? ' selected' : '') + '>' + map[k].name + '</option>'; }).join('');
+  }
+  function row(title, key, html) {
+    return '<div class="style-card" style="margin-top:8px"><h4 style="margin-bottom:4px">' + title + '</h4>' +
+      '<select class="select-field" onchange="' + handler + "('" + key + "', this.value)" + '">' + html + '</select></div>';
+  }
+  var styleHtml = CAREER_PLAY_STYLES.map(function (s) { return '<option value="' + s.id + '"' + (s.id === t.style ? ' selected' : '') + '>' + s.name + '</option>'; }).join('');
+  return '<div class="panel"><h3 style="margin-bottom:4px">Táctica</h3>' +
+    '<p class="dim small">Más riesgo da más rendimiento: intensidad alta y estilo brusco suben ataque y defensa, pero traen más lesiones y tarjetas.</p>' +
+    (withStyle ? row('Estilo de juego', 'style', styleHtml) : '') +
+    row('Estilo físico', 'foul', opts(CAREER_FOUL_STYLES, t.foul || 'medio')) +
+    row('Intensidad', 'intensity', opts(CAREER_INTENSITIES, t.intensity || 'media')) +
+  '</div>';
+}
+window.actionSetFutDraftTactic = function (key, val) {
+  var f = G.futdraft;
+  f.tactics = f.tactics || { style: 'equilibrado', foul: 'medio', intensity: 'media' };
+  f.tactics[key] = val;
+  render();
+};
 function futDraftCoachOptions() {
   return COACHES.slice().sort(function () { return Math.random() - 0.5; }).slice(0, 3);
 }
@@ -803,6 +841,7 @@ function renderFutDraftTeam() {
       '</div>' +
       benchHtml +
       futDraftCoachPanelHtml(f) +
+      tacticsPanelHtml(f.tactics || { style: 'equilibrado', foul: 'medio', intensity: 'media' }, 'actionSetFutDraftTactic', true) +
       '<div class="panel center-text">' +
         '<button class="btn btn-outline btn-block" onclick="actionShareFutDraftSquad()">Compartir 🔗</button>' +
         (G.futdraftShareMessage ? '<p class="dim small">' + escapeHtml(G.futdraftShareMessage) + '</p>' : '') +

@@ -166,10 +166,17 @@ function futDraftSimulateMatchCore(oppPower) {
   var styleDefMult = typeof f.styleDefMult === 'number' ? f.styleDefMult : 1;
   var myAtk = score * formation.atk * mods.bothMult * mods.myAtkMult * styleAtkMult;
   var myDef = score * formation.def * mods.bothMult * mods.myDefMult * styleDefMult;
+  // Táctica elegida fuera de Carrera (f.tactics): el estilo de juego solo
+  // cuenta si el modo no puso ya el suyo (styleAtkMult, Carrera y Mundial).
+  if (f.tactics) {
+    var tacMods = futDraftTacticsMods(f.tactics, typeof f.styleAtkMult !== 'number');
+    myAtk *= tacMods.atk;
+    myDef *= tacMods.def;
+  }
   // Entrenador (f.coach, ver COACHES/coachEffect): puntos de ataque y defensa
   // más los multiplicadores de su intensidad y estilo.
   if (f.coach) {
-    var coachFx = coachEffect(f.coach, f.coachChosenStyle || null);
+    var coachFx = coachEffect(f.coach, f.coachChosenStyle || (f.tactics && f.tactics.style) || null);
     myAtk = myAtk * coachFx.atkMult + coachFx.atkPts;
     myDef = myDef * coachFx.defMult + coachFx.defPts;
   }
@@ -375,9 +382,10 @@ function futDraftAdvancePossession(live) {
   // petición explícita ("el modificador de lesiones y de sanciones, son
   // dos cosas diferentes"). La amarilla no tiene ajuste propio, se queda
   // igual que siempre.
-  var redMult = typeof live.redCardFreqMult === 'number' ? live.redCardFreqMult : 1;
-  var injuryMult = typeof live.injuryFreqMult === 'number' ? live.injuryFreqMult : 1;
-  var yellowMult = typeof live.yellowFreqMult === 'number' ? live.yellowFreqMult : 1;
+  var tacFx = G.futdraft && G.futdraft.tactics ? futDraftTacticsMods(G.futdraft.tactics, false) : null;
+  var redMult = typeof live.redCardFreqMult === 'number' ? live.redCardFreqMult : (tacFx ? tacFx.foul : 1);
+  var injuryMult = typeof live.injuryFreqMult === 'number' ? live.injuryFreqMult : (tacFx ? tacFx.injury : 1);
+  var yellowMult = typeof live.yellowFreqMult === 'number' ? live.yellowFreqMult : (tacFx ? tacFx.foul : 1);
   if (scoreboardPlayer && Math.random() < 0.0102 * yellowMult) {
     live.cards.push({ side: p.side, minute: Math.round(live.minute), type: 'yellow', name: scoreboardPlayer.nombre, id: scoreboardPlayer.id || null });
   } else if (scoreboardPlayer && redMult > 0 && Math.random() < 0.0018 * redMult) {
