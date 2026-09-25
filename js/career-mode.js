@@ -993,6 +993,20 @@ var CAREER_INTENSITIES = {
   media: { name: 'Media', mult: 1 },
   alta: { name: 'Alta', mult: 1.8 }
 };
+// Lo que das a cambio del riesgo, a petición explícita ("algo tendrán que
+// dar"): intensidad alta = más ataque y algo más de defensa (jugadores a
+// tope, pero más lesiones); baja = un poco menos. Estilo brusco = mejor
+// defensa (más entradas, pero más tarjetas); leve = algo peor. Solo cuenta
+// mientras el suceso correspondiente esté activado (con rojas o lesiones
+// desactivadas el ajuste no existe ni da nada).
+var CAREER_INTENSITY_BENEFIT = { baja: { atk: 0.96, def: 0.98 }, media: { atk: 1, def: 1 }, alta: { atk: 1.06, def: 1.03 } };
+var CAREER_FOUL_BENEFIT = { leve: { atk: 1, def: 0.97 }, medio: { atk: 1, def: 1 }, brusco: { atk: 1.02, def: 1.06 } };
+function careerRiskBenefit(c) {
+  var atk = 1, def = 1;
+  if (c.injuryFreq !== 'desactivado') { var i = CAREER_INTENSITY_BENEFIT[c.intensity] || CAREER_INTENSITY_BENEFIT.media; atk *= i.atk; def *= i.def; }
+  if (c.redCardFreq !== 'desactivado') { var f = CAREER_FOUL_BENEFIT[c.foulStyle] || CAREER_FOUL_BENEFIT.medio; atk *= f.atk; def *= f.def; }
+  return { atk: atk, def: def };
+}
 function careerFoulMult(c) { return (CAREER_FOUL_STYLES[c.foulStyle] || CAREER_FOUL_STYLES.medio).mult; }
 function careerIntensityMult(c) { return (CAREER_INTENSITIES[c.intensity] || CAREER_INTENSITIES.media).mult; }
 function careerInjuryFreqMult(c) { return (CAREER_EVENT_FREQ[c.injuryFreq] || CAREER_EVENT_FREQ.bajo).mult * careerIntensityMult(c); }
@@ -1937,9 +1951,9 @@ function careerRiskPanelHtml(c) {
     return Object.keys(map).map(function (k) { return '<option value="' + k + '"' + (k === current ? ' selected' : '') + '>' + map[k].name + '</option>'; }).join('');
   }
   return '<div class="panel">' +
-    (redOn ? '<h3 style="margin-bottom:4px">Estilo físico</h3><p class="dim small">Más brusco, más tarjetas (amarillas y rojas). Más leve, menos.</p>' +
+    (redOn ? '<h3 style="margin-bottom:4px">Estilo físico</h3><p class="dim small">Brusco: mejor defensa, pero más tarjetas (amarillas y rojas). Leve: menos tarjetas, algo peor defensa.</p>' +
       '<select class="select-field" onchange="actionSetCareerFoulStyle(this.value)">' + opts(CAREER_FOUL_STYLES, c.foulStyle || 'medio') + '</select>' : '') +
-    (injOn ? '<h3 style="margin:' + (redOn ? '12px' : '0') + ' 0 4px">Intensidad</h3><p class="dim small">Más intensidad, más riesgo de lesión. Menos, menos.</p>' +
+    (injOn ? '<h3 style="margin:' + (redOn ? '12px' : '0') + ' 0 4px">Intensidad</h3><p class="dim small">Alta: más ataque y algo más de defensa, pero más lesiones. Baja: menos lesiones, algo menos de rendimiento.</p>' +
       '<select class="select-field" onchange="actionSetCareerIntensity(this.value)">' + opts(CAREER_INTENSITIES, c.intensity || 'media') + '</select>' : '') +
   '</div>';
 }
@@ -3646,7 +3660,8 @@ function careerPlayStyleModifiers(c) {
   var formationLean = formation.atk - formation.def;
   var aligned = styleLean === 0 || formationLean === 0 || (styleLean > 0) === (formationLean > 0);
   var blend = aligned ? 1 : CAREER_PLAY_STYLE_CONTRADICTION_DAMPEN;
-  return { atk: 1 + (style.atk - 1) * blend, def: 1 + (style.def - 1) * blend, aligned: aligned };
+  var risk = careerRiskBenefit(c);
+  return { atk: (1 + (style.atk - 1) * blend) * risk.atk, def: (1 + (style.def - 1) * blend) * risk.def, aligned: aligned };
 }
 // Ataque/defensa de TU equipo para resolver un partido de verdad
 // (Jornada/Copa/Champions, camino "Saltar" -- el camino "Simular" hace
