@@ -5808,6 +5808,8 @@ function finishCareerSupercopaMatch() {
   var c = G.career;
   var live = G.futdraft.live;
   var myGoals = live.finalMyGoals, oppGoals = live.finalOppGoals;
+  var scPrev = c.supercopa.legResults[0];
+  if (c.supercopa.legIndex === 1 && scPrev && futDraftLivePenaltyGate(live, c.supercopa.opponentName, careerMatchTeamScore(c) - careerSupercopaPower(), (myGoals + scPrev.myGoals) === (oppGoals + scPrev.oppGoals), finishCareerSupercopaMatch)) return;
   var myEvents = live.revealed.filter(function (e) { return e.side === 'me'; });
   futDraftRecordGoalEvents(c.careerStats, myEvents, 'Tu equipo');
   careerFinishMatchEvents(c, live);
@@ -5815,7 +5817,7 @@ function finishCareerSupercopaMatch() {
   G.futdraft.lastMatchResult = {
     oppName: c.supercopa.opponentName, oppShield: teamShieldPath(c.supercopa.opponentName), oppPower: careerSupercopaPower(),
     myGoals: myGoals, oppGoals: oppGoals, playerWon: myGoals > oppGoals,
-    timeline: live.revealed, modifier: live.modifier, isCareer: true, isSupercopa: true, youAreHome: live.youAreHome
+    timeline: live.revealed, modifier: live.modifier, isCareer: true, isSupercopa: true, youAreHome: live.youAreHome, penalty: c.supercopa.penalty || null
   };
   G.futdraft.live = null;
   G.screen = 'futdraftMatchResult';

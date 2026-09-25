@@ -111,11 +111,13 @@ window.actionPickFutDraftCoach = function (id) {
 };
 function futDraftCoachPanelHtml(f) {
   if (!f.coachOptions) f.coachOptions = futDraftCoachOptions();
+  if (f.coach) {
+    return '<div class="panel"><h3 style="margin-bottom:4px">Entrenador</h3>' + coachCardHtml(f.coach, true, '') + '</div>';
+  }
   return '<div class="panel">' +
     '<h3 style="margin-bottom:4px">Entrenador</h3>' +
-    '<p class="dim small">Elige uno de estos tres: suma ataque y defensa, y su intensidad y estilo cuentan en todos tus partidos.</p>' +
+    '<p class="dim small">Elige uno de estos tres. Suma ataque y defensa.</p>' +
     f.coachOptions.map(function (co) { return coachCardHtml(co, f.coach && f.coach.id === co.id, "actionPickFutDraftCoach('" + co.id + "')"); }).join('') +
-    '<button class="btn btn-tiny mt' + (!f.coach ? ' active' : '') + '" onclick="actionPickFutDraftCoach(null)">Sin entrenador</button>' +
   '</div>';
 }
 function pickFutDraftFormationChoices(n) {
