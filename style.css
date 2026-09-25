@@ -1994,3 +1994,5 @@ body { padding-bottom: calc(var(--safe-b) + 72px); }
 .tie-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 8px; }
 .tie-chip { font-size: 0.72rem; padding: 3px 10px; border-radius: 999px; background: rgba(255,255,255,0.08); color: var(--text-dim); }
 .tie-chip-gold { background: rgba(255,176,32,0.18); color: var(--accent-2); }
+
+#app.no-anim .screen > *, #app.no-anim .screen { animation: none !important; }

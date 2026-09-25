@@ -176,8 +176,11 @@ function render() {
   if (G.confirmLeaveOpen) html += renderConfirmLeaveModal();
   if (G.showPatchNotes) html += renderPatchNotesModal();
   // Re-render de la misma pantalla (teclear, filtros, pestañas): sin repetir el fundido de entrada.
-  appEl.classList.toggle('no-anim', G.screen === lastRenderedScreen || !!(G.meta && G.meta.reduceMotion));
-  lastRenderedScreen = G.screen;
+  // Solo se anima al cambiar de pantalla o de pestaña; acciones dentro de la misma vista (fichar, flechas, filtros) no repiten la animación.
+  var viewKey = G.screen + '|' + G.tacTab;
+  if (G.career && G.screen === 'careerMode') Object.keys(G.career).forEach(function (k) { if (/(Tab|Sub|View|tab)$/.test(k) && typeof G.career[k] === 'string') viewKey += '|' + k + ':' + G.career[k]; });
+  appEl.classList.toggle('no-anim', viewKey === lastRenderedScreen || !!(G.meta && G.meta.reduceMotion));
+  lastRenderedScreen = viewKey;
   appEl.innerHTML = html;
   restoreFocusAfterRerender(focusInfo);
   if (G.screen === 'map') drawMapConnections();
