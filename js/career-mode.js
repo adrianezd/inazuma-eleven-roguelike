@@ -1318,7 +1318,7 @@ function careerFreshState(choices) {
 // roster-data.js cambia de una sesión a otra (stats retocados, etc.) la
 // partida guardada sigue viendo los datos actuales, no una foto
 // congelada del momento en que se guardó.
-var CAREER_SLOT_COUNT = 3;
+var CAREER_SLOT_COUNT = 5;
 function careerSlotKey(slot) { return 'inazumaRoguelike_career_slot_' + slot; }
 
 function careerSerialize(c) {

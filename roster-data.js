@@ -3571,5 +3571,8 @@ var COACHES = [
   { id: 'c06', nombre: 'Mr. D', original: 'Mr. D', equipo: 'Orfeo', atk: 3, def: 3, intensidad: 'alta', estilo: 'equilibrado', desc: 'Frío y calculador, dirige con mano de hierro.' },
   { id: 'c07', nombre: 'Astero Black', original: 'Ray Dark', equipo: 'Earth Eleven', atk: 4, def: 3, intensidad: 'alta', estilo: 'muy_ofensiva', desc: 'Ray Dark, el líder oscuro que lo sacrifica todo por ganar.' },
   { id: 'c08', nombre: 'David Evans', original: 'Daisuke Endou', equipo: 'Pequeños Gigantes', atk: 2, def: 2, intensidad: 'media', estilo: 'equilibrado', desc: 'El entrenador de Inazuma Japón, siempre optimista.' },
+  { id: 'c09', nombre: 'Hekyll Jyde', original: 'Hekyll Jyde', equipo: 'Sallys', atk: 3, def: 2, intensidad: 'media', estilo: 'ofensiva', desc: 'Entrenador ambicioso que apuesta por el ataque.' },
+  { id: 'c10', nombre: 'Stewart Vanguard', original: 'Stewart Vanguard', equipo: 'Sallys', atk: 2, def: 4, intensidad: 'baja', estilo: 'defensiva', desc: 'Estratega prudente que prioriza no encajar.' },
+  { id: 'c11', nombre: 'Nerina Hartland', original: 'Nerina Hartland', equipo: 'Sallys', atk: 3, def: 3, intensidad: 'media', estilo: 'equilibrado', desc: 'Entrenadora equilibrada que cuida cada detalle.' },
 
 ];
