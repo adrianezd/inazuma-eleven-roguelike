@@ -1924,3 +1924,32 @@ body { padding-bottom: calc(var(--safe-b) + 72px); }
 .pitch-coach { position: absolute; right: 8px; bottom: 8px; display: flex; flex-direction: column; align-items: center; width: 52px; z-index: 2; }
 .pitch-coach .coach-avatar { width: 34px; height: 34px; font-size: 0.7rem; box-shadow: 0 0 0 2px var(--accent-2); }
 .pitch-coach .pitch-player-name { font-size: 0.56rem; max-width: 52px; }
+
+/* ===== Transiciones y feedback ===== */
+.screen > .panel, .screen > .coach-card, .screen > .menu-grid { animation: panelIn 0.28s ease-out both; }
+.screen > *:nth-child(2) { animation-delay: 0.03s; }
+.screen > *:nth-child(3) { animation-delay: 0.06s; }
+.screen > *:nth-child(4) { animation-delay: 0.09s; }
+.screen > *:nth-child(5) { animation-delay: 0.12s; }
+@keyframes panelIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.btn, .btn-tiny, .menu-tile, .coach-card { transition: transform 0.12s ease, filter 0.12s ease, box-shadow 0.12s ease; }
+.btn:active, .btn-tiny:active, .menu-tile:active, .coach-card:active { transform: scale(0.97); }
+.score-num { display: inline-block; }
+.score-num.score-pop { animation: scorePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes scorePop { 0% { transform: scale(1); } 40% { transform: scale(1.5); color: var(--accent-2); } 100% { transform: scale(1); } }
+.coach-card.just-hired { animation: hirePulse 0.7s ease-out; }
+@keyframes hirePulse { 0% { box-shadow: 0 0 0 0 rgba(255,176,32,0.7); } 100% { box-shadow: 0 0 0 14px rgba(255,176,32,0); } }
+@media (prefers-reduced-motion: reduce) { .screen > *, .score-num.score-pop, .coach-card.just-hired { animation: none !important; } }
+
+/* ===== Resumen de temporada y récords ===== */
+.recap-card { background: linear-gradient(150deg, rgba(255,176,32,0.14), var(--panel)); border-color: var(--accent-2); }
+.recap-title { font-family: 'Oswald', sans-serif; font-size: 1.3rem; text-align: center; margin-bottom: 10px; color: var(--accent-2); }
+.recap-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+.recap-cell { display: flex; flex-direction: column; gap: 2px; background: var(--bg-alt); border: 1px solid var(--border); border-radius: 12px; padding: 10px; min-width: 0; }
+.recap-cell span { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); }
+.recap-cell strong { font-family: 'Oswald', sans-serif; font-size: 1.05rem; overflow-wrap: anywhere; }
+.recap-cell em { font-style: normal; font-size: 0.74rem; color: var(--text-dim); }
+.record-row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+.record-row:last-child { border-bottom: none; }
+.record-row span { color: var(--text-dim); }
+.record-row strong { text-align: right; overflow-wrap: anywhere; }

@@ -1,3 +1,8 @@
+function setScoreNum(el, v) {
+  if (String(el.textContent) === String(v)) return;
+  el.textContent = v;
+  el.classList.remove("score-pop"); void el.offsetWidth; el.classList.add("score-pop");
+}
 window.startFutDraftMatches = function () {
   var size = futDraftBracketSize();
   var bracket = generateTournamentBracket(size);
@@ -833,8 +838,8 @@ function futDraftDotsRefresh(live) {
   var nums = document.querySelectorAll('.score-num');
   if (nums.length >= 2) {
     var youAreHome = live.youAreHome !== false;
-    nums[0].textContent = youAreHome ? live.myGoals : live.oppGoals;
-    nums[1].textContent = youAreHome ? live.oppGoals : live.myGoals;
+    setScoreNum(nums[0], youAreHome ? live.myGoals : live.oppGoals);
+    setScoreNum(nums[1], youAreHome ? live.oppGoals : live.myGoals);
   }
 }
 function futDraftLiveRefresh(live) {
@@ -846,8 +851,8 @@ function futDraftLiveRefresh(live) {
   var note = String(!!(live.inExtraTime && live.minute <= 91));
   if (!root || nums.length < 2 || !indicator || !timeline || root.getAttribute('data-extra') !== String(!!live.inExtraTime) || root.getAttribute('data-note') !== note) { render(); return; }
   var youAreHome = live.youAreHome !== false;
-  nums[0].textContent = youAreHome ? live.myGoals : live.oppGoals;
-  nums[1].textContent = youAreHome ? live.oppGoals : live.myGoals;
+  setScoreNum(nums[0], youAreHome ? live.myGoals : live.oppGoals);
+  setScoreNum(nums[1], youAreHome ? live.oppGoals : live.myGoals);
   indicator.textContent = futDraftLiveIndicatorText(live);
   if (timeline.getAttribute('data-count') !== String(live.revealed.length)) {
     timeline.innerHTML = futDraftLiveLogHtml(live) || '<p class="dim small center-text">Aún no ha pasado nada…</p>';
@@ -980,8 +985,8 @@ function futDraftPenaltyRefresh(p) {
   var nums = root ? root.querySelectorAll('.score-num') : [];
   var timeline = root ? root.querySelector('.futdraft-timeline') : null;
   if (!root || nums.length < 2 || !timeline || p.done || root.getAttribute('data-done') === 'true') { render(); return; }
-  nums[0].textContent = p.playerGoals;
-  nums[1].textContent = p.rivalGoals;
+  setScoreNum(nums[0], p.playerGoals);
+  setScoreNum(nums[1], p.rivalGoals);
   timeline.innerHTML = p.revealed.slice().reverse().map(function (ev) { return futDraftPenaltyRowHtml(ev, p.oppShield); }).join('');
 }
 

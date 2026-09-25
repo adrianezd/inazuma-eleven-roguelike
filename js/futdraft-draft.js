@@ -661,7 +661,8 @@ function pitchCurrentCoach() {
   return (G.worldTour && G.worldTour.coachId && String(G.screen).indexOf("worldTour") === 0) ? coachById(G.worldTour.coachId) : null;
 }
 function pitchCoachHtml(coach) {
-  return coach ? '<div class="pitch-coach" title="Entrenador: ' + escapeHtml(coach.nombre) + '">' + coachAvatarHtml(coach) + '<span class="pitch-player-name">' + escapeHtml(coach.nombre) + '</span></div>' : '';
+  var tabbed = ['futdraftTeam', 'worldTourLineup', 'futdraftVsPrep'].indexOf(G.screen) !== -1;
+  return coach ? '<div class="pitch-coach"' + (tabbed ? ' style="cursor:pointer" onclick="actionSetTacTab(\'tactica\')"' : '') + ' title="Entrenador: ' + escapeHtml(coach.nombre) + '">' + coachAvatarHtml(coach) + '<span class="pitch-player-name">' + escapeHtml(coach.nombre) + '</span></div>' : '';
 }
 function renderFutDraftPitch(squad, formationId, showEmptySlots, coach) {
   var formation = FUTDRAFT_FORMATIONS.find(function (f) { return f.id === formationId; });

@@ -1237,6 +1237,7 @@ function careerFreshState(choices) {
     boughtThisSeasonIds: [],
     incomingOffers: [],
     budget: CAREER_STARTING_BUDGET_OPTIONS.indexOf(choices.budget) !== -1 ? choices.budget : CAREER_STARTING_BUDGET,
+    seasonStartBudget: CAREER_STARTING_BUDGET_OPTIONS.indexOf(choices.budget) !== -1 ? choices.budget : CAREER_STARTING_BUDGET,
     marketWindow: careerNewMarketWindow('preseason', CAREER_PRESEASON_DAYS),
     // Mejor posición en liga y goleadores/asistentes ACUMULADOS de toda
     // la carrera (todas las temporadas, no se resetean con
@@ -1325,7 +1326,7 @@ function careerSerialize(c) {
   return {
     tab: c.tab, competicionesTab: c.competicionesTab || 'liga', ligaView: c.ligaView || 'resumida',
     season: c.season || 1, clubName: c.clubName || 'Tu Equipo', clubShieldName: c.clubShieldName || null,
-    formation: c.formation, playStyle: c.playStyle || 'equilibrado', captainId: c.captainId, budget: c.budget,
+    formation: c.formation, playStyle: c.playStyle || 'equilibrado', captainId: c.captainId, budget: c.budget, seasonStartBudget: c.seasonStartBudget,
     lineup: c.lineup.map(function (s) { return { pos: s.pos, id: s.player.id }; }),
     bench: c.bench.map(function (p) { return p.id; }),
     loanedIds: c.loanedIds || [],
@@ -1421,6 +1422,7 @@ function careerDeserialize(data) {
     lastMatchdayResult: data.lastMatchdayResult || null,
     jornadaAckPending: !!data.jornadaAckPending,
     budget: typeof data.budget === 'number' ? data.budget : CAREER_STARTING_BUDGET,
+    seasonStartBudget: typeof data.seasonStartBudget === 'number' ? data.seasonStartBudget : null,
     loanedIds: data.loanedIds || [],
     loanedOutIds: data.loanedOutIds || [],
     suspendedIds: data.suspendedIds || [], injuries: data.injuries || [], boostedIds: data.boostedIds || [],
@@ -1984,7 +1986,7 @@ function renderCareerLineupPitch(c) {
     return '<div class="pitch-row">' + itemsHtml + '</div>';
   }).join('');
   var coach = coachById(c.coachId);
-  var coachHtml = coach ? '<div class="pitch-coach" title="Entrenador: ' + escapeHtml(coach.nombre) + '">' + coachAvatarHtml(coach) + '<span class="pitch-player-name">' + escapeHtml(coach.nombre) + '</span></div>' : '';
+  var coachHtml = coach ? '<div class="pitch-coach" style="cursor:pointer" onclick="actionSetCareerEquipoTab(\'estilo\')" title="Entrenador: ' + escapeHtml(coach.nombre) + '">' + coachAvatarHtml(coach) + '<span class="pitch-player-name">' + escapeHtml(coach.nombre) + '</span></div>' : '';
   return '<div class="pitch pitch-11">' + rowsHtml + coachHtml + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div>';
 }
 
@@ -3137,7 +3139,7 @@ window.actionCareerHireCoach = function (id) {
   if (c.budget < price) { c.marketMessage = 'No tienes ' + price + ' M€ para contratar a ' + co.nombre + '.'; render(); return; }
   c.budget = Math.round((c.budget - price) * 10) / 10;
   c.coachId = id;
-  c.marketMessage = 'Has contratado a ' + co.nombre + ' por ' + price + ' M€.';
+  c.justHired = true; c.marketMessage = 'Has contratado a ' + co.nombre + ' por ' + price + ' M€.';
   render();
 };
 function careerCoachMarketHtml(c) {
@@ -4835,6 +4837,7 @@ window.actionStartNewCareerSeason = function () {
   if (c.league.matchdayIndex < c.league.schedule.length) return;
   careerRecordSeasonHistory(c);
   c.season = (c.season || 1) + 1;
+  c.seasonStartBudget = c.budget;
   // El patrocinador dura solo 1 temporada -- toca elegir uno nuevo cada
   // vez (renderCareerPatrocinadores genera ofertas frescas la próxima
   // vez que se entre en la pestaña).
@@ -5920,6 +5923,40 @@ function careerSeasonBadgeHtml(icon, label, text, cls) {
     '<div><div class="season-badge-label">' + escapeHtml(label) + '</div><div class="season-badge-text">' + text + '</div></div>' +
   '</div>';
 }
+// Ficha final de temporada: campeón de Liga, tus trofeos, mejor jugador,
+// revelación y balance económico.
+function careerSeasonRecapHtml(c, position, cupBadge) {
+  var sorted = ligaSortedTable(c.league.table);
+  var champIdx = sorted.length ? sorted[0].idx : null;
+  var champName = champIdx === null ? '—' : (champIdx === 0 ? careerClubDisplayName(c) : c.league.teamNames[champIdx]);
+  var trophies = [];
+  if (position === 1) trophies.push('Liga');
+  var cupChamp = c.cup ? careerCupChampion(c.cup) : null;
+  if (cupChamp && cupChamp.isPlayer) trophies.push('Copa del Rey');
+  var chChamp = c.champions ? careerChampionsChampion(c.champions) : null;
+  if (chChamp && chChamp.isPlayer) trophies.push('Champions League');
+  var mine = sortedStatsList(c.league.stats.scorers).filter(function (e) { return e.team === 'Tu equipo'; })[0];
+  var all = c.lineup.map(function (s) { return s.player; }).concat(c.bench);
+  var rev = null, revDelta = 0;
+  all.forEach(function (p) {
+    var d = (c.lastPlayerProgressionDelta || {})[p.id] || 0;
+    if (d > revDelta) { revDelta = d; rev = p; }
+  });
+  var net = typeof c.seasonStartBudget === 'number' ? Math.round((c.budget - c.seasonStartBudget) * 10) / 10 : null;
+  function cell(label, value, sub) {
+    return '<div class="recap-cell"><span>' + label + '</span><strong>' + value + '</strong>' + (sub ? '<em>' + sub + '</em>' : '') + '</div>';
+  }
+  return '<div class="panel recap-card">' +
+    '<div class="recap-title">Temporada ' + c.season + '</div>' +
+    '<div class="recap-grid">' +
+      cell('Campeón de Liga', escapeHtml(champName), escapeHtml(careerDivisionName(c.division))) +
+      cell('Tus trofeos', trophies.length ? trophies.map(escapeHtml).join(', ') : 'Ninguno', position ? 'Liga: ' + position + 'º' : '') +
+      cell('Mejor jugador', mine ? escapeHtml(mine.nombre) : 'Sin goles', mine ? mine.count + ' goles' : '') +
+      cell('Revelación', rev ? escapeHtml(rev.nombre) : 'Nadie', rev ? '+' + revDelta + ' de media' : '') +
+      cell('Balance económico', net === null ? 'Sin datos' : (net >= 0 ? '+' : '') + net + ' M€', 'Presupuesto ' + c.budget + ' M€') +
+    '</div>' +
+  '</div>';
+}
 function careerSeasonSummaryHtml(c) {
   var position = careerFinalLeaguePosition(c);
   var finish = c.lastLeagueFinish;
@@ -5979,7 +6016,7 @@ function careerSeasonSummaryHtml(c) {
     if (pr.relegatedNames.length) movementsText += '<p class="dim small">Descienden: ' + pr.relegatedNames.map(escapeHtml).join(', ') + '.</p>';
     promotionBadge = moveText + movementsText;
   }
-  return '<div class="panel center-text">' +
+  return careerSeasonRecapHtml(c, position, cupBadge) + '<div class="panel center-text">' +
     '<h3 style="margin-bottom:4px">Resumen de la temporada ' + c.season + '</h3>' +
     '<p class="dim small">' + escapeHtml(careerDivisionName(c.division)) + '</p>' +
     '<div class="season-summary-badges">' +
@@ -6131,6 +6168,20 @@ function careerSeasonHistoryHtml(c) {
 // propio, a petición explícita ("en estadísticas, que salgan todos tus
 // trofeos en un pequeño apartado, como un palmarés") -- mismo estilo de
 // tarjeta con icono que ya usa el resto de la app (.season-badge).
+// Récords propios del club: mejor temporada, goleador y asistente históricos.
+function careerRecordsHtml(c) {
+  var hist = c.seasonHistory || [];
+  var best = null;
+  hist.forEach(function (h) { if (h.position && (!best || h.position < best.position || (h.position === best.position && h.division < best.division))) best = h; });
+  var scorer = sortedStatsList(c.careerStats.scorers)[0], assister = sortedStatsList(c.careerStats.assists)[0];
+  function row(label, value) { return '<div class="record-row"><span>' + label + '</span><strong>' + value + '</strong></div>'; }
+  return '<div class="panel"><h3 style="margin-bottom:8px" class="center-text">Récords del club</h3>' +
+    row('Temporadas jugadas', hist.length) +
+    row('Mejor temporada', best ? 'Temporada ' + best.season + ', ' + best.position + 'º en ' + escapeHtml(careerDivisionName(best.division)) : 'Sin datos') +
+    row('Goleador histórico', scorer ? escapeHtml(scorer.nombre) + ', ' + scorer.count : 'Sin datos') +
+    row('Máximo asistente histórico', assister ? escapeHtml(assister.nombre) + ', ' + assister.count : 'Sin datos') +
+  '</div>';
+}
 function careerPalmaresHtml(c) {
   var items = [
     { count: c.ligaTitlesWon || 0, label: 'Liga' },
@@ -6215,6 +6266,7 @@ function renderCareerEstadisticas(c) {
       '<p class="dim small">Mejor posición en liga: <strong style="color:var(--accent-2)">' + bestPosText + '</strong></p>' +
     '</div>' +
     careerPalmaresHtml(c) +
+    careerRecordsHtml(c) +
     careerScorersMenuHtml(c) +
     careerSeasonHistoryHtml(c)
   );
