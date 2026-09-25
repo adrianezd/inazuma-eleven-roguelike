@@ -104,7 +104,7 @@ function renderPatchNotesModal() {
     return '<p class="dim small" style="margin:8px 0 2px"><strong>Versión ' + escapeHtml(n.version) + '</strong></p><ul class="dim small" style="text-align:left;padding-left:18px;margin:0">' + n.items.map(function (t) { return '<li>' + escapeHtml(t) + '</li>'; }).join('') + '</ul>';
   }).join('');
   return '<div class="modal-overlay" onclick="actionDismissPatchNotes()">' +
-    '<div class="jugador-trophy-card" onclick="event.stopPropagation()" style="max-width:340px;max-height:80vh;overflow-y:auto">' +
+    '<div class="jugador-trophy-card" data-nofx="1" onclick="event.stopPropagation()" style="max-width:340px;max-height:80vh;overflow-y:auto">' +
       '<div class="jugador-trophy-icon">📣</div>' +
       '<h3 style="margin-bottom:4px">Versión ' + escapeHtml(APP_VERSION) + '</h3>' +
       '<p class="dim small" style="margin-bottom:6px">Parches y novedades:</p>' +

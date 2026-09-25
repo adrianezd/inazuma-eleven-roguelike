@@ -2009,3 +2009,20 @@ button.fold-head:active .fold-arrow { transform: scale(0.9); }
 button.fold-head { -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent; text-transform: none; letter-spacing: normal; height: auto; }
 button.fold-head .fold-arrow svg { display: block; }
 .panel.fold-open { border-left: 3px solid var(--accent-2); }
+
+/* ===== Efectos ===== */
+.fx-layer { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 9999; }
+.fx-piece { position: absolute; width: 8px; height: 13px; border-radius: 2px; opacity: 0; animation: fxFall 2.4s ease-out forwards; }
+@keyframes fxFall { 0% { opacity: 1; transform: translate(0, 0) rotate(0deg); } 85% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); } }
+.fx-goal-flash { position: fixed; inset: 0; pointer-events: none; z-index: 9998; background: radial-gradient(circle at 50% 40%, rgba(255,214,90,0.55), rgba(255,214,90,0) 65%); animation: fxFlash 0.7s ease-out forwards; }
+@keyframes fxFlash { 0% { opacity: 0; } 25% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ===== Transiciones de pestaña más suaves ===== */
+.screen > .panel, .screen > .coach-card, .screen > .menu-grid, .screen > .tie-panel, .screen > .recap-card { animation: panelIn2 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes panelIn2 { from { opacity: 0; transform: translateY(14px) scale(0.985); } to { opacity: 1; transform: none; } }
+.screen > *:nth-child(6) { animation-delay: 0.15s; }
+.screen > *:nth-child(7) { animation-delay: 0.18s; }
+.screen > *:nth-child(8) { animation-delay: 0.21s; }
+.screen > *:nth-child(n+9) { animation-delay: 0.24s; }
+.btn-tiny, .career-tabs-scroll button { transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease; }
+@media (prefers-reduced-motion: reduce) { .fx-layer, .fx-goal-flash { display: none; } }

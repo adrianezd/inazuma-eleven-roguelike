@@ -183,6 +183,11 @@ function render() {
   lastRenderedScreen = viewKey;
   appEl.innerHTML = html;
   restoreFocusAfterRerender(focusInfo);
+  // Confeti al aparecer una ventana de trofeo nueva (no en avisos con data-nofx).
+  var trophyEl = appEl.querySelector('.jugador-trophy-card:not([data-nofx])');
+  var trophyKey = trophyEl ? trophyEl.textContent : null;
+  if (trophyKey && trophyKey !== window.__lastTrophyKey && typeof fxConfetti === 'function') fxConfetti('big');
+  window.__lastTrophyKey = trophyKey;
   if (G.screen === 'map') drawMapConnections();
   var howToEl = document.getElementById('como-jugar');
   if (howToEl) howToEl.hidden = G.screen !== 'menu';

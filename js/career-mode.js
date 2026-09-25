@@ -3245,7 +3245,7 @@ function careerHireConfirmHtml(c) {
   var co = coachById(c.coachConfirm), cur = coachById(c.coachId);
   if (!co) return '';
   return '<div class="modal-overlay" onclick="actionCancelHireCoach()">' +
-    '<div class="jugador-trophy-card" onclick="event.stopPropagation()" style="max-width:340px">' +
+    '<div class="jugador-trophy-card" data-nofx="1" onclick="event.stopPropagation()" style="max-width:340px">' +
       '<h3 style="margin-bottom:8px">Contratar entrenador</h3>' +
       '<p class="dim small">¿Seguro que quieres gastar <strong style="color:var(--accent-2)">' + careerCoachPrice(co) + ' M€</strong> en <strong>' + escapeHtml(co.nombre) + '</strong> y reemplazar a ' + (cur ? '<strong>' + escapeHtml(cur.nombre) + '</strong>' : 'tu entrenador actual') + '?</p>' +
       '<div style="display:flex;gap:8px;margin-top:12px">' +

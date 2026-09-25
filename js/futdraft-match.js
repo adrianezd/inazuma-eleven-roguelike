@@ -819,7 +819,13 @@ function futDraftPitchDotsHtml(live) {
 // que la transición de posición se animara (un elemento nuevo no puede
 // "venir desde" donde estaba el viejo). Solo cae a render() completo si
 // la pantalla aún no existe o cambia el número de puntitos.
+function futDraftGoalFx(live) {
+  var prev = live._fxMy === undefined ? 0 : live._fxMy;
+  if (live.myGoals > prev && typeof fxGoalFlash === 'function') fxGoalFlash();
+  live._fxMy = live.myGoals;
+}
 function futDraftDotsRefresh(live) {
+  futDraftGoalFx(live);
   var field = document.querySelector('.pitch-dots-field');
   var state = live.dotsState;
   if (!field || !state) { render(); return; }
@@ -867,6 +873,7 @@ function futDraftDotsRefresh(live) {
   }
 }
 function futDraftLiveRefresh(live) {
+  futDraftGoalFx(live);
   if (live.visualMode === 'dots') { futDraftDotsRefresh(live); return; }
   var root = document.querySelector('.screen[data-live]');
   var nums = root ? root.querySelectorAll('.score-num') : [];
