@@ -3191,7 +3191,7 @@ function renderCareerIncomingOffers(c) {
   }).join('');
   var offersOpen = !(c.marketFolded && c.marketFolded.offers);
   return '<div class="panel">' +
-    foldHeaderHtml('Ofertas recibidas', 'offers', offersOpen) +
+    foldHeaderHtml('Ofertas recibidas', 'offers', offersOpen, offers.length, offersOpen ? '' : 'Toca para ver') +
     (offersOpen ? (atMinSquad ? '<p class="dim small" style="color:var(--danger)">' + escapeHtml(blockedTitle) + '</p>' : '') + rowsHtml : '') +
   '</div>';
 }
@@ -3202,8 +3202,13 @@ window.actionToggleMarketFold = function (key) {
   c.marketFolded[key] = !c.marketFolded[key];
   render();
 };
-function foldHeaderHtml(title, key, open) {
-  return '<button class="fold-head" onclick="actionToggleMarketFold(\'' + key + '\')" aria-expanded="' + open + '"><h3>' + title + '</h3><span class="fold-arrow' + (open ? ' open' : '') + '">&#9656;</span></button>';
+function foldHeaderHtml(title, key, open, count, sub) {
+  return '<button type="button" class="fold-head' + (open ? ' open' : '') + '" onclick="actionToggleMarketFold(\'' + key + '\')" aria-expanded="' + open + '">' +
+    '<span class="fold-text"><span class="fold-title">' + title + '</span>' +
+      (sub ? '<span class="fold-sub">' + sub + '</span>' : '') + '</span>' +
+    (count !== undefined ? '<span class="fold-count">' + count + '</span>' : '') +
+    '<span class="fold-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' +
+  '</button>';
 }
 
 function careerCoachPrice(co) { return (co.atk + co.def) * 6; }
@@ -3227,7 +3232,7 @@ function careerCoachMarketHtml(c) {
   }).join('');
   var cur = coachById(c.coachId);
   var open = !(c.marketFolded && c.marketFolded.coaches);
-  return '<div class="panel">' + foldHeaderHtml('Entrenadores', 'coaches', open) +
+  return '<div class="panel">' + foldHeaderHtml('Entrenadores', 'coaches', open, rows ? COACHES.length - 1 : 0, open ? '' : 'Toca para ver') +
     (open ? '<p class="dim small">Contratar a uno nuevo sustituye a ' + (cur ? escapeHtml(cur.nombre) : 'tu entrenador actual') + '.</p>' + rows : '') + '</div>';
 }
 function renderCareerMercado(c) {
