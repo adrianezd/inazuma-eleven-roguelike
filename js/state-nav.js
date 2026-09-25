@@ -115,6 +115,7 @@ function render() {
   isRendering = true;
   if (!appEl) appEl = document.getElementById('app');
   var focusInfo = captureFocusForRerender();
+  if (typeof profileHook === 'function') profileHook();
   var html = '';
   switch (G.screen) {
     case 'menu': html = renderMenu(); break;
@@ -138,6 +139,7 @@ function render() {
     case 'gacha': html = renderGacha(); break;
     case 'penaltyMode': html = renderPenaltyMode(); break;
     case 'coleccion': html = renderColeccion(); break;
+    case 'perfil': html = renderProfile(); break;
     case 'coleccionEquipos': html = renderColeccionEquipos(); break;
     case 'miColeccion': html = renderMiColeccion(); break;
     case 'rewardMachine': html = renderRewardMachine(); break;
@@ -241,6 +243,7 @@ function renderMenu() {
         menuTile('📖', 'Personajes', 'Todos los jugadores', 'actionGoColeccion()') +
         menuTile('🛡️', 'Equipos', 'Todos los equipos y escudos', 'actionGoColeccionEquipos()') +
         menuTile('⭐', 'Mi Colección', 'Lo que has desbloqueado', 'actionGoMiColeccion()') +
+        menuTile('📊', 'Mi perfil', 'Tus estadísticas globales', 'actionGoProfile()') +
       '</div>' +
       '<div class="menu-section-title">Próximamente</div>' +
       '<div class="menu-grid">' +

@@ -4821,6 +4821,7 @@ window.actionSkipCareerMatchday = function () {
   };
   c.jornadaAckPending = true;
   careerRecordStarterAppearances(c);
+  profileRecord('carrera', myGoals, oppGoals, null);
   careerFinishMatchEvents(c, null);
   league.matchdayIndex++;
   c.lastCupResult = null; c.lastChampionsResult = null;
@@ -5303,6 +5304,7 @@ window.actionSkipCareerCupMatch = function () {
   for (var i = 0; i < myGoals; i++) events.push(futDraftGoalEvent(myPlayers));
   futDraftRecordGoalEvents(c.careerStats, events, 'Tu equipo');
   careerRecordMyCompMatch(c, cup, opp.name, events, null, oppGoals);
+  profileRecord('carrera', myGoals, oppGoals, null);
   careerFinishMatchEvents(c, null);
 
   var roundIdxAtElimination = cup.rounds.length - 1;
@@ -5727,6 +5729,7 @@ window.actionSkipCareerChampionsMatch = function () {
   for (var i = 0; i < myGoals; i++) events.push(futDraftGoalEvent(myPlayers));
   futDraftRecordGoalEvents(c.careerStats, events, 'Tu equipo');
   careerRecordMyCompMatch(c, champions, opp.name, events, null, oppGoals);
+  profileRecord('carrera', myGoals, oppGoals, null);
   careerFinishMatchEvents(c, null);
 
   if (champions.phase === 'group') {
@@ -6006,6 +6009,7 @@ window.actionSkipCareerSupercopaMatch = function () {
   var events = [];
   for (var i = 0; i < myGoals; i++) events.push(futDraftGoalEvent(myPlayers));
   futDraftRecordGoalEvents(c.careerStats, events, 'Tu equipo');
+  profileRecord('carrera', myGoals, oppGoals, null);
   careerFinishMatchEvents(c, null);
   careerSupercopaResolveLeg(c, myGoals, oppGoals);
   render();
@@ -6477,6 +6481,8 @@ window.actionToggleReduceMotion = function () {
 // jugadorTrophyPop/jugadorTrophyShine en style.css), reaprovechado tal
 // cual para no duplicar la animación.
 function careerTriggerTrophyPopup(title, points) {
+  var kindMap = { 'Copa del Rey': 'copa', 'Champions League': 'champions', 'Supercopa': 'supercopa' };
+  profileTitle(kindMap[title] || 'liga');
   G.careerTrophyPopup = { title: title, points: points || 0 };
 }
 // Puntos de Espíritu por títulos/puestos de Modo Carrera (para gastar en

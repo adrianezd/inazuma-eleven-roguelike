@@ -712,6 +712,7 @@ function finishWorldTourMatch() {
     }
     if (wt.stageIndex >= wt.stages.length) {
       wt.won = true;
+      profileTitle('mundial');
       // Modo Leyenda: se cuenta cada vez que se termina el recorrido
       // entero (siempre completo ahora, ver comentario de arriba).
       try { localStorage.setItem(WORLD_TOUR_LEGEND_KEY, String(worldTourLegendWins() + 1)); } catch (e) {}
