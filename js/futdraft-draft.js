@@ -602,6 +602,10 @@ function assignFutDraftFormation(squad, formation) {
 // para que se vea de un vistazo cuánto queda de cada línea. Se usa solo
 // durante el draft (vista previa, aún sin cambios posibles) -- la
 // pantalla de equipo usa renderFutDraftLineupPitch, que sí es editable.
+function pitchCurrentCoach() {
+  if (G.futdraft && G.futdraft.coach) return G.futdraft.coach;
+  return (G.worldTour && G.worldTour.coachId && String(G.screen).indexOf("worldTour") === 0) ? coachById(G.worldTour.coachId) : null;
+}
 function pitchCoachHtml(coach) {
   return coach ? '<div class="pitch-coach" title="Entrenador: ' + escapeHtml(coach.nombre) + '">' + coachAvatarHtml(coach) + '<span class="pitch-player-name">' + escapeHtml(coach.nombre) + '</span></div>' : '';
 }
@@ -622,7 +626,7 @@ function renderFutDraftPitch(squad, formationId, showEmptySlots, coach) {
     }
     return '<div class="pitch-row">' + itemsHtml + '</div>';
   }).join('');
-  return '<div class="pitch pitch-11">' + rowsHtml + pitchCoachHtml(coach !== undefined ? coach : (G.futdraft && G.futdraft.coach)) + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div>';
+  return '<div class="pitch pitch-11">' + rowsHtml + pitchCoachHtml(coach !== undefined ? coach : pitchCurrentCoach()) + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div>';
 }
 
 // Campo de la pantalla de equipo: cada titular es clicable para hacer
@@ -662,7 +666,7 @@ function renderFutDraftLineupPitch(f) {
     }).join('');
     return '<div class="pitch-row">' + itemsHtml + '</div>';
   }).join('');
-  return '<div class="pitch pitch-11">' + rowsHtml + pitchCoachHtml(G.futdraft && G.futdraft.coach) + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div>';
+  return '<div class="pitch pitch-11">' + rowsHtml + pitchCoachHtml(pitchCurrentCoach()) + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div>';
 }
 
 window.setFutDraftFormation = function (id) {
@@ -864,7 +868,7 @@ function futDraftSharedPitchHtml(formation, lineup, captainId) {
     }).join('');
     return '<div class="pitch-row">' + itemsHtml + '</div>';
   }).join('');
-  return '<div class="pitch pitch-11">' + rowsHtml + pitchCoachHtml(G.futdraft && G.futdraft.coach) + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div>';
+  return '<div class="pitch pitch-11">' + rowsHtml + pitchCoachHtml(pitchCurrentCoach()) + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div>';
 }
 function renderFutDraftSharedSquad() {
   var summary = G.futdraftSharedSquad;
