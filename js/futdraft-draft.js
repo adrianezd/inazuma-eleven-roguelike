@@ -1101,6 +1101,9 @@ function futDraftVsStartPrep() {
   s.prepTurn = 'A';
   s.swapSelectedId = null;
   s.captainA = null; s.captainB = null; s.pickingCaptain = false;
+  s.coachBy = { A: null, B: null };
+  s.coachOptBy = { A: futDraftCoachOptions(), B: futDraftCoachOptions() };
+  s.tacticsBy = { A: { style: 'equilibrado', foul: 'medio', intensity: 'media' }, B: { style: 'equilibrado', foul: 'medio', intensity: 'media' } };
   G.screen = 'futdraftVsPrep';
   render();
 }
@@ -1151,6 +1154,16 @@ window.actionSelectFutDraftVsPlayer = function (id) {
   s.swapSelectedId = null;
   render();
 };
+window.actionPickFutDraftVsCoach = function (id) {
+  var s = G.futdraftVs;
+  s.coachBy[s.prepTurn] = coachById(id);
+  render();
+};
+window.actionSetFutDraftVsTactic = function (key, val) {
+  var s = G.futdraftVs;
+  s.tacticsBy[s.prepTurn][key] = val;
+  render();
+};
 window.actionConfirmFutDraftVsPrep = function () {
   var s = G.futdraftVs;
   s.swapSelectedId = null; s.pickingCaptain = false;
@@ -1178,6 +1191,13 @@ function futDraftVsFinishDraft() {
   var scoreB = futDraftTeamScore(s.lineupB, s.captainB || null);
   var atkA = scoreA * fA.atk, defA = scoreA * fA.def;
   var atkB = scoreB * fB.atk, defB = scoreB * fB.def;
+  ['A', 'B'].forEach(function (k) {
+    var tac = s.tacticsBy[k], tm = futDraftTacticsMods(tac, true);
+    var cf = coachEffect(s.coachBy[k], tac.style);
+    var atk = (k === 'A' ? atkA : atkB) * tm.atk * cf.atkMult + cf.atkPts;
+    var def = (k === 'A' ? defA : defB) * tm.def * cf.defMult + cf.defPts;
+    if (k === 'A') { atkA = atk; defA = def; } else { atkB = atk; defB = def; }
+  });
   var golA = futDraftRandomGoals(futDraftExpectedGoals(atkA, defB));
   var golB = futDraftRandomGoals(futDraftExpectedGoals(atkB, defA));
   var playersA = s.lineupA.map(function (x) { return x.player; });
@@ -1333,6 +1353,12 @@ function renderFutDraftVsPick() {
     '</div>'
   );
 }
+function vsCoachPanelHtml(s, side) {
+  var co = s.coachBy[side];
+  if (co) return '<div class="panel"><h3 style="margin-bottom:4px">Entrenador</h3>' + coachCardHtml(co, true, '') + '</div>';
+  return '<div class="panel"><h3 style="margin-bottom:4px">Entrenador</h3><p class="dim small">Elige uno de estos tres. Suma ataque y defensa.</p>' +
+    s.coachOptBy[side].map(function (c) { return coachCardHtml(c, false, "actionPickFutDraftVsCoach('" + c.id + "')"); }).join('') + '</div>';
+}
 function renderFutDraftVsPrep() {
   var s = G.futdraftVs, side = s.prepTurn;
   var name = futDraftVsTeamName(side);
@@ -1362,7 +1388,9 @@ function renderFutDraftVsPrep() {
         '<button class="btn btn-tiny' + (s.pickingCaptain ? ' active' : '') + '" onclick="actionToggleFutDraftVsCaptain()">' + (s.pickingCaptain ? 'Toca un titular…' : (capId ? 'Cambiar capitán 👑' : 'Elegir capitán 👑')) + '</button>' +
       '</div>' +
       '<div class="panel"><h3 style="margin-bottom:8px">Formación</h3><div class="view-toggle view-toggle-wrap">' + formationBtns + '</div>' +
-        '<div class="pitch pitch-11">' + rowsHtml + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div></div>' +
+        '<div class="pitch pitch-11">' + rowsHtml + pitchCoachHtml(s.coachBy[side]) + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div></div>' +
+      vsCoachPanelHtml(s, side) +
+      tacticsPanelHtml(s.tacticsBy[side], 'actionSetFutDraftVsTactic', true) +
       '<div class="panel"><h3 style="margin-bottom:4px">Banquillo</h3><div class="pitch-row" style="justify-content:center">' + bench.map(function (p) { return slotHtml(p, false); }).join('') + '</div></div>' +
       '<button class="btn btn-primary btn-block mt" onclick="actionConfirmFutDraftVsPrep()">' + (last ? 'Listo' : 'Listo, turno del 2') + '</button>' +
     '</div>'
