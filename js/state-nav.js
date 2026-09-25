@@ -187,69 +187,58 @@ function render() {
   if (pendingRerender) { pendingRerender = false; render(); }
 }
 
+// Menú principal organizado en secciones (Destacados / Competiciones / Retos
+// / Colección / Próximamente) con tarjetas en vez de una lista larga de
+// botones, a petición explícita ("organiza mucho mejor todo el menú
+// principal, porque hay demasiados modos"). Cada tarjeta mantiene la misma
+// acción de siempre.
+function menuTile(icon, title, sub, onclick, cls, disabled) {
+  return '<button class="menu-tile' + (cls ? ' ' + cls : '') + '"' + (disabled ? ' disabled' : ' onclick="' + onclick + '"') + '>' +
+    '<span class="menu-tile-icon">' + icon + '</span>' +
+    '<span class="menu-tile-title">' + title + '</span>' +
+    '<span class="menu-tile-sub">' + sub + '</span>' +
+  '</button>';
+}
 function renderMenu() {
   var m = G.meta;
   return (
     '<div class="screen">' +
       '<div class="panel center-text">' +
-        '<p class="currency-display">' + spiritIcon() + ' ' + m.points + ' Puntos de Espíritu</p>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-primary btn-block" onclick="actionStartRun()">Jugar</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-primary btn-block" onclick="actionGoFutDraftModeSelect()">FutDraft</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-primary btn-block" onclick="actionGoCareerMode()">Modo Carrera</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-primary btn-block" onclick="actionGoModoJugador()">Modo Jugador</button>' +
-        '</div>' +
-        '<p class="dim small center-text">Los modos más jugados, a un toque.</p>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionGoLigaTierSelect()">Liga</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionGoFutDraftVsSetup()">FutDraft 2 jugadores</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionGoWorldTour()">Modo Mundial</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionStartTournament()">Modo Torneo</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionStartDraftMode(\'supervivencia\')">Modo Supervivencia</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionStartDaily()">Modo Diario' + (G.meta.dailyLastDate === todayKey() ? ' ✓' : '') + '</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionStartPenaltyMode()">Modo Penaltis</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-block" onclick="actionGoGacha()">Fichajes</button>' +
-        '</div>' +
-        '<p class="dim small center-text">Comprar personajes/escudos, o probar suerte con una tirada al azar.</p>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-outline btn-block" onclick="actionGoColeccion()">Colección de personajes</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-outline btn-block" onclick="actionGoColeccionEquipos()">Colección de equipos</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-outline btn-block" onclick="actionGoMiColeccion()">Mi Colección</button>' +
-        '</div>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-outline btn-block" disabled style="opacity:0.5;cursor:not-allowed;">Supertécnicas 🔒</button>' +
-        '</div>' +
-        '<p class="dim small center-text">Proximamente</p>' +
-        '<div class="btn-row" style="justify-content:center">' +
-          '<button class="btn btn-outline btn-block" disabled style="opacity:0.5;cursor:not-allowed;">Multijugador 🔒</button>' +
-        '</div>' +
-        '<p class="dim small center-text">Proximamente</p>' +
+        '<p class="currency-display" style="margin:0">' + spiritIcon() + ' ' + m.points + ' Puntos de Espíritu</p>' +
       '</div>' +
-      '<div class="panel">' +
+      '<div class="menu-section-title">Destacados</div>' +
+      '<div class="menu-grid">' +
+        menuTile('🏆', 'Modo Carrera', 'Dirige tu club temporada a temporada', 'actionGoCareerMode()', 'menu-tile-hero menu-tile-gold') +
+        menuTile('⚽', 'Modo Jugador', 'Vive la carrera de un futbolista', 'actionGoModoJugador()', 'menu-tile-hero') +
+        menuTile('📋', 'FutDraft', 'Elige tu plantilla y compite', 'actionGoFutDraftModeSelect()', 'menu-tile-hero') +
+        menuTile('🌍', 'Modo Mundial', 'Recorre el mundo de Inazuma', 'actionGoWorldTour()', 'menu-tile-hero') +
+      '</div>' +
+      '<div class="menu-section-title">Competiciones</div>' +
+      '<div class="menu-grid">' +
+        menuTile('🏟️', 'Liga', 'Temporada contra rivales', 'actionGoLigaTierSelect()') +
+        menuTile('🥇', 'Modo Torneo', 'Cuadro de eliminatorias', 'actionStartTournament()') +
+        menuTile('🤝', 'FutDraft 2 jugadores', 'Duelo en el mismo móvil', 'actionGoFutDraftVsSetup()') +
+      '</div>' +
+      '<div class="menu-section-title">Retos</div>' +
+      '<div class="menu-grid">' +
+        menuTile('🗺️', 'Aventura', 'Recorrido por nodos con combates', 'actionStartRun()') +
+        menuTile('🛡️', 'Supervivencia', 'Aguanta el mayor número de oleadas', 'actionStartDraftMode(\'supervivencia\')') +
+        menuTile('📅', 'Modo Diario' + (G.meta.dailyLastDate === todayKey() ? ' ✓' : ''), 'Un reto nuevo cada día', 'actionStartDaily()') +
+        menuTile('🥅', 'Modo Penaltis', 'Tanda de penaltis', 'actionStartPenaltyMode()') +
+      '</div>' +
+      '<div class="menu-section-title">Colección</div>' +
+      '<div class="menu-grid">' +
+        menuTile('🎰', 'Fichajes', 'Compra o prueba suerte', 'actionGoGacha()') +
+        menuTile('📖', 'Personajes', 'Todos los jugadores', 'actionGoColeccion()') +
+        menuTile('🛡️', 'Equipos', 'Todos los equipos y escudos', 'actionGoColeccionEquipos()') +
+        menuTile('⭐', 'Mi Colección', 'Lo que has desbloqueado', 'actionGoMiColeccion()') +
+      '</div>' +
+      '<div class="menu-section-title">Próximamente</div>' +
+      '<div class="menu-grid">' +
+        menuTile('🔒', 'Supertécnicas', 'Muy pronto', '', '', true) +
+        menuTile('🔒', 'Multijugador', 'Muy pronto', '', '', true) +
+      '</div>' +
+      '<div class="panel" style="margin-top:18px">' +
         '<h2 class="panel-title">La rueda elemental</h2>' +
         '<p class="dim small">Fuego vence a Bosque · Bosque vence a Viento · Viento vence a Montaña · Montaña vence a Fuego. Es la rueda de ventajas real de Inazuma Eleven.</p>' +
         '<div class="btn-row">' + TYPES.map(typeBadge).join('') + '</div>' +

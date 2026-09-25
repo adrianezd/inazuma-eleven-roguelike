@@ -1833,3 +1833,42 @@ body { padding-bottom: calc(var(--safe-b) + 72px); }
 .futdraft-timeline-row { flex-wrap: wrap; row-gap: 6px; }
 .futdraft-timeline-row > span:not([class]) { flex: 1 1 130px; min-width: 0; }
 .futdraft-timeline-row > .btn-tiny { flex-shrink: 0; }
+
+/* ===== Goleadores y asistentes (Modo Carrera, Estadísticas) ===== */
+.scorer-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+.scorer-hero-card { background: linear-gradient(135deg, rgba(255,212,71,0.16), rgba(255,212,71,0.03)); border: 1px solid rgba(255,212,71,0.35); border-radius: 14px; padding: 12px; text-align: center; }
+.scorer-hero-card:nth-child(2) { background: linear-gradient(135deg, rgba(78,205,196,0.18), rgba(78,205,196,0.03)); border-color: rgba(78,205,196,0.4); }
+.scorer-hero-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); }
+.scorer-hero-name { font-family: 'Oswald', sans-serif; font-size: 1.15rem; margin: 4px 0 2px; }
+.scorer-hero-sub { font-size: 0.78rem; color: var(--text-dim); }
+.scorer-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.scorer-col-title { margin: 4px 0 8px; font-size: 0.95rem; text-align: center; }
+.scorer-row { display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 12px; margin-bottom: 6px; background: var(--bg-alt); border: 1px solid transparent; }
+.scorer-row-top { border-color: rgba(255,212,71,0.25); }
+.scorer-row-mine { border-color: var(--accent-2); }
+.scorer-rank { width: 22px; text-align: center; font-weight: 700; font-size: 0.9rem; flex-shrink: 0; }
+.scorer-row .avatar { width: 32px; height: 32px; }
+.scorer-main { flex: 1; min-width: 0; }
+.scorer-name { font-weight: 600; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scorer-team { display: flex; align-items: center; gap: 4px; font-size: 0.68rem; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scorer-team img { width: 12px; height: 12px; object-fit: contain; flex-shrink: 0; }
+.scorer-bar { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.08); margin-top: 3px; overflow: hidden; }
+.scorer-bar span { display: block; height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--accent-2), #ffd447); }
+.scorer-count { font-family: 'Oswald', sans-serif; font-size: 1.05rem; flex-shrink: 0; }
+@media (max-width: 520px) { .scorer-cols { grid-template-columns: 1fr; } }
+
+/* ===== Menú principal organizado ===== */
+.menu-section-title { font-family: 'Oswald', sans-serif; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-dim); margin: 18px 2px 8px; display: flex; align-items: center; gap: 8px; }
+.menu-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.menu-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 12px 12px 11px; border-radius: 16px; border: 1px solid var(--border); background: var(--bg-alt); color: var(--text); cursor: pointer; font: inherit; min-height: 74px; transition: transform .12s ease, border-color .12s ease; }
+.menu-tile:hover { transform: translateY(-2px); border-color: var(--accent-2); }
+.menu-tile-icon { font-size: 1.35rem; line-height: 1; }
+.menu-tile-title { font-weight: 700; font-size: 0.95rem; }
+.menu-tile-sub { font-size: 0.7rem; color: var(--text-dim); line-height: 1.25; }
+.menu-tile-hero { min-height: 104px; background: linear-gradient(140deg, rgba(78,205,196,0.22), rgba(78,205,196,0.04)); border-color: rgba(78,205,196,0.4); }
+.menu-tile-hero .menu-tile-icon { font-size: 1.8rem; }
+.menu-tile-hero .menu-tile-title { font-size: 1.05rem; }
+.menu-tile-gold { background: linear-gradient(140deg, rgba(255,212,71,0.2), rgba(255,212,71,0.03)); border-color: rgba(255,212,71,0.4); }
+.menu-tile:disabled { opacity: 0.45; cursor: not-allowed; }
+.menu-tile:disabled:hover { transform: none; border-color: var(--border); }

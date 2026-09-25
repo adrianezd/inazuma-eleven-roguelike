@@ -3772,25 +3772,29 @@ function careerTeamGhostPool(c, league, teamIdx) {
   // fantasma tiene una forma realista (2 porteros, 5 defensas, 5
   // centrocampistas, 4 delanteros), así que un rival concentra sus goles
   // en sus pocos delanteros reales, como haría un equipo de verdad.
+  var squad = careerFillGhostSquad(realPlayers, pool);
+  squad.forEach(function (p) { usedIds.push(p.id); });
+  league.ghostSquads[teamIdx] = squad;
+  return squad;
+}
+// Completa una plantilla fantasma a 16 con la forma de un once (2 porteros,
+// 5 defensas, 5 centrocampistas, 4 delanteros) descontando los jugadores
+// reales que ya trae; si el pool se queda corto, rellena con lo que quede.
+function careerFillGhostSquad(real, pool) {
   var GHOST_SHAPE = { Portero: 2, Defensa: 5, Centrocampista: 5, Delantero: 4 };
   var byPos = { Portero: [], Defensa: [], Centrocampista: [], Delantero: [] };
   pool.forEach(function (p) { if (byPos[p.posicion]) byPos[p.posicion].push(p); });
   Object.keys(byPos).forEach(function (pos) { byPos[pos].sort(function () { return Math.random() - 0.5; }); });
-  var squad = realPlayers.slice();
+  var squad = real.slice();
   Object.keys(GHOST_SHAPE).forEach(function (pos) {
-    var have = realPlayers.filter(function (p) { return p.posicion === pos; }).length;
+    var have = real.filter(function (p) { return p.posicion === pos; }).length;
     squad = squad.concat(byPos[pos].slice(0, Math.max(0, GHOST_SHAPE[pos] - have)));
   });
-  // Si a algún equipo le faltan jugadores de una posición (pool ya muy
-  // esquilmado a estas alturas de la temporada), se rellena con lo que
-  // quede de cualquier posición para no quedarse con menos de 16.
   if (squad.length < 16) {
     var chosenIds = squad.map(function (p) { return p.id; });
     var leftovers = pool.filter(function (p) { return chosenIds.indexOf(p.id) === -1; }).sort(function () { return Math.random() - 0.5; });
     squad = squad.concat(leftovers.slice(0, 16 - squad.length));
   }
-  squad.forEach(function (p) { usedIds.push(p.id); });
-  league.ghostSquads[teamIdx] = squad;
   return squad;
 }
 
@@ -3807,6 +3811,70 @@ function careerTeamGhostPool(c, league, teamIdx) {
 // DOBLE (cada gol/asistencia se apunta dos veces), a petición explícita
 // ("que tengan prácticamente el doble de estadísticas... siempre gano la
 // bota de oro y de asistencias") -- los tuyos, una vez.
+// ===== Goleadores y asistentes de Copa y Champions =====
+// A petición explícita ("que también haya máximos goleadores y asistentes
+// en copa y champions y se pueda ver"): cada competición guarda sus
+// propias estadísticas de la temporada (cup.stats/champions.stats, se
+// reinician con la competición cada año). Tus goles salen de tus partidos
+// (jugados o saltados); los de los rivales, de su plantilla real por
+// equipo (campo equipo) + relleno, y los cruces entre CPU reparten goles
+// coherentes con quien pasa de ronda.
+function careerCompStats(comp) {
+  comp.stats = comp.stats || { scorers: {}, assists: {} };
+  return comp.stats;
+}
+function careerCompNames(comp) {
+  var names = [];
+  if (comp.rounds && comp.rounds[0]) comp.rounds[0].forEach(function (m) { names.push(m.a.name, m.b.name); });
+  if (comp.groups) comp.groups.forEach(function (g) { g.forEach(function (t) { names.push(t.name); }); });
+  return names;
+}
+function careerCompGhostSquad(c, comp, teamName) {
+  comp.ghosts = comp.ghosts || {};
+  if (comp.ghosts[teamName]) return comp.ghosts[teamName];
+  var myIds = c.lineup.map(function (s) { return s.player.id; }).concat(c.bench.map(function (p) { return p.id; }));
+  var used = comp.ghostUsed || (comp.ghostUsed = myIds.slice());
+  var inComp = {};
+  careerCompNames(comp).forEach(function (n) { inComp[n] = true; });
+  var real = ROSTER.filter(function (p) { return p.equipo === teamName && used.indexOf(p.id) === -1; }).slice(0, 16);
+  var pool = ROSTER.filter(function (p) { return used.indexOf(p.id) === -1 && !inComp[p.equipo] && real.indexOf(p) === -1; });
+  var squad = careerFillGhostSquad(real, pool);
+  // Con 64 equipos el roster no da para plantillas sin repetir: si se queda
+  // corto, se repite relleno de cualquier equipo (solo afecta a estas stats).
+  if (squad.length < 8) squad = careerFillGhostSquad(real, ROSTER.filter(function (p) { return myIds.indexOf(p.id) === -1 && real.indexOf(p) === -1; }));
+  squad.forEach(function (p) { used.push(p.id); });
+  comp.ghosts[teamName] = squad;
+  return squad;
+}
+// Goles de un equipo CPU en un cruce de Copa/Champions -> sus goleadores.
+function careerRecordCompTeamGoals(c, comp, team, goals) {
+  if (!c || !team || team.isPlayer || !goals) return;
+  var pool = careerCompGhostSquad(c, comp, team.name);
+  var events = [];
+  for (var i = 0; i < goals; i++) events.push(futDraftGoalEvent(pool));
+  careerRecordLeagueStats(careerCompStats(comp), events, team.name, false);
+}
+// Cruce entre dos equipos CPU: marcador coherente con el ganador ya decidido.
+function careerCompCpuGoals(comp, m, winner) {
+  var c = G.career;
+  if (!c || m.a.isPlayer || m.b.isPlayer) return;
+  var g = simulateCpuMatchGoals(m.a, m.b);
+  if (winner === m.a && g[0] <= g[1]) g[0] = g[1] + 1;
+  if (winner === m.b && g[1] <= g[0]) g[1] = g[0] + 1;
+  careerRecordCompTeamGoals(c, comp, m.a, g[0]);
+  careerRecordCompTeamGoals(c, comp, m.b, g[1]);
+}
+// Tu partido (jugado o saltado): tus goles + los del rival con su plantilla.
+function careerRecordMyCompMatch(c, comp, oppName, myEvents, oppEvents, oppGoals) {
+  var stats = careerCompStats(comp);
+  careerRecordLeagueStats(stats, myEvents, 'Tu equipo', true);
+  if (!oppEvents) {
+    var pool = careerCompGhostSquad(c, comp, oppName);
+    oppEvents = [];
+    for (var i = 0; i < oppGoals; i++) oppEvents.push(futDraftGoalEvent(pool));
+  }
+  careerRecordLeagueStats(stats, oppEvents, oppName, false);
+}
 function careerRecordLeagueStats(stats, events, label, isMine) {
   futDraftRecordGoalEvents(stats, events, label);
   if (!isMine) futDraftRecordGoalEvents(stats, events, label);
@@ -4753,8 +4821,10 @@ window.actionStartNewCareerSeason = function () {
 // 30 jornadas de Segunda (donde también se juega ahora) con margen.
 // Ver careerCupLocked, que mira en qué ronda va la Copa (cup.rounds.length)
 // para saber qué jornada le toca.
-var CAREER_CUP_SIZE = 32;
-var CAREER_CUP_ROUND_MATCHDAYS = [4, 9, 14, 19, 24];
+// Copa de 64 equipos (6 rondas: dieciseisavos... hasta la final), a petición
+// explícita; una jornada por ronda, repartidas para no chocar con la Champions.
+var CAREER_CUP_SIZE = 64;
+var CAREER_CUP_ROUND_MATCHDAYS = [3, 8, 13, 18, 23, 28];
 // Bajado (antes 3/12/9), a petición explícita ("baja premios por
 // títulos"): ganar era demasiado rentable en dinero además de en
 // prestigio -- se mantiene la insignia/Puntos de Espíritu igual, solo el
@@ -4821,7 +4891,7 @@ function careerCupPending(c) { return !careerCupLocked(c) && !careerCupFinished(
 function careerCupAdvanceRound(cup) {
   var round = cup.rounds[cup.rounds.length - 1];
   round.forEach(function (m) {
-    if (m.winner === null) m.winner = simulateCpuMatch(m.a, m.b);
+    if (m.winner === null) { m.winner = simulateCpuMatch(m.a, m.b); careerCompCpuGoals(cup, m, m.winner); }
   });
   if (round.length === 1) return;
   var winners = round.map(function (m) { return m.winner; });
@@ -4884,7 +4954,7 @@ window.actionSimulateCareerCupMatch = function (visualMode) {
   // petición explícita ("no puede meter gol alguien en el equipo
   // contrario al que estoy jugando, un jugador que yo tengo en mi equipo").
   var careerStyleMods = careerPlayStyleModifiers(c);
-  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna', styleAtkMult: careerStyleMods.atk, styleDefMult: careerStyleMods.def, teamScoreOverride: careerMatchTeamScore(c) };
+  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna', styleAtkMult: careerStyleMods.atk, styleDefMult: careerStyleMods.def, teamScoreOverride: careerMatchTeamScore(c), oppGhostPool: careerCompGhostSquad(c, cup, opp.name) };
   var sim = futDraftSimulateMatchCore(careerKnockoutPower(careerRivalPower(opp.name), 'cup'));
   G.futdraft.live = {
     oppSide: { name: opp.name }, modifier: sim.modifier,
@@ -4924,6 +4994,7 @@ function finishCareerCupMatch() {
 
   var myEvents = live.revealed.filter(function (e) { return e.side === 'me'; });
   futDraftRecordGoalEvents(c.careerStats, myEvents, 'Tu equipo');
+  careerRecordMyCompMatch(c, cup, opp.name, myEvents, live.revealed.filter(function (e) { return e.side === 'opp'; }), oppGoals);
   careerFinishMatchEvents(c, live);
 
   var roundIdxAtElimination = cup.rounds.length - 1;
@@ -4960,6 +5031,7 @@ window.actionSkipCareerCupMatch = function () {
   var events = [];
   for (var i = 0; i < myGoals; i++) events.push(futDraftGoalEvent(myPlayers));
   futDraftRecordGoalEvents(c.careerStats, events, 'Tu equipo');
+  careerRecordMyCompMatch(c, cup, opp.name, events, null, oppGoals);
   careerFinishMatchEvents(c, null);
 
   var roundIdxAtElimination = cup.rounds.length - 1;
@@ -5132,6 +5204,8 @@ function careerChampionsResolveGroupRoundOthers(champions) {
       var goles = simulateCpuMatchGoals(a, b);
       careerChampionsRecordGroupResult(a, goles[0], goles[1]);
       careerChampionsRecordGroupResult(b, goles[1], goles[0]);
+      careerRecordCompTeamGoals(G.career, champions, a, goles[0]);
+      careerRecordCompTeamGoals(G.career, champions, b, goles[1]);
     });
   });
 }
@@ -5246,7 +5320,7 @@ function careerChampionsPending(c) { return !careerChampionsLocked(c) && !career
 function careerChampionsAdvanceRound(champions) {
   var round = champions.rounds[champions.rounds.length - 1];
   round.forEach(function (m) {
-    if (m.winner === null) m.winner = simulateCpuMatch(m.a, m.b);
+    if (m.winner === null) { m.winner = simulateCpuMatch(m.a, m.b); careerCompCpuGoals(champions, m, m.winner); }
   });
   if (round.length === 1) return;
   var winners = round.map(function (m) { return m.winner; });
@@ -5297,7 +5371,7 @@ window.actionSimulateCareerChampionsMatch = function (visualMode) {
   // petición explícita ("no puede meter gol alguien en el equipo
   // contrario al que estoy jugando, un jugador que yo tengo en mi equipo").
   var careerStyleMods = careerPlayStyleModifiers(c);
-  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna', styleAtkMult: careerStyleMods.atk, styleDefMult: careerStyleMods.def, teamScoreOverride: careerMatchTeamScore(c) };
+  G.futdraft = { lineup: c.lineup, squad: c.lineup.map(function (s) { return s.player; }).concat(c.bench), captainId: c.captainId, formation: c.formation, condition: 'ninguna', styleAtkMult: careerStyleMods.atk, styleDefMult: careerStyleMods.def, teamScoreOverride: careerMatchTeamScore(c), oppGhostPool: careerCompGhostSquad(c, champions, opp.name) };
   var sim = futDraftSimulateMatchCore(careerKnockoutPower(careerRivalPower(opp.name), 'champions'));
   G.futdraft.live = {
     oppSide: { name: opp.name }, modifier: sim.modifier,
@@ -5331,6 +5405,7 @@ function finishCareerChampionsMatch() {
 
   var myEvents = live.revealed.filter(function (e) { return e.side === 'me'; });
   futDraftRecordGoalEvents(c.careerStats, myEvents, 'Tu equipo');
+  careerRecordMyCompMatch(c, champions, opp.name, myEvents, live.revealed.filter(function (e) { return e.side === 'opp'; }), oppGoals);
   careerFinishMatchEvents(c, live);
 
   if (live.careerChampionsPhase === 'group') {
@@ -5376,6 +5451,7 @@ window.actionSkipCareerChampionsMatch = function () {
   var events = [];
   for (var i = 0; i < myGoals; i++) events.push(futDraftGoalEvent(myPlayers));
   futDraftRecordGoalEvents(c.careerStats, events, 'Tu equipo');
+  careerRecordMyCompMatch(c, champions, opp.name, events, null, oppGoals);
   careerFinishMatchEvents(c, null);
 
   if (champions.phase === 'group') {
@@ -5931,10 +6007,67 @@ function careerPalmaresHtml(c) {
   }).join('');
   return '<div class="panel"><h3 style="margin-bottom:8px" class="center-text">Palmarés (' + total + ')</h3><div class="season-summary-badges">' + rows + '</div></div>';
 }
+// Menú de goleadores y asistentes (Liga / Copa / Champions / histórico del
+// club), a petición explícita ("más mono y mejor el menú para ver máximos
+// goleadores y asistentes de copa, liga y champions"): pestañas arriba, la
+// Bota de Oro y el máximo asistente destacados, y el top 10 de cada uno con
+// medallas, escudo y barra proporcional.
+var CAREER_SCORERS_VIEWS = [
+  { id: 'liga', name: '🏟️ Liga' }, { id: 'copa', name: '🏆 Copa' },
+  { id: 'champions', name: '⭐ Champions' }, { id: 'historico', name: '📜 Histórico' }
+];
+window.actionSetCareerScorersView = function (id) { G.career.scorersView = id; render(); };
+function careerScorersStats(c, view) {
+  if (view === 'copa') return c.cup ? careerCompStats(c.cup) : null;
+  if (view === 'champions') return c.champions ? careerCompStats(c.champions) : null;
+  if (view === 'historico') return c.careerStats;
+  return c.league.stats;
+}
+function careerScorersColumnHtml(c, list, kind) {
+  var top = list.length ? list[0].count : 1;
+  var medals = ['🥇', '🥈', '🥉'];
+  return list.slice(0, 10).map(function (e, i) {
+    var shield = e.team === 'Tu equipo' ? careerClubShieldPath(c) : teamShieldPath(e.team);
+    return '<div class="scorer-row' + (i < 3 ? ' scorer-row-top' : '') + (e.team === 'Tu equipo' ? ' scorer-row-mine' : '') + '">' +
+      '<span class="scorer-rank">' + (i < 3 ? medals[i] : (i + 1)) + '</span>' +
+      avatarHtml(e.player) +
+      '<div class="scorer-main"><div class="scorer-name">' + escapeHtml(e.nombre) + '</div>' +
+        '<div class="scorer-team"><img src="' + escapeHtml(shield) + '" alt="">' + escapeHtml(e.team === 'Tu equipo' ? careerClubDisplayName(c) : e.team) + '</div>' +
+        '<div class="scorer-bar"><span style="width:' + Math.max(6, Math.round(e.count / top * 100)) + '%"></span></div></div>' +
+      '<span class="scorer-count">' + e.count + '</span>' +
+    '</div>';
+  }).join('');
+}
+function careerScorersMenuHtml(c) {
+  var view = c.scorersView || 'liga';
+  var tabs = CAREER_SCORERS_VIEWS.map(function (v) {
+    return '<button class="btn btn-tiny' + (view === v.id ? ' active' : '') + '" onclick="actionSetCareerScorersView(\'' + v.id + '\')">' + v.name + '</button>';
+  }).join('');
+  var stats = careerScorersStats(c, view);
+  var body;
+  if (!stats) {
+    body = '<p class="dim small center-text">Esta competición no se juega esta temporada.</p>';
+  } else {
+    var scorers = sortedStatsList(stats.scorers), assists = sortedStatsList(stats.assists);
+    if (!scorers.length && !assists.length) {
+      body = '<p class="dim small center-text">Todavía no hay goles registrados aquí.</p>';
+    } else {
+      var boot = scorers[0], ast = assists[0];
+      body = '<div class="scorer-hero">' +
+        (boot ? '<div class="scorer-hero-card"><div class="scorer-hero-title">⚽ Bota de Oro</div><div class="scorer-hero-name">' + escapeHtml(boot.nombre) + '</div><div class="scorer-hero-sub">' + escapeHtml(boot.team === 'Tu equipo' ? careerClubDisplayName(c) : boot.team) + ' · <strong>' + boot.count + '</strong> goles</div></div>' : '') +
+        (ast ? '<div class="scorer-hero-card"><div class="scorer-hero-title">🅰️ Máximo asistente</div><div class="scorer-hero-name">' + escapeHtml(ast.nombre) + '</div><div class="scorer-hero-sub">' + escapeHtml(ast.team === 'Tu equipo' ? careerClubDisplayName(c) : ast.team) + ' · <strong>' + ast.count + '</strong> asistencias</div></div>' : '') +
+      '</div>' +
+      '<div class="scorer-cols">' +
+        '<div><h4 class="scorer-col-title">Goleadores</h4>' + careerScorersColumnHtml(c, scorers, 'g') + '</div>' +
+        '<div><h4 class="scorer-col-title">Asistentes</h4>' + careerScorersColumnHtml(c, assists, 'a') + '</div>' +
+      '</div>';
+    }
+  }
+  return '<div class="panel"><h3 style="margin-bottom:8px" class="center-text">Goleadores y asistentes</h3>' +
+    '<div class="btn-row" style="justify-content:center;flex-wrap:wrap">' + tabs + '</div>' + body + '</div>';
+}
 function renderCareerEstadisticas(c) {
   var bestPosText = c.bestPosition ? (c.bestPosition.position + 'º de ' + c.bestPosition.totalTeams) : 'Todavía sin datos.';
-  var seasonPanel = renderTopScorersAssistsPanel(c.league.stats, 'Goleadores y asistentes de esta temporada', true);
-  var historicPanel = renderTopScorersAssistsPanel(c.careerStats, 'Máximos históricos del club', true);
   return (
     '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Estadísticas de la carrera</h3>' +
@@ -5942,8 +6075,7 @@ function renderCareerEstadisticas(c) {
       '<p class="dim small">Mejor posición en liga: <strong style="color:var(--accent-2)">' + bestPosText + '</strong></p>' +
     '</div>' +
     careerPalmaresHtml(c) +
-    (seasonPanel || '<div class="panel center-text"><p class="dim small">Todavía no hay goles registrados esta temporada.</p></div>') +
-    (historicPanel || '<div class="panel center-text"><p class="dim small">Todavía no hay goles históricos registrados.</p></div>') +
+    careerScorersMenuHtml(c) +
     careerSeasonHistoryHtml(c)
   );
 }
