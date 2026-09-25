@@ -3489,7 +3489,7 @@ function renderCareerLigaSection(c) {
       (view === 'forma' ? '<p class="dim small">Una racha de 3 victorias o derrotas seguidas da un empujón (o un bajón) de forma al siguiente partido.</p>' : '') +
     '</div>';
   if (view === 'calendario') return headerHtml + renderCareerCalendario(c);
-  var topScorersHtml = c.showTopScorers ? renderTopScorersAssistsPanel(league.stats, 'Goleadores y asistentes de esta temporada') : '';
+  var topScorersHtml = c.showTopScorers ? renderTopScorersAssistsPanel(league.stats, 'Goleadores y asistentes de esta temporada', true) : '';
   return headerHtml + (topScorersHtml || '') + renderCareerLigaTable(c, view);
 }
 
@@ -3767,6 +3767,14 @@ function careerTeamGhostPool(c, league, teamIdx) {
 // identidad real de una temporada a otra) también se suman a
 // c.careerStats, que no se resetea nunca entre temporadas -- ver la
 // pestaña Estadísticas.
+// Estadísticas de goleadores/asistentes de la Liga: los rivales cuentan el
+// DOBLE (cada gol/asistencia se apunta dos veces), a petición explícita
+// ("que tengan prácticamente el doble de estadísticas... siempre gano la
+// bota de oro y de asistencias") -- los tuyos, una vez.
+function careerRecordLeagueStats(stats, events, label, isMine) {
+  futDraftRecordGoalEvents(stats, events, label);
+  if (!isMine) futDraftRecordGoalEvents(stats, events, label);
+}
 function careerRecordMatchGoals(c, league, homeIdx, awayIdx, homeGoals, awayGoals) {
   var homeLabel = homeIdx === 0 ? 'Tu equipo' : league.teamNames[homeIdx];
   var awayLabel = awayIdx === 0 ? 'Tu equipo' : league.teamNames[awayIdx];
@@ -3776,8 +3784,8 @@ function careerRecordMatchGoals(c, league, homeIdx, awayIdx, homeGoals, awayGoal
   var homeEvents = [], awayEvents = [];
   for (var i = 0; i < homeGoals; i++) homeEvents.push(futDraftGoalEvent(homePool));
   for (var j = 0; j < awayGoals; j++) awayEvents.push(futDraftGoalEvent(awayPool));
-  futDraftRecordGoalEvents(league.stats, homeEvents, homeLabel);
-  futDraftRecordGoalEvents(league.stats, awayEvents, awayLabel);
+  careerRecordLeagueStats(league.stats, homeEvents, homeLabel, homeIdx === 0);
+  careerRecordLeagueStats(league.stats, awayEvents, awayLabel, awayIdx === 0);
   if (homeIdx === 0) futDraftRecordGoalEvents(c.careerStats, homeEvents, homeLabel);
   if (awayIdx === 0) futDraftRecordGoalEvents(c.careerStats, awayEvents, awayLabel);
 }
@@ -3882,12 +3890,13 @@ function careerEnsureBoard(c) {
   }
   return c.board;
 }
-// Sube la confianza de la directiva (tope 100) por un trofeo o un objetivo
-// cumplido a mitad de temporada, a petición explícita ("que cuando ganas
-// trofeo o cumples objetivos también vaya subiendo de nuevo").
-function careerBoardBoost(c, amount) {
+// La confianza de la directiva SOLO se mueve al acabar la temporada (no
+// partido a partido, a petición explícita): los trofeos ganados durante
+// el año se apuntan aquí y suman al hacer la revisión final
+// (careerBoardSeasonReview), junto con los objetivos extra.
+function careerBoardNoteTrophy(c, kind) {
   var board = careerEnsureBoard(c);
-  board.confidence = clamp(board.confidence + amount, 0, 100);
+  board.trophies = (board.trophies || []).concat([kind]);
 }
 var CAREER_BOARD_TROPHY_BOOST = { cup: 4, champions: 8, supercopa: 3 };
 function careerBoardMidseasonReview(c) {
@@ -3927,11 +3936,12 @@ function careerBoardSeasonReview(c, position) {
   // veces; los cumplidos ahora suman su premio, los fallados restan.
   var objectiveResults = careerBoardObjectivesStatus(c, board);
   objectiveResults.forEach(function (r) {
-    if (r.obj.claimed) return;
     delta += r.met ? r.obj.reward : -r.obj.penalty;
   });
+  var trophyBoost = (board.trophies || []).reduce(function (sum, k) { return sum + (CAREER_BOARD_TROPHY_BOOST[k] || 0); }, 0);
+  delta += trophyBoost;
   board.confidence = clamp(before + delta, 0, 100);
-  c.lastBoardReview = { position: position, target: board.targetPosition, delta: delta, before: before, after: board.confidence, fired: board.confidence <= 0, objectives: objectiveResults.map(function (r) { return { met: r.met, label: r.label, type: r.obj.type, reward: r.obj.reward, claimed: !!r.obj.claimed }; }) };
+  c.lastBoardReview = { position: position, target: board.targetPosition, delta: delta, before: before, after: board.confidence, fired: board.confidence <= 0, objectives: objectiveResults.map(function (r) { return { met: r.met, label: r.label, type: r.obj.type, reward: r.obj.reward }; }), trophyBoost: trophyBoost };
   if (board.confidence <= 0) careerBoardFire(c, position);
   return c.lastBoardReview;
 }
@@ -4282,10 +4292,9 @@ function careerApplyPromotionRelegation(c) {
 // quedar en una posición, que haya más, como ganar trofeos, hacer jugar a
 // gente de la cantera... y más que se te ocurran"): cada temporada salen 2
 // en Segunda y 3 en Primera, de tipos distintos. Cada uno tiene premio de
-// confianza si se cumple y castigo si no (obj.reward/obj.penalty). Los que
-// se pueden cumplir antes de acabar (goles, victorias, Copa, Champions) se
-// cobran en cuanto se cumplen (careerBoardClaimObjectives); el resto se
-// mira al acabar la Liga (careerBoardSeasonReview).
+// confianza si se cumple y castigo si no (obj.reward/obj.penalty). Todos se
+// evalúan al acabar la Liga (careerBoardSeasonReview): la confianza solo se
+// mueve al final de la temporada, no partido a partido.
 function careerObjectiveIcon(type) {
   return { element: '🔥', academy: '🌱', cup: '🏆', cupSemi: '🏅', champions: '⭐', championsKO: '🌍', goals: '⚽', wins: '💪', defense: '🧱', scorer: '👟', savings: '💰' }[type] || '🎯';
 }
@@ -4351,20 +4360,6 @@ function careerBoardObjectiveMet(c, obj) {
   if (obj.type === 'champions') { var cc = ch && careerChampionsChampion(ch); return { obj: obj, count: 0, met: !!(cc && cc.isPlayer), label: 'ganar la Champions League' }; }
   return { obj: obj, count: 0, met: false, label: obj.type };
 }
-// Cobra ya los objetivos que se pueden cumplir antes de acabar la temporada
-// (goles, victorias, Copa, Champions): se llama tras cada partido. Una vez
-// cobrado (obj.claimed) no vuelve a contar en la revisión final.
-var CAREER_BOARD_CLAIMABLE = ['goals', 'wins', 'cup', 'cupSemi', 'championsKO', 'champions'];
-function careerBoardClaimObjectives(c) {
-  var board = careerEnsureBoard(c);
-  careerBoardObjectivesStatus(c, board).forEach(function (r) {
-    if (r.met && !r.obj.claimed && CAREER_BOARD_CLAIMABLE.indexOf(r.obj.type) !== -1) {
-      r.obj.claimed = true;
-      careerBoardBoost(c, r.obj.reward);
-    }
-  });
-}
-
 // Resuelve todos los partidos de la jornada actual que NO sean el tuyo
 // (o todos, si fromIdx se omite): comparando potencias 0-100, igual que
 // el resto de la jornada en Liga (continueLigaMatchday). Se usa tanto
@@ -4462,7 +4457,6 @@ window.actionSkipCareerMatchday = function () {
   careerUpdateBestPosition(c);
   careerMaybeOpenMidseasonWindow(c);
   careerBoardMidseasonReview(c);
-  careerBoardClaimObjectives(c);
   careerMaybeAwardLeagueFinish(c);
   render();
 };
@@ -4551,7 +4545,7 @@ function finishCareerMatchdayMatch() {
   // así que aquí se registran esos en vez de generar unos nuevos.
   var myEvents = live.revealed.filter(function (e) { return e.side === 'me'; });
   futDraftRecordGoalEvents(league.stats, myEvents, 'Tu equipo');
-  futDraftRecordGoalEvents(league.stats, live.revealed.filter(function (e) { return e.side === 'opp'; }), oppName);
+  careerRecordLeagueStats(league.stats, live.revealed.filter(function (e) { return e.side === 'opp'; }), oppName, false);
   futDraftRecordGoalEvents(c.careerStats, myEvents, 'Tu equipo');
   careerResolveOtherFixtures(c, league, fi);
   var winBonus = careerAwardWinBonus(c, myGoals, oppGoals);
@@ -4564,7 +4558,6 @@ function finishCareerMatchdayMatch() {
   careerUpdateBestPosition(c);
   careerMaybeOpenMidseasonWindow(c);
   careerBoardMidseasonReview(c);
-  careerBoardClaimObjectives(c);
   careerMaybeAwardLeagueFinish(c);
 
   G.futdraft.lastMatchResult = {
@@ -4834,7 +4827,7 @@ function careerCupMaybeAwardChampion(c) {
   if (champion.isPlayer) {
     c.budget = Math.round((c.budget + CAREER_CUP_WIN_BONUS) * 10) / 10;
     c.cupsWon = (c.cupsWon || 0) + 1;
-    careerBoardBoost(c, CAREER_BOARD_TROPHY_BOOST.cup);
+    careerBoardNoteTrophy(c, 'cup');
     var cupPoints = careerAwardSpiritPoints(CAREER_CUP_WIN_POINTS * (c.division === 1 ? 2 : 1));
     careerTriggerTrophyPopup('Copa del Rey', cupPoints);
     careerApplySponsorTrophyPayout(c);
@@ -5240,7 +5233,7 @@ function careerChampionsMaybeAwardChampion(c) {
   if (champion.isPlayer) {
     c.budget = Math.round((c.budget + CAREER_CHAMPIONS_WIN_BONUS) * 10) / 10;
     c.championsWon = (c.championsWon || 0) + 1;
-    careerBoardBoost(c, CAREER_BOARD_TROPHY_BOOST.champions);
+    careerBoardNoteTrophy(c, 'champions');
     var championsPoints = careerAwardSpiritPoints(CAREER_CHAMPIONS_WIN_POINTS);
     careerTriggerTrophyPopup('Champions League', championsPoints);
     careerApplySponsorTrophyPayout(c);
@@ -5530,7 +5523,7 @@ function careerSupercopaMaybeAwardChampion(c) {
   if (sc.won) {
     c.budget = Math.round((c.budget + CAREER_SUPERCOPA_WIN_BONUS) * 10) / 10;
     c.supercopasWon = (c.supercopasWon || 0) + 1;
-    careerBoardBoost(c, CAREER_BOARD_TROPHY_BOOST.supercopa);
+    careerBoardNoteTrophy(c, 'supercopa');
     careerTriggerTrophyPopup('Supercopa');
     careerApplySponsorTrophyPayout(c);
   }
@@ -5904,8 +5897,8 @@ function careerPalmaresHtml(c) {
 }
 function renderCareerEstadisticas(c) {
   var bestPosText = c.bestPosition ? (c.bestPosition.position + 'º de ' + c.bestPosition.totalTeams) : 'Todavía sin datos.';
-  var seasonPanel = renderTopScorersAssistsPanel(c.league.stats, 'Goleadores y asistentes de esta temporada');
-  var historicPanel = renderTopScorersAssistsPanel(c.careerStats, 'Máximos históricos del club');
+  var seasonPanel = renderTopScorersAssistsPanel(c.league.stats, 'Goleadores y asistentes de esta temporada', true);
+  var historicPanel = renderTopScorersAssistsPanel(c.careerStats, 'Máximos históricos del club', true);
   return (
     '<div class="panel center-text">' +
       '<h3 style="margin-bottom:4px">Estadísticas de la carrera</h3>' +

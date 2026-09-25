@@ -205,7 +205,7 @@ function renderFutDraftMatchResult() {
 // ver segundo parámetro) las dos tablas de Modo Carrera (temporada actual
 // e histórico del club) -- stats es { scorers: {}, assists: {} } (ver
 // futDraftRecordGoalEvents).
-function renderTopScorersAssistsPanel(stats, title) {
+function renderTopScorersAssistsPanel(stats, title, isCareer) {
   stats = stats || { scorers: {}, assists: {} };
   var scorers = sortedStatsList(stats.scorers).slice(0, 3);
   var assists = sortedStatsList(stats.assists).slice(0, 3);
@@ -213,7 +213,7 @@ function renderTopScorersAssistsPanel(stats, title) {
   var topScorer = scorers[0], topAssist = assists[0];
   function listHtml(list) {
     return list.map(function (s, i) {
-      var shieldSrc = s.team === 'Tu equipo' ? getPlayerShieldPath() : teamShieldPath(s.team);
+      var shieldSrc = s.team === 'Tu equipo' ? (isCareer && G.career ? careerClubShieldPath(G.career) : getPlayerShieldPath()) : teamShieldPath(s.team);
       return '<div class="futdraft-timeline-row"><span>' + (i + 1) + '.</span>' + avatarHtml(s.player) +
         '<img class="futdraft-timeline-shield" src="' + escapeHtml(shieldSrc) + '" alt="" title="' + escapeHtml(s.team) + '">' +
         '<span style="flex:1;text-align:left">' + escapeHtml(s.nombre) + '</span><span class="dim">' + s.count + '</span></div>';
