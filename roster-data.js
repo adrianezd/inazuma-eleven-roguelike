@@ -115,7 +115,7 @@ var TEAM_SEASON = {
   'Protocolo Omega 2.0': 'go2', 'Protocolo Omega 3.0': 'go2', 'Ragnah': 'go2',
   'Raimon Inakuni': 'ares', 'Resistencia Japon': 'temp2', 'Resistencia Japón GO': 'go2',
   'Royal Academy': 'temp1', 'Sallys': 'temp1', 'Shuriken': 'temp1',
-  'Tarjeteros': 'temp3', 'Tormenta de Géminis': 'temp2', 'Ángeles Oscuros': 'temp3', 'Neo Raimon': 'temp1', 'FFI Estrellas': 'temp3', 'Raimon GO': 'go1', 'Zoolan Team': 'temp3', 'Claustro Sagrado': 'temp2', 'Twinford': 'vr', 'Umbrella': 'temp1',
+  'Tarjeteros': 'temp3', 'Tormenta de Géminis': 'temp2', 'Ángeles Oscuros': 'temp3', 'Neo Raimon': 'temp1', 'FFI Estrellas': 'temp3', 'Raimon GO': 'go1', 'Zoolan Team': 'temp3', 'Claustro Sagrado': 'temp2', 'Royal Academy GO': 'go1', 'Instituto Espejismo': 'go1', 'Poderosa Fe': 'go1', 'Twinford': 'vr', 'Umbrella': 'temp1',
   'Unicorn': 'temp3', 'Veteranos Inazuma': 'temp1', 'Wild': 'temp1',
   'Zanark Domain': 'go2', 'Zeus': 'temp1'
 };
@@ -2009,7 +2009,7 @@ var ROSTER = [
   locked:true,cost:210
 },
 {
-  id:'r231', equipo:'Royal Academy', nombre:'Dracon Yale', original:'Oji Ryuzaki', sprite:'assets/sprites/r231.webp',
+  id:'r231', equipo:'Royal Academy GO', nombre:'Dracon Yale', original:'Oji Ryuzaki', sprite:'assets/sprites/r231.webp',
   posicion:'Defensa', tipo:'Viento',
   tiro:66,pase:76,defensa:83,especial:85,
   hissatsu:['Gran Torbellino'],tipoTecnica:'defensa',
@@ -2017,7 +2017,7 @@ var ROSTER = [
   locked:true,cost:210
 },
 {
-  id:'r232', equipo:'Royal Academy', nombre:'Rex Remington', original:'Rex Remington', sprite:'assets/sprites/r232.webp',
+  id:'r232', equipo:'Royal Academy GO', nombre:'Rex Remington', original:'Rex Remington', sprite:'assets/sprites/r232.webp',
   posicion:'Delantero', tipo:'Montaña',
   tiro:81,pase:70,defensa:60,especial:80,
   hissatsu:['Pinguino Emperador Nº7'],tipoTecnica:'tiro',
