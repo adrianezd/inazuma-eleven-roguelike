@@ -3208,12 +3208,15 @@ window.actionToggleMarketFold = function (key) {
   render();
 };
 function foldHeaderHtml(title, key, open, count, sub) {
-  return '<button type="button" class="fold-head' + (open ? ' open' : '') + '" onclick="actionToggleMarketFold(\'' + key + '\')" aria-expanded="' + open + '">' +
-    '<span class="fold-text"><span class="fold-title">' + title + '</span>' +
-      (sub ? '<span class="fold-sub">' + sub + '</span>' : '') + '</span>' +
-    (count !== undefined ? '<span class="fold-count">' + count + '</span>' : '') +
-    '<span class="fold-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' +
-  '</button>';
+  // Estilos en línea a propósito: así se ve igual en Safari de iPhone aunque el CSS esté en caché o los botones tengan estilo global.
+  var arrowStyle = 'width:38px;height:38px;flex:0 0 38px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1.5px solid ' + (open ? '#ffb020' : 'rgba(255,255,255,0.22)') + ';background:' + (open ? 'rgba(255,176,32,0.18)' : 'rgba(255,255,255,0.06)') + ';color:#ffb020;transition:transform 0.25s ease;transform:rotate(' + (open ? '0' : '-90') + 'deg)';
+  var countHtml = count !== undefined ? '<span style="flex:0 0 auto;min-width:28px;height:28px;padding:0 9px;display:flex;align-items:center;justify-content:center;border-radius:999px;background:rgba(255,176,32,0.18);color:#ffb020;font-size:0.85rem;font-weight:700">' + count + '</span>' : '';
+  var subHtml = sub ? '<div style="font-size:0.75rem;opacity:0.65;margin-top:2px">' + sub + '</div>' : '';
+  return '<div role="button" tabindex="0" aria-expanded="' + open + '" onclick="actionToggleMarketFold(\'' + key + '\')" style="display:flex;align-items:center;gap:12px;width:100%;min-height:48px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none">' +
+    '<div style="flex:1 1 auto;min-width:0"><div style="font-family:Oswald,sans-serif;font-size:1.2rem;line-height:1.2">' + title + '</div>' + subHtml + '</div>' +
+    countHtml +
+    '<div style="' + arrowStyle + '" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" style="display:block"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' +
+  '</div>';
 }
 
 function careerCoachPrice(co) { return (co.atk + co.def) * 6; }
