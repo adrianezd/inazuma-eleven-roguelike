@@ -2804,15 +2804,18 @@ var CAREER_NEGOTIATION_MONEY_EXPONENT = 8;
 // dinero -- ni siquiera pagar de más lo sube, a diferencia del resto de
 // jugadores (fórmula normal de dinero+prestigio, sin cambios).
 var CAREER_ELITE_SIGN_CHANCE = 0.05;
-function careerNegotiationAccepts(offer, value, playerScore, teamAvgScore) {
+function careerNegotiationChance(offer, value, playerScore, teamAvgScore) {
   var gap = playerScore - teamAvgScore;
-  if (gap > CAREER_INTERESTED_GAP) return Math.random() < CAREER_ELITE_SIGN_CHANCE;
+  if (gap > CAREER_INTERESTED_GAP) return CAREER_ELITE_SIGN_CHANCE;
   var c = G.career;
   var mode = c && CAREER_NEGOTIATION_MODES[c.negotiation];
   var exponent = mode ? mode.moneyExponent : CAREER_NEGOTIATION_MONEY_EXPONENT;
   var moneyFactor = offer >= value ? 1 : Math.pow(offer / value, exponent);
   var prestigeFactor = clamp(1 - Math.max(0, gap) * 0.08, 0.05, 1);
-  return Math.random() < moneyFactor * prestigeFactor;
+  return moneyFactor * prestigeFactor;
+}
+function careerNegotiationAccepts(offer, value, playerScore, teamAvgScore) {
+  return Math.random() < careerNegotiationChance(offer, value, playerScore, teamAvgScore);
 }
 
 // Cuántas cesiones ENTRANTES tienes ahora mismo (jugadores que no son
@@ -3029,6 +3032,8 @@ function renderCareerNegotiation(c) {
   var prestigeHint = gap > CAREER_INTERESTED_GAP
     ? '<p class="dim small" style="color:var(--danger)">Es probable que no se quiera unir a tu equipo (media ' + Math.round(teamAvg) + ' la tuya, ' + Math.round(careerPlayerScore(p)) + ' la suya), aunque ofrezcas su valor o más.</p>'
     : '';
+  var chancePct = Math.round(careerNegotiationChance(neg.offer, asking, careerPlayerScore(p), teamAvg) * 100);
+  prestigeHint += '<p class="dim small">Probabilidad de que acepte con esta oferta: <strong style="color:var(--accent-2)">' + chancePct + '%</strong>. Ofrecer más que su valor no sube más allá de lo que permite su nivel frente al de tu equipo.</p>';
   var w = c.marketWindow;
   var offersUsed = (w && w.offersToday[neg.playerId]) || 0;
   var offersLeft = CAREER_MAX_OFFERS_PER_PLAYER_PER_DAY - offersUsed;
