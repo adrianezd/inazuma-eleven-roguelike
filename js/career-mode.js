@@ -4796,6 +4796,7 @@ window.actionSkipCareerMatchday = function () {
   careerRecordStarterAppearances(c);
   careerFinishMatchEvents(c, null);
   league.matchdayIndex++;
+  c.lastCupResult = null; c.lastChampionsResult = null;
   careerUpdateBestPosition(c);
   careerMaybeOpenMidseasonWindow(c);
   careerBoardMidseasonReview(c);
@@ -4897,6 +4898,7 @@ function finishCareerMatchdayMatch() {
   careerRecordStarterAppearances(c);
   careerFinishMatchEvents(c, live);
   league.matchdayIndex++;
+  c.lastCupResult = null; c.lastChampionsResult = null;
   careerUpdateBestPosition(c);
   careerMaybeOpenMidseasonWindow(c);
   careerBoardMidseasonReview(c);
