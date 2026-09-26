@@ -126,6 +126,8 @@ var TEAM_SHIELD_FILES = {
   'Instituto Espejismo': 'espejismo.webp',
   'Royal Academy Redux': 'royal-academy-redux.webp',
   'Triple C': 'triplec.webp',
+  'Servicio Secreto': 'servicio-secreto.webp',
+  'Knights': 'knights.webp',
   'Épsilon Plus': 'epsilon-plus.webp',
   'Poderosa Fe': 'poderosa-fe.webp',
   'Inazuma Japon GO': 'inazuma-japon-go.webp',
