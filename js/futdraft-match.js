@@ -449,7 +449,8 @@ function futDraftApplyGoalEvent(live, ev, isDots) {
   live.revealed.push(ev);
   live.lastGoalSide = ev.side;
   live.goalSeq = (live.goalSeq || 0) + 1;
-  live.goalFlashUntil = Date.now() + 1300;
+  var manyGoals = live.pending && live.pending.length > 6;
+  live.goalFlashUntil = Date.now() + (manyGoals ? 300 : 1300);
   if (isDots) {
     live.poss = { side: ev.side, line: 3 };
     // El balón "entra" en la portería justo cuando se marca el gol, en
@@ -462,7 +463,7 @@ function futDraftApplyGoalEvent(live, ev, isDots) {
     // varios goles muy seguidos, uno se coma la celebración del otro
     // (antes se procesaban todos los pendientes del mismo tick de golpe
     // y solo se veía el último), a petición explícita.
-    live.celebrateUntil = Date.now() + 1900;
+    live.celebrateUntil = Date.now() + (manyGoals ? 350 : 1900);
   }
   if (typeof playGoalSound === 'function') playGoalSound();
 }

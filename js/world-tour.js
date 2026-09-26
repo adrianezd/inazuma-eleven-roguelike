@@ -195,7 +195,7 @@ function wtUmbrellaStage(id, power) {
   return { id: id, name: 'Umbrella', power: power, players: base.players };
 }
 var WORLD_TOUR_STAGES_T2 = [
-  wtStageExtra(wtTeamStage('t2-geminis1', 'Tormenta de Géminis', ['Tormenta de Géminis'], 70), { forcedLoss: true, injures: ['r47', 'r46', 'r49'], lossMessage: 'Derrota inevitable ante Tormenta de Géminis: Timmy, Steve y Jim se lesionan y dejan el equipo.' }),
+  wtStageExtra(wtTeamStage('t2-geminis1', 'Tormenta de Géminis', ['Tormenta de Géminis'], 70), { forcedLoss: true, forcedScore: { my: 0, opp: 40 }, injures: ['r47', 'r46', 'r49'], lossMessage: 'Derrota inevitable ante Tormenta de Géminis: Timmy, Steve y Jim se lesionan y dejan el equipo.' }),
   wtUmbrellaStage('t2-umbrella', 46),
   wtStageExtra(wtTeamStage('t2-servicio', 'Servicio Secreto', ['Servicio Secreto'], 55), { joins: [['r57', -3, 'Conwell']] }),
   wtStageExtra(wtTeamStage('t2-geminis2', 'Tormenta de Géminis', ['Tormenta de Géminis'], 66), { leaves: ['r02'], leaveMessage: 'Axel se marcha del equipo.' }),
@@ -395,6 +395,7 @@ window.actionStartWorldTour = function () {
   // partida) -- clonado aparte para no tocar nunca la potencia base.
   // Siempre el recorrido completo (ver comentario de arriba).
   var season = worldTourSetupSeason();
+  if (season === 2 && !useRandom) squad = squad.concat(wtSquad([['r10', 52], ['r16', 50]]));
   var seasonBoost = season === 2 ? 10 : 0;
   if (seasonBoost && !useRandom) squad.forEach(function (p) { p.tiro += seasonBoost; p.pase += seasonBoost; p.defensa += seasonBoost; p.especial += seasonBoost; });
   var stages = (season === 3 ? WORLD_TOUR_STAGES_T3 : season === 2 ? WORLD_TOUR_STAGES_T2 : WORLD_TOUR_STAGES).slice().map(function (st) {
@@ -725,11 +726,12 @@ window.actionSkipWorldTourMatch = function () {
 // que la Copa del Rey de Modo Carrera, careerCupPenaltyShootout), sin
 // pantalla de tanda completa, para no salirse del flujo de 3 botones.
 function worldTourRigSim(stage, sim) {
-  if (!stage.forcedLoss || sim.myGoals < sim.oppGoals) return sim;
+  if (!stage.forcedLoss || (!stage.forcedScore && sim.myGoals < sim.oppGoals)) return sim;
   var f = G.futdraft;
   var myPlayers = f.lineup.map(function (s) { return s.player; });
   var oppPlayers = (f.oppPlayersOverride && f.oppPlayersOverride.length) ? f.oppPlayersOverride : stage.players;
-  sim.oppGoals = sim.myGoals + 1 + (Math.random() < 0.5 ? 1 : 0);
+  if (stage.forcedScore) { sim.myGoals = stage.forcedScore.my; sim.oppGoals = stage.forcedScore.opp; }
+  else sim.oppGoals = sim.myGoals + 1 + (Math.random() < 0.5 ? 1 : 0);
   sim.timeline = futDraftBuildTimeline(sim.myGoals, sim.oppGoals, myPlayers, oppPlayers);
   return sim;
 }
