@@ -66,6 +66,10 @@ var WORLD_TOUR_STORY_JOINS = {
 // petición explícita, con un botón propio para incluirlos o no en el
 // banquillo del Raimon.
 var WORLD_TOUR_RAIMON_SPECIALS = wtSquad([['r09', 46], ['r39', 45], ['r41', 44]]);
+// Jugadores especiales por temporada: T1 Shadow Cimmerian y Paul Peabody, T2 solo Paul Peabody, T3 ninguno.
+var WORLD_TOUR_SPECIAL_IDS = { 1: ['r39', 'r41'], 2: ['r41'], 3: [] };
+var WORLD_TOUR_SPECIAL_NAMES = { 1: 'Shadow Cimmerian y Paul Peabody', 2: 'Paul Peabody', 3: '' };
+function worldTourSpecialsFor(season) { return WORLD_TOUR_RAIMON_SPECIALS.filter(function (p) { return (WORLD_TOUR_SPECIAL_IDS[season] || []).indexOf(p.id) !== -1; }); }
 
 // Equipos de Inazuma Eleven 1, en el orden real del torneo Fútbol
 // Frontier (Occult primero) más el Equipo Ogro como rival final tras el
@@ -368,7 +372,7 @@ function renderWorldTourSetup() {
           '<button class="btn btn-tiny' + (worldTourSetupSpecials() ? ' active' : '') + '" onclick="actionSetWorldTourSpecials(true)">Sí</button>' +
           '<button class="btn btn-tiny' + (!worldTourSetupSpecials() ? ' active' : '') + '" onclick="actionSetWorldTourSpecials(false)">No</button>' +
         '</div>' +
-        '<p class="dim small center-text mt">Austin Hobbs, Shadow Cimmerian y Paul Peabody en el banquillo del Raimon (personajes secundarios de refuerzo).</p>' +
+        '<p class="dim small center-text mt">' + (WORLD_TOUR_SPECIAL_NAMES[worldTourSetupSeason()] ? WORLD_TOUR_SPECIAL_NAMES[worldTourSetupSeason()] + ' en el banquillo (personajes secundarios de refuerzo).' : 'Esta temporada no tiene jugadores especiales.') + '</p>' +
       '</div>') : '') +
       '<div class="panel center-text">' +
         '<button class="btn btn-primary btn-block" onclick="actionStartWorldTour()">Listo</button>' +
@@ -383,7 +387,7 @@ window.actionGoWorldTour = function () {
 window.actionStartWorldTour = function () {
   var useRandom = worldTourSetupSquadType() === 'random';
   var squad = useRandom ? worldTourRandomSquad() : (worldTourSetupSeason() === 3 ? wtSquad(WORLD_TOUR_IJ_BASE_IDS) : WORLD_TOUR_RAIMON_BASE.map(function (p) { return Object.assign({}, p); }));
-  if (!useRandom && worldTourSetupSpecials()) squad = squad.concat(WORLD_TOUR_RAIMON_SPECIALS.map(function (p) { return Object.assign({}, p); }));
+  if (!useRandom && worldTourSetupSpecials()) squad = squad.concat(worldTourSpecialsFor(worldTourSetupSeason()).map(function (p) { return Object.assign({}, p); }));
   var legend = worldTourSetupLegend();
   var legendBoost = legend ? worldTourLegendWins() * 3 : 0;
   // Modo Leyenda: los rivales suben de fuerza según cuántos recorridos
