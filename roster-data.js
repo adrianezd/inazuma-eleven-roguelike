@@ -3554,15 +3554,15 @@ var ROSTER = [
   sprite:'assets/sprites/r410.webp'
 },
 
-{
-  id:'r411', equipo:'Triple C', nombre:'Sue', original:'Rika Urabe',
-  posicion:'Delantero', tipo:'Bosque',
-  tiro:89,pase:78,defensa:45,especial:88,
-  hissatsu:['Lecho de rosas'],tipoTecnica:'tiro',
-  desc:'Capitana y principal delantera del Triple C de Osaka. Se une posteriormente al Raimon durante la lucha contra la Academia Alius.',
-  locked:true,cost:420,
-  sprite:'assets/sprites/r411.webp'
-},
+// {
+//   id:'r411', equipo:'Triple C', nombre:'Sue', original:'Rika Urabe',
+//   posicion:'Delantero', tipo:'Bosque',
+//   tiro:89,pase:78,defensa:45,especial:88,
+//   hissatsu:['Lecho de rosas'],tipoTecnica:'tiro',
+//   desc:'Capitana y principal delantera del Triple C de Osaka. Se une posteriormente al Raimon durante la lucha contra la Academia Alius.',
+//   locked:true,cost:420,
+//   sprite:'assets/sprites/r411.webp'
+// },
 
 {
   id:'r412', equipo:'Claustro Sagrado', nombre:'Scotty', original:'Yuya Kogure',

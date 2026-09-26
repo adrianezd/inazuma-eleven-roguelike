@@ -191,7 +191,7 @@ function wtUmbrellaStage(id, power) {
   return { id: id, name: 'Umbrella', power: power, players: base.players };
 }
 var WORLD_TOUR_STAGES_T2 = [
-  wtStageExtra(wtTeamStage('t2-geminis1', 'Tormenta de Géminis', ['Tormenta de Géminis'], 70), { forcedLoss: true, injures: ['r47', 'r46', 'r49'], lossMessage: 'Derrota inevitable ante Tormenta de Géminis: Timmy, Steve y Jim se lesionan.' }),
+  wtStageExtra(wtTeamStage('t2-geminis1', 'Tormenta de Géminis', ['Tormenta de Géminis'], 70), { forcedLoss: true, injures: ['r47', 'r46', 'r49'], lossMessage: 'Derrota inevitable ante Tormenta de Géminis: Timmy, Steve y Jim se lesionan y dejan el equipo.' }),
   wtUmbrellaStage('t2-umbrella', 46),
   wtStageExtra(wtTeamStage('t2-servicio', 'Servicio Secreto', ['Servicio Secreto'], 55), { joins: [['r57', -3, 'Conwell']] }),
   wtStageExtra(wtTeamStage('t2-geminis2', 'Tormenta de Géminis', ['Tormenta de Géminis'], 66), { leaves: ['r02'], leaveMessage: 'Axel se marcha del equipo.' }),
@@ -203,7 +203,7 @@ var WORLD_TOUR_STAGES_T2 = [
   wtStageExtra(wtTeamStage('t2-triplec', 'Triple C', ['Triple C'], 50), { joins: [['r56', -3, 'Suzette']] }),
   wtTeamStage('t2-epsilon2', 'Épsilon', ['Épsilon'], 72),
   wtStageExtra(wtTeamStage('t2-fauxshore', 'Fauxshore', ['Fauxshore'], 42), { joins: [['r11', -3, 'Darren']] }),
-  wtStageExtra(wtTeamStage('t2-genesis1', 'Genesis', ['Genesis'], 91), { forcedLoss: true, injures: ['r03', 'r12', 'r05'], lossMessage: 'Derrota inevitable ante Genesis: Nathan, Tod y Kevin se lesionan.' }),
+  wtStageExtra(wtTeamStage('t2-genesis1', 'Genesis', ['Genesis'], 91), { forcedLoss: true, injures: ['r03', 'r12', 'r05'], lossMessage: 'Derrota inevitable ante Genesis: Nathan, Tod y Kevin se lesionan y dejan el equipo.' }),
   wtStageExtra(wtTeamStage('t2-marytimes', 'Mary Times', ['Mary Times'], 40), { joins: [['r18', -3, 'Hurley']] }),
   wtStageExtra(wtTeamStage('t2-epsilonplus', 'Épsilon Plus', ['Épsilon'], 78), { joins: [['r42', -2, 'Thor'], ['r02', -2, 'Axel']] }),
   wtStageExtra(wtTeamStage('t2-zeus', 'Zeus', ['Zeus'], 75), { joins: [['r20', -2, 'Byron']] }),
@@ -764,7 +764,6 @@ function finishWorldTourMatch() {
         var i = wt.squad.findIndex(function (p) { return p.id === id; });
         if (i === -1) return;
         var pl = wt.squad.splice(i, 1)[0];
-        wt.squad.push(pl);
         hurt.push(pl.nombre);
       });
     }
