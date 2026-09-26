@@ -365,6 +365,11 @@ function futDraftAdvancePossession(live) {
   // equipo en inferioridad pierde el balón más fácil, el que va con uno
   // de más lo conserva mejor.
   var turnoverChance = inGoalWindow ? 0.02 : (p.line === 3 ? (attacking ? 0.06 : 0.22) : 0.09);
+  // Posesión con sentido: el equipo más fuerte (ataque y defensa) conserva más el balón y lo recupera antes.
+  if (typeof live.myAtk === 'number' && typeof live.effectiveOppPower === 'number' && !inGoalWindow) {
+    var strengthEdge = clamp(((live.myAtk + live.myDef) / 2 - live.effectiveOppPower) / 120, -0.2, 0.2);
+    turnoverChance *= p.side === 'me' ? (1 - strengthEdge * 1.6) : (1 + strengthEdge * 1.6);
+  }
   if (advantaged) turnoverChance = Math.max(0.01, turnoverChance - manAdvantageBonus);
   if (disadvantaged) turnoverChance = Math.min(0.6, turnoverChance + manAdvantageBonus);
   if (Math.random() < turnoverChance) { p.side = p.side === 'me' ? 'opp' : 'me'; p.line = 1; }
@@ -443,7 +448,8 @@ function futDraftApplyGoalEvent(live, ev, isDots) {
   if (ev.side === 'me') live.myGoals++; else live.oppGoals++;
   live.revealed.push(ev);
   live.lastGoalSide = ev.side;
-  live.goalFlashUntil = Date.now() + 1600;
+  live.goalSeq = (live.goalSeq || 0) + 1;
+  live.goalFlashUntil = Date.now() + 1300;
   if (isDots) {
     live.poss = { side: ev.side, line: 3 };
     // El balón "entra" en la portería justo cuando se marca el gol, en
@@ -456,7 +462,7 @@ function futDraftApplyGoalEvent(live, ev, isDots) {
     // varios goles muy seguidos, uno se coma la celebración del otro
     // (antes se procesaban todos los pendientes del mismo tick de golpe
     // y solo se veía el último), a petición explícita.
-    live.celebrateUntil = Date.now() + 1500;
+    live.celebrateUntil = Date.now() + 1900;
   }
   if (typeof playGoalSound === 'function') playGoalSound();
 }
@@ -690,30 +696,27 @@ var WT_KEEPER_X = { me: 4, opp: 96 };
 var WT_SHAPE_SHIFT_ATTACK = 7;
 var WT_SHAPE_SHIFT_DEFEND = -4;
 function futDraftNudgeDotsState(state, poss) {
+  var ball = state.ball || { x: 50, y: 50 };
   ['me', 'opp'].forEach(function (side) {
-    var colX = side === 'me' ? WT_LINE_X_ME : WT_LINE_X_OPP;
     var attackDir = side === 'me' ? 1 : -1;
     var hasBall = poss && poss.side === side;
-    var shapeShift = (hasBall ? WT_SHAPE_SHIFT_ATTACK : WT_SHAPE_SHIFT_DEFEND) * attackDir;
+    // Todo el bloque se desplaza un poco hacia donde está el balón y, con balón, se adelanta;
+    // cada jugador vuelve siempre hacia SU posición base (hx, hy), así la formación no se colapsa.
+    var teamShiftX = clamp((ball.x - 50) * 0.28, -13, 13) + (hasBall ? WT_SHAPE_SHIFT_ATTACK : WT_SHAPE_SHIFT_DEFEND) * attackDir;
     state[side].forEach(function (d) {
+      if (d.hx === undefined) { d.hx = d.x; d.hy = d.y; }
       if (d.line === 0) {
-        // Portero: prácticamente clavado en la línea de gol, solo un
-        // pequeño vaivén vertical dentro del área pequeña.
         d.x = clamp(d.x + (WT_KEEPER_X[side] - d.x) * 0.4, 2, 98);
-        d.y = clamp(d.y + rand(-8, 8) / 10, 38, 62);
+        d.y = clamp(d.y + (clamp(50 + (ball.y - 50) * 0.25, 40, 60) - d.y) * 0.3 + rand(-5, 5) / 10, 38, 62);
         return;
       }
-      // Cada jugador cambia de "posición de referencia" de vez en cuando
-      // (desmarques, ayudas, repliegues) y se siente atraído por el balón.
-      if (!d.roamLeft || d.roamLeft <= 0) { d.ox = rand(-9, 9); d.oy = rand(-14, 14); d.roamLeft = 2 + Math.floor(Math.random() * 4); }
+      if (!d.roamLeft || d.roamLeft <= 0) { d.ox = rand(-7, 7); d.oy = rand(-9, 9); d.roamLeft = 2 + Math.floor(Math.random() * 4); }
       d.roamLeft--;
-      var attackLean = hasBall && d.line >= 2 ? 6 * attackDir : 0;
-      var targetX = clamp(colX[d.line] + shapeShift + attackLean + d.ox, 2, 98);
-      var ballPos = state.ball;
-      var pullX = ballPos ? (ballPos.x - d.x) * (hasBall ? 0.05 : 0.08) : 0;
-      var pullY = ballPos ? (ballPos.y - d.y) * 0.1 : 0;
-      d.x = clamp(d.x + (targetX - d.x) * 0.2 + pullX + rand(-30, 30) / 10, 3, 97);
-      d.y = clamp(d.y + pullY + (d.oy > 0 ? 0.6 : -0.6) * Math.random() + rand(-40, 40) / 10, 5, 95);
+      var lineLean = hasBall ? d.line * 2.2 * attackDir : d.line * -0.8 * attackDir;
+      var targetX = clamp(d.hx + teamShiftX + lineLean + d.ox, Math.max(3, d.hx - 22), Math.min(97, d.hx + 22));
+      var targetY = clamp(d.hy + (ball.y - d.hy) * 0.22 + d.oy, 6, 94);
+      d.x = clamp(d.x + (targetX - d.x) * 0.3 + rand(-12, 12) / 10, 3, 97);
+      d.y = clamp(d.y + (targetY - d.y) * 0.3 + rand(-12, 12) / 10, 5, 95);
     });
   });
 }
@@ -796,7 +799,7 @@ function futDraftPitchDotsHtml(live) {
   var dotsHtml = meDots.map(function (d) { return pitchDotHtml(mirrored(d), 'me'); }).join('') + oppDots.map(function (d) { return pitchDotHtml(mirrored(d), 'opp'); }).join('');
   // Solo se avisa en pantalla de los goles, no de cada tiro -- a
   // petición explícita ("que no salga tiro en pantalla, solo los goles").
-  var flashHtml = (live.lastGoalSide && live.goalFlashUntil && Date.now() < live.goalFlashUntil) ? '<div class="pitch-goal-flash pitch-goal-flash-' + live.lastGoalSide + '">' + (live.lastGoalSide === 'me' ? '¡GOOOL! ⚽' : 'Gol rival ⚽') + '</div>' : '';
+  var flashHtml = (live.lastGoalSide && live.goalFlashUntil && Date.now() < live.goalFlashUntil) ? '<div class="pitch-goal-flash pitch-goal-flash-' + live.lastGoalSide + '" data-seq="' + (live.goalSeq || 0) + '">' + (live.lastGoalSide === 'me' ? '¡GOOOL! ⚽' : 'Gol rival ⚽') + '</div>' : '';
   return '<div class="pitch pitch-dots-field pitch-dots-field-h">' +
     '<div class="pitch-dots-field-stripes pitch-dots-field-stripes-h"></div>' +
     '<div class="pitch-crowd pitch-crowd-left"></div><div class="pitch-crowd pitch-crowd-right"></div>' +
@@ -861,7 +864,7 @@ function futDraftDotsRefresh(live) {
   }
   var flashWanted = !!(live.lastGoalSide && live.goalFlashUntil && Date.now() < live.goalFlashUntil);
   var flashEl = field.querySelector('.pitch-goal-flash');
-  if (flashWanted && !flashEl) { render(); return; }
+  if (flashWanted && (!flashEl || flashEl.getAttribute('data-seq') !== String(live.goalSeq || 0))) { render(); return; }
   if (!flashWanted && flashEl) flashEl.remove();
   var indicator = document.querySelector('.turn-indicator');
   if (indicator) indicator.textContent = futDraftLiveIndicatorText(live);
