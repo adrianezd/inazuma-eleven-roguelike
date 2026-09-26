@@ -3574,6 +3574,10 @@ var COACHES = [
   { id: 'c09', nombre: 'Hekyll Jyde', original: 'Hekyll Jyde', equipo: 'Occult', atk: 2, def: 1, intensidad: 'media', estilo: 'ofensiva', desc: 'Entrenador ambicioso que apuesta por el ataque.' },
   { id: 'c10', nombre: 'Stewart Vanguard', original: 'Stewart Vanguard', equipo: 'Servicio Secreto', atk: 2, def: 2, intensidad: 'baja', estilo: 'defensiva', desc: 'Estratega prudente que prioriza no encajar.' },
   { id: 'c11', nombre: 'Nerina Hartland', original: 'Nerina Hartland', equipo: 'Sallys', atk: 2, def: 2, intensidad: 'media', estilo: 'equilibrado', desc: 'Entrenadora equilibrada que cuida cada detalle.' },
-  { id: 'c12', nombre: 'Percival Travis', original: 'Percival Travis', equipo: 'Inazuma Japón', atk: 3, def: 3, intensidad: 'media', estilo: 'equilibrado', desc: 'Entrenador de Inazuma Japón, serio y disciplinado.' }
+  { id: 'c12', nombre: 'Percival Travis', original: 'Percival Travis', equipo: 'Inazuma Japón', atk: 3, def: 3, intensidad: 'media', estilo: 'equilibrado', desc: 'Entrenador de Inazuma Japón, serio y disciplinado.' },
+  { id: 'c13', nombre: 'Wonderbot', original: 'Wonderbot', equipo: 'Raimon GO', atk: 2, def: 3, intensidad: 'media', estilo: 'equilibrado', desc: 'El robot entrenador, siempre animando al equipo.' },
+  { id: 'c14', nombre: 'Mark Evans adulto', original: 'Mark Evans', equipo: 'Raimon', atk: 4, def: 3, intensidad: 'alta', estilo: 'ofensiva', desc: 'El eterno capitán convertido en entrenador, todo pasión.' },
+  { id: 'c15', nombre: 'Jude Sharp adulto', original: 'Jude Sharp', equipo: 'Royal Academy GO', atk: 3, def: 4, intensidad: 'media', estilo: 'equilibrado', desc: 'El estratega de las gafas, ahora desde el banquillo.' },
+  { id: 'c16', nombre: 'Destiny Billows', original: 'Destin Billows', equipo: 'Neo Raimon', atk: 3, def: 3, intensidad: 'media', estilo: 'equilibrado', desc: 'Entrenador táctico de gran carisma.' }
 
 ];

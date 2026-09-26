@@ -473,7 +473,7 @@ function futDraftLiveTick() {
   var cap = live.inExtraTime ? 120 : 90;
   if (isDots && live.celebrateUntil && Date.now() < live.celebrateUntil) {
     futDraftLiveRefresh(live);
-    setTimeout(futDraftLiveTick, 250);
+    setTimeout(futDraftLiveTick, 300);
     return;
   }
   live.minute = Math.min(cap, live.minute + (isDots ? rand(1, 2.4) : rand(3, 7)));
@@ -495,7 +495,7 @@ function futDraftLiveTick() {
   // En puntitos, no se da por acabado mientras queden goles sin revelar
   // (procesados de uno en uno) aunque ya se haya llegado al 90' -- para
   // no dejarse celebraciones sin mostrar.
-  if (isDots && live.pending.length) { setTimeout(futDraftLiveTick, 420); return; }
+  if (isDots && live.pending.length) { setTimeout(futDraftLiveTick, 520); return; }
   if (live.minute >= cap) {
     // En la Liga el empate es un resultado válido (allowDraw): no hay
     // prórroga ni penaltis, se queda como está y suma su punto a cada uno.
@@ -515,7 +515,7 @@ function futDraftLiveTick() {
     G.futdraft.lastLiveStats = isDots ? { cards: live.cards || [], poss_ticks: live.poss_ticks || { me: 0, opp: 0 } } : null;
     setTimeout(live.onFinish, 500);
   } else {
-    setTimeout(futDraftLiveTick, isDots ? 420 : 150);
+    setTimeout(futDraftLiveTick, isDots ? 520 : 150);
   }
 }
 
