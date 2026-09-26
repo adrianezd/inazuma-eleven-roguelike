@@ -3552,6 +3552,216 @@ var ROSTER = [
   desc:'Hermano de Jack y aprendiz.',
   locked:true,cost:100,
   sprite:'assets/sprites/r410.webp'
+},
+
+{
+  id:'r411', equipo:'Triple C', nombre:'Sue', original:'Rika Urabe',
+  posicion:'Delantero', tipo:'Bosque',
+  tiro:89,pase:78,defensa:45,especial:88,
+  hissatsu:['Lecho de rosas'],tipoTecnica:'tiro',
+  desc:'Capitana y principal delantera del Triple C de Osaka. Se une posteriormente al Raimon durante la lucha contra la Academia Alius.',
+  locked:true,cost:420,
+  sprite:'assets/sprites/r411.webp'
+},
+
+{
+  id:'r412', equipo:'Claustro Sagrado', nombre:'Scotty', original:'Yuya Kogure',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:48,pase:72,defensa:91,especial:86,
+  hissatsu:['Campo Torbellino'],tipoTecnica:'defensa',
+  desc:'Defensa del Claustro Sagrado conocido por su carácter bromista y por su extraordinario dominio del Campo Torbellino.',
+  locked:true,cost:410,
+  sprite:'assets/sprites/r412.webp'
+},
+
+{
+  id:'r413', equipo:'Fauxshore', nombre:'Jonathan Luckyman', original:'Yuichiro Toda',
+  posicion:'Delantero', tipo:'Bosque',
+  tiro:87,pase:75,defensa:42,especial:82,
+  hissatsu:['Remate curvo','Arco iris'],tipoTecnica:'tiro',
+  desc:'Capitán y delantero del Fauxshore. Es uno de los jugadores más destacados del equipo.',
+  locked:true,cost:400,
+  sprite:'assets/sprites/r413.webp'
+},
+
+{
+  id:'r414', equipo:'Fauxshore', nombre:'Spencer Duskplay', original:'Yarimichi Kuroda',
+  posicion:'Centrocampista', tipo:'Aire',
+  tiro:70,pase:84,defensa:61,especial:80,
+  hissatsu:['Granada doble','Truco de magia'],tipoTecnica:'regate',
+  desc:'Centrocampista del Fauxshore de personalidad recta y gran capacidad para controlar el juego.',
+  locked:true,cost:390,
+  sprite:'assets/sprites/r414.webp'
+},
+
+{
+  id:'r415', equipo:'Fauxshore', nombre:'Joe Poker', original:'Yuu Matsubayashi',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:67,pase:82,defensa:69,especial:78,
+  hissatsu:['Ruleta de balón'],tipoTecnica:'regate',
+  desc:'Uno de los jugadores destacados del Fauxshore, con buenas capacidades para mover el balón en el centro del campo.',
+  locked:true,cost:380,
+  sprite:'assets/sprites/r415.webp'
+},
+
+{
+  id:'r416', equipo:'Fauxshore', nombre:'Maurice Badgame', original:'Morihito Ishiyama',
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:45,pase:67,defensa:84,especial:76,
+  hissatsu:['Pared rocosa'],tipoTecnica:'defensa',
+  desc:'Defensa del Fauxshore especializado en detener las ofensivas rivales mediante su fortaleza física.',
+  locked:true,cost:370,
+  sprite:'assets/sprites/r416.webp'
+},
+
+{
+  id:'r417', equipo:'Fauxshore', nombre:'Cannon Random', original:'Kaneaki Shika',
+  posicion:'Portero', tipo:'Montaña',
+  tiro:35,pase:58,defensa:80,especial:84,
+  hissatsu:['Mano celestial'],tipoTecnica:'parada',
+  desc:'Uno de los porteros del Fauxshore y uno de los jugadores más reconocibles de la plantilla.',
+  locked:true,cost:370,
+  sprite:'assets/sprites/r417.webp'
+},
+
+{
+  id:'r418', equipo:'Triple C', nombre:'Daisy Fields', original:'Koi Dosu',
+  posicion:'Portero', tipo:'Fuego',
+  tiro:30,pase:57,defensa:79,especial:85,
+  hissatsu:['Tormenta de pétalos'],tipoTecnica:'parada',
+  desc:'Portera titular del Triple C de Osaka. Destaca por su técnica Tormenta de pétalos.',
+  locked:true,cost:390,
+  sprite:'assets/sprites/r418.webp'
+},
+
+{
+  id:'r419', equipo:'Triple C', nombre:'Alexia Sand', original:'Koko Torahama',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:42,pase:70,defensa:84,especial:78,
+  hissatsu:['Pared de fuego'],tipoTecnica:'defensa',
+  desc:'Defensa del Triple C de Osaka que forma parte del once principal del equipo.',
+  locked:true,cost:370,
+  sprite:'assets/sprites/r419.webp'
+},
+
+{
+  id:'r420', equipo:'Triple C', nombre:'Hellen Hearth', original:'Michiko Hori',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:40,pase:68,defensa:82,especial:76,
+  hissatsu:['Corte giratorio'],tipoTecnica:'defensa',
+  desc:'Defensa del Triple C de Osaka y una de las jugadoras principales de su formación.',
+  locked:true,cost:365,
+  sprite:'assets/sprites/r420.webp'
+},
+
+{
+  id:'r421', equipo:'Triple C', nombre:'Mary Moor', original:'Mari Tennoji',
+  posicion:'Centrocampista', tipo:'Montaña',
+  tiro:66,pase:83,defensa:62,especial:79,
+  hissatsu:['Regate múltiple'],tipoTecnica:'regate',
+  desc:'Centrocampista del Triple C de Osaka con buenas capacidades para organizar el juego.',
+  locked:true,cost:375,
+  sprite:'assets/sprites/r421.webp'
+},
+
+{
+  id:'r422', equipo:'Royal Academy Redux', nombre:'Caleb Stonewall', original:'Akio Fudou',
+  posicion:'Centrocampista', tipo:'Fuego',
+  tiro:89,pase:86,defensa:72,especial:91,
+  hissatsu:['Pingüino emperador n.º 1','Embestida'],tipoTecnica:'tiro',
+  desc:'Capitán de la Royal Academy Redux. Fue uno de los jugadores clave en la creación del equipo por parte de Ray Dark.',
+  locked:true,cost:440,
+  sprite:'assets/sprites/r422.webp'
+},
+
+{
+  id:'r423', equipo:'Royal Academy Redux', nombre:'Joseph King', original:'Genou Ishikawa',
+  posicion:'Portero', tipo:'Bosque',
+  tiro:32,pase:63,defensa:87,especial:91,
+  hissatsu:['Colmillo de pantera','Mano celestial'],tipoTecnica:'parada',
+  desc:'Portero de la Royal Academy Redux y antiguo guardameta de la Royal Academy.',
+  locked:true,cost:430,
+  sprite:'assets/sprites/r423.webp'
+},
+
+{
+  id:'r424', equipo:'Royal Academy Redux', nombre:'David Samford', original:'Jirou Sakuma',
+  posicion:'Delantero', tipo:'Bosque',
+  tiro:91,pase:79,defensa:48,especial:90,
+  hissatsu:['Pingüino emperador n.º 1'],tipoTecnica:'tiro',
+  desc:'Delantero de enorme talento que se unió temporalmente a la Royal Academy Redux junto a Joseph King.',
+  locked:true,cost:435,
+  sprite:'assets/sprites/r424.webp'
+},
+
+{
+  id:'r425', equipo:'Royal Academy Redux', nombre:'Blade Healen', original:'Masaru Hyoudou',
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:46,pase:68,defensa:87,especial:81,
+  hissatsu:['Escudo de fuerza'],tipoTecnica:'defensa',
+  desc:'Defensa de la Royal Academy Redux que destaca por su capacidad para contener los ataques rivales.',
+  locked:true,cost:390,
+  sprite:'assets/sprites/r425.webp'
+},
+
+{
+  id:'r426', equipo:'Royal Academy Redux', nombre:'Rowan Beltzer', original:'Gouenjiro Beltzer',
+  posicion:'Defensa', tipo:'Bosque',
+  tiro:50,pase:70,defensa:84,especial:78,
+  hissatsu:['Barrido defensivo'],tipoTecnica:'defensa',
+  desc:'Defensa de la Royal Academy Redux y uno de los jugadores habituales de su formación.',
+  locked:true,cost:380,
+  sprite:'assets/sprites/r426.webp'
+},
+
+{
+  id:'r427', equipo:'Mary Times', nombre:'Spring Millpond', original:'Spring Millpond',
+  posicion:'Portero', tipo:'Aire',
+  tiro:34,pase:61,defensa:78,especial:82,
+  hissatsu:['Mano celestial'],tipoTecnica:'parada',
+  desc:'Portero del Mary Times y uno de los miembros principales de su formación.',
+  locked:true,cost:365,
+  sprite:'assets/sprites/r427.webp'
+},
+
+{
+  id:'r428', equipo:'Mary Times', nombre:'Cadence Soundtown', original:'Gakuya Otomura',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:72,pase:88,defensa:65,especial:86,
+  hissatsu:['Ritmo musical'],tipoTecnica:'regate',
+  desc:'Capitán del Mary Times en los videojuegos. Su pasión por la música marca el particular estilo de juego del equipo.',
+  locked:true,cost:405,
+  sprite:'assets/sprites/r428.webp'
+},
+
+{
+  id:'r429', equipo:'Mary Times', nombre:'Victor Hills', original:'Hills',
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:45,pase:71,defensa:83,especial:77,
+  hissatsu:['Pared de roca'],tipoTecnica:'defensa',
+  desc:'Defensa del Mary Times y uno de los jugadores principales de su formación.',
+  locked:true,cost:370,
+  sprite:'assets/sprites/r429.webp'
+},
+
+{
+  id:'r430', equipo:'Mary Times', nombre:'Hector Redding', original:'Redding',
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:62,pase:79,defensa:66,especial:75,
+  hissatsu:['Regate múltiple'],tipoTecnica:'regate',
+  desc:'Centrocampista del Mary Times que participa habitualmente en la formación del equipo.',
+  locked:true,cost:365,
+  sprite:'assets/sprites/r430.webp'
+},
+
+{
+  id:'r431', equipo:'Mary Times', nombre:'Dora Delight', original:'Dora Delight',
+  posicion:'Delantero', tipo:'Aire',
+  tiro:78,pase:72,defensa:45,especial:78,
+  hissatsu:['Remate giratorio'],tipoTecnica:'tiro',
+  desc:'Delantera del Mary Times y una de las jugadoras principales de la plantilla.',
+  locked:true,cost:370,
+  sprite:'assets/sprites/r431.webp'
 }
 
 ]

@@ -200,7 +200,7 @@ var WORLD_TOUR_STAGES_T2 = [
   wtStageExtra(wtTeamStage('t2-claustro', 'Claustro Sagrado', ['Claustro Sagrado'], 60), { joins: [['r244', -3, 'Scotty']] }),
   wtTeamStage('t2-epsilon1', 'Épsilon', ['Épsilon'], 70),
   wtTeamStage('t2-redux', 'Royal Academy Redux', ['Royal Academy'], 70),
-  wtTeamStage('t2-triplec', 'Triple C', ['Triple C'], 50),
+  wtStageExtra(wtTeamStage('t2-triplec', 'Triple C', ['Triple C'], 50), { joins: [['r56', -3, 'Suzette']] }),
   wtTeamStage('t2-epsilon2', 'Épsilon', ['Épsilon'], 72),
   wtStageExtra(wtTeamStage('t2-fauxshore', 'Fauxshore', ['Fauxshore'], 42), { joins: [['r11', -3, 'Darren']] }),
   wtStageExtra(wtTeamStage('t2-genesis1', 'Genesis', ['Genesis'], 91), { forcedLoss: true, injures: ['r03', 'r12', 'r05'], lossMessage: 'Derrota inevitable ante Genesis: Nathan, Tod y Kevin se lesionan.' }),
