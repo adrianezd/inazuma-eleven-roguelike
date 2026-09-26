@@ -395,7 +395,7 @@ window.actionStartWorldTour = function () {
   // partida) -- clonado aparte para no tocar nunca la potencia base.
   // Siempre el recorrido completo (ver comentario de arriba).
   var season = worldTourSetupSeason();
-  if (season === 2 && !useRandom) squad = squad.concat(wtSquad([['r10', 52], ['r16', 50]]));
+  if (season === 2 && !useRandom) squad = squad.concat(wtSquad([['r04', 58], ['r10', 52], ['r16', 50]]));
   var seasonBoost = season === 2 ? 10 : 0;
   if (seasonBoost && !useRandom) squad.forEach(function (p) { p.tiro += seasonBoost; p.pase += seasonBoost; p.defensa += seasonBoost; p.especial += seasonBoost; });
   var stages = (season === 3 ? WORLD_TOUR_STAGES_T3 : season === 2 ? WORLD_TOUR_STAGES_T2 : WORLD_TOUR_STAGES).slice().map(function (st) {
