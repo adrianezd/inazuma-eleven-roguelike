@@ -25,6 +25,7 @@ var APP_PATCH_NOTES = [
       'Confeti y destello al marcar y al ganar trofeos.',
       'Carrera: cansancio y entrenadores opcionales (al crear la partida y en Ajustes); lesiones y rojas se ven con un icono en el campo, el banquillo y la plantilla; más paneles plegables con flecha.',
       'Partido: los jugadores mantienen la formación, la posesión depende de la fuerza de los equipos y se ven dos goles seguidos.',
+      'Modo Mundial: elige Temporada 1 o Temporada 2 (Academia Alius, de Tormenta de Géminis a Genesis), con draft al ganar cada partido.',
       'Mi perfil en el menú: partidos, victorias, goles y títulos de todos los modos.',
       'Menú: botón Continuar carrera con el resumen de tu club, y botón Novedades.',
       'Champions: cruces de ida y vuelta rediseñados con casillas de cada partido y el global.',

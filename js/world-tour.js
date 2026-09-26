@@ -169,6 +169,28 @@ function wtPlayerGeneric(id, nombre, posicion, tipo, ovr) {
 // guarda el valor exacto de la última victoria para poder enseñarlo en
 // la pantalla del draft (antes era el mismo número siempre, ahora toca
 // recordarlo).
+// ===== Temporada 2 (Alius Academy): rivales con su once real del roster =====
+// Orden de los partidos según la serie (de memoria, ajustable aquí): cada
+// equipo usa a sus jugadores del roster y, si le faltan, se completa con
+// otros jugadores de la Academia Alius para poder ofrecer draft al ganar.
+var WT_T2_ALIUS_POOL = ['Alius Masters', 'Genesis', 'Caos', 'Épsilon', 'Tormenta de Géminis', 'Diamond Dust', 'Polvo de Diamante', 'Prominence'];
+function wtTeamStage(id, name, ownTeams, power) {
+  var own = ROSTER.filter(function (p) { return ownTeams.indexOf(p.equipo) !== -1 && p.posicion !== 'Portero'; });
+  var fill = ROSTER.filter(function (p) { return WT_T2_ALIUS_POOL.indexOf(p.equipo) !== -1 && ownTeams.indexOf(p.equipo) === -1 && p.posicion !== 'Portero'; });
+  var picked = own.slice(0, 6);
+  for (var i = 0; picked.length < 6 && i < fill.length; i++) picked.push(fill[i]);
+  return { id: id, name: name, power: power, players: wtSquad(picked.map(function (p, k) { return [p.id, Math.round(power + 8 - k * 1.5)]; })) };
+}
+var WORLD_TOUR_STAGES_T2 = [
+  wtTeamStage('t2-geminis', 'Tormenta de Géminis', ['Tormenta de Géminis'], 56),
+  wtTeamStage('t2-epsilon', 'Épsilon', ['Épsilon'], 60),
+  wtTeamStage('t2-diamond', 'Diamond Dust', ['Diamond Dust', 'Polvo de Diamante'], 64),
+  wtTeamStage('t2-prominence', 'Prominence', ['Prominence'], 68),
+  wtTeamStage('t2-caos', 'Caos', ['Caos'], 74),
+  wtTeamStage('t2-genesis', 'Genesis', ['Genesis'], 82)
+];
+function worldTourSetupSeason() { return G.worldTourSetupSeason === 2 ? 2 : 1; }
+window.actionSetWorldTourSeason = function (s) { G.worldTourSetupSeason = s === 2 ? 2 : 1; render(); };
 var WORLD_TOUR_WIN_BOOST_MIN = 2;
 var WORLD_TOUR_WIN_BOOST_MAX = 4;
 var WORLD_TOUR_DEFAULT_FORMATION = '442';
@@ -258,6 +280,14 @@ function renderWorldTourSetup() {
         '<p class="dim small">Recorre los equipos de Inazuma Eleven 1, empezando por el Occult. Cada victoria sube un poco tu media y te deja fichar a un jugador real del equipo derrotado (como un draft).</p>' +
       '</div>' +
       '<div class="panel">' +
+        '<h3 style="margin-bottom:8px" class="center-text">Temporada</h3>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<button class="btn btn-tiny' + (worldTourSetupSeason() === 1 ? ' active' : '') + '" onclick="actionSetWorldTourSeason(1)">Temporada 1</button>' +
+          '<button class="btn btn-tiny' + (worldTourSetupSeason() === 2 ? ' active' : '') + '" onclick="actionSetWorldTourSeason(2)">Temporada 2</button>' +
+        '</div>' +
+        '<p class="dim small center-text mt">' + (worldTourSetupSeason() === 1 ? 'Los equipos de Inazuma Eleven 1, del Occult al Equipo Ogro.' : 'Los partidos de la Academia Alius de Inazuma Eleven 2, de Tormenta de Géminis a Genesis.') + '</p>' +
+      '</div>' +
+      '<div class="panel">' +
         '<h3 style="margin-bottom:8px" class="center-text">Tu equipo</h3>' +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-tiny' + (squadType === 'raimon' ? ' active' : '') + '" onclick="actionSetWorldTourSquadType(\'raimon\')">Raimon</button>' +
@@ -320,7 +350,9 @@ window.actionStartWorldTour = function () {
   // completos llevas ya terminados (contador en localStorage, no en esta
   // partida) -- clonado aparte para no tocar nunca la potencia base.
   // Siempre el recorrido completo (ver comentario de arriba).
-  var stages = WORLD_TOUR_STAGES.slice().map(function (st) {
+  var season = worldTourSetupSeason();
+  if (season === 2 && !useRandom) squad.forEach(function (p) { p.tiro += 10; p.pase += 10; p.defensa += 10; p.especial += 10; });
+  var stages = (season === 2 ? WORLD_TOUR_STAGES_T2 : WORLD_TOUR_STAGES).slice().map(function (st) {
     return legendBoost ? Object.assign({}, st, { power: Math.min(99, st.power + legendBoost) }) : st;
   });
   G.worldTour = {
@@ -332,6 +364,7 @@ window.actionStartWorldTour = function () {
     // el Occult y sin las mejoras ni nada, como un modo difícil").
     startingSquad: squad.map(function (p) { return Object.assign({}, p); }),
     isRaimon: !useRandom,
+    season: season,
     teamName: useRandom ? ((G.worldTourSetupName || '').trim() || 'Tu Equipo') : 'Raimon',
     teamShieldName: useRandom ? (G.worldTourSetupShield || null) : null,
     formationId: WORLD_TOUR_DEFAULT_FORMATION,
@@ -527,7 +560,7 @@ function renderWorldTourHome() {
     return '<div class="screen">' +
       '<div class="panel center-text">' +
         '<h2 class="panel-title mb0">🏆 ¡Recorrido completo!</h2>' +
-        '<p class="dim small">Has ganado a todos los equipos, incluido el Equipo Ogro. Media final del equipo: <strong style="color:var(--accent-2)">' + worldTourTeamScore() + '</strong> / 100.</p>' +
+        '<p class="dim small">Has ganado a todos los equipos, incluido el ' + escapeHtml(wt.stages[wt.stages.length - 1].name) + '. Media final del equipo: <strong style="color:var(--accent-2)">' + worldTourTeamScore() + '</strong> / 100.</p>' +
       '</div>' +
       '<div class="panel">' + renderFutDraftPitch(wt.squad.slice(0, 11), wt.formationId || WORLD_TOUR_DEFAULT_FORMATION, false, coachById(wt.coachId) || null) + '</div>' +
       '<div class="panel center-text"><button class="btn btn-primary btn-block" onclick="actionGoWorldTour()">Repetir</button><button class="btn btn-outline btn-block mt" onclick="actionBackToMenu()">Menú</button></div>' +
