@@ -552,7 +552,7 @@ var ROSTER = [
     posicion: 'Centrocampista', tipo: 'Viento',
     tiro: 58, pase: 62, defensa: 74, especial: 72,
     hissatsu:['Torre Inexpugnable'],tipoTecnica:'defensa',
-    desc: 'Centrocampista de Aire con una gran capacidad defensiva.',
+    desc: 'Centrocampista de Viento con una gran capacidad defensiva.',
     locked: true, cost:121
   },
   {
@@ -2975,7 +2975,7 @@ var ROSTER = [
 },
 {
   id:'r347', equipo:'Alpino', nombre:'Milton Bindings', original:'Milton Bindings',
-  posicion:'Defensa', tipo:'Aire',
+  posicion:'Defensa', tipo:'Viento',
   tiro:44,pase:78,defensa:75,especial:72,
   hissatsu:['Muro de Hierro'],tipoTecnica:'defensa',
   desc:'Defensa del Alpino, aguanta cualquier embestida.',
@@ -3586,7 +3586,7 @@ var ROSTER = [
 
 {
   id:'r414', equipo:'Fauxshore', nombre:'Spencer Duskplay', original:'Yarimichi Kuroda',
-  posicion:'Centrocampista', tipo:'Aire',
+  posicion:'Centrocampista', tipo:'Viento',
   tiro:70,pase:80,defensa:61,especial:80,
   hissatsu:['Truco de magia'],tipoTecnica:'regate',
   desc:'Centrocampista del Fauxshore de personalidad recta y gran capacidad para controlar el juego.',
@@ -3756,7 +3756,7 @@ var ROSTER = [
 
 {
   id:'r431', equipo:'Mary Times', nombre:'Dora Delight', original:'Dora Delight',
-  posicion:'Delantero', tipo:'Aire',
+  posicion:'Delantero', tipo:'Viento',
   tiro:78,pase:72,defensa:45,especial:78,
   hissatsu:['Remate giratorio'],tipoTecnica:'tiro',
   desc:'Delantera del Mary Times y una de las jugadoras principales de la plantilla.',
@@ -3765,7 +3765,7 @@ var ROSTER = [
 },
 {
   id:'r432', equipo:'Mary Times', nombre:'Spring Milipond', original:'Spring Milipond',
-  posicion:'Delantero', tipo:'Aire',
+  posicion:'Delantero', tipo:'Viento',
   tiro:79,pase:76,defensa:45,especial:78,
   hissatsu:['Remate Tsunami'],tipoTecnica:'tiro',
   desc:'Delantero del Mary Times y uno de las jugadoras principales de la plantilla.',
