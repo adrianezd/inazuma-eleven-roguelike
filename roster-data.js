@@ -2491,9 +2491,9 @@ var ROSTER = [
   sprite:'assets/sprites/r288.webp'
 },
 {
-  id:'r289', equipo:'Neo Raimon', nombre:'Dan Rhino', original:'Rhino',
-  posicion:'Defensa', tipo:'Montaña',
-  tiro:42,pase:48,defensa:70,especial:55,
+  id:'r289', equipo:'Neo Raimon', nombre:'Weathervane', original:'Gustav Weathervane',
+  posicion:'Defensa', tipo:'Viento',
+  tiro:42,pase:68,defensa:70,especial:70,
   hissatsu:['Ataque Afilado'],tipoTecnica:'defensa',
   desc:'Un defensa fuerte que utiliza su físico para detener los ataques.',
   locked:false,cost:17,
@@ -2662,11 +2662,11 @@ var ROSTER = [
   sprite:'assets/sprites/r308.webp'
 },
 {
-  id:'r309', equipo:'Neo Raimon', nombre:'Creed Caving', original:'Caving',
-  posicion:'Defensa', tipo:'Bosque',
-  tiro:39,pase:55,defensa:65,especial:52,
+  id:'r309', equipo:'Neo Raimon', nombre:'Graham Awn', original:'Graham Awn',
+  posicion:'Centrocampista', tipo:'Fuego',
+  tiro:70,pase:75,defensa:65,especial:80,
   hissatsu:['Corte Giratorio'],tipoTecnica:'defensa',
-  desc:'Un defensa disciplinado que busca cortar las jugadas rivales.',
+  desc:'Un centrocampista disciplinado que busca cortar las jugadas rivales.',
   locked:false,cost:15,
   sprite:'assets/sprites/r309.webp'
 },
@@ -3771,7 +3771,161 @@ var ROSTER = [
   desc:'Delantero del Mary Times y uno de las jugadoras principales de la plantilla.',
   locked:true,cost:370,
   sprite:'assets/sprites/r432.webp'
-}
+},
+
+{
+"id":"r433","equipo":"Campeones Raimon","nombre":"Fletch Blitzen","original":"Blitzen",
+"posicion":"Delantero","tipo":"Viento",
+"tiro":91,"pase":73,"defensa":43,"especial":87,
+"hissatsu":["Relámpago veloz"],"tipoTecnica":"tiro",
+"desc":"Delantero japonés de elemento Viento, conocido por su enorme velocidad y capacidad para lanzarse rápidamente hacia la portería rival.",
+"locked":true,"cost":400,
+"sprite":"assets/sprites/r433.webp"
+},
+{
+"id":"r434","equipo":"Campeones Raimon","nombre":"Zander Warmington","original":"Warmington",
+"posicion":"Portero","tipo":"Fuego",
+"tiro":32,"pase":63,"defensa":88,"especial":91,
+"hissatsu":["Manos liberadas"],"tipoTecnica":"parada",
+"desc":"Portero titular del Raimon y uno de los jugadores que sostiene la defensa del equipo.",
+"locked":true,"cost":410,
+"sprite":"assets/sprites/r434.webp"
+},
+{
+"id":"r435","equipo":"Campeones Raimon","nombre":"Viorain Maleby","original":"Maleby",
+"posicion":"Defensa","tipo":"Bosque",
+"tiro":43,"pase":74,"defensa":90,"especial":86,
+"hissatsu":["Guardián férreo"],"tipoTecnica":"defensa",
+"desc":"Defensa titular del Raimon. Aunque suele mostrarse negativo, sus observaciones ayudan al equipo a encontrar soluciones.",
+"locked":true,"cost":405,
+"sprite":"assets/sprites/r435.webp"
+},
+{
+"id":"r436","equipo":"Campeones Raimon","nombre":"Clement Mariner","original":"Mariner",
+"posicion":"Defensa","tipo":"Viento",
+"tiro":47,"pase":71,"defensa":87,"especial":82,
+"hissatsu":["Remolino acuático"],"tipoTecnica":"defensa",
+"desc":"Defensa titular del Raimon, amante de la natación y conocido por su personalidad despreocupada.",
+"locked":true,"cost":395,
+"sprite":"assets/sprites/r436.webp"
+},
+{
+"id":"r437","equipo":"Campeones Raimon","nombre":"Boone Wretman","original":"Wretman",
+"posicion":"Defensa","tipo":"Viento",
+"tiro":45,"pase":76,"defensa":89,"especial":84,
+"hissatsu":["Bloqueo defensivo"],"tipoTecnica":"defensa",
+"desc":"Defensa titular del Raimon, especialista en analizar las situaciones del partido y elaborar estrategias.",
+"locked":true,"cost":400,
+"sprite":"assets/sprites/r437.webp"
+},
+{
+"id":"r438","equipo":"Campeones Raimon","nombre":"Jazmine Carmine","original":"Matsuri Akasode",
+"posicion":"Centrocampista","tipo":"Fuego",
+"tiro":68,"pase":87,"defensa":64,"especial":84,
+"hissatsu":["Brisa deslizante"],"tipoTecnica":"regate",
+"desc":"Centrocampista titular del Raimon. Aunque tiene una actitud sombría, participa habitualmente en las actividades del equipo.",
+"locked":true,"cost":400,
+"sprite":"assets/sprites/r438.webp"
+},
+{
+"id":"r439","equipo":"Campeones Raimon","nombre":"Colton Sharps","original":"Sharps",
+"posicion":"Centrocampista","tipo":"Bosque",
+"tiro":71,"pase":88,"defensa":67,"especial":83,
+"hissatsu":["Pase cruzado"],"tipoTecnica":"pase",
+"desc":"Centrocampista titular del Raimon y uno de los jugadores habituales del centro del campo.",
+"locked":true,"cost":400,
+"sprite":"assets/sprites/r439.webp"
+},
+{
+"id":"r440","equipo":"Campeones Raimon","nombre":"Maddock Jackson","original":"Jackson",
+"posicion":"Centrocampista","tipo":"Montaña",
+"tiro":74,"pase":84,"defensa":69,"especial":82,
+"hissatsu":["Carga poderosa"],"tipoTecnica":"regate",
+"desc":"Centrocampista titular del Raimon con un estilo de juego físico y directo.",
+"locked":true,"cost":400,
+"sprite":"assets/sprites/r440.webp"
+},
+{
+"id":"r441","equipo":"Campeones Raimon","nombre":"Eleanor Estrella","original":"Estrella",
+"posicion":"Centrocampista","tipo":"Viento",
+"tiro":76,"pase":86,"defensa":62,"especial":85,
+"hissatsu":["Vuelo de Ícaro"],"tipoTecnica":"regate",
+"desc":"Centrocampista titular del Raimon y una de las jugadoras más destacadas de la formación.",
+"locked":true,"cost":405,
+"sprite":"assets/sprites/r441.webp"
+},
+{
+"id":"r442","equipo":"Campeones Raimon","nombre":"Darian Moonward","original":"Moonward",
+"posicion":"Centrocampista","tipo":"Bosque",
+"tiro":82,"pase":91,"defensa":76,"especial":89,
+"hissatsu":["Remate Bahamut"],"tipoTecnica":"tiro",
+"desc":"Capitán del Raimon y uno de los principales líderes del equipo. Destaca por su capacidad para dirigir el juego.",
+"locked":true,"cost":430,
+"sprite":"assets/sprites/r442.webp"
+},
+{
+"id":"r443","equipo":"Campeones Raimon","nombre":"Harper Evans","original":"Haru Endou",
+"posicion":"Delantero","tipo":"Montaña",
+"tiro":94,"pase":82,"defensa":46,"especial":93,
+"hissatsu":["Chilena"],"tipoTecnica":"tiro",
+"desc":"El delantero estrella del Raimon y conocido como el monstruo del fútbol. Es hijo de Mark Evans y lleva el dorsal 10.",
+"locked":true,"cost":450,
+"sprite":"assets/sprites/r443.webp"
+},
+{
+"id":"r444","equipo":"Campeones Raimon","nombre":"Talon Lewis","original":"Lewis",
+"posicion":"Delantero","tipo":"Bosque",
+"tiro":89,"pase":76,"defensa":44,"especial":86,
+"hissatsu":["Remate potente"],"tipoTecnica":"tiro",
+"desc":"Delantero titular del Raimon que forma junto a Harper una de las principales amenazas ofensivas del equipo.",
+"locked":true,"cost":415,
+"sprite":"assets/sprites/r444.webp"
+},
+{
+"id":"r445","equipo":"Campeones Raimon","nombre":"Nino Gamberini","original":"Natsuki Ebihara",
+"posicion":"Delantero","tipo":"Fuego",
+"tiro":84,"pase":70,"defensa":42,"especial":80,
+"hissatsu":["Remate ardiente"],"tipoTecnica":"tiro",
+"desc":"Delantero suplente del Raimon que espera su oportunidad para entrar al terreno de juego y reforzar el ataque.",
+"locked":true,"cost":375,
+"sprite":"assets/sprites/r445.webp"
+},
+{
+"id":"r446","equipo":"Campeones Raimon","nombre":"Hortensia Raintree","original":"Raintree",
+"posicion":"Defensa","tipo":"Bosque",
+"tiro":41,"pase":70,"defensa":82,"especial":77,
+"hissatsu":["Corte defensivo"],"tipoTecnica":"defensa",
+"desc":"Defensa suplente del Raimon que forma parte de la segunda unidad del equipo.",
+"locked":true,"cost":365,
+"sprite":"assets/sprites/r446.webp"
+},
+{
+"id":"r447","equipo":"Campeones Raimon","nombre":"Milan McGrath","original":"McGrath",
+"posicion":"Defensa","tipo":"Viento",
+"tiro":43,"pase":68,"defensa":81,"especial":76,
+"hissatsu":["Bloqueo de viento"],"tipoTecnica":"defensa",
+"desc":"Defensa suplente del Raimon que puede entrar para aportar solidez a la línea defensiva.",
+"locked":true,"cost":360,
+"sprite":"assets/sprites/r447.webp"
+},
+{
+"id":"r448","equipo":"Campeones Raimon","nombre":"Kaeo Springfield","original":"Reo Kasuga",
+"posicion":"Centrocampista","tipo":"Bosque",
+"tiro":65,"pase":82,"defensa":63,"especial":78,
+"hissatsu":["Pase preciso"],"tipoTecnica":"pase",
+"desc":"Centrocampista suplente del Raimon que forma parte del banquillo del equipo.",
+"locked":true,"cost":365,
+"sprite":"assets/sprites/r448.webp"
+},
+{
+"id":"r449","equipo":"Campeones Raimon","nombre":"Mami Sigdale","original":"Mami Sigdale",
+"posicion":"Portero","tipo":"Montaña",
+"tiro":54,"pase":70,"defensa":86,"especial":80,
+"hissatsu":["Parada Celestial"],"tipoTecnica":"parada",
+"desc":"Portera suplente del Raimon que espera su oportunidad para entrar al terreno de juego y reforzar la porteria.",
+"locked":true,"cost":375,
+"sprite":"assets/sprites/r449.webp"
+},
 
 ]
 
