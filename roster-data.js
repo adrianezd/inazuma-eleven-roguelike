@@ -300,7 +300,7 @@ var ROSTER = [
   },
   // -- Ampliación del plantel (segunda ronda de verificación, ver README) --
   {
-    id: 'r17', equipo:'Diamond Dust', nombre: 'Bryce Withingale', original: 'Suzuno Fuusuke',
+    id: 'r17', equipo: 'Caos', nombre: 'Bryce Withingale', original: 'Suzuno Fuusuke',
     posicion: 'Delantero', tipo: 'Viento',
     tiro: 84, pase: 60, defensa: 38, especial: 73,
     hissatsu:['Balón Iceberg'],tipoTecnica:'tiro',
