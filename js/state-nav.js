@@ -185,6 +185,7 @@ function render() {
   appEl.classList.toggle('no-anim', viewKey === lastRenderedScreen || !!(G.meta && G.meta.reduceMotion));
   lastRenderedScreen = viewKey;
   appEl.innerHTML = html;
+  if (typeof autoFoldPanels === 'function') autoFoldPanels(appEl);
   restoreFocusAfterRerender(focusInfo);
   // Confeti al aparecer una ventana de trofeo nueva (no en avisos con data-nofx).
   var trophyEl = appEl.querySelector('.jugador-trophy-card:not([data-nofx])');
