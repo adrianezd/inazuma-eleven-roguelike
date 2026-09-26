@@ -27,6 +27,7 @@ var APP_PATCH_NOTES = [
       'Partido: los jugadores mantienen la formación, la posesión depende de la fuerza de los equipos y se ven dos goles seguidos.',
       'Modo Mundial: elige Temporada 1 o Temporada 2 (Academia Alius, de Tormenta de Géminis a Genesis), con draft al ganar cada partido.',
       'Modo Carrera: plantilla a mano, eligiendo tú los 16 jugadores (con tope de media). Modo Mundial: Temporada 3 con los rivales del torneo mundial.',
+      'Modo Mundial Temporada 2 con el recorrido real (20 partidos, derrotas de guion, lesiones, salidas y fichajes por historia) y Temporada 3 con la plantilla de Inazuma Japón.',
       'Mi perfil en el menú: partidos, victorias, goles y títulos de todos los modos.',
       'Menú: botón Continuar carrera con el resumen de tu club, y botón Novedades.',
       'Champions: cruces de ida y vuelta rediseñados con casillas de cada partido y el global.',

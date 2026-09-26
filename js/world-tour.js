@@ -182,15 +182,35 @@ function wtTeamStage(id, name, ownTeams, power, fillPool) {
   for (var i = 0; picked.length < 6 && i < fill.length; i++) picked.push(fill[i]);
   return { id: id, name: name, power: power, players: wtSquad(picked.map(function (p, k) { return [p.id, Math.round(power + 8 - k * 1.5)]; })) };
 }
+// Recorrido real de Inazuma Eleven 2 (dado por el usuario). Extras por etapa:
+// forcedLoss (derrota de guion), injures (lesionados, con el Raimon), leaves (se va),
+// joins ([id, delta de media, nombre], se une siempre con el Raimon).
+function wtStageExtra(stage, extra) { return Object.assign(stage, extra); }
+function wtUmbrellaStage(id, power) {
+  var base = WORLD_TOUR_STAGES.find(function (st) { return st.id === 'umbrella'; });
+  return { id: id, name: 'Umbrella', power: power, players: base.players };
+}
 var WORLD_TOUR_STAGES_T2 = [
-  wtTeamStage('t2-geminis', 'Tormenta de Géminis', ['Tormenta de Géminis'], 56),
-  wtTeamStage('t2-epsilon', 'Épsilon', ['Épsilon'], 60),
-  wtTeamStage('t2-diamond', 'Diamond Dust', ['Diamond Dust', 'Polvo de Diamante'], 64),
-  wtTeamStage('t2-prominence', 'Prominence', ['Prominence'], 68),
-  wtTeamStage('t2-caos', 'Caos', ['Caos'], 74),
-  wtTeamStage('t2-emperadores', 'Emperadores Oscuros', ['Emperadores Oscuros'], 80),
-  wtTeamStage('t2-genesis', 'Genesis', ['Genesis'], 86),
-  wtTeamStage('t2-alius', 'Alius Masters', ['Alius Masters'], 92)
+  wtStageExtra(wtTeamStage('t2-geminis1', 'Tormenta de Géminis', ['Tormenta de Géminis'], 70), { forcedLoss: true, injures: ['r47', 'r46', 'r49'], lossMessage: 'Derrota inevitable ante Tormenta de Géminis: Timmy, Steve y Jim se lesionan.' }),
+  wtUmbrellaStage('t2-umbrella', 46),
+  wtStageExtra(wtTeamStage('t2-servicio', 'Servicio Secreto', ['Servicio Secreto'], 55), { joins: [['r57', -3, 'Conwell']] }),
+  wtStageExtra(wtTeamStage('t2-geminis2', 'Tormenta de Géminis', ['Tormenta de Géminis'], 66), { leaves: ['r02'], leaveMessage: 'Axel se marcha del equipo.' }),
+  wtStageExtra(wtTeamStage('t2-alpino', 'Alpino', ['Alpino'], 50), { joins: [['r08', -3, 'Shawn']] }),
+  wtTeamStage('t2-geminis3', 'Tormenta de Géminis', ['Tormenta de Géminis'], 68),
+  wtStageExtra(wtTeamStage('t2-claustro', 'Claustro Sagrado', ['Claustro Sagrado'], 60), { joins: [['r244', -3, 'Scotty']] }),
+  wtTeamStage('t2-epsilon1', 'Épsilon', ['Épsilon'], 70),
+  wtTeamStage('t2-redux', 'Royal Academy Redux', ['Royal Academy'], 70),
+  wtTeamStage('t2-triplec', 'Triple C', ['Triple C'], 50),
+  wtTeamStage('t2-epsilon2', 'Épsilon', ['Épsilon'], 72),
+  wtStageExtra(wtTeamStage('t2-fauxshore', 'Fauxshore', ['Fauxshore'], 42), { joins: [['r11', -3, 'Darren']] }),
+  wtStageExtra(wtTeamStage('t2-genesis1', 'Genesis', ['Genesis'], 91), { forcedLoss: true, injures: ['r03', 'r12', 'r05'], lossMessage: 'Derrota inevitable ante Genesis: Nathan, Tod y Kevin se lesionan.' }),
+  wtStageExtra(wtTeamStage('t2-marytimes', 'Mary Times', ['Mary Times'], 40), { joins: [['r18', -3, 'Hurley']] }),
+  wtStageExtra(wtTeamStage('t2-epsilonplus', 'Épsilon Plus', ['Épsilon'], 78), { joins: [['r42', -2, 'Thor'], ['r02', -2, 'Axel']] }),
+  wtStageExtra(wtTeamStage('t2-zeus', 'Zeus', ['Zeus'], 75), { joins: [['r20', -2, 'Byron']] }),
+  wtTeamStage('t2-genesis2', 'Genesis', ['Genesis'], 88),
+  wtTeamStage('t2-emperadores', 'Emperadores Oscuros', ['Emperadores Oscuros'], 90),
+  wtTeamStage('t2-mararboles', 'Mar de Árboles', ['Mar de Árboles'], 52),
+  wtTeamStage('t2-caos', 'Caos', ['Caos'], 94)
 ];
 // ===== Temporada 3 (FFI): rivales de los mundiales, Inazuma Japón =====
 // Orden de memoria (ajustable aquí). Reserva de jugadores: equipos de la temporada 3.
@@ -198,14 +218,16 @@ var WT_T3_POOL = ['Neo Japón', 'Tarjeteros', 'Ángeles Oscuros', 'FFI Estrellas
 var WORLD_TOUR_STAGES_T3 = [
   wtTeamStage('t3-leones', 'Leones del desierto', ['Leones del desierto'], 58, WT_T3_POOL),
   wtTeamStage('t3-waves', 'Big Waves', ['Big Waves'], 62, WT_T3_POOL),
-  wtTeamStage('t3-dragones', 'Dragones de Fuego', ['Dragones de Fuego'], 66, WT_T3_POOL),
-  wtTeamStage('t3-osreis', 'Os Reis', ['Os Reis'], 70, WT_T3_POOL),
-  wtTeamStage('t3-neo', 'Neo Japón', ['Neo Japón'], 73, WT_T3_POOL),
+  wtTeamStage('t3-neo', 'Neo Japón', ['Neo Japón'], 64, WT_T3_POOL),
+  wtTeamStage('t3-dragones', 'Dragones de Fuego', ['Dragones de Fuego'], 68, WT_T3_POOL),
+  wtTeamStage('t3-osreis', 'Os Reis', ['Os Reis'], 72, WT_T3_POOL),
   wtTeamStage('t3-knights', 'Knights', ['Knights'], 76, WT_T3_POOL),
   wtTeamStage('t3-orfeo', 'Orfeo', ['Orfeo'], 80, WT_T3_POOL),
   wtTeamStage('t3-angeles', 'Ángeles Oscuros', ['Ángeles Oscuros'], 85, WT_T3_POOL),
   wtTeamStage('t3-gigantes', 'Pequeños Gigantes', ['Pequeños Gigantes'], 90, WT_T3_POOL)
 ];
+// Plantilla por defecto de Inazuma Japón (Temporada 3), con los jugadores reales del roster.
+var WORLD_TOUR_IJ_BASE_IDS = [['r01', 72], ['r02', 74], ['r03', 71], ['r04', 73], ['r05', 72], ['r08', 70], ['r11', 69], ['r12', 68], ['r15', 69], ['r18', 68], ['r20', 72], ['r23', 69], ['r42', 70], ['r50', 68], ['r46', 64], ['r47', 64]];
 function worldTourSetupSeason() { return G.worldTourSetupSeason === 3 ? 3 : (G.worldTourSetupSeason === 2 ? 2 : 1); }
 window.actionSetWorldTourSeason = function (s) { G.worldTourSetupSeason = s === 3 ? 3 : (s === 2 ? 2 : 1); render(); };
 var WORLD_TOUR_WIN_BOOST_MIN = 2;
@@ -360,7 +382,7 @@ window.actionGoWorldTour = function () {
 };
 window.actionStartWorldTour = function () {
   var useRandom = worldTourSetupSquadType() === 'random';
-  var squad = useRandom ? worldTourRandomSquad() : WORLD_TOUR_RAIMON_BASE.map(function (p) { return Object.assign({}, p); });
+  var squad = useRandom ? worldTourRandomSquad() : (worldTourSetupSeason() === 3 ? wtSquad(WORLD_TOUR_IJ_BASE_IDS) : WORLD_TOUR_RAIMON_BASE.map(function (p) { return Object.assign({}, p); }));
   if (!useRandom && worldTourSetupSpecials()) squad = squad.concat(WORLD_TOUR_RAIMON_SPECIALS.map(function (p) { return Object.assign({}, p); }));
   var legend = worldTourSetupLegend();
   var legendBoost = legend ? worldTourLegendWins() * 3 : 0;
@@ -369,7 +391,7 @@ window.actionStartWorldTour = function () {
   // partida) -- clonado aparte para no tocar nunca la potencia base.
   // Siempre el recorrido completo (ver comentario de arriba).
   var season = worldTourSetupSeason();
-  var seasonBoost = season === 3 ? 20 : (season === 2 ? 10 : 0);
+  var seasonBoost = season === 2 ? 10 : 0;
   if (seasonBoost && !useRandom) squad.forEach(function (p) { p.tiro += seasonBoost; p.pase += seasonBoost; p.defensa += seasonBoost; p.especial += seasonBoost; });
   var stages = (season === 3 ? WORLD_TOUR_STAGES_T3 : season === 2 ? WORLD_TOUR_STAGES_T2 : WORLD_TOUR_STAGES).slice().map(function (st) {
     return legendBoost ? Object.assign({}, st, { power: Math.min(99, st.power + legendBoost) }) : st;
@@ -384,7 +406,7 @@ window.actionStartWorldTour = function () {
     startingSquad: squad.map(function (p) { return Object.assign({}, p); }),
     isRaimon: !useRandom,
     season: season,
-    teamName: useRandom ? ((G.worldTourSetupName || '').trim() || 'Tu Equipo') : 'Raimon',
+    teamName: useRandom ? ((G.worldTourSetupName || '').trim() || 'Tu Equipo') : (season === 3 ? 'Inazuma Japón' : 'Raimon'),
     teamShieldName: useRandom ? (G.worldTourSetupShield || null) : null,
     formationId: WORLD_TOUR_DEFAULT_FORMATION,
     captainId: null,
@@ -429,7 +451,7 @@ function worldTourMatchupCardHtml(oppName, contextLabel) {
 function worldTourShieldPath() {
   var wt = G.worldTour;
   if (!wt) return WORLD_TOUR_RAIMON_SHIELD;
-  if (wt.isRaimon) return WORLD_TOUR_RAIMON_SHIELD;
+  if (wt.isRaimon) return wt.season === 3 ? teamShieldPath('Inazuma Japon') : WORLD_TOUR_RAIMON_SHIELD;
   return wt.teamShieldName ? teamShieldPath(wt.teamShieldName) : PLAYER_SHIELD;
 }
 
@@ -670,7 +692,7 @@ window.actionSimulateWorldTourMatch = function (visualMode) {
   var stage = worldTourStage();
   if (!stage || G.worldTour.won) return;
   worldTourBridgeFutdraft(stage);
-  var sim = futDraftSimulateMatchCore(stage.power);
+  var sim = worldTourRigSim(stage, futDraftSimulateMatchCore(stage.power));
   G.futdraft.live = {
     oppSide: { name: stage.name }, modifier: sim.modifier,
     minute: 0, pending: sim.timeline.slice(), revealed: [],
@@ -691,13 +713,22 @@ window.actionSkipWorldTourMatch = function () {
   var stage = worldTourStage();
   if (!stage || G.worldTour.won) return;
   worldTourBridgeFutdraft(stage);
-  var sim = futDraftSimulateMatchCore(stage.power);
+  var sim = worldTourRigSim(stage, futDraftSimulateMatchCore(stage.power));
   G.futdraft.live = { oppSide: { name: stage.name }, modifier: sim.modifier, myGoals: sim.myGoals, oppGoals: sim.oppGoals, finalMyGoals: sim.myGoals, finalOppGoals: sim.oppGoals, revealed: sim.timeline, myAtk: sim.myAtk, myDef: sim.myDef, effectiveOppPower: sim.effectiveOppPower, isWorldTour: true, youAreHome: true };
   finishWorldTourMatch();
 };
 // Empate: se decide con una tanda de penaltis resumida (mismo criterio
 // que la Copa del Rey de Modo Carrera, careerCupPenaltyShootout), sin
 // pantalla de tanda completa, para no salirse del flujo de 3 botones.
+function worldTourRigSim(stage, sim) {
+  if (!stage.forcedLoss || sim.myGoals < sim.oppGoals) return sim;
+  var f = G.futdraft;
+  var myPlayers = f.lineup.map(function (s) { return s.player; });
+  var oppPlayers = (f.oppPlayersOverride && f.oppPlayersOverride.length) ? f.oppPlayersOverride : stage.players;
+  sim.oppGoals = sim.myGoals + 1 + (Math.random() < 0.5 ? 1 : 0);
+  sim.timeline = futDraftBuildTimeline(sim.myGoals, sim.oppGoals, myPlayers, oppPlayers);
+  return sim;
+}
 function worldTourPenaltyShootout(oppPower) {
   if (G.futdraft && G.futdraft.live && G.futdraft.live.penaltyResult) return G.futdraft.live.penaltyResult;
   var myScore = worldTourTeamScore();
@@ -721,8 +752,23 @@ function finishWorldTourMatch() {
   if (futDraftLivePenaltyGate(live, stage.name || (G.futdraft.oppName) || 'Rival', worldTourTeamScore() - stage.power, myGoals === oppGoals, finishWorldTourMatch)) return;
   var penalty = myGoals === oppGoals ? worldTourPenaltyShootout(stage.power) : null;
   var playerWon = penalty ? penalty.myGoals > penalty.oppGoals : myGoals > oppGoals;
+  if (stage.forcedLoss) playerWon = false;
 
-  if (playerWon) {
+  if (stage.forcedLoss) {
+    // Derrota de guion (como en la serie): la historia sigue sin repetir el partido.
+    wt.stageIndex++;
+    wt.lastLossMessage = wt.isRaimon ? stage.lossMessage : 'Derrota inevitable: la historia sigue.';
+    if (wt.isRaimon && stage.injures) {
+      var hurt = [];
+      stage.injures.forEach(function (id) {
+        var i = wt.squad.findIndex(function (p) { return p.id === id; });
+        if (i === -1) return;
+        var pl = wt.squad.splice(i, 1)[0];
+        wt.squad.push(pl);
+        hurt.push(pl.nombre);
+      });
+    }
+  } else if (playerWon) {
     var boost = Math.round(rand(WORLD_TOUR_WIN_BOOST_MIN, WORLD_TOUR_WIN_BOOST_MAX) * 10) / 10;
     wt.lastBoost = boost;
     wt.squad.forEach(function (p) { p.tiro += boost; p.pase += boost; p.defensa += boost; p.especial += boost; });
@@ -730,7 +776,8 @@ function finishWorldTourMatch() {
     // No ofrecer en el draft a jugadores que ya tienes en la plantilla --
     // a petición explícita.
     var squadIds = wt.squad.map(function (p) { return p.id; });
-    var available = stage.players.filter(function (p) { return squadIds.indexOf(p.id) === -1; });
+    var joinIds = (stage.joins || []).map(function (j) { return j[0]; });
+    var available = stage.players.filter(function (p) { return squadIds.indexOf(p.id) === -1 && joinIds.indexOf(p.id) === -1; });
     var options = available.slice().sort(function () { return Math.random() - 0.5; }).slice(0, wt.draftSize || 3);
     // Los fichajes del draft ya no salen con la media fija de la etapa
     // (quedaban flojísimos a mitad de recorrido, cuando tu equipo ya ha
@@ -750,10 +797,13 @@ function finishWorldTourMatch() {
     // Raimon) -- a petición explícita. Su media ya no es fija (ver
     // WORLD_TOUR_STORY_JOINS): se calcula sobre tu media actual, tras
     // aplicar ya la subida por la victoria de esta etapa.
-    if (wt.isRaimon && WORLD_TOUR_STORY_JOINS[stage.id]) {
+    if (wt.isRaimon && stage.leaves) {
+      wt.squad = wt.squad.filter(function (p) { return stage.leaves.indexOf(p.id) === -1; });
+    }
+    if (wt.isRaimon && (stage.joins || WORLD_TOUR_STORY_JOINS[stage.id])) {
       var joinedNames = [];
       var teamScoreForJoins = worldTourTeamScore();
-      WORLD_TOUR_STORY_JOINS[stage.id].forEach(function (j) {
+      (stage.joins || WORLD_TOUR_STORY_JOINS[stage.id]).forEach(function (j) {
         var already = wt.squad.some(function (p) { return p.id === j[0]; });
         if (already) return;
         var joinOvr = Math.round(clamp(teamScoreForJoins + j[1], 30, 99));
