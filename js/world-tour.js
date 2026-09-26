@@ -188,19 +188,23 @@ var WORLD_TOUR_STAGES_T2 = [
   wtTeamStage('t2-diamond', 'Diamond Dust', ['Diamond Dust', 'Polvo de Diamante'], 64),
   wtTeamStage('t2-prominence', 'Prominence', ['Prominence'], 68),
   wtTeamStage('t2-caos', 'Caos', ['Caos'], 74),
-  wtTeamStage('t2-genesis', 'Genesis', ['Genesis'], 82)
+  wtTeamStage('t2-emperadores', 'Emperadores Oscuros', ['Emperadores Oscuros'], 80),
+  wtTeamStage('t2-genesis', 'Genesis', ['Genesis'], 86),
+  wtTeamStage('t2-alius', 'Alius Masters', ['Alius Masters'], 92)
 ];
 // ===== Temporada 3 (FFI): rivales de los mundiales, Inazuma Japón =====
 // Orden de memoria (ajustable aquí). Reserva de jugadores: equipos de la temporada 3.
-var WT_T3_POOL = ['Los Cuatro Magníficos', 'Neo Japón', 'Tarjeteros', 'Ángeles Oscuros', 'FFI Estrellas', 'Orfeo', 'Unicorn', 'Pequeños Gigantes', 'Academia Ogre'];
+var WT_T3_POOL = ['Neo Japón', 'Tarjeteros', 'Ángeles Oscuros', 'FFI Estrellas', 'Orfeo', 'Unicorn', 'Pequeños Gigantes', 'Academia Ogre'];
 var WORLD_TOUR_STAGES_T3 = [
   wtTeamStage('t3-leones', 'Leones del desierto', ['Leones del desierto'], 58, WT_T3_POOL),
   wtTeamStage('t3-waves', 'Big Waves', ['Big Waves'], 62, WT_T3_POOL),
   wtTeamStage('t3-dragones', 'Dragones de Fuego', ['Dragones de Fuego'], 66, WT_T3_POOL),
   wtTeamStage('t3-osreis', 'Os Reis', ['Os Reis'], 70, WT_T3_POOL),
-  wtTeamStage('t3-unicorn', 'Unicorn', ['Unicorn'], 75, WT_T3_POOL),
-  wtTeamStage('t3-knights', 'Knights', ['Knights'], 79, WT_T3_POOL),
-  wtTeamStage('t3-orfeo', 'Orfeo', ['Orfeo'], 85, WT_T3_POOL)
+  wtTeamStage('t3-neo', 'Neo Japón', ['Neo Japón'], 73, WT_T3_POOL),
+  wtTeamStage('t3-knights', 'Knights', ['Knights'], 76, WT_T3_POOL),
+  wtTeamStage('t3-orfeo', 'Orfeo', ['Orfeo'], 80, WT_T3_POOL),
+  wtTeamStage('t3-angeles', 'Ángeles Oscuros', ['Ángeles Oscuros'], 85, WT_T3_POOL),
+  wtTeamStage('t3-gigantes', 'Pequeños Gigantes', ['Pequeños Gigantes'], 90, WT_T3_POOL)
 ];
 function worldTourSetupSeason() { return G.worldTourSetupSeason === 3 ? 3 : (G.worldTourSetupSeason === 2 ? 2 : 1); }
 window.actionSetWorldTourSeason = function (s) { G.worldTourSetupSeason = s === 3 ? 3 : (s === 2 ? 2 : 1); render(); };
@@ -299,7 +303,7 @@ function renderWorldTourSetup() {
           '<button class="btn btn-tiny' + (worldTourSetupSeason() === 2 ? ' active' : '') + '" onclick="actionSetWorldTourSeason(2)">Temporada 2</button>' +
           '<button class="btn btn-tiny' + (worldTourSetupSeason() === 3 ? ' active' : '') + '" onclick="actionSetWorldTourSeason(3)">Temporada 3</button>' +
         '</div>' +
-        '<p class="dim small center-text mt">' + (worldTourSetupSeason() === 1 ? 'Los equipos de Inazuma Eleven 1, del Occult al Equipo Ogro.' : worldTourSetupSeason() === 2 ? 'Los partidos de la Academia Alius de Inazuma Eleven 2, de Tormenta de Géminis a Genesis.' : 'El torneo mundial de Inazuma Eleven 3, con Inazuma Japón, de los Leones del desierto a Orfeo.') + '</p>' +
+        '<p class="dim small center-text mt">' + (worldTourSetupSeason() === 1 ? 'Los equipos de Inazuma Eleven 1, del Occult al Equipo Ogro.' : worldTourSetupSeason() === 2 ? 'Los partidos de la Academia Alius de Inazuma Eleven 2, de Tormenta de Géminis a los Alius Masters.' : 'El torneo mundial de Inazuma Eleven 3, con Inazuma Japón, de los Leones del desierto a los Pequeños Gigantes.') + '</p>' +
       '</div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:8px" class="center-text">Tu equipo</h3>' +
