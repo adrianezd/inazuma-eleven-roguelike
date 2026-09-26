@@ -1208,7 +1208,7 @@ var ROSTER = [
   },
     {id: 'r132', equipo:'Tormenta de Géminis', nombre: 'Ganymede', original: 'Ganymede',
     posicion: 'Defensa', tipo: 'Montaña',
-    tiro: 43, pase: 70, defensa: 79, especial: 76,
+    tiro: 47, pase: 74, defensa: 83, especial: 80,
     hissatsu:['Gravitación'],tipoTecnica:'defensa',
     desc: 'Defensa de Tormenta de Géminis',
     locked: false, cost:134
@@ -1622,10 +1622,10 @@ var ROSTER = [
   locked:true,cost:168
 },
 {
-  id:'r184', equipo:'Tormenta de Géminis', nombre:'Galileo', original:'Goryuu Reo', sprite:'assets/sprites/r184.webp',
+  id:'r184', equipo:'Tormenta de Géminis', nombre:'Gordon Star', original:'Goryuu Reo', sprite:'assets/sprites/r184.webp',
   posicion:'Portero', tipo:'Bosque',
   tiro:22,pase:50,defensa:84,especial:78,
-  hissatsu:['Agujero negro'],tipoTecnica:'portero',
+  hissatsu:['Agujero de Gusano'],tipoTecnica:'portero',
   desc:'Portero del Gemini Storm, del proyecto Aliea Academy, conocido como "Gorleo". Su Agujero de Gusano se traga cualquier tiro.',
   locked:true,cost:176
 },
@@ -3539,7 +3539,7 @@ var ROSTER = [
 {
   id:'r409', equipo:'Tormenta de Géminis', nombre:'Janus', original:'Janus',
   posicion:'Delantero', tipo:'Bosque',
-  tiro:81,pase:86,defensa:75,especial:83,
+  tiro:85,pase:90,defensa:79,especial:87,
   hissatsu:['Astro remate','Disparo cósmico'],tipoTecnica:'tiro',
   desc:'Un alienígena que se dedica a destrozar institutos.',
   locked:true,cost:400,
@@ -3928,256 +3928,265 @@ var ROSTER = [
 "sprite":"assets/sprites/r449.webp"
 },
 {
-"id":"r450","equipo":"Tormenta de Géminis","nombre":"Coral","original":"Connor Shuttle",
-"posicion":"Defensa","tipo":"Montaña",
-"tiro":37,"pase":60,"defensa":72,"especial":66,
-"hissatsu":["Cinto astral"],"tipoTecnica":"defensa",
-"desc":"Defensa de Tormenta de Géminis (dorsal 2).",
+"id":"r450","equipo":"Tormenta de Géminis","nombre":"Diam","original":"Dylan Bluemoon",
+"posicion":"Delantero","tipo":"Fuego",
+"tiro":83,"pase":69,"defensa":43,"especial":81,
+"hissatsu":["Astro remate","Disparo cósmico"],"tipoTecnica":"tiro",
+"desc":"Delantero de Tormenta de Géminis (dorsal 11).",
 "locked":true,"cost":390,
 "sprite":"assets/sprites/r450.webp"
 },
 {
-"id":"r451","equipo":"Tormenta de Géminis","nombre":"Gigs","original":"Jim Landing",
-"posicion":"Defensa","tipo":"Bosque",
-"tiro":37,"pase":60,"defensa":72,"especial":66,
-"hissatsu":["Recobro"],"tipoTecnica":"defensa",
-"desc":"Defensa de Tormenta de Géminis (dorsal 3).",
+"id":"r451","equipo":"Tormenta de Géminis","nombre":"Ryhm","original":"Rhona Countdown",
+"posicion":"Centrocampista","tipo":"Viento",
+"tiro":62,"pase":76,"defensa":58,"especial":72,
+"hissatsu":["Disparo cósmico"],"tipoTecnica":"regate",
+"desc":"Centrocampista de Tormenta de Géminis (dorsal 9).",
 "locked":true,"cost":390,
 "sprite":"assets/sprites/r451.webp"
 },
 {
-"id":"r452","equipo":"Tormenta de Géminis","nombre":"Charon","original":"Charles Riverboat",
-"posicion":"Defensa","tipo":"Montaña",
-"tiro":37,"pase":60,"defensa":72,"especial":66,
-"hissatsu":["Flash de fotones"],"tipoTecnica":"defensa",
-"desc":"Defensa de Tormenta de Géminis (dorsal 5).",
+"id":"r452","equipo":"Tormenta de Géminis","nombre":"Pandora","original":"Pat Box",
+"posicion":"Centrocampista","tipo":"Bosque",
+"tiro":62,"pase":76,"defensa":58,"especial":72,
+"hissatsu":["Gravitación","Teleportación"],"tipoTecnica":"regate",
+"desc":"Centrocampista de Tormenta de Géminis (dorsal 6).",
 "locked":true,"cost":390,
 "sprite":"assets/sprites/r452.webp"
 },
 {
-"id":"r453","equipo":"Tormenta de Géminis","nombre":"Pandora","original":"Pat Box",
-"posicion":"Centrocampista","tipo":"Viento",
-"tiro":58,"pase":72,"defensa":54,"especial":68,
-"hissatsu":["Gravitación","Teleportación"],"tipoTecnica":"regate",
-"desc":"Centrocampista de Tormenta de Géminis (dorsal 6).",
+"id":"r453","equipo":"Tormenta de Géminis","nombre":"Galileo","original":"Gordon Star",
+"posicion":"Portero","tipo":"Viento",
+"tiro":26,"pase":56,"defensa":80,"especial":76,
+"hissatsu":["Agujero negro"],"tipoTecnica":"parada",
+"desc":"Portero de Tormenta de Géminis (dorsal 1).",
 "locked":true,"cost":390,
 "sprite":"assets/sprites/r453.webp"
 },
 {
 "id":"r454","equipo":"Tormenta de Géminis","nombre":"Grengo","original":"Gregory Saturn",
 "posicion":"Centrocampista","tipo":"Bosque",
-"tiro":58,"pase":72,"defensa":54,"especial":68,
+"tiro":62,"pase":76,"defensa":58,"especial":72,
 "hissatsu":["Teleportación"],"tipoTecnica":"regate",
 "desc":"Centrocampista de Tormenta de Géminis (dorsal 7).",
 "locked":true,"cost":390,
 "sprite":"assets/sprites/r454.webp"
 },
 {
-"id":"r455","equipo":"Tormenta de Géminis","nombre":"Io","original":"Izzy Jupiter",
-"posicion":"Centrocampista","tipo":"Viento",
-"tiro":58,"pase":72,"defensa":54,"especial":68,
-"hissatsu":["Teleportación","Gravitación"],"tipoTecnica":"regate",
-"desc":"Centrocampista de Tormenta de Géminis (dorsal 8).",
-"locked":true,"cost":390,
-"sprite":"assets/sprites/r455.webp"
-},
-{
-"id":"r456","equipo":"Tormenta de Géminis","nombre":"Rihm","original":"Rhona Countdown",
-"posicion":"Centrocampista","tipo":"Bosque",
-"tiro":58,"pase":72,"defensa":54,"especial":68,
-"hissatsu":["Disparo cósmico"],"tipoTecnica":"regate",
-"desc":"Centrocampista de Tormenta de Géminis (dorsal 9).",
-"locked":true,"cost":390,
-"sprite":"assets/sprites/r456.webp"
-},
-{
-"id":"r457","equipo":"Tormenta de Géminis","nombre":"Diam","original":"Dylan Bluemoon",
-"posicion":"Delantero","tipo":"Viento",
-"tiro":79,"pase":65,"defensa":39,"especial":77,
-"hissatsu":["Astro remate","Disparo cósmico"],"tipoTecnica":"tiro",
-"desc":"Delantero de Tormenta de Géminis (dorsal 11).",
-"locked":true,"cost":390,
-"sprite":"assets/sprites/r457.webp"
-},
-{
-"id":"r458","equipo":"Épsilon","nombre":"Kenville","original":"Craven Kenville",
-"posicion":"Defensa","tipo":"Montaña",
-"tiro":45,"pase":68,"defensa":80,"especial":74,
-"hissatsu":["Teleportación","Gravedad grave"],"tipoTecnica":"defensa",
-"desc":"Defensa de Épsilon (dorsal 2).",
-"locked":true,"cost":390,
-"sprite":"assets/sprites/r458.webp"
-},
-{
-"id":"r459","equipo":"Épsilon","nombre":"Mole","original":"Anna Mole",
-"posicion":"Defensa","tipo":"Bosque",
-"tiro":45,"pase":68,"defensa":80,"especial":74,
-"hissatsu":["Teleportación","Flash de fotones"],"tipoTecnica":"defensa",
-"desc":"Defensa de Épsilon (dorsal 3).",
-"locked":true,"cost":390,
-"sprite":"assets/sprites/r459.webp"
-},
-{
-"id":"r460","equipo":"Épsilon","nombre":"Kayson","original":"Kayson Wattever",
-"posicion":"Defensa","tipo":"Montaña",
-"tiro":45,"pase":68,"defensa":80,"especial":74,
-"hissatsu":["Gravedad grave","Cinto astral"],"tipoTecnica":"defensa",
-"desc":"Defensa de Épsilon (dorsal 4).",
-"locked":true,"cost":390,
-"sprite":"assets/sprites/r460.webp"
-},
-{
-"id":"r461","equipo":"Épsilon","nombre":"Tytan","original":"Chris Tytan",
-"posicion":"Defensa","tipo":"Bosque",
-"tiro":45,"pase":68,"defensa":80,"especial":74,
-"hissatsu":["Gravitación"],"tipoTecnica":"defensa",
-"desc":"Defensa de Épsilon (dorsal 5).",
-"locked":true,"cost":390,
-"sprite":"assets/sprites/r461.webp"
-},
-{
-"id":"r462","equipo":"Épsilon","nombre":"Fedora","original":"Mads Hatter",
-"posicion":"Centrocampista","tipo":"Bosque",
-"tiro":66,"pase":80,"defensa":62,"especial":76,
-"hissatsu":["Lluvia de meteoros","Flash de fotones"],"tipoTecnica":"regate",
-"desc":"Centrocampista de Épsilon (dorsal 6).",
-"locked":true,"cost":390,
-"sprite":"assets/sprites/r462.webp"
-},
-{
-"id":"r463","equipo":"Épsilon","nombre":"Krypto","original":"Karen Ripton",
-"posicion":"Centrocampista","tipo":"Viento",
-"tiro":66,"pase":80,"defensa":62,"especial":76,
-"hissatsu":["Astro remate","Lluvia de meteoros"],"tipoTecnica":"regate",
-"desc":"Centrocampista de Épsilon (dorsal 7).",
-"locked":true,"cost":390,
-"sprite":"assets/sprites/r463.webp"
-},
-{
-"id":"r464","equipo":"Épsilon","nombre":"Sworm","original":"Yakker Plantsworm",
-"posicion":"Centrocampista","tipo":"Bosque",
-"tiro":66,"pase":80,"defensa":62,"especial":76,
-"hissatsu":["Lluvia de meteoros"],"tipoTecnica":"regate",
-"desc":"Centrocampista de Épsilon (dorsal 8).",
-"locked":true,"cost":390,
-"sprite":"assets/sprites/r464.webp"
-},
-{
-"id":"r465","equipo":"Épsilon","nombre":"Mercury","original":"Carrie McCuring",
-"posicion":"Delantero","tipo":"Viento",
-"tiro":84,"pase":70,"defensa":44,"especial":82,
-"hissatsu":["Remate de Gaia","Lluvia de meteoros"],"tipoTecnica":"tiro",
-"desc":"Delantero de Épsilon (dorsal 9).",
-"locked":true,"cost":390,
-"sprite":"assets/sprites/r465.webp"
-},
-{
-"id":"r466","equipo":"Épsilon","nombre":"Metron","original":"Ronny Metcalf",
+"id":"r455","equipo":"Épsilon","nombre":"Metron","original":"Ronny Metcalf",
 "posicion":"Delantero","tipo":"Fuego",
 "tiro":87,"pase":73,"defensa":47,"especial":85,
 "hissatsu":["Remate de Gaia","Lluvia de meteoros"],"tipoTecnica":"tiro",
 "desc":"Delantero de Épsilon (dorsal 10).",
 "locked":true,"cost":390,
-"sprite":"assets/sprites/r466.webp"
+"sprite":"assets/sprites/r455.webp"
 },
 {
-"id":"r467","equipo":"Épsilon Plus","nombre":"Dvalin Osc.","original":"Dave Quagmire",
-"posicion":"Portero","tipo":"Montaña",
-"tiro":36,"pase":66,"defensa":90,"especial":86,
-"hissatsu":["Lanza de Odín","Agujero de gusano"],"tipoTecnica":"parada",
-"desc":"Versión oscura de Dvalin, dorsal 1 del Épsilon Plus, el equipo potenciado por la Piedra Alius.",
-"locked":true,"cost":420,
-"sprite":"assets/sprites/r467.webp"
-},
-{
-"id":"r468","equipo":"Épsilon Plus","nombre":"Kenville Osc.","original":"Craven Kenville",
+"id":"r456","equipo":"Épsilon","nombre":"Kenville","original":"Craven Kenville",
 "posicion":"Defensa","tipo":"Bosque",
-"tiro":48,"pase":71,"defensa":83,"especial":77,
+"tiro":45,"pase":68,"defensa":80,"especial":74,
+"hissatsu":["Teleportación","Gravedad grave"],"tipoTecnica":"defensa",
+"desc":"Defensa de Épsilon (dorsal 2).",
+"locked":true,"cost":390,
+"sprite":"assets/sprites/r456.webp"
+},
+{
+"id":"r457","equipo":"Épsilon","nombre":"Fedora","original":"Mads Hatter",
+"posicion":"Centrocampista","tipo":"Bosque",
+"tiro":66,"pase":80,"defensa":62,"especial":76,
+"hissatsu":["Lluvia de meteoros","Flash de fotones"],"tipoTecnica":"regate",
+"desc":"Centrocampista de Épsilon (dorsal 6).",
+"locked":true,"cost":390,
+"sprite":"assets/sprites/r457.webp"
+},
+{
+"id":"r458","equipo":"Épsilon","nombre":"Sworm","original":"Yakker Plantsworm",
+"posicion":"Centrocampista","tipo":"Viento",
+"tiro":66,"pase":80,"defensa":62,"especial":76,
+"hissatsu":["Lluvia de meteoros"],"tipoTecnica":"regate",
+"desc":"Centrocampista de Épsilon (dorsal 8).",
+"locked":true,"cost":390,
+"sprite":"assets/sprites/r458.webp"
+},
+{
+"id":"r459","equipo":"Épsilon","nombre":"Mercury","original":"Carrie McCuring",
+"posicion":"Delantero","tipo":"Fuego",
+"tiro":84,"pase":70,"defensa":44,"especial":82,
+"hissatsu":["Remate de Gaia","Lluvia de meteoros"],"tipoTecnica":"tiro",
+"desc":"Delantero de Épsilon (dorsal 9).",
+"locked":true,"cost":390,
+"sprite":"assets/sprites/r459.webp"
+},
+{
+"id":"r460","equipo":"Épsilon Plus","nombre":"Metron Osc.","original":"Ronny Metcalf",
+"posicion":"Delantero","tipo":"Fuego",
+"tiro":92,"pase":78,"defensa":52,"especial":90,
+"hissatsu":["Lluvia de meteoros","Remate de Gaia"],"tipoTecnica":"tiro",
+"desc":"Versión oscura de Metron, dorsal 10 del Épsilon Plus, el equipo potenciado por la Piedra Alius.",
+"locked":true,"cost":420,
+"sprite":"assets/sprites/r460.webp"
+},
+{
+"id":"r461","equipo":"Épsilon Plus","nombre":"Kenville Osc.","original":"Craven Kenville",
+"posicion":"Defensa","tipo":"Bosque",
+"tiro":50,"pase":73,"defensa":85,"especial":79,
 "hissatsu":["Gravedad grave","Teleportación"],"tipoTecnica":"defensa",
 "desc":"Versión oscura de Kenville, dorsal 2 del Épsilon Plus, el equipo potenciado por la Piedra Alius.",
 "locked":true,"cost":420,
-"sprite":"assets/sprites/r468.webp"
+"sprite":"assets/sprites/r461.webp"
 },
 {
-"id":"r469","equipo":"Épsilon Plus","nombre":"Mole Osc.","original":"Anna Mole",
-"posicion":"Defensa","tipo":"Montaña",
-"tiro":48,"pase":71,"defensa":83,"especial":77,
-"hissatsu":["Flash de fotones","Teleportación"],"tipoTecnica":"defensa",
-"desc":"Versión oscura de Mole, dorsal 3 del Épsilon Plus, el equipo potenciado por la Piedra Alius.",
-"locked":true,"cost":420,
-"sprite":"assets/sprites/r469.webp"
-},
-{
-"id":"r470","equipo":"Épsilon Plus","nombre":"Kayson Osc.","original":"Kayson Wattever",
-"posicion":"Defensa","tipo":"Bosque",
-"tiro":48,"pase":71,"defensa":83,"especial":77,
-"hissatsu":["Gravedad grave","Cinto astral"],"tipoTecnica":"defensa",
-"desc":"Versión oscura de Kayson, dorsal 4 del Épsilon Plus, el equipo potenciado por la Piedra Alius.",
-"locked":true,"cost":420,
-"sprite":"assets/sprites/r470.webp"
-},
-{
-"id":"r471","equipo":"Épsilon Plus","nombre":"Tytan Osc.","original":"Chris Tytan",
-"posicion":"Defensa","tipo":"Montaña",
-"tiro":48,"pase":71,"defensa":83,"especial":77,
-"hissatsu":["Gravitación"],"tipoTecnica":"defensa",
-"desc":"Versión oscura de Tytan, dorsal 5 del Épsilon Plus, el equipo potenciado por la Piedra Alius.",
-"locked":true,"cost":420,
-"sprite":"assets/sprites/r471.webp"
-},
-{
-"id":"r472","equipo":"Épsilon Plus","nombre":"Fedora Osc.","original":"Mads Hatter",
-"posicion":"Centrocampista","tipo":"Viento",
-"tiro":69,"pase":83,"defensa":65,"especial":79,
+"id":"r462","equipo":"Épsilon Plus","nombre":"Fedora Osc.","original":"Mads Hatter",
+"posicion":"Centrocampista","tipo":"Bosque",
+"tiro":73,"pase":87,"defensa":69,"especial":83,
 "hissatsu":["Lluvia de meteoros","Flash de fotones"],"tipoTecnica":"regate",
 "desc":"Versión oscura de Fedora, dorsal 6 del Épsilon Plus, el equipo potenciado por la Piedra Alius.",
 "locked":true,"cost":420,
+"sprite":"assets/sprites/r462.webp"
+},
+{
+"id":"r463","equipo":"Épsilon Plus","nombre":"Sworm Osc.","original":"Yakker Plantsworm",
+"posicion":"Centrocampista","tipo":"Viento",
+"tiro":73,"pase":87,"defensa":69,"especial":83,
+"hissatsu":["Lluvia de meteoros"],"tipoTecnica":"regate",
+"desc":"Versión oscura de Sworm, dorsal 8 del Épsilon Plus, el equipo potenciado por la Piedra Alius.",
+"locked":true,"cost":420,
+"sprite":"assets/sprites/r463.webp"
+},
+{
+"id":"r464","equipo":"Épsilon Plus","nombre":"Mercury Osc.","original":"Carrie McCuring",
+"posicion":"Delantero","tipo":"Fuego",
+"tiro":89,"pase":78,"defensa":49,"especial":87,
+"hissatsu":["Remate de Gaia"],"tipoTecnica":"tiro",
+"desc":"Versión oscura de Mercury, dorsal 9 del Épsilon Plus, el equipo potenciado por la Piedra Alius.",
+"locked":true,"cost":420,
+"sprite":"assets/sprites/r464.webp"
+},
+{
+"id":"r465","equipo":"Tormenta de Géminis","nombre":"Coral","original":"Connor Shuttle",
+"posicion":"Defensa","tipo":"Bosque",
+"tiro":41,"pase":64,"defensa":76,"especial":70,
+"hissatsu":["Cinto astral"],"tipoTecnica":"defensa",
+"desc":"Defensa de Tormenta de Géminis (dorsal 2).",
+"locked":true,"cost":390,
+"sprite":"assets/sprites/r465.webp"
+},
+{
+"id":"r466","equipo":"Tormenta de Géminis","nombre":"Gigs","original":"Jim Landing",
+"posicion":"Defensa","tipo":"Montaña",
+"tiro":41,"pase":64,"defensa":76,"especial":70,
+"hissatsu":["Recobro"],"tipoTecnica":"defensa",
+"desc":"Defensa de Tormenta de Géminis (dorsal 3).",
+"locked":true,"cost":390,
+"sprite":"assets/sprites/r466.webp"
+},
+{
+"id":"r467","equipo":"Tormenta de Géminis","nombre":"Charon","original":"Charles Riverboat",
+"posicion":"Defensa","tipo":"Bosque",
+"tiro":41,"pase":64,"defensa":76,"especial":70,
+"hissatsu":["Flash de fotones"],"tipoTecnica":"defensa",
+"desc":"Defensa de Tormenta de Géminis (dorsal 5).",
+"locked":true,"cost":390,
+"sprite":"assets/sprites/r467.webp"
+},
+{
+"id":"r468","equipo":"Tormenta de Géminis","nombre":"Io","original":"Izzy Jupiter",
+"posicion":"Centrocampista","tipo":"Bosque",
+"tiro":62,"pase":76,"defensa":58,"especial":72,
+"hissatsu":["Teleportación","Gravitación"],"tipoTecnica":"regate",
+"desc":"Centrocampista de Tormenta de Géminis (dorsal 8).",
+"locked":true,"cost":390,
+"sprite":"assets/sprites/r468.webp"
+},
+{
+"id":"r469","equipo":"Épsilon","nombre":"Mole","original":"Anna Mole",
+"posicion":"Defensa","tipo":"Bosque",
+"tiro":45,"pase":68,"defensa":80,"especial":74,
+"hissatsu":["Teleportación","Flash de fotones"],"tipoTecnica":"defensa",
+"desc":"Defensa de Épsilon (dorsal 3).",
+"locked":true,"cost":390,
+"sprite":"assets/sprites/r469.webp"
+},
+{
+"id":"r470","equipo":"Épsilon","nombre":"Kayson","original":"Kayson Wattever",
+"posicion":"Defensa","tipo":"Montaña",
+"tiro":45,"pase":68,"defensa":80,"especial":74,
+"hissatsu":["Gravedad grave","Cinto astral"],"tipoTecnica":"defensa",
+"desc":"Defensa de Épsilon (dorsal 4).",
+"locked":true,"cost":390,
+"sprite":"assets/sprites/r470.webp"
+},
+{
+"id":"r471","equipo":"Épsilon","nombre":"Tytan","original":"Chris Tytan",
+"posicion":"Defensa","tipo":"Bosque",
+"tiro":45,"pase":68,"defensa":80,"especial":74,
+"hissatsu":["Gravitación"],"tipoTecnica":"defensa",
+"desc":"Defensa de Épsilon (dorsal 5).",
+"locked":true,"cost":390,
+"sprite":"assets/sprites/r471.webp"
+},
+{
+"id":"r472","equipo":"Épsilon","nombre":"Krypto","original":"Karen Ripton",
+"posicion":"Centrocampista","tipo":"Bosque",
+"tiro":66,"pase":80,"defensa":62,"especial":76,
+"hissatsu":["Astro remate","Lluvia de meteoros"],"tipoTecnica":"regate",
+"desc":"Centrocampista de Épsilon (dorsal 7).",
+"locked":true,"cost":390,
 "sprite":"assets/sprites/r472.webp"
 },
 {
-"id":"r473","equipo":"Épsilon Plus","nombre":"Krypto Osc.","original":"Karen Ripton",
-"posicion":"Centrocampista","tipo":"Bosque",
-"tiro":69,"pase":83,"defensa":65,"especial":79,
-"hissatsu":["Astro remate","Lluvia de meteoros"],"tipoTecnica":"regate",
-"desc":"Versión oscura de Krypto, dorsal 7 del Épsilon Plus, el equipo potenciado por la Piedra Alius.",
+"id":"r473","equipo":"Épsilon Plus","nombre":"Dvalin Osc.","original":"Dave Quagmire",
+"posicion":"Portero","tipo":"Viento",
+"tiro":38,"pase":68,"defensa":92,"especial":88,
+"hissatsu":["Lanza de Odín","Agujero de gusano"],"tipoTecnica":"parada",
+"desc":"Versión oscura de Dvalin, dorsal 1 del Épsilon Plus, el equipo potenciado por la Piedra Alius.",
 "locked":true,"cost":420,
 "sprite":"assets/sprites/r473.webp"
 },
 {
-"id":"r474","equipo":"Épsilon Plus","nombre":"Sworm Osc.","original":"Yakker Plantsworm",
-"posicion":"Centrocampista","tipo":"Viento",
-"tiro":69,"pase":83,"defensa":65,"especial":79,
-"hissatsu":["Lluvia de meteoros"],"tipoTecnica":"regate",
-"desc":"Versión oscura de Sworm, dorsal 8 del Épsilon Plus, el equipo potenciado por la Piedra Alius.",
+"id":"r474","equipo":"Épsilon Plus","nombre":"Mole Osc.","original":"Anna Mole",
+"posicion":"Defensa","tipo":"Montaña",
+"tiro":50,"pase":73,"defensa":85,"especial":79,
+"hissatsu":["Flash de fotones","Teleportación"],"tipoTecnica":"defensa",
+"desc":"Versión oscura de Mole, dorsal 3 del Épsilon Plus, el equipo potenciado por la Piedra Alius.",
 "locked":true,"cost":420,
 "sprite":"assets/sprites/r474.webp"
 },
 {
-"id":"r475","equipo":"Épsilon Plus","nombre":"Mercury Osc.","original":"Carrie McCuring",
-"posicion":"Delantero","tipo":"Fuego",
-"tiro":87,"pase":73,"defensa":47,"especial":85,
-"hissatsu":["Remate de Gaia"],"tipoTecnica":"tiro",
-"desc":"Versión oscura de Mercury, dorsal 9 del Épsilon Plus, el equipo potenciado por la Piedra Alius.",
+"id":"r475","equipo":"Épsilon Plus","nombre":"Kayson Osc.","original":"Kayson Wattever",
+"posicion":"Defensa","tipo":"Bosque",
+"tiro":50,"pase":73,"defensa":85,"especial":79,
+"hissatsu":["Gravedad grave","Cinto astral"],"tipoTecnica":"defensa",
+"desc":"Versión oscura de Kayson, dorsal 4 del Épsilon Plus, el equipo potenciado por la Piedra Alius.",
 "locked":true,"cost":420,
 "sprite":"assets/sprites/r475.webp"
 },
 {
-"id":"r476","equipo":"Épsilon Plus","nombre":"Metron Osc.","original":"Ronny Metcalf",
-"posicion":"Delantero","tipo":"Viento",
-"tiro":90,"pase":76,"defensa":50,"especial":88,
-"hissatsu":["Lluvia de meteoros","Remate de Gaia"],"tipoTecnica":"tiro",
-"desc":"Versión oscura de Metron, dorsal 10 del Épsilon Plus, el equipo potenciado por la Piedra Alius.",
+"id":"r476","equipo":"Épsilon Plus","nombre":"Tytan Osc.","original":"Chris Tytan",
+"posicion":"Defensa","tipo":"Montaña",
+"tiro":50,"pase":73,"defensa":85,"especial":79,
+"hissatsu":["Gravitación"],"tipoTecnica":"defensa",
+"desc":"Versión oscura de Tytan, dorsal 5 del Épsilon Plus, el equipo potenciado por la Piedra Alius.",
 "locked":true,"cost":420,
 "sprite":"assets/sprites/r476.webp"
 },
 {
-"id":"r477","equipo":"Épsilon Plus","nombre":"Zell Osc.","original":"Zeke Valanche",
+"id":"r477","equipo":"Épsilon Plus","nombre":"Krypto Osc.","original":"Karen Ripton",
+"posicion":"Centrocampista","tipo":"Viento",
+"tiro":73,"pase":87,"defensa":69,"especial":83,
+"hissatsu":["Astro remate","Lluvia de meteoros"],"tipoTecnica":"regate",
+"desc":"Versión oscura de Krypto, dorsal 7 del Épsilon Plus, el equipo potenciado por la Piedra Alius.",
+"locked":true,"cost":420,
+"sprite":"assets/sprites/r477.webp"
+},
+{
+"id":"r478","equipo":"Épsilon Plus","nombre":"Zell Osc.","original":"Zeke Valanche",
 "posicion":"Delantero","tipo":"Fuego",
-"tiro":90,"pase":76,"defensa":50,"especial":88,
+"tiro":92,"pase":78,"defensa":52,"especial":90,
 "hissatsu":["Rayo de Ganímedes","Remate de Gaia"],"tipoTecnica":"tiro",
 "desc":"Versión oscura de Zell, dorsal 11 del Épsilon Plus, el equipo potenciado por la Piedra Alius.",
 "locked":true,"cost":420,
-"sprite":"assets/sprites/r477.webp"
+"sprite":"assets/sprites/r478.webp"
 },
 
 ]
