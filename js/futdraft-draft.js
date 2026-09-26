@@ -740,6 +740,7 @@ window.setFutDraftFormation = function (id) {
 // de capitán en vez de cambio (ver toggleFutDraftCaptainMode).
 window.selectFutDraftPlayer = function (id) {
   var f = G.futdraft;
+  f.blockedMsg = null;
   if (f.pickingCaptain) { pickFutDraftCaptainInternal(id); return; }
   if (f.swapSelectedId === id) { f.swapSelectedId = null; render(); return; }
   if (!f.swapSelectedId) { f.swapSelectedId = id; render(); return; }
@@ -753,6 +754,13 @@ window.selectFutDraftPlayer = function (id) {
   } else {
     var benchIdxA = f.bench.findIndex(function (p) { return p.id === otherId; });
     var benchIdxB = f.bench.findIndex(function (p) { return p.id === id; });
+    var benchIn = lineupIdxA !== -1 && benchIdxB !== -1 ? f.bench[benchIdxB] : (lineupIdxB !== -1 && benchIdxA !== -1 ? f.bench[benchIdxA] : null);
+    if (benchIn && f.mode === 'worldTour' && typeof worldTourPlayerStatus === 'function' && worldTourPlayerStatus(benchIn.id)) {
+      f.blockedMsg = benchIn.nombre + ' no puede jugar: está lesionado o sancionado.';
+      f.swapSelectedId = null;
+      render();
+      return;
+    }
     if (lineupIdxA !== -1 && benchIdxB !== -1) {
       var starterOut = f.lineup[lineupIdxA].player;
       f.lineup[lineupIdxA].player = f.bench[benchIdxB];

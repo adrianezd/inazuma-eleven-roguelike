@@ -254,6 +254,12 @@ function positionIconPath(pos) {
 // careerAvatarHtml/actionBoostCareerPlayer), a petición explícita
 // ("tienen un aura alrededor del círculo").
 function avatarHtml(p, extraClass) {
+  var av = avatarBaseHtml(p, extraClass);
+  var st = typeof playerStatusHook === 'function' ? playerStatusHook(p.id) : null;
+  if (!st) return av;
+  return '<span class="avatar-status">' + av + '<span class="status-badge status-badge-' + st.type + '" title="' + (st.type === 'injury' ? 'Lesionado' : 'Sancionado por roja') + '">' + (st.type === 'injury' ? '+' : '') + '</span></span>';
+}
+function avatarBaseHtml(p, extraClass) {
   var spritePath = p.sprite || ('assets/sprites/' + p.id + '.png');
   var sprite = '<img class="avatar-sprite" src="' + escapeHtml(spritePath) + '" alt="" loading="lazy" ' +
     'onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'\';">';

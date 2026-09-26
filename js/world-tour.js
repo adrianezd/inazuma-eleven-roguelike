@@ -429,7 +429,10 @@ window.actionStartWorldTour = function () {
     // equipo aleatorio (se puede cambiar en Alineación).
     coachId: !useRandom ? 'c01' : COACHES[Math.floor(Math.random() * COACHES.length)].id,
     lastLossMessage: null,
-    lastJoinMessage: null
+    lastJoinMessage: null,
+    injuries: [],
+    suspended: [],
+    eventMessage: null
   };
   G.screen = 'worldTourHome';
   render();
@@ -498,6 +501,50 @@ function worldTourRandomEvent(wt) {
   }
 }
 
+// ===== Lesiones y rojas en el Modo Mundial =====
+function worldTourPlayerStatus(id) {
+  var wt = G.worldTour;
+  if (!wt) return null;
+  var inj = (wt.injuries || []).find(function (i) { return i.id === id; });
+  if (inj) return { type: 'injury', left: inj.matchesLeft };
+  if ((wt.suspended || []).indexOf(id) !== -1) return { type: 'red' };
+  return null;
+}
+function playerStatusHook(id) {
+  if (!G.worldTour || String(G.screen).indexOf('worldTour') !== 0) return null;
+  return worldTourPlayerStatus(id);
+}
+// Los no disponibles salen del once: se cambian por el mejor suplente disponible (misma posición si hay).
+function worldTourAutoBench() {
+  var wt = G.worldTour;
+  for (var i = 0; i < Math.min(11, wt.squad.length); i++) {
+    if (!worldTourPlayerStatus(wt.squad[i].id)) continue;
+    var best = -1;
+    for (var j = 11; j < wt.squad.length; j++) {
+      if (worldTourPlayerStatus(wt.squad[j].id)) continue;
+      var better = best === -1 || (wt.squad[j].posicion === wt.squad[i].posicion && wt.squad[best].posicion !== wt.squad[i].posicion) || (((wt.squad[j].posicion === wt.squad[i].posicion) === (wt.squad[best].posicion === wt.squad[i].posicion)) && futDraftPlayerScore(wt.squad[j]) > futDraftPlayerScore(wt.squad[best]));
+      if (better) best = j;
+    }
+    if (best !== -1) { var tmp = wt.squad[i]; wt.squad[i] = wt.squad[best]; wt.squad[best] = tmp; if (wt.captainId === tmp.id) wt.captainId = null; }
+  }
+}
+// Tras cada partido: se cumplen las bajas anteriores y se anotan las nuevas (del partido en vivo o al azar).
+function worldTourApplyMatchEvents(wt, live) {
+  wt.injuries = (wt.injuries || []).map(function (i) { return { id: i.id, matchesLeft: i.matchesLeft - 1 }; }).filter(function (i) { return i.matchesLeft > 0; });
+  wt.suspended = [];
+  var starters = wt.squad.slice(0, 11);
+  var sent = ((live && live.sentOff) || []).slice();
+  var hurt = ((live && live.injured) || []).slice();
+  if (!(live && live.visualMode === 'dots')) {
+    if (starters.length && Math.random() < 0.03) sent.push(starters[Math.floor(Math.random() * starters.length)].id);
+    if (starters.length && Math.random() < 0.04) hurt.push(starters[Math.floor(Math.random() * starters.length)].id);
+  }
+  var names = [];
+  sent.forEach(function (id) { var p = wt.squad.find(function (x) { return x.id === id; }); if (p && wt.suspended.indexOf(id) === -1) { wt.suspended.push(id); names.push(p.nombre + ' sancionado por roja, se pierde el próximo partido'); } });
+  hurt.forEach(function (id) { var p = wt.squad.find(function (x) { return x.id === id; }); if (p && !wt.injuries.some(function (i) { return i.id === id; }) && wt.suspended.indexOf(id) === -1) { var n = 1 + Math.floor(Math.random() * 3); wt.injuries.push({ id: id, matchesLeft: n }); names.push(p.nombre + ' lesionado, ' + n + ' partido' + (n === 1 ? '' : 's')); } });
+  wt.eventMessage = names.length ? names.join('. ') + '.' : null;
+  worldTourAutoBench();
+}
 function worldTourLineup() {
   return futDraftBuildLineup(G.worldTour.squad.slice(0, 11), G.worldTour.formationId || WORLD_TOUR_DEFAULT_FORMATION);
 }
@@ -532,6 +579,7 @@ window.actionWorldTourLineupDone = function () {
   wt.squad = f.lineup.map(function (s) { return s.player; }).concat(f.bench);
   wt.formationId = f.formation;
   wt.captainId = f.captainId;
+  worldTourAutoBench();
   G.screen = 'worldTourHome';
   render();
 };
@@ -572,6 +620,7 @@ function renderWorldTourLineup() {
         '<h2 class="panel-title mt mb0">Alineación</h2>' +
         '<p class="dim small">Puntuación de equipo: <strong style="color:var(--accent-2)">' + breakdown.total + '</strong> / 100</p>' +
         '<p class="dim small">Toca a dos jugadores para cambiarlos.</p>' +
+        (f.blockedMsg ? '<p class="dim small" style="color:var(--danger)">' + escapeHtml(f.blockedMsg) + '</p>' : '') +
         '<p class="dim small">' + captainHint + '</p>' +
         '<button class="btn btn-tiny' + (f.pickingCaptain ? ' active' : '') + '" onclick="toggleFutDraftCaptainMode()">' + (f.pickingCaptain ? 'Toca un titular…' : 'Elegir capitán 👑') + '</button>' +
       '</div>' +
@@ -624,6 +673,7 @@ function renderWorldTourHome() {
       '</div>' +
       (wt.lastLossMessage ? '<div class="panel center-text"><p class="dim small">' + escapeHtml(wt.lastLossMessage) + '</p></div>' : '') +
       (wt.lastJoinMessage ? '<div class="panel center-text"><p class="dim small">' + escapeHtml(wt.lastJoinMessage) + '</p></div>' : '') +
+      (wt.eventMessage ? '<div class="panel center-text"><p class="dim small" style="color:var(--danger)">' + escapeHtml(wt.eventMessage) + '</p></div>' : '') +
       worldTourMatchupCardHtml(stage.name, 'Rival ' + (wt.stageIndex + 1)) +
       '<div class="panel">' +
         '<div class="match-mode-picker">' +
@@ -676,6 +726,7 @@ window.actionSetWorldTourPlayStyle = function (id) {
 };
 function worldTourBridgeFutdraft(stage) {
   var wt = G.worldTour;
+  worldTourAutoBench();
   // El aviso de "fulano se une al equipo" solo tiene sentido justo tras
   // la victoria que lo trae -- antes se quedaba pegado en pantalla en
   // TODOS los partidos siguientes hasta el próximo fichaje, a petición
@@ -765,6 +816,7 @@ function finishWorldTourMatch() {
   var penalty = myGoals === oppGoals ? worldTourPenaltyShootout(stage.power) : null;
   var playerWon = penalty ? penalty.myGoals > penalty.oppGoals : myGoals > oppGoals;
   if (stage.forcedLoss) playerWon = false;
+  worldTourApplyMatchEvents(wt, live);
 
   if (stage.forcedLoss) {
     // Derrota de guion (como en la serie): la historia sigue sin repetir el partido.
