@@ -177,7 +177,7 @@ function wtPlayerGeneric(id, nombre, posicion, tipo, ovr) {
 // Orden de los partidos según la serie (de memoria, ajustable aquí): cada
 // equipo usa a sus jugadores del roster y, si le faltan, se completa con
 // otros jugadores de la Academia Alius para poder ofrecer draft al ganar.
-var WT_T2_ALIUS_POOL = ['Alius Masters', 'Genesis', 'Caos', 'Épsilon', 'Tormenta de Géminis', 'Diamond Dust', 'Polvo de Diamante', 'Prominence'];
+var WT_T2_ALIUS_POOL = ['Genesis', 'Caos', 'Épsilon', 'Tormenta de Géminis', 'Diamond Dust', 'Polvo de Diamante', 'Prominence'];
 function wtTeamStage(id, name, ownTeams, power, fillPool) {
   fillPool = fillPool || WT_T2_ALIUS_POOL;
   var own = ROSTER.filter(function (p) { return ownTeams.indexOf(p.equipo) !== -1 && p.posicion !== 'Portero'; });
@@ -330,7 +330,7 @@ function renderWorldTourSetup() {
           '<button class="btn btn-tiny' + (worldTourSetupSeason() === 2 ? ' active' : '') + '" onclick="actionSetWorldTourSeason(2)">Temporada 2</button>' +
           '<button class="btn btn-tiny' + (worldTourSetupSeason() === 3 ? ' active' : '') + '" onclick="actionSetWorldTourSeason(3)">Temporada 3</button>' +
         '</div>' +
-        '<p class="dim small center-text mt">' + (worldTourSetupSeason() === 1 ? 'Los equipos de Inazuma Eleven 1, del Occult al Equipo Ogro.' : worldTourSetupSeason() === 2 ? 'Los partidos de la Academia Alius de Inazuma Eleven 2, de Tormenta de Géminis a los Alius Masters.' : 'El torneo mundial de Inazuma Eleven 3, con Inazuma Japón, de los Leones del desierto a los Pequeños Gigantes.') + '</p>' +
+        '<p class="dim small center-text mt">' + (worldTourSetupSeason() === 1 ? 'Los equipos de Inazuma Eleven 1, del Occult al Equipo Ogro.' : worldTourSetupSeason() === 2 ? 'Los partidos de la Academia Alius de Inazuma Eleven 2, de Tormenta de Géminis a Caos.' : 'El torneo mundial de Inazuma Eleven 3, con Inazuma Japón, de los Leones del desierto a los Pequeños Gigantes.') + '</p>' +
       '</div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:8px" class="center-text">Tu equipo</h3>' +
