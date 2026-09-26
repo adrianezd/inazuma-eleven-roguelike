@@ -183,8 +183,9 @@ function wtTeamStage(id, name, ownTeams, power, fillPool) {
   var own = ROSTER.filter(function (p) { return ownTeams.indexOf(p.equipo) !== -1 && p.posicion !== 'Portero'; });
   var fill = ROSTER.filter(function (p) { return fillPool.indexOf(p.equipo) !== -1 && ownTeams.indexOf(p.equipo) === -1 && p.posicion !== 'Portero'; });
   var picked = own.slice(0, 6);
-  for (var i = 0; picked.length < 6 && i < fill.length; i++) picked.push(fill[i]);
-  return { id: id, name: name, power: power, players: wtSquad(picked.map(function (p, k) { return [p.id, Math.round(power + 8 - k * 1.5)]; })) };
+  // Solo se rellena con jugadores de otros equipos si el propio tiene menos de 3.
+  for (var i = 0; picked.length < 3 && i < fill.length; i++) picked.push(fill[i]);
+  return { id: id, name: name, power: power, ownIds: own.map(function (p) { return p.id; }), players: wtSquad(picked.map(function (p, k) { return [p.id, Math.round(power + 8 - k * 1.5)]; })) };
 }
 // Recorrido real de Inazuma Eleven 2 (dado por el usuario). Extras por etapa:
 // forcedLoss (derrota de guion), injures (lesionados, con el Raimon), leaves (se va),
@@ -734,7 +735,8 @@ function worldTourRigSim(stage, sim) {
   else sim.oppGoals = sim.myGoals + 1 + (Math.random() < 0.5 ? 1 : 0);
   sim.timeline = futDraftBuildTimeline(sim.myGoals, sim.oppGoals, myPlayers, oppPlayers);
   // Goles repartidos entre todos los rivales (no siempre el mismo delantero).
-  var rotation = oppPlayers.slice().sort(function () { return Math.random() - 0.5; });
+  var ownOnly = stage.ownIds && stage.ownIds.length ? oppPlayers.filter(function (p) { return stage.ownIds.indexOf(p.id) !== -1; }) : [];
+  var rotation = (ownOnly.length ? ownOnly : oppPlayers).slice().sort(function () { return Math.random() - 0.5; });
   var oi = 0;
   sim.timeline.forEach(function (ev) { if (ev.side === 'opp' && rotation.length) { ev.scorer = rotation[oi % rotation.length]; ev.assist = rotation[(oi + 1) % rotation.length] === ev.scorer ? null : rotation[(oi + 1) % rotation.length]; oi++; } });
   return sim;

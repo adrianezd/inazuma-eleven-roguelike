@@ -275,7 +275,7 @@ var ROSTER = [
     locked: true, cost:107
   },
   {
-    id: 'r14', equipo:'Genesis', nombre: 'Xavier Foster', original: 'Kiyama Hiroto',
+    id: 'r14', equipo: 'Inazuma Japon', nombre: 'Xavier Foster', original: 'Kiyama Hiroto',
     posicion: 'Delantero', tipo: 'Fuego',
     tiro: 87, pase: 81, defensa: 38, especial: 80,
     hissatsu:['Cañon de Meteoritos'],tipoTecnica:'tiro',
