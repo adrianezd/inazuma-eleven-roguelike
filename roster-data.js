@@ -115,7 +115,7 @@ var TEAM_SEASON = {
   'Protocolo Omega 2.0': 'go2', 'Protocolo Omega 3.0': 'go2', 'Ragnah': 'go2',
   'Raimon Inakuni': 'ares', 'Resistencia Japon': 'temp2', 'Resistencia Japón GO': 'go2',
   'Royal Academy': 'temp1', 'Sallys': 'temp1', 'Shuriken': 'temp1',
-  'Tarjeteros': 'temp3', 'Tormenta de Géminis': 'temp2', 'Ángeles Oscuros': 'temp3', 'Neo Raimon': 'temp1', 'FFI Estrellas': 'temp3', 'Raimon GO': 'go1', 'Zoolan Team': 'temp3', 'Claustro Sagrado': 'temp2', 'Royal Academy GO': 'go1', 'Instituto Espejismo': 'go1', 'Poderosa Fe': 'go1', 'Twinford': 'vr', 'Umbrella': 'temp1',
+  'Tarjeteros': 'temp3', 'Tormenta de Géminis': 'temp2', 'Ángeles Oscuros': 'temp3', 'Neo Raimon': 'temp1', 'Raimon': 'temp1', 'Diamond Dust': 'temp2', 'Knights': 'temp3', 'Criaturas de la Noche': 'go2', 'Nosfanáticos': 'go2', 'Camino Imperial': 'go1', 'Servicio Secreto': 'temp2', 'Inazuma Kids': 'temp1', 'FFI Estrellas': 'temp3', 'Raimon GO': 'go1', 'Zoolan Team': 'temp3', 'Claustro Sagrado': 'temp2', 'Royal Academy GO': 'go1', 'Instituto Espejismo': 'go1', 'Poderosa Fe': 'go1', 'Twinford': 'vr', 'Umbrella': 'temp1',
   'Unicorn': 'temp3', 'Veteranos Inazuma': 'temp1', 'Wild': 'temp1',
   'Zanark Domain': 'go2', 'Zeus': 'temp1'
 };
@@ -3575,7 +3575,7 @@ var COACHES = [
   { id: 'c10', nombre: 'Stewart Vanguard', original: 'Stewart Vanguard', equipo: 'Servicio Secreto', atk: 2, def: 2, intensidad: 'baja', estilo: 'defensiva', desc: 'Estratega prudente que prioriza no encajar.' },
   { id: 'c11', nombre: 'Nerina Hartland', original: 'Nerina Hartland', equipo: 'Sallys', atk: 2, def: 2, intensidad: 'media', estilo: 'equilibrado', desc: 'Entrenadora equilibrada que cuida cada detalle.' },
   { id: 'c12', nombre: 'Percival Travis', original: 'Percival Travis', equipo: 'Inazuma Japón', atk: 3, def: 3, intensidad: 'media', estilo: 'equilibrado', desc: 'Entrenador de Inazuma Japón, serio y disciplinado.' },
-  { id: 'c13', nombre: 'Wonderbot', original: 'Wonderbot', equipo: 'Raimon GO', atk: 2, def: 3, intensidad: 'media', estilo: 'equilibrado', desc: 'El robot entrenador, siempre animando al equipo.' },
+  { id: 'c13', nombre: 'Wonderbot', original: 'Wonderbot', equipo: 'Los Arions', atk: 2, def: 3, intensidad: 'media', estilo: 'equilibrado', desc: 'El robot entrenador, siempre animando al equipo.' },
   { id: 'c14', nombre: 'Mark Evans adulto', original: 'Mark Evans', equipo: 'Raimon', atk: 4, def: 3, intensidad: 'alta', estilo: 'ofensiva', desc: 'El eterno capitán convertido en entrenador, todo pasión.' },
   { id: 'c15', nombre: 'Jude Sharp adulto', original: 'Jude Sharp', equipo: 'Royal Academy GO', atk: 3, def: 4, intensidad: 'media', estilo: 'equilibrado', desc: 'El estratega de las gafas, ahora desde el banquillo.' },
   { id: 'c16', nombre: 'Destiny Billows', original: 'Destin Billows', equipo: 'Neo Raimon', atk: 3, def: 3, intensidad: 'media', estilo: 'equilibrado', desc: 'Entrenador táctico de gran carisma.' }
