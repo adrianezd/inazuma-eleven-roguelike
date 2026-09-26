@@ -1192,7 +1192,7 @@ var ROSTER = [
   {
     id: 'r130', equipo:'Mary Times', nombre: 'Soundtown', original: 'Cadence Soundtown',
     posicion: 'Centrocampista', tipo: 'Fuego',
-    tiro: 65, pase: 82, defensa: 79, especial: 75,
+    tiro: 71, pase: 82, defensa: 82, especial: 75,
     hissatsu:['Baile de Llamas'],tipoTecnica:'tiro',
     desc: 'Capitán de Mary Times',
     locked: false, cost:134
@@ -3567,7 +3567,7 @@ var ROSTER = [
 {
   id:'r412', equipo:'Claustro Sagrado', nombre:'Scotty', original:'Yuya Kogure',
   posicion:'Defensa', tipo:'Bosque',
-  tiro:48,pase:72,defensa:91,especial:86,
+  tiro:48,pase:72,defensa:80,especial:80,
   hissatsu:['Campo Torbellino'],tipoTecnica:'defensa',
   desc:'Defensa del Claustro Sagrado conocido por su carácter bromista y por su extraordinario dominio del Campo Torbellino.',
   locked:true,cost:410,
@@ -3577,8 +3577,8 @@ var ROSTER = [
 {
   id:'r413', equipo:'Fauxshore', nombre:'Jonathan Luckyman', original:'Yuichiro Toda',
   posicion:'Delantero', tipo:'Bosque',
-  tiro:87,pase:75,defensa:42,especial:82,
-  hissatsu:['Remate curvo','Arco iris'],tipoTecnica:'tiro',
+  tiro:80,pase:75,defensa:42,especial:82,
+  hissatsu:['Remate Arcoiris'],tipoTecnica:'tiro',
   desc:'Capitán y delantero del Fauxshore. Es uno de los jugadores más destacados del equipo.',
   locked:true,cost:400,
   sprite:'assets/sprites/r413.webp'
@@ -3587,8 +3587,8 @@ var ROSTER = [
 {
   id:'r414', equipo:'Fauxshore', nombre:'Spencer Duskplay', original:'Yarimichi Kuroda',
   posicion:'Centrocampista', tipo:'Aire',
-  tiro:70,pase:84,defensa:61,especial:80,
-  hissatsu:['Granada doble','Truco de magia'],tipoTecnica:'regate',
+  tiro:70,pase:80,defensa:61,especial:80,
+  hissatsu:['Truco de magia'],tipoTecnica:'regate',
   desc:'Centrocampista del Fauxshore de personalidad recta y gran capacidad para controlar el juego.',
   locked:true,cost:390,
   sprite:'assets/sprites/r414.webp'
@@ -3596,9 +3596,9 @@ var ROSTER = [
 
 {
   id:'r415', equipo:'Fauxshore', nombre:'Joe Poker', original:'Yuu Matsubayashi',
-  posicion:'Centrocampista', tipo:'Bosque',
-  tiro:67,pase:82,defensa:69,especial:78,
-  hissatsu:['Ruleta de balón'],tipoTecnica:'regate',
+  posicion:'Delantero', tipo:'Fuego',
+  tiro:73,pase:82,defensa:69,especial:78,
+  hissatsu:['Truco de Magia'],tipoTecnica:'regate',
   desc:'Uno de los jugadores destacados del Fauxshore, con buenas capacidades para mover el balón en el centro del campo.',
   locked:true,cost:380,
   sprite:'assets/sprites/r415.webp'
@@ -3607,7 +3607,7 @@ var ROSTER = [
 {
   id:'r416', equipo:'Fauxshore', nombre:'Maurice Badgame', original:'Morihito Ishiyama',
   posicion:'Defensa', tipo:'Montaña',
-  tiro:45,pase:67,defensa:84,especial:76,
+  tiro:45,pase:67,defensa:74,especial:76,
   hissatsu:['Pared rocosa'],tipoTecnica:'defensa',
   desc:'Defensa del Fauxshore especializado en detener las ofensivas rivales mediante su fortaleza física.',
   locked:true,cost:370,
@@ -3615,11 +3615,11 @@ var ROSTER = [
 },
 
 {
-  id:'r417', equipo:'Fauxshore', nombre:'Cannon Random', original:'Kaneaki Shika',
-  posicion:'Portero', tipo:'Montaña',
-  tiro:35,pase:58,defensa:80,especial:84,
-  hissatsu:['Mano celestial'],tipoTecnica:'parada',
-  desc:'Uno de los porteros del Fauxshore y uno de los jugadores más reconocibles de la plantilla.',
+  id:'r417', equipo:'Fauxshore', nombre:'Drancis Fake', original:'Drancis Fake',
+  posicion:'Defensa', tipo:'Viento',
+  tiro:35,pase:58,defensa:80,especial:80,
+  hissatsu:['Campo Torbellino'],tipoTecnica:'defensa',
+  desc:'Uno de los defensas del Fauxshore y uno de los jugadores más reconocibles de la plantilla.',
   locked:true,cost:370,
   sprite:'assets/sprites/r417.webp'
 },
@@ -3668,7 +3668,7 @@ var ROSTER = [
   id:'r422', equipo:'Royal Academy Redux', nombre:'Caleb Stonewall', original:'Akio Fudou',
   posicion:'Centrocampista', tipo:'Fuego',
   tiro:89,pase:86,defensa:72,especial:91,
-  hissatsu:['Pingüino emperador n.º 1','Embestida'],tipoTecnica:'tiro',
+  hissatsu:['Pingüino emperador n.º 1'],tipoTecnica:'tiro',
   desc:'Capitán de la Royal Academy Redux. Fue uno de los jugadores clave en la creación del equipo por parte de Ray Dark.',
   locked:true,cost:440,
   sprite:'assets/sprites/r422.webp'
@@ -3676,9 +3676,9 @@ var ROSTER = [
 
 {
   id:'r423', equipo:'Royal Academy Redux', nombre:'Joseph King', original:'Genou Ishikawa',
-  posicion:'Portero', tipo:'Bosque',
+  posicion:'Portero', tipo:'Fuego',
   tiro:32,pase:63,defensa:87,especial:91,
-  hissatsu:['Colmillo de pantera','Mano celestial'],tipoTecnica:'parada',
+  hissatsu:['Colmillo de pantera'],tipoTecnica:'parada',
   desc:'Portero de la Royal Academy Redux y antiguo guardameta de la Royal Academy.',
   locked:true,cost:430,
   sprite:'assets/sprites/r423.webp'
@@ -3698,7 +3698,7 @@ var ROSTER = [
   id:'r425', equipo:'Royal Academy Redux', nombre:'Blade Healen', original:'Masaru Hyoudou',
   posicion:'Defensa', tipo:'Montaña',
   tiro:46,pase:68,defensa:87,especial:81,
-  hissatsu:['Escudo de fuerza'],tipoTecnica:'defensa',
+  hissatsu:['Barrido defensivo'],tipoTecnica:'defensa',
   desc:'Defensa de la Royal Academy Redux que destaca por su capacidad para contener los ataques rivales.',
   locked:true,cost:390,
   sprite:'assets/sprites/r425.webp'
@@ -3715,8 +3715,8 @@ var ROSTER = [
 },
 
 {
-  id:'r427', equipo:'Mary Times', nombre:'Spring Millpond', original:'Spring Millpond',
-  posicion:'Portero', tipo:'Aire',
+  id:'r427', equipo:'Mary Times', nombre:'Rocky Black', original:'Rocky Black',
+  posicion:'Portero', tipo:'Fuego',
   tiro:34,pase:61,defensa:78,especial:82,
   hissatsu:['Mano celestial'],tipoTecnica:'parada',
   desc:'Portero del Mary Times y uno de los miembros principales de su formación.',
@@ -3724,15 +3724,15 @@ var ROSTER = [
   sprite:'assets/sprites/r427.webp'
 },
 
-{
-  id:'r428', equipo:'Mary Times', nombre:'Cadence Soundtown', original:'Gakuya Otomura',
-  posicion:'Centrocampista', tipo:'Bosque',
-  tiro:72,pase:88,defensa:65,especial:86,
-  hissatsu:['Ritmo musical'],tipoTecnica:'regate',
-  desc:'Capitán del Mary Times en los videojuegos. Su pasión por la música marca el particular estilo de juego del equipo.',
-  locked:true,cost:405,
-  sprite:'assets/sprites/r428.webp'
-},
+// {
+//   id:'r428', equipo:'Mary Times', nombre:'Cadence Soundtown', original:'Gakuya Otomura',
+//   posicion:'Centrocampista', tipo:'Bosque',
+//   tiro:72,pase:88,defensa:65,especial:86,
+//   hissatsu:['Ritmo musical'],tipoTecnica:'regate',
+//   desc:'Capitán del Mary Times en los videojuegos. Su pasión por la música marca el particular estilo de juego del equipo.',
+//   locked:true,cost:405,
+//   sprite:'assets/sprites/r428.webp'
+// },
 
 {
   id:'r429', equipo:'Mary Times', nombre:'Victor Hills', original:'Hills',
@@ -3762,6 +3762,15 @@ var ROSTER = [
   desc:'Delantera del Mary Times y una de las jugadoras principales de la plantilla.',
   locked:true,cost:370,
   sprite:'assets/sprites/r431.webp'
+},
+{
+  id:'r432', equipo:'Mary Times', nombre:'Spring Milipond', original:'Spring Milipond',
+  posicion:'Delantero', tipo:'Aire',
+  tiro:79,pase:76,defensa:45,especial:78,
+  hissatsu:['Remate Tsunami'],tipoTecnica:'tiro',
+  desc:'Delantero del Mary Times y uno de las jugadoras principales de la plantilla.',
+  locked:true,cost:370,
+  sprite:'assets/sprites/r432.webp'
 }
 
 ]
@@ -3788,6 +3797,7 @@ var COACHES = [
   { id: 'c13', nombre: 'Wonderbot', original: 'Wonderbot', equipo: 'Los Arions', atk: 2, def: 3, intensidad: 'media', estilo: 'equilibrado', desc: 'El robot entrenador, siempre animando al equipo.' },
   { id: 'c14', nombre: 'Mark Evans adulto', original: 'Mark Evans', equipo: 'Raimon', atk: 4, def: 3, intensidad: 'alta', estilo: 'ofensiva', desc: 'El eterno capitán convertido en entrenador, todo pasión.' },
   { id: 'c15', nombre: 'Jude Sharp adulto', original: 'Jude Sharp', equipo: 'Royal Academy GO', atk: 3, def: 4, intensidad: 'media', estilo: 'equilibrado', desc: 'El estratega de las gafas, ahora desde el banquillo.' },
-  { id: 'c16', nombre: 'Destiny Billows', original: 'Destin Billows', equipo: 'Neo Raimon', atk: 3, def: 3, intensidad: 'media', estilo: 'equilibrado', desc: 'Entrenador táctico de gran carisma.' }
+  { id: 'c16', nombre: 'Destiny Billows', original: 'Destin Billows', equipo: 'Neo Raimon', atk: 3, def: 3, intensidad: 'media', estilo: 'equilibrado', desc: 'Entrenador táctico de gran carisma.' },
+  { id: 'c17', nombre: 'Dave Quagmire', original: 'Dave Quagmire', equipo: 'Kirkwood GO', atk: 3, def: 3, intensidad: 'media', estilo: 'equilibrado', desc: 'Entrenador pasional.' }
 
 ];
