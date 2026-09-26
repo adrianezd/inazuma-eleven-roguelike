@@ -121,6 +121,7 @@ function render() {
     case 'menu': html = renderMenu(); break;
     case 'careerSlots': html = renderCareerSlots(); break;
     case 'careerSetup': html = renderCareerSetup(); break;
+    case 'careerSquadPicker': html = renderCareerSquadPicker(); break;
     case 'careerMode': html = renderCareerMode(); break;
     case 'jugadorSetup': html = renderJugadorSetup(); break;
     case 'jugadorMode': html = renderJugadorMode(); break;

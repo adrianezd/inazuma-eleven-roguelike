@@ -278,6 +278,75 @@ var CAREER_MODE_DEFAULT_FORMATION = '433';
 // cualquier reparto de posiciones en la formación 4-3-3 por defecto sin
 // romperse, así que no hace falta forzar más equilibrio que ese.
 var CAREER_RANDOM_SQUAD_MAX_SCORE = 82;
+// ===== Plantilla a mano: eliges 16 jugadores; el once sale de forma automática =====
+var CAREER_CUSTOM_MAX_AVG = 72;
+function careerCustomAvg(ids) {
+  if (!ids.length) return 0;
+  var sum = 0;
+  ids.forEach(function (id) { var p = ROSTER.find(function (x) { return x.id === id; }); if (p) sum += careerPlayerScore(p); });
+  return Math.round(sum / ids.length * 10) / 10;
+}
+function careerCustomSquadProblem(ids) {
+  if (ids.length !== 16) return 'Elige exactamente 16 jugadores.';
+  var ps = ids.map(function (id) { return ROSTER.find(function (x) { return x.id === id; }); }).filter(Boolean);
+  if (!ps.some(function (p) { return p.posicion === 'Portero'; })) return 'Necesitas al menos un portero.';
+  if (careerCustomAvg(ids) > CAREER_CUSTOM_MAX_AVG) return 'La media de la plantilla no puede pasar de ' + CAREER_CUSTOM_MAX_AVG + '.';
+  return null;
+}
+function careerCustomSquadIds(ids) {
+  var ps = ids.map(function (id) { return ROSTER.find(function (x) { return x.id === id; }); }).filter(Boolean);
+  var quota = { 'Portero': 1, 'Defensa': 4, 'Centrocampista': 3, 'Delantero': 3 };
+  var starters = [];
+  Object.keys(quota).forEach(function (pos) {
+    ps.filter(function (p) { return p.posicion === pos; }).sort(function (a, b) { return careerPlayerScore(b) - careerPlayerScore(a); }).slice(0, quota[pos]).forEach(function (p) { starters.push(p); });
+  });
+  var rest = ps.filter(function (p) { return starters.indexOf(p) === -1; }).sort(function (a, b) { return careerPlayerScore(b) - careerPlayerScore(a); });
+  while (starters.length < 11 && rest.length) starters.push(rest.shift());
+  return { starterIds: starters.map(function (p) { return p.id; }), benchIds: rest.map(function (p) { return p.id; }) };
+}
+window.actionOpenCareerSquadPicker = function () { G.careerPicker = G.careerPicker || { search: '', pos: null }; G.screen = 'careerSquadPicker'; render(); };
+window.actionCareerPickerBack = function () { G.screen = 'careerSetup'; render(); };
+window.actionCareerPickerSearch = function (v) { G.careerPicker.search = v; render(); };
+window.actionCareerPickerPos = function (pos) { G.careerPicker.pos = pos || null; render(); };
+window.actionCareerPickerToggle = function (id) {
+  var ch = G.careerSetupChoices;
+  ch.customIds = ch.customIds || [];
+  var i = ch.customIds.indexOf(id);
+  if (i !== -1) ch.customIds.splice(i, 1); else if (ch.customIds.length < 16) ch.customIds.push(id);
+  render();
+};
+function renderCareerSquadPicker() {
+  var ch = G.careerSetupChoices, ids = ch.customIds || [], pk = G.careerPicker || { search: '', pos: null };
+  var q = (pk.search || '').trim().toLowerCase();
+  var list = ROSTER.filter(function (p) { return (!pk.pos || p.posicion === pk.pos) && (!q || p.nombre.toLowerCase().indexOf(q) !== -1 || (p.equipo || '').toLowerCase().indexOf(q) !== -1); })
+    .sort(function (a, b) { return careerPlayerScore(b) - careerPlayerScore(a); });
+  var shown = list.slice(0, 60);
+  var counts = { 'Portero': 0, 'Defensa': 0, 'Centrocampista': 0, 'Delantero': 0 };
+  ids.forEach(function (id) { var p = ROSTER.find(function (x) { return x.id === id; }); if (p) counts[p.posicion]++; });
+  var problem = careerCustomSquadProblem(ids);
+  var avg = careerCustomAvg(ids);
+  var posBtns = [['', 'Todos'], ['Portero', 'PR'], ['Defensa', 'DF'], ['Centrocampista', 'MD'], ['Delantero', 'DL']].map(function (x) {
+    return '<button class="btn btn-tiny' + ((pk.pos || '') === x[0] ? ' active' : '') + '" onclick="actionCareerPickerPos(\'' + x[0] + '\')">' + x[1] + '</button>';
+  }).join('');
+  var rows = shown.map(function (p) {
+    var on = ids.indexOf(p.id) !== -1;
+    var full = !on && ids.length >= 16;
+    return '<div class="futdraft-timeline-row">' + careerMediaBadgeHtml(p) + avatarHtml(p) +
+      '<span style="min-width:0">' + escapeHtml(p.nombre) + ' ' + positionIconHtml(p.posicion, 16) + '<span class="dim small" style="display:block">' + escapeHtml(p.equipo || '') + '</span></span>' +
+      '<button class="btn btn-tiny' + (on ? ' active' : '') + '" style="margin-left:auto" ' + (full ? 'disabled' : '') + ' onclick="actionCareerPickerToggle(\'' + p.id + '\')">' + (on ? 'Quitar' : 'Añadir') + '</button></div>';
+  }).join('');
+  return '<div class="screen">' +
+    '<div class="panel center-text"><button class="btn btn-outline btn-block" onclick="actionCareerPickerBack()">Listo</button>' +
+      '<h2 class="panel-title mt mb0">Tu plantilla a mano</h2>' +
+      '<p class="dim small"><strong style="color:var(--accent-2)">' + ids.length + '</strong> de 16, media <strong style="color:' + (avg > CAREER_CUSTOM_MAX_AVG ? 'var(--danger)' : 'var(--accent-2)') + '">' + avg + '</strong> (máximo ' + CAREER_CUSTOM_MAX_AVG + ')</p>' +
+      '<p class="dim small">PR ' + counts['Portero'] + ', DF ' + counts['Defensa'] + ', MD ' + counts['Centrocampista'] + ', DL ' + counts['Delantero'] + '. El once se forma solo en 4-3-3 con los mejores.</p>' +
+      (problem ? '<p class="dim small" style="color:var(--danger)">' + problem + '</p>' : '<p class="dim small" style="color:var(--accent-2)">Plantilla válida.</p>') +
+    '</div>' +
+    '<div class="panel"><input class="select-field" type="text" placeholder="Buscar por nombre o equipo…" data-focus-key="career-picker-search" value="' + escapeHtml(pk.search || '') + '" oninput="actionCareerPickerSearch(this.value)">' +
+      '<div class="btn-row mt">' + posBtns + '</div>' +
+      '<p class="dim small">' + list.length + ' jugadores' + (list.length > 60 ? ', se muestran los 60 mejores: usa el buscador' : '') + '.</p>' + rows + '</div>' +
+  '</div>';
+}
 function careerRandomSquadIds() {
   var pool = ROSTER.filter(function (p) { return careerPlayerScore(p) <= CAREER_RANDOM_SQUAD_MAX_SCORE; });
   var keepers = pool.filter(function (p) { return p.posicion === 'Portero'; }).sort(function () { return Math.random() - 0.5; });
@@ -1220,7 +1289,8 @@ function careerFreshState(choices) {
   // mano) o aleatoria (careerRandomSquadIds, sorteada una vez aquí al
   // confirmar la carrera y ya fija para siempre, igual que el resto de
   // elecciones de creación).
-  var squadIds = choices.squadMode === 'random' ? careerRandomSquadIds()
+  var squadIds = choices.squadMode === 'custom' && (choices.customIds || []).length === 16 ? careerCustomSquadIds(choices.customIds)
+    : choices.squadMode === 'random' ? careerRandomSquadIds()
     : choices.squadMode === 'raimon' ? { starterIds: CAREER_MODE_RAIMON_STARTER_IDS, benchIds: CAREER_MODE_RAIMON_BENCH_IDS }
     : { starterIds: CAREER_MODE_STARTER_IDS, benchIds: CAREER_MODE_BENCH_IDS };
   var starters = careerModeRoster(squadIds.starterIds);
@@ -1646,7 +1716,7 @@ window.actionNewCareerInSlot = function (slot) {
 // explícita ("un equipo por defecto que es el que hay ahora, y un modo
 // aleatorio... todo esto con desplegable junto al resto de opciones").
 window.actionSetCareerSetupSquadMode = function (mode) {
-  if (mode !== 'default' && mode !== 'random' && mode !== 'raimon') return;
+  if (mode !== 'default' && mode !== 'random' && mode !== 'raimon' && mode !== 'custom') return;
   G.careerSetupChoices.squadMode = mode;
   render();
 };
@@ -1744,6 +1814,8 @@ window.actionCancelCareerSetup = function () {
 window.actionConfirmCareerSetup = function () {
   var slot = G.careerSetupSlot;
   if (!slot) return;
+  var ch = G.careerSetupChoices;
+  if (ch.squadMode === 'custom' && careerCustomSquadProblem(ch.customIds || [])) { render(); return; }
   G.career = careerFreshState(G.careerSetupChoices);
   G.careerActiveSlot = slot;
   saveCareerToSlot(slot);
@@ -1776,12 +1848,14 @@ function renderCareerSetup() {
   // Plantilla inicial: botones como el resto de opciones (antes un
   // desplegable, a petición explícita: "haz que salga también con
   // botones para elegir, así").
-  var squadMode = (choices.squadMode === 'random' || choices.squadMode === 'raimon') ? choices.squadMode : 'default';
+  var squadMode = (choices.squadMode === 'random' || choices.squadMode === 'raimon' || choices.squadMode === 'custom') ? choices.squadMode : 'default';
+  var customCount = (choices.customIds || []).length;
   var squadModeBtnsHtml =
     '<button class="btn btn-tiny' + (squadMode === 'default' ? ' active' : '') + '" onclick="actionSetCareerSetupSquadMode(\'default\')">Por defecto</button>' +
     '<button class="btn btn-tiny' + (squadMode === 'random' ? ' active' : '') + '" onclick="actionSetCareerSetupSquadMode(\'random\')">Aleatoria</button>' +
-    '<button class="btn btn-tiny' + (squadMode === 'raimon' ? ' active' : '') + '" onclick="actionSetCareerSetupSquadMode(\'raimon\')">Raimon</button>';
-  var squadModeDesc = squadMode === 'random' ? '16 jugadores al azar, todos de 82 de nota o menos.'
+    '<button class="btn btn-tiny' + (squadMode === 'raimon' ? ' active' : '') + '" onclick="actionSetCareerSetupSquadMode(\'raimon\')">Raimon</button>' +
+    '<button class="btn btn-tiny' + (squadMode === 'custom' ? ' active' : '') + '" onclick="actionSetCareerSetupSquadMode(\'custom\')">A mano</button>';
+  var squadModeDesc = squadMode === 'custom' ? 'Eliges tú los 16 jugadores, con un tope de media para la plantilla (' + CAREER_CUSTOM_MAX_AVG + ' de media).' : squadMode === 'random' ? '16 jugadores al azar, todos de 82 de nota o menos.'
     : squadMode === 'raimon' ? 'El once real de Inazuma Eleven 1, con Jude/Bobby/Erik de refuerzo en el banquillo.'
     : 'Los mismos 16 jugadores de siempre.';
   // Nombre/escudo de TU club, a petición explícita ("elige nombre de
@@ -1832,6 +1906,7 @@ function renderCareerSetup() {
         '<h3 style="margin-bottom:4px">Plantilla inicial</h3>' +
         '<p class="dim small">' + squadModeDesc + '</p>' +
         '<div class="btn-row mt">' + squadModeBtnsHtml + '</div>' +
+        (squadMode === 'custom' ? '<button class="btn btn-primary btn-block mt" onclick="actionOpenCareerSquadPicker()">Elegir jugadores, ' + customCount + ' de 16</button>' + (customCount !== 16 ? '<p class="dim small" style="color:var(--danger)">Elige exactamente 16 jugadores para empezar.</p>' : '') : '') +
       '</div>' +
       '<div class="panel">' +
         '<h3 style="margin-bottom:4px">División inicial</h3>' +
