@@ -733,6 +733,10 @@ function worldTourRigSim(stage, sim) {
   if (stage.forcedScore) { sim.myGoals = stage.forcedScore.my; sim.oppGoals = stage.forcedScore.opp; }
   else sim.oppGoals = sim.myGoals + 1 + (Math.random() < 0.5 ? 1 : 0);
   sim.timeline = futDraftBuildTimeline(sim.myGoals, sim.oppGoals, myPlayers, oppPlayers);
+  // Goles repartidos entre todos los rivales (no siempre el mismo delantero).
+  var rotation = oppPlayers.slice().sort(function () { return Math.random() - 0.5; });
+  var oi = 0;
+  sim.timeline.forEach(function (ev) { if (ev.side === 'opp' && rotation.length) { ev.scorer = rotation[oi % rotation.length]; ev.assist = rotation[(oi + 1) % rotation.length] === ev.scorer ? null : rotation[(oi + 1) % rotation.length]; oi++; } });
   return sim;
 }
 function worldTourPenaltyShootout(oppPower) {
