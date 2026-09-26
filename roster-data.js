@@ -64,7 +64,7 @@ var RIVAL_TEAM_NAMES = [
   'Cala Pirata', 'Sallys', 'Leones del desierto',
   'Academia Universal', 'Instituto Plenilunio',
   'Raimon Inakuni', 'Mary Times', 'Mar de Luna', 'Farm', 'Fauxshore',
-  'Neo Raimon', 'Raimon GO', 'Zoolan Team', 'Claustro Sagrado', 'Royal Academy GO', 'Instituto Espejismo', 'Poderosa Fe', 'Los arions', 'Mar de Árboles', 'Fertilia', 'Magmavis', 'Colina Verde', 'Barcelona Orb', 'Twinford', 'Northbright', 'Campeones Raimon'
+  'Neo Raimon', 'Raimon GO', 'Zoolan Team', 'Claustro Sagrado', 'Royal Academy GO', 'Instituto Espejismo', 'Poderosa Fe', 'Los arions', 'Servicio Secreto', 'Knights', 'Triple C', 'Royal Academy Redux', 'Mar de Árboles', 'Fertilia', 'Magmavis', 'Colina Verde', 'Barcelona Orb', 'Twinford', 'Northbright', 'Campeones Raimon'
 ];
 
 var RIVAL_TEAM_BOSSES = [
@@ -115,7 +115,7 @@ var TEAM_SEASON = {
   'Protocolo Omega 2.0': 'go2', 'Protocolo Omega 3.0': 'go2', 'Ragnah': 'go2',
   'Raimon Inakuni': 'ares', 'Resistencia Japon': 'temp2', 'Resistencia Japón GO': 'go2',
   'Royal Academy': 'temp1', 'Sallys': 'temp1', 'Shuriken': 'temp1',
-  'Tarjeteros': 'temp3', 'Tormenta de Géminis': 'temp2', 'Ángeles Oscuros': 'temp3', 'Neo Raimon': 'temp1', 'Raimon': 'temp1', 'Diamond Dust': 'temp2', 'Knights': 'temp3', 'Criaturas de la Noche': 'go2', 'Nosfanáticos': 'go2', 'Camino Imperial': 'go1', 'Servicio Secreto': 'temp2', 'Inazuma Kids': 'temp1', 'FFI Estrellas': 'temp3', 'Raimon GO': 'go1', 'Zoolan Team': 'temp3', 'Claustro Sagrado': 'temp2', 'Royal Academy GO': 'go1', 'Instituto Espejismo': 'go1', 'Poderosa Fe': 'go1', 'Twinford': 'vr', 'Umbrella': 'temp1',
+  'Tarjeteros': 'temp3', 'Tormenta de Géminis': 'temp2', 'Ángeles Oscuros': 'temp3', 'Neo Raimon': 'temp1', 'Raimon': 'temp1', 'Diamond Dust': 'temp2', 'Knights': 'temp3', 'Criaturas de la Noche': 'go2', 'Nosfanáticos': 'go2', 'Camino Imperial': 'go1', 'Servicio Secreto': 'temp2', 'Triple C': 'temp2', 'Royal Academy Redux': 'temp2', 'Inazuma Kids': 'temp1', 'FFI Estrellas': 'temp3', 'Raimon GO': 'go1', 'Zoolan Team': 'temp3', 'Claustro Sagrado': 'temp2', 'Royal Academy GO': 'go1', 'Instituto Espejismo': 'go1', 'Poderosa Fe': 'go1', 'Twinford': 'vr', 'Umbrella': 'temp1',
   'Unicorn': 'temp3', 'Veteranos Inazuma': 'temp1', 'Wild': 'temp1',
   'Zanark Domain': 'go2', 'Zeus': 'temp1'
 };
@@ -160,7 +160,8 @@ var TEAM_POWER = {
   'Chispas Perfectas': 85, 'Artemisa de Mr.YI': 90,
   // Añadidos por el usuario (escudo y media dados por él)
   'Ángeles Oscuros': 85, 'FFI Estrellas': 80, 'Neo Raimon': 75, 'Raimon GO': 70, 'Zoolan Team': 60, 'Claustro Sagrado': 60,
-  'Royal Academy GO': 60, 'Instituto Espejismo': 63, 'Poderosa Fe': 60
+  'Royal Academy GO': 60, 'Instituto Espejismo': 63, 'Poderosa Fe': 60,
+  'Servicio Secreto': 55, 'Knights': 72, 'Triple C': 50, 'Royal Academy Redux': 70
 };
 
 
