@@ -434,7 +434,26 @@ function futDraftApplyGoalEvent(live, ev, isDots) {
   // donde hay plantilla real con posesión simulada jugador a jugador); el
   // rival, fuera de Modo Mundial, no tiene plantilla propia. Ya excluye a
   // los expulsados (live.sentOff, ver futDraftBallCarrierPlayer).
-  if (isDots && ev.side === 'me' && live.poss && live.poss.side === 'me') {
+  if (isDots && live.dotsState) {
+    // El goleador es el puntito que lleva el balón justo ahora (delantero), y la asistencia, quien se lo pasó.
+    var gSide = ev.side === 'me' ? 'me' : 'opp';
+    var gDots = live.dotsState[gSide] || [];
+    var sentOffIds = live.sentOff || [];
+    var gActive = gDots.filter(function (d) { return d.line === 3 && d.player && sentOffIds.indexOf(d.player.id) === -1; });
+    if (!gActive.length) gActive = gDots.filter(function (d) { return d.line >= 2 && d.player && sentOffIds.indexOf(d.player.id) === -1; });
+    if (gActive.length) {
+      var gCarrier = live.ballCarrier && live.ballCarrier.side === gSide ? gActive.find(function (d) { return d.num === live.ballCarrier.num; }) : null;
+      if (!gCarrier) {
+        gCarrier = gActive[Math.floor(Math.random() * gActive.length)];
+        live.prevCarrier = live.ballCarrier && live.ballCarrier.side === gSide ? { side: gSide, num: live.ballCarrier.num } : null;
+        live.ballCarrier = { side: gSide, line: 3, num: gCarrier.num };
+      }
+      ev.scorer = gCarrier.player;
+      var passer = live.prevCarrier && live.prevCarrier.side === gSide ? gDots.find(function (d) { return d.num === live.prevCarrier.num && d.player && d.player.id !== gCarrier.player.id; }) : null;
+      ev.assist = passer && Math.random() < 0.8 ? passer.player : null;
+      live.goalFromY = gCarrier.y;
+    }
+  } else if (isDots && ev.side === 'me' && live.poss && live.poss.side === 'me') {
     var carrier = futDraftBallCarrierPlayer(live, live.poss);
     if (carrier && carrier.id) {
       var assistPool = (G.career && live.isCareer ? G.career.lineup : G.futdraft.lineup).map(function (s) { return s.player; })
@@ -457,7 +476,7 @@ function futDraftApplyGoalEvent(live, ev, isDots) {
     // vez de quedarse a medio camino en la línea de delanteros -- a
     // petición explícita ("que coincida el gol con justo cuando tira
     // alguien a puerta").
-    live.goalBall = { x: ev.side === 'me' ? 95 : 5, y: 50, until: Date.now() + 1400 };
+    live.goalBall = { x: ev.side === 'me' ? 95 : 5, y: typeof live.goalFromY === 'number' ? live.goalFromY : 50, until: Date.now() + 1400 };
     // Pausa de celebración: unos segundos sin avanzar el marcador antes
     // de seguir, para que dé tiempo a verlo -- también evita que, con
     // varios goles muy seguidos, uno se coma la celebración del otro
@@ -672,8 +691,11 @@ function futDraftBuildDotsState(live) {
     var row = formation.rows.find(function (r) { return r.pos === pos; });
     var count = row ? row.count : 0;
     var ys = futDraftLineSlots(count);
+    var oppPoolAll = (G.futdraft && (G.futdraft.oppPlayersOverride || G.futdraft.oppGhostPool)) || null;
+    var linePool = oppPoolAll && oppPoolAll.length ? oppPoolAll.filter(function (pl) { return pl.posicion === pos; }) : [];
     for (var i = 0; i < count; i++) {
-      oppDots.push({ x: clamp(WT_LINE_X_OPP[lineIdx] + rand(-4, 4), 50, 97), y: ys[i], num: oppNum++, line: lineIdx });
+      var oppPlayer = oppPoolAll && oppPoolAll.length ? ((linePool.length ? linePool : oppPoolAll)[i % (linePool.length ? linePool.length : oppPoolAll.length)] || null) : null;
+      oppDots.push({ x: clamp(WT_LINE_X_OPP[lineIdx] + rand(-4, 4), 50, 97), y: ys[i], num: oppNum++, line: lineIdx, player: oppPlayer });
     }
   });
   return { me: meDots, opp: oppDots };
@@ -764,6 +786,7 @@ function futDraftBallCarrierDot(live, poss, activeList) {
     if (kept) return kept;
   }
   var pick = activeList[Math.floor(Math.random() * activeList.length)];
+  if (live.ballCarrier && live.ballCarrier.side === poss.side && live.ballCarrier.num !== pick.num) live.prevCarrier = { side: live.ballCarrier.side, num: live.ballCarrier.num };
   live.ballCarrier = { side: poss.side, line: poss.line, num: pick.num };
   return pick;
 }
