@@ -742,6 +742,11 @@ function worldTourBridgeFutdraft(stage) {
   // (wtPlayerGeneric, sin sprite) cuentan igual: tienen nombre propio de
   // ese equipo aunque no tengan cara.
   var oppPlayersOverride = stage ? stage.players.filter(function (p) { return p.posicion !== 'Portero'; }) : null;
+  // Contra un equipo, solo juegan sus propios jugadores (el relleno de otros equipos es solo para el draft).
+  if (stage && stage.ownIds && stage.ownIds.length) {
+    var ownOnlyOpp = oppPlayersOverride.filter(function (p) { return stage.ownIds.indexOf(p.id) !== -1; });
+    if (ownOnlyOpp.length) oppPlayersOverride = ownOnlyOpp;
+  }
   var styleMods = worldTourPlayStyleModifiers(wt);
   G.futdraft = { coach: coachById(wt.coachId), coachChosenStyle: wt.playStyle || 'equilibrado', lineup: lineup, squad: wt.squad.slice(), captainId: wt.captainId || null, formation: wt.formationId || WORLD_TOUR_DEFAULT_FORMATION, condition: 'ninguna', tactics: { foul: wt.foulStyle || 'medio', intensity: wt.intensity || 'media' }, teamScoreOverride: futDraftTeamScore(lineup, wt.captainId || null), oppPlayersOverride: oppPlayersOverride && oppPlayersOverride.length ? oppPlayersOverride : null, styleAtkMult: styleMods.atk, styleDefMult: styleMods.def };
 }
