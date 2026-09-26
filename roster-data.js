@@ -115,7 +115,7 @@ var TEAM_SEASON = {
   'Protocolo Omega 2.0': 'go2', 'Protocolo Omega 3.0': 'go2', 'Ragnah': 'go2',
   'Raimon Inakuni': 'ares', 'Resistencia Japon': 'temp2', 'Resistencia Japón GO': 'go2',
   'Royal Academy': 'temp1', 'Sallys': 'temp1', 'Shuriken': 'temp1',
-  'Tarjeteros': 'temp3', 'Tormenta de Géminis': 'temp2', 'Ángeles Oscuros': 'temp3', 'Neo Raimon': 'temp1', 'Raimon': 'temp1', 'Diamond Dust': 'temp2', 'Knights': 'temp3', 'Criaturas de la Noche': 'go2', 'Nosfanáticos': 'go2', 'Camino Imperial': 'go1', 'Servicio Secreto': 'temp2', 'Triple C': 'temp2', 'Royal Academy Redux': 'temp2', 'Inazuma Kids': 'temp1', 'FFI Estrellas': 'temp3', 'Raimon GO': 'go1', 'Zoolan Team': 'temp3', 'Claustro Sagrado': 'temp2', 'Royal Academy GO': 'go1', 'Instituto Espejismo': 'go1', 'Poderosa Fe': 'go1', 'Twinford': 'vr', 'Umbrella': 'temp1',
+  'Tarjeteros': 'temp3', 'Tormenta de Géminis': 'temp2', 'Ángeles Oscuros': 'temp3', 'Neo Raimon': 'temp1', 'Raimon': 'temp1', 'Diamond Dust': 'temp2', 'Knights': 'temp3', 'Criaturas de la Noche': 'go2', 'Nosfanáticos': 'go2', 'Camino Imperial': 'go1', 'Servicio Secreto': 'temp2', 'Épsilon Plus': 'temp2', 'Triple C': 'temp2', 'Royal Academy Redux': 'temp2', 'Inazuma Kids': 'temp1', 'FFI Estrellas': 'temp3', 'Raimon GO': 'go1', 'Zoolan Team': 'temp3', 'Claustro Sagrado': 'temp2', 'Royal Academy GO': 'go1', 'Instituto Espejismo': 'go1', 'Poderosa Fe': 'go1', 'Twinford': 'vr', 'Umbrella': 'temp1',
   'Unicorn': 'temp3', 'Veteranos Inazuma': 'temp1', 'Wild': 'temp1',
   'Zanark Domain': 'go2', 'Zeus': 'temp1'
 };
@@ -161,7 +161,7 @@ var TEAM_POWER = {
   // Añadidos por el usuario (escudo y media dados por él)
   'Ángeles Oscuros': 85, 'FFI Estrellas': 80, 'Neo Raimon': 75, 'Raimon GO': 70, 'Zoolan Team': 60, 'Claustro Sagrado': 60,
   'Royal Academy GO': 60, 'Instituto Espejismo': 63, 'Poderosa Fe': 60,
-  'Servicio Secreto': 55, 'Knights': 72, 'Triple C': 50, 'Royal Academy Redux': 70
+  'Servicio Secreto': 55, 'Épsilon Plus': 80, 'Knights': 72, 'Triple C': 50, 'Royal Academy Redux': 70
 };
 
 
@@ -3926,6 +3926,141 @@ var ROSTER = [
 "desc":"Portera suplente del Raimon que espera su oportunidad para entrar al terreno de juego y reforzar la porteria.",
 "locked":true,"cost":375,
 "sprite":"assets/sprites/r449.webp"
+},
+{
+"id":"r450","equipo":"Tormenta de Géminis","nombre":"Diam","original":"Diam",
+"posicion":"Delantero","tipo":"Fuego",
+"tiro":84,"pase":72,"defensa":44,"especial":82,
+"hissatsu":["Big Bang"],"tipoTecnica":"tiro",
+"desc":"Delantero de Tormenta de Géminis, el equipo de la Academia Alius que humilló al Raimon.",
+"locked":true,"cost":390,
+"sprite":"assets/sprites/r450.webp"
+},
+{
+"id":"r451","equipo":"Tormenta de Géminis","nombre":"Ryhm","original":"Ryhm",
+"posicion":"Delantero","tipo":"Viento",
+"tiro":80,"pase":70,"defensa":46,"especial":78,
+"hissatsu":["Golpe estelar"],"tipoTecnica":"tiro",
+"desc":"Delantero veloz de Tormenta de Géminis, siempre pegado a su capitán.",
+"locked":true,"cost":390,
+"sprite":"assets/sprites/r451.webp"
+},
+{
+"id":"r452","equipo":"Tormenta de Géminis","nombre":"Pandora","original":"Pandora",
+"posicion":"Centrocampista","tipo":"Bosque",
+"tiro":66,"pase":82,"defensa":62,"especial":76,
+"hissatsu":["Caja de Pandora"],"tipoTecnica":"pase",
+"desc":"Centrocampista de Tormenta de Géminis que reparte el juego con frialdad.",
+"locked":true,"cost":390,
+"sprite":"assets/sprites/r452.webp"
+},
+{
+"id":"r453","equipo":"Tormenta de Géminis","nombre":"Galileo","original":"Galileo",
+"posicion":"Defensa","tipo":"Montaña",
+"tiro":46,"pase":68,"defensa":82,"especial":74,
+"hissatsu":["Órbita defensiva"],"tipoTecnica":"defensa",
+"desc":"Defensa de Tormenta de Géminis, imposible de superar por el centro.",
+"locked":true,"cost":390,
+"sprite":"assets/sprites/r453.webp"
+},
+{
+"id":"r454","equipo":"Tormenta de Géminis","nombre":"Grengo","original":"Grengo",
+"posicion":"Portero","tipo":"Montaña",
+"tiro":30,"pase":60,"defensa":84,"especial":80,
+"hissatsu":["Muro de meteoritos"],"tipoTecnica":"parada",
+"desc":"Portero de Tormenta de Géminis, grande y difícil de batir.",
+"locked":true,"cost":390,
+"sprite":"assets/sprites/r454.webp"
+},
+{
+"id":"r455","equipo":"Épsilon","nombre":"Metron","original":"Metron",
+"posicion":"Delantero","tipo":"Fuego",
+"tiro":86,"pase":74,"defensa":46,"especial":84,
+"hissatsu":["Rayo épsilon"],"tipoTecnica":"tiro",
+"desc":"Delantero de Épsilon, el equipo de la Academia Alius que combina fuerza y velocidad.",
+"locked":true,"cost":390,
+"sprite":"assets/sprites/r455.webp"
+},
+{
+"id":"r456","equipo":"Épsilon","nombre":"Kenville","original":"Kenville",
+"posicion":"Delantero","tipo":"Viento",
+"tiro":82,"pase":72,"defensa":44,"especial":80,
+"hissatsu":["Corte relámpago"],"tipoTecnica":"tiro",
+"desc":"Delantero de Épsilon con un remate rapidísimo.",
+"locked":true,"cost":390,
+"sprite":"assets/sprites/r456.webp"
+},
+{
+"id":"r457","equipo":"Épsilon","nombre":"Fedora","original":"Fedora",
+"posicion":"Centrocampista","tipo":"Bosque",
+"tiro":68,"pase":84,"defensa":64,"especial":78,
+"hissatsu":["Pase de sombrero"],"tipoTecnica":"pase",
+"desc":"Centrocampista de Épsilon, elegante y muy preciso en el pase.",
+"locked":true,"cost":390,
+"sprite":"assets/sprites/r457.webp"
+},
+{
+"id":"r458","equipo":"Épsilon","nombre":"Sworm","original":"Sworm",
+"posicion":"Defensa","tipo":"Montaña",
+"tiro":48,"pase":70,"defensa":84,"especial":76,
+"hissatsu":["Enjambre defensivo"],"tipoTecnica":"defensa",
+"desc":"Defensa de Épsilon que cierra todos los espacios.",
+"locked":true,"cost":390,
+"sprite":"assets/sprites/r458.webp"
+},
+{
+"id":"r459","equipo":"Épsilon","nombre":"Mercury","original":"Mercury",
+"posicion":"Portero","tipo":"Viento",
+"tiro":32,"pase":62,"defensa":86,"especial":82,
+"hissatsu":["Mano de mercurio"],"tipoTecnica":"parada",
+"desc":"Portero de Épsilon, ágil y con grandes reflejos.",
+"locked":true,"cost":390,
+"sprite":"assets/sprites/r459.webp"
+},
+{
+"id":"r460","equipo":"Épsilon Plus","nombre":"Metron Osc.","original":"Metron",
+"posicion":"Delantero","tipo":"Fuego",
+"tiro":92,"pase":80,"defensa":52,"especial":90,
+"hissatsu":["Rayo épsilon oscuro"],"tipoTecnica":"tiro",
+"desc":"Versión oscura de Metron, del Épsilon Plus, el equipo potenciado de la Academia Alius.",
+"locked":true,"cost":430,
+"sprite":"assets/sprites/r460.webp"
+},
+{
+"id":"r461","equipo":"Épsilon Plus","nombre":"Kenville Osc.","original":"Kenville",
+"posicion":"Delantero","tipo":"Viento",
+"tiro":88,"pase":78,"defensa":50,"especial":86,
+"hissatsu":["Corte relámpago oscuro"],"tipoTecnica":"tiro",
+"desc":"Versión oscura de Kenville, del Épsilon Plus, el equipo potenciado de la Academia Alius.",
+"locked":true,"cost":430,
+"sprite":"assets/sprites/r461.webp"
+},
+{
+"id":"r462","equipo":"Épsilon Plus","nombre":"Fedora Osc.","original":"Fedora",
+"posicion":"Centrocampista","tipo":"Bosque",
+"tiro":74,"pase":90,"defensa":70,"especial":84,
+"hissatsu":["Pase de sombrero oscuro"],"tipoTecnica":"pase",
+"desc":"Versión oscura de Fedora, del Épsilon Plus, el equipo potenciado de la Academia Alius.",
+"locked":true,"cost":430,
+"sprite":"assets/sprites/r462.webp"
+},
+{
+"id":"r463","equipo":"Épsilon Plus","nombre":"Sworm Osc.","original":"Sworm",
+"posicion":"Defensa","tipo":"Montaña",
+"tiro":54,"pase":76,"defensa":90,"especial":82,
+"hissatsu":["Enjambre defensivo oscuro"],"tipoTecnica":"defensa",
+"desc":"Versión oscura de Sworm, del Épsilon Plus, el equipo potenciado de la Academia Alius.",
+"locked":true,"cost":430,
+"sprite":"assets/sprites/r463.webp"
+},
+{
+"id":"r464","equipo":"Épsilon Plus","nombre":"Mercury Osc.","original":"Mercury",
+"posicion":"Portero","tipo":"Viento",
+"tiro":38,"pase":68,"defensa":92,"especial":88,
+"hissatsu":["Mano de mercurio oscuro"],"tipoTecnica":"parada",
+"desc":"Versión oscura de Mercury, del Épsilon Plus, el equipo potenciado de la Academia Alius.",
+"locked":true,"cost":430,
+"sprite":"assets/sprites/r464.webp"
 },
 
 ]

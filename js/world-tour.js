@@ -210,7 +210,7 @@ var WORLD_TOUR_STAGES_T2 = [
   wtStageExtra(wtTeamStage('t2-fauxshore', 'Fauxshore', ['Fauxshore'], 42), { joins: [['r11', -3, 'Darren']] }),
   wtStageExtra(wtTeamStage('t2-genesis1', 'Genesis', ['Genesis'], 91), { forcedLoss: true, injures: ['r03', 'r12', 'r05'], lossMessage: 'Derrota inevitable ante Genesis: Nathan, Tod y Kevin se lesionan y dejan el equipo.' }),
   wtStageExtra(wtTeamStage('t2-marytimes', 'Mary Times', ['Mary Times'], 40), { joins: [['r18', -3, 'Hurley']] }),
-  wtStageExtra(wtTeamStage('t2-epsilonplus', 'Épsilon Plus', ['Épsilon'], 78), { joins: [['r42', -2, 'Thor'], ['r02', -2, 'Axel']] }),
+  wtStageExtra(wtTeamStage('t2-epsilonplus', 'Épsilon Plus', ['Épsilon Plus'], 78), { joins: [['r42', -2, 'Thor'], ['r02', -2, 'Axel']] }),
   wtStageExtra(wtTeamStage('t2-zeus', 'Zeus', ['Zeus'], 75), { joins: [['r20', -2, 'Byron']] }),
   wtTeamStage('t2-genesis2', 'Genesis', ['Genesis'], 88),
   wtTeamStage('t2-emperadores', 'Emperadores Oscuros', ['Emperadores Oscuros'], 90),
