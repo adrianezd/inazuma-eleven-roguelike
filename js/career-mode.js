@@ -193,7 +193,7 @@ function renderCareerEstilo(c) {
   }).join('');
   var redOn = c.redCardFreq !== 'desactivado', injOn = c.injuryFreq !== 'desactivado';
   var foul = CAREER_FOUL_BENEFIT[c.foulStyle || 'medio'], inten = CAREER_INTENSITY_BENEFIT[c.intensity || 'media'];
-  var coach = coachById(c.coachId);
+  var coach = c.coachOn === false ? null : coachById(c.coachId);
   var html = coach ? '<div class="panel style-card">' +
     '<h3 style="margin-bottom:2px">Entrenador</h3>' +
     '<div class="coach-card selected" style="cursor:default">' + coachAvatarHtml(coach) +
@@ -380,10 +380,12 @@ function careerPlayerScore(p) {
 var CAREER_FATIGUE_TIRED_AT = 50;
 function careerFatigueOf(c, id) { return (c && c.fatigue && c.fatigue[id]) || 0; }
 function careerFatiguePenalty(c, id) {
+  if (c && c.fatigueOn === false) return 0;
   var f = careerFatigueOf(c, id);
   return f > CAREER_FATIGUE_TIRED_AT ? Math.round(Math.min(5, (f - CAREER_FATIGUE_TIRED_AT) / 10) * 2) / 2 : 0;
 }
 function careerUpdateFatigue(c) {
+  if (c.fatigueOn === false) return;
   c.fatigue = c.fatigue || {};
   var unavailable = careerUnavailableIds(c);
   var ready = c.lineup.map(function (s) { return s.player; }).concat(c.bench).filter(function (p) { return unavailable.indexOf(p.id) === -1; });
@@ -1274,6 +1276,8 @@ function careerFreshState(choices) {
     // Mercado de invierno activable/desactivable al crear la carrera, a
     // petición explícita -- el de pretemporada siempre está activo.
     winterMarket: choices.winterMarket !== false,
+    fatigueOn: choices.fatigueOn !== false,
+    coachOn: choices.coachOn !== false,
     foulStyle: 'medio',
     intensity: 'media',
     coachId: COACHES[Math.floor(Math.random() * COACHES.length)].id,
@@ -1415,7 +1419,7 @@ function careerSerialize(c) {
     suspendedIds: c.suspendedIds || [], injuries: c.injuries || [], boostedIds: c.boostedIds || [],
     difficulty: c.difficulty || 'normal',
     negotiation: c.negotiation || 'duras',
-    hideProdigy: !!c.hideProdigy, boardStyle: c.boardStyle || 'normal', ironman: !!c.ironman, marketActivity: c.marketActivity || 'baja', winterMarket: c.winterMarket !== false, injuryFreq: c.injuryFreq || 'bajo', foulStyle: c.foulStyle || 'medio', intensity: c.intensity || 'media', redCardFreq: c.redCardFreq || 'bajo', seasonFilter: c.seasonFilter || TEAM_SEASON_ORDER.slice(),
+    hideProdigy: !!c.hideProdigy, boardStyle: c.boardStyle || 'normal', ironman: !!c.ironman, marketActivity: c.marketActivity || 'baja', fatigueOn: c.fatigueOn !== false, coachOn: c.coachOn !== false, winterMarket: c.winterMarket !== false, injuryFreq: c.injuryFreq || 'bajo', foulStyle: c.foulStyle || 'medio', intensity: c.intensity || 'media', redCardFreq: c.redCardFreq || 'bajo', seasonFilter: c.seasonFilter || TEAM_SEASON_ORDER.slice(),
     division: c.division || 2,
     divisionTeams: c.divisionTeams,
     league: c.league,
@@ -1455,6 +1459,7 @@ function careerSerialize(c) {
     fatigue: c.fatigue || {},
     coachId: c.coachId || null,
     news: c.news || [],
+    folds: c.folds || {},
     sponsorOffers: c.sponsorOffers || null,
     activeSponsor: c.activeSponsor || null,
     seasonHistory: c.seasonHistory || [],
@@ -1499,7 +1504,7 @@ function careerDeserialize(data) {
     // ahí).
     difficulty: CAREER_DIFFICULTY_TIERS[data.difficulty] ? data.difficulty : 'normal',
     negotiation: CAREER_NEGOTIATION_MODES[data.negotiation] ? data.negotiation : 'duras',
-    hideProdigy: !!data.hideProdigy, boardStyle: data.boardStyle || 'normal', ironman: !!data.ironman, marketActivity: data.marketActivity || 'baja', winterMarket: data.winterMarket !== false, injuryFreq: data.injuryFreq || 'bajo', foulStyle: data.foulStyle || 'medio', intensity: data.intensity || 'media', coachId: (coachById(data.coachId) ? data.coachId : COACHES[Math.floor(Math.random() * COACHES.length)].id), redCardFreq: data.redCardFreq || 'bajo', seasonFilter: data.seasonFilter || TEAM_SEASON_ORDER.slice(),
+    hideProdigy: !!data.hideProdigy, boardStyle: data.boardStyle || 'normal', ironman: !!data.ironman, marketActivity: data.marketActivity || 'baja', fatigueOn: data.fatigueOn !== false, coachOn: data.coachOn !== false, winterMarket: data.winterMarket !== false, injuryFreq: data.injuryFreq || 'bajo', foulStyle: data.foulStyle || 'medio', intensity: data.intensity || 'media', coachId: (coachById(data.coachId) ? data.coachId : COACHES[Math.floor(Math.random() * COACHES.length)].id), redCardFreq: data.redCardFreq || 'bajo', seasonFilter: data.seasonFilter || TEAM_SEASON_ORDER.slice(),
     division: data.division || 1,
     divisionTeams: data.divisionTeams || careerInitialDivisionTeams(),
     league: data.league,
@@ -1508,6 +1513,7 @@ function careerDeserialize(data) {
     budget: typeof data.budget === 'number' ? data.budget : CAREER_STARTING_BUDGET,
     seasonStartBudget: typeof data.seasonStartBudget === 'number' ? data.seasonStartBudget : null,
     news: data.news || [],
+    folds: data.folds || {},
     loanedIds: data.loanedIds || [],
     loanedOutIds: data.loanedOutIds || [],
     suspendedIds: data.suspendedIds || [], injuries: data.injuries || [], boostedIds: data.boostedIds || [],
@@ -1684,6 +1690,10 @@ window.actionSetCareerSetupMarketActivity = function (id) {
   G.careerSetupChoices.marketActivity = id;
   render();
 };
+window.actionSetCareerSetupFatigue = function (on) { G.careerSetupChoices.fatigueOn = !!on; render(); };
+window.actionSetCareerSetupCoach = function (on) { G.careerSetupChoices.coachOn = !!on; render(); };
+window.actionToggleCareerFatigue = function () { var c = G.career; c.fatigueOn = c.fatigueOn === false; if (c.fatigueOn === false) c.fatigue = {}; render(); };
+window.actionToggleCareerCoach = function () { var c = G.career; c.coachOn = c.coachOn === false; render(); };
 window.actionSetCareerSetupWinterMarket = function (on) {
   G.careerSetupChoices.winterMarket = !!on;
   render();
@@ -1886,6 +1896,22 @@ function renderCareerSetup() {
         '</div>' +
       '</div>' +
       '<div class="panel">' +
+        '<h3 style="margin-bottom:4px">Cansancio</h3>' +
+        '<p class="dim small">Los titulares se cansan cada jornada y bajan de media; se rota con los suplentes.</p>' +
+        '<div class="btn-row mt">' +
+          '<button class="btn btn-tiny' + (choices.fatigueOn !== false ? ' active' : '') + '" onclick="actionSetCareerSetupFatigue(true)">Activado</button>' +
+          '<button class="btn btn-tiny' + (choices.fatigueOn === false ? ' active' : '') + '" onclick="actionSetCareerSetupFatigue(false)">Desactivado</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="panel">' +
+        '<h3 style="margin-bottom:4px">Entrenadores</h3>' +
+        '<p class="dim small">Un entrenador que suma ataque y defensa, con su intensidad y estilo, y que se puede fichar en el mercado.</p>' +
+        '<div class="btn-row mt">' +
+          '<button class="btn btn-tiny' + (choices.coachOn !== false ? ' active' : '') + '" onclick="actionSetCareerSetupCoach(true)">Activado</button>' +
+          '<button class="btn btn-tiny' + (choices.coachOn === false ? ' active' : '') + '" onclick="actionSetCareerSetupCoach(false)">Desactivado</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="panel">' +
         '<h3 style="margin-bottom:4px">Mercado de invierno</h3>' +
         '<p class="dim small">Ventana de fichajes a mitad de temporada (jornada ' + CAREER_MIDSEASON_AT_MATCHDAY + '), aparte de la de pretemporada (que siempre está activa).</p>' +
         '<div class="btn-row mt">' +
@@ -2082,12 +2108,12 @@ function renderCareerLineupPitch(c) {
         (c.swapSelectedId === p.id ? ' selected' : '') +
         (outOfPosition ? ' futdraft-out-of-position' : '');
       var badge = c.captainId === p.id ? '<span class="futdraft-captain-badge" title="Capitán">👑</span>' : '';
-      var nameSuffix = (outOfPosition ? ' <span class="dim">(' + p.posicion + ')</span>' : '') + (careerFatigueOf(c, p.id) >= CAREER_FATIGUE_TIRED_AT ? ' <span class="tired-chip">Cansado</span>' : '');
+      var nameSuffix = (outOfPosition ? ' <span class="dim">(' + p.posicion + ')</span>' : '') + (c.fatigueOn !== false && careerFatigueOf(c, p.id) >= CAREER_FATIGUE_TIRED_AT ? ' <span class="tired-chip">Cansado</span>' : '');
       return '<div class="' + cls + '" onclick="selectCareerPlayer(\'' + p.id + '\')">' + badge + careerPitchMediaBadgeHtml(p) + pitchAffinityBadgeHtml(p) + careerAvatarHtml(c, p) + '<span class="pitch-player-name">' + escapeHtml(p.nombre) + nameSuffix + '</span></div>';
     }).join('');
     return '<div class="pitch-row">' + itemsHtml + '</div>';
   }).join('');
-  var coach = coachById(c.coachId);
+  var coach = c.coachOn === false ? null : coachById(c.coachId);
   var coachHtml = coach ? '<div class="pitch-coach" style="cursor:pointer" onclick="actionSetCareerEquipoTab(\'estilo\')" title="Entrenador: ' + escapeHtml(coach.nombre) + '">' + coachAvatarHtml(coach) + '<span class="pitch-player-name">' + escapeHtml(coach.nombre) + '</span></div>' : '';
   return '<div class="pitch pitch-11">' + rowsHtml + coachHtml + '<div class="pitch-center-line"></div><div class="pitch-center-circle"></div></div>';
 }
@@ -2158,7 +2184,7 @@ function renderCareerEquipo(c) {
     '<div class="panel center-text">' +
       '<p class="dim small">Puntuación de equipo: <strong style="color:var(--accent-2)">' + breakdown.total + '</strong> / 100</p>' +
       '<p class="dim small">' + captainHint + '</p>' +
-      '<button class="btn btn-tiny" onclick="actionCareerRotateTired()">Rotar cansados</button> ' +
+      (c.fatigueOn !== false ? '<button class="btn btn-tiny" onclick="actionCareerRotateTired()">Rotar cansados</button> ' : '') +
       (c.rotateMessage ? '<p class="dim small">' + escapeHtml(c.rotateMessage) + '</p>' : '') +
       '<button class="btn btn-tiny' + (c.pickingCaptain ? ' active' : '') + '" onclick="toggleCareerCaptainMode()">' + (c.pickingCaptain ? 'Toca un titular…' : 'Elegir capitán 👑') + '</button>' +
     '</div>' +
@@ -2168,14 +2194,8 @@ function renderCareerEquipo(c) {
     '</div>' +
 
     '<div class="panel">' + renderCareerLineupPitch(c) + '</div>' +
-    '<div class="panel">' +
-      '<h3 style="margin-bottom:4px">Banquillo</h3>' +
-      '<div class="pitch-row" style="justify-content:center">' + benchHtml + '</div>' +
-    '</div>' +
-    '<div class="panel center-text">' +
-      '<h3 style="margin-bottom:8px">Bonificación de atributo (once titular)</h3>' +
-      '<div>' + elementCountsHtml + '</div>' +
-    '</div>'
+    careerFoldPanel(c, 'bench', 'Banquillo', '<div class="pitch-row" style="justify-content:center">' + benchHtml + '</div>', true, c.bench.length) +
+    careerFoldPanel(c, 'synergy', 'Bonificación de atributo', '<div class="center-text">' + elementCountsHtml + '</div>', false)
   );
 }
 
@@ -2387,8 +2407,25 @@ var CAREER_BOOST_MIN_SCORE = 100;
 var CAREER_BOOST_MAX_PLAYERS = 5;
 var CAREER_BOOST_AMOUNT = 5;
 function careerIsBoosted(c, p) { return (c.boostedIds || []).indexOf(p.id) !== -1; }
-function careerAvatarHtml(c, p) { return avatarHtml(p, careerIsBoosted(c, p) ? 'avatar-boosted' : ''); }
-function boostTagHtml(c, p) { return careerIsBoosted(c, p) ? ' <span class="player-tag player-tag-new" title="Potenciado +' + CAREER_BOOST_AMOUNT + '">⚡ +' + CAREER_BOOST_AMOUNT + '</span>' : ''; }
+// Estado del jugador: lesionado (partidos que le quedan) o sancionado por roja.
+function careerPlayerStatus(c, id) {
+  var inj = (c.injuries || []).find(function (i) { return i.id === id; });
+  if (inj) return { type: 'injury', left: inj.matchesLeft };
+  if ((c.suspendedIds || []).indexOf(id) !== -1) return { type: 'red' };
+  return null;
+}
+function careerAvatarHtml(c, p) {
+  var av = avatarHtml(p, careerIsBoosted(c, p) ? 'avatar-boosted' : '');
+  var st = careerPlayerStatus(c, p.id);
+  if (!st) return av;
+  return '<span class="avatar-status">' + av + '<span class="status-badge status-badge-' + st.type + '" title="' + (st.type === 'injury' ? 'Lesionado' : 'Sancionado por roja') + '">' + (st.type === 'injury' ? '+' : '') + '</span></span>';
+}
+function careerStatusTagHtml(c, p) {
+  var st = careerPlayerStatus(c, p.id);
+  if (!st) return '';
+  return st.type === 'injury' ? ' <span class="player-tag status-tag-injury">Lesionado, ' + st.left + ' partido' + (st.left === 1 ? '' : 's') + '</span>' : ' <span class="player-tag status-tag-red">Sancionado</span>';
+}
+function boostTagHtml(c, p) { return careerStatusTagHtml(c, p) + (careerIsBoosted(c, p) ? ' <span class="player-tag player-tag-new" title="Potenciado +' + CAREER_BOOST_AMOUNT + '">⚡ +' + CAREER_BOOST_AMOUNT + '</span>' : ''); }
 window.actionBoostCareerPlayer = function (id) {
   var c = G.career;
   c.boostedIds = c.boostedIds || [];
@@ -3259,6 +3296,33 @@ function foldHeaderHtml(title, key, open, count, sub) {
   '</div>';
 }
 
+// Plegables genéricos: c.folds[key] = true (abierto) o false (cerrado); si no existe, manda defOpen.
+function careerFoldOpen(c, key, defOpen) { return c.folds && c.folds[key] !== undefined ? !!c.folds[key] : defOpen !== false; }
+window.actionToggleFold = function (key, defOpen) {
+  var c = G.career;
+  c.folds = c.folds || {};
+  c.folds[key] = !careerFoldOpen(c, key, defOpen);
+  render();
+};
+function careerFoldHead(c, key, title, defOpen, count, sub) {
+  var open = careerFoldOpen(c, key, defOpen);
+  var arrowStyle = 'width:38px;height:38px;flex:0 0 38px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1.5px solid ' + (open ? '#ffb020' : 'rgba(255,255,255,0.22)') + ';background:' + (open ? 'rgba(255,176,32,0.18)' : 'rgba(255,255,255,0.06)') + ';color:#ffb020;transition:transform 0.25s ease;transform:rotate(' + (open ? '0' : '-90') + 'deg)';
+  var countHtml = count !== undefined && count !== null ? '<span style="flex:0 0 auto;min-width:28px;height:28px;padding:0 9px;display:flex;align-items:center;justify-content:center;border-radius:999px;background:rgba(255,176,32,0.18);color:#ffb020;font-size:0.85rem;font-weight:700">' + count + '</span>' : '';
+  var subHtml = sub ? '<div style="font-size:0.75rem;opacity:0.65;margin-top:2px">' + sub + '</div>' : '';
+  return '<div role="button" tabindex="0" aria-expanded="' + open + '" onclick="actionToggleFold(\'' + key + '\',' + (defOpen !== false) + ')" style="display:flex;align-items:center;gap:12px;width:100%;min-height:48px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none">' +
+    '<div style="flex:1 1 auto;min-width:0"><div style="font-family:Oswald,sans-serif;font-size:1.2rem;line-height:1.2">' + title + '</div>' + subHtml + '</div>' + countHtml +
+    '<div style="' + arrowStyle + '" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" style="display:block"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' +
+  '</div>';
+}
+function careerFoldStart(c, key, title, defOpen, count, sub) {
+  var open = careerFoldOpen(c, key, defOpen);
+  return careerFoldHead(c, key, title, defOpen, count, open ? '' : (sub || 'Toca para ver')) + '<div' + (open ? '' : ' style="display:none"') + '>';
+}
+function careerFoldEnd() { return '</div>'; }
+function careerFoldPanel(c, key, title, bodyHtml, defOpen, count, sub) {
+  var open = careerFoldOpen(c, key, defOpen);
+  return '<div class="panel' + (open ? ' fold-open' : '') + '">' + careerFoldStart(c, key, title, defOpen, count, sub) + bodyHtml + careerFoldEnd() + '</div>';
+}
 function careerCoachPrice(co) { return (co.atk + co.def) * 6; }
 window.actionCareerHireCoach = function (id) {
   var c = G.career, co = coachById(id);
@@ -3390,7 +3454,7 @@ function renderCareerMercado(c) {
   return (
     windowBannerHtml +
     incomingOffersHtml +
-    careerCoachMarketHtml(c) +
+    (c.coachOn === false ? '' : careerCoachMarketHtml(c)) +
     '<div class="panel">' +
       '<h3 style="margin-bottom:4px">Mercado</h3>' +
       '<p class="dim small">Presupuesto disponible: <strong style="color:var(--accent-2)">' + c.budget + ' M€</strong> · Cedidos: <strong>' + careerLoanCount(c) + ' / ' + CAREER_MAX_LOANS_IN + '</strong></p>' +
@@ -3399,6 +3463,7 @@ function renderCareerMercado(c) {
       (loansFull ? '<p class="dim small" style="color:var(--danger)">Ya tienes ' + CAREER_MAX_LOANS_IN + ' cesiones, el máximo. Devuelve a alguna antes de fichar otra.</p>' : '') +
       (c.marketMessage ? '<p class="dim small">' + escapeHtml(c.marketMessage) + '</p>' : '') +
       '<input class="select-field" type="text" placeholder="Buscar por nombre…" data-focus-key="career-market-search" value="' + escapeHtml(c.marketSearch || '') + '" oninput="actionSetCareerMarketSearch(this.value)">' +
+      careerFoldStart(c, 'mfilters', 'Filtros y orden', false) +
       '<div class="btn-row mt">' + filterBtnsHtml + '</div>' +
       '<div class="btn-row mt">' + typeFilterBtnsHtml + '</div>' +
       '<div class="btn-row mt">' + growthFilterBtnsHtml + '</div>' +
@@ -3412,6 +3477,7 @@ function renderCareerMercado(c) {
         '<select class="select-field" style="width:auto;min-height:36px;padding:6px 10px" onchange="actionSetCareerMarketSort(this.value)">' + sortOptionsHtml + '</select>' +
         '<button class="btn btn-tiny" onclick="actionToggleCareerMarketSortDir()">' + (sortDir === -1 ? '⬇ Mayor a menor' : '⬆ Menor a mayor') + '</button>' +
       '</div>' +
+      careerFoldEnd() +
       '<div class="futdraft-timeline mt">' + (rowsHtml || '<p class="dim small center-text">No queda nadie disponible con ese filtro.</p>') + '</div>' +
       pagerHtml +
     '</div>'
@@ -3915,7 +3981,7 @@ function careerPlayStyleModifiers(c) {
   var aligned = styleLean === 0 || formationLean === 0 || (styleLean > 0) === (formationLean > 0);
   var blend = aligned ? 1 : CAREER_PLAY_STYLE_CONTRADICTION_DAMPEN;
   var risk = careerRiskBenefit(c);
-  var cfx = coachEffect(coachById(c.coachId), style.id);
+  var cfx = coachEffect(c.coachOn === false ? null : coachById(c.coachId), style.id);
   return { atk: (1 + (style.atk - 1) * blend) * risk.atk * (1 + cfx.atkPts / 100) * cfx.atkMult, def: (1 + (style.def - 1) * blend) * risk.def * (1 + cfx.defPts / 100) * cfx.defMult, aligned: aligned };
 }
 // Ataque/defensa de TU equipo para resolver un partido de verdad
@@ -6343,8 +6409,7 @@ function careerSeasonHistoryHtml(c) {
     return '<div class="panel center-text"><h3 style="margin-bottom:4px">Historial de la carrera</h3><p class="dim small">Todavía no has completado ninguna temporada.</p></div>';
   }
   var rows = history.slice().reverse().map(careerSeasonHistoryRowHtml).join('');
-  return '<div class="panel center-text"><h3 style="margin-bottom:4px">Historial de la carrera</h3></div>' +
-    '<div class="panel"><div class="season-summary-badges">' + rows + '</div></div>';
+  return careerFoldPanel(c, 'historial', 'Historial de la carrera', '<div class="season-summary-badges">' + rows + '</div>', false, history.length);
 }
 // Palmarés: todos los títulos ganados en la carrera en un apartado
 // propio, a petición explícita ("en estadísticas, que salgan todos tus
@@ -6357,12 +6422,11 @@ function careerRecordsHtml(c) {
   hist.forEach(function (h) { if (h.position && (!best || h.position < best.position || (h.position === best.position && h.division < best.division))) best = h; });
   var scorer = sortedStatsList(c.careerStats.scorers)[0], assister = sortedStatsList(c.careerStats.assists)[0];
   function row(label, value) { return '<div class="record-row"><span>' + label + '</span><strong>' + value + '</strong></div>'; }
-  return '<div class="panel"><h3 style="margin-bottom:8px" class="center-text">Récords del club</h3>' +
+  return careerFoldPanel(c, 'records', 'Récords del club', ''+
     row('Temporadas jugadas', hist.length) +
     row('Mejor temporada', best ? 'Temporada ' + best.season + ', ' + best.position + 'º en ' + escapeHtml(careerDivisionName(best.division)) : 'Sin datos') +
     row('Goleador histórico', scorer ? escapeHtml(scorer.nombre) + ', ' + scorer.count : 'Sin datos') +
-    row('Máximo asistente histórico', assister ? escapeHtml(assister.nombre) + ', ' + assister.count : 'Sin datos') +
-  '</div>';
+    row('Máximo asistente histórico', assister ? escapeHtml(assister.nombre) + ', ' + assister.count : 'Sin datos'), true);
 }
 function careerPalmaresHtml(c) {
   var items = [
@@ -6378,7 +6442,7 @@ function careerPalmaresHtml(c) {
       '<div><div class="season-badge-label">' + escapeHtml(it.label) + '</div><div class="season-badge-text">' + it.count + '</div></div>' +
     '</div>';
   }).join('');
-  return '<div class="panel"><h3 style="margin-bottom:8px" class="center-text">Palmarés (' + total + ')</h3><div class="season-summary-badges">' + rows + '</div></div>';
+  return careerFoldPanel(c, 'palmares', 'Palmarés', '<div class="season-summary-badges">' + rows + '</div>', true, total);
 }
 // Menú de goleadores y asistentes (Liga / Copa / Champions / histórico del
 // club), a petición explícita ("más mono y mejor el menú para ver máximos
@@ -6480,6 +6544,14 @@ function renderCareerConfiguracion(c) {
   return '<div class="panel">' +
     '<h3 style="margin-bottom:8px">Configuración</h3>' +
     '<div class="btn-row" style="justify-content:space-between;align-items:center">' +
+      '<div><strong>Cansancio</strong><div class="dim small">Los titulares se cansan cada jornada.</div></div>' +
+      '<button class="btn btn-tiny' + (c.fatigueOn !== false ? ' active' : '') + '" onclick="actionToggleCareerFatigue()">' + (c.fatigueOn !== false ? 'Activado' : 'Desactivado') + '</button>' +
+    '</div>' +
+    '<div class="btn-row mt" style="justify-content:space-between;align-items:center">' +
+      '<div><strong>Entrenadores</strong><div class="dim small">Entrenador propio y fichajes de entrenadores.</div></div>' +
+      '<button class="btn btn-tiny' + (c.coachOn !== false ? ' active' : '') + '" onclick="actionToggleCareerCoach()">' + (c.coachOn !== false ? 'Activado' : 'Desactivado') + '</button>' +
+    '</div>' +
+    '<div class="btn-row mt" style="justify-content:space-between;align-items:center">' +
       '<div><strong>Autoguardado</strong><div class="dim small">Guarda la partida sola cada 3 minutos en el hueco ' + (G.careerActiveSlot || '-') + '.</div></div>' +
       '<button class="btn btn-tiny' + (c.autosave ? ' active' : '') + '" onclick="actionToggleCareerAutosave()">' + (c.autosave ? 'Activado' : 'Desactivado') + '</button>' +
     '</div>' +

@@ -23,6 +23,8 @@ var APP_PATCH_NOTES = [
       'App instalable: añade el juego a la pantalla de inicio (iPhone: compartir, Añadir a pantalla de inicio) y funciona sin conexión tras la primera visita.',
       'Carrera: pestaña Noticias en Club con los fichajes de otros clubes. Puntitos más vivos: se mueven todos menos los porteros, y de visitante juegas a la derecha.',
       'Confeti y destello al marcar y al ganar trofeos.',
+      'Carrera: cansancio y entrenadores opcionales (al crear la partida y en Ajustes); lesiones y rojas se ven con un icono en el campo, el banquillo y la plantilla; más paneles plegables con flecha.',
+      'Partido: los jugadores mantienen la formación, la posesión depende de la fuerza de los equipos y se ven dos goles seguidos.',
       'Mi perfil en el menú: partidos, victorias, goles y títulos de todos los modos.',
       'Menú: botón Continuar carrera con el resumen de tu club, y botón Novedades.',
       'Champions: cruces de ida y vuelta rediseñados con casillas de cada partido y el global.',
