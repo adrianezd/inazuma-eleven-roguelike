@@ -279,7 +279,7 @@ var CAREER_MODE_DEFAULT_FORMATION = '433';
 // romperse, así que no hace falta forzar más equilibrio que ese.
 var CAREER_RANDOM_SQUAD_MAX_SCORE = 82;
 // ===== Plantilla a mano: eliges 16 jugadores; el once sale de forma automática =====
-var CAREER_CUSTOM_MAX_AVG = 72;
+var CAREER_CUSTOM_MAX_AVG = 72; // solo para avisos antiguos; A mano ya no tiene tope
 function careerCustomAvg(ids) {
   if (!ids.length) return 0;
   var sum = 0;
@@ -290,7 +290,6 @@ function careerCustomSquadProblem(ids) {
   if (ids.length !== 16) return 'Elige exactamente 16 jugadores.';
   var ps = ids.map(function (id) { return ROSTER.find(function (x) { return x.id === id; }); }).filter(Boolean);
   if (!ps.some(function (p) { return p.posicion === 'Portero'; })) return 'Necesitas al menos un portero.';
-  if (careerCustomAvg(ids) > CAREER_CUSTOM_MAX_AVG) return 'La media de la plantilla no puede pasar de ' + CAREER_CUSTOM_MAX_AVG + '.';
   return null;
 }
 function careerCustomSquadIds(ids) {
@@ -338,7 +337,7 @@ function renderCareerSquadPicker() {
   return '<div class="screen">' +
     '<div class="panel center-text"><button class="btn btn-outline btn-block" onclick="actionCareerPickerBack()">Listo</button>' +
       '<h2 class="panel-title mt mb0">Tu plantilla a mano</h2>' +
-      '<p class="dim small"><strong style="color:var(--accent-2)">' + ids.length + '</strong> de 16, media <strong style="color:' + (avg > CAREER_CUSTOM_MAX_AVG ? 'var(--danger)' : 'var(--accent-2)') + '">' + avg + '</strong> (máximo ' + CAREER_CUSTOM_MAX_AVG + ')</p>' +
+      '<p class="dim small"><strong style="color:var(--accent-2)">' + ids.length + '</strong> de 16, media <strong style="color:var(--accent-2)">' + avg + '</strong></p>' +
       '<p class="dim small">PR ' + counts['Portero'] + ', DF ' + counts['Defensa'] + ', MD ' + counts['Centrocampista'] + ', DL ' + counts['Delantero'] + '. El once se forma solo en 4-3-3 con los mejores.</p>' +
       (problem ? '<p class="dim small" style="color:var(--danger)">' + problem + '</p>' : '<p class="dim small" style="color:var(--accent-2)">Plantilla válida.</p>') +
     '</div>' +
@@ -347,8 +346,22 @@ function renderCareerSquadPicker() {
       '<p class="dim small">' + list.length + ' jugadores' + (list.length > 60 ? ', se muestran los 60 mejores: usa el buscador' : '') + '.</p>' + rows + '</div>' +
   '</div>';
 }
-function careerRandomSquadIds() {
-  var pool = ROSTER.filter(function (p) { return careerPlayerScore(p) <= CAREER_RANDOM_SQUAD_MAX_SCORE; });
+// Equipos elegibles para "Elegir equipo": con el escudo desbloqueado y al menos 5 jugadores en el roster.
+function careerTeamPickList() {
+  return (G.meta.unlockedShields || []).filter(function (n) { return ROSTER.filter(function (p) { return p.equipo === n; }).length >= 5; });
+}
+function careerTeamSquadIds(name) {
+  var own = ROSTER.filter(function (p) { return p.equipo === name; }).sort(function (a, b) { return careerPlayerScore(b) - careerPlayerScore(a); }).slice(0, 16);
+  var ids = own.map(function (p) { return p.id; });
+  if (ids.length < 16) {
+    var filler = ROSTER.filter(function (p) { return ids.indexOf(p.id) === -1 && careerPlayerScore(p) <= 70; }).sort(function () { return Math.random() - 0.5; });
+    if (!own.some(function (p) { return p.posicion === 'Portero'; })) { var gk = filler.find(function (p) { return p.posicion === 'Portero'; }); if (gk) { ids.push(gk.id); filler.splice(filler.indexOf(gk), 1); } }
+    while (ids.length < 16 && filler.length) ids.push(filler.shift().id);
+  }
+  return careerCustomSquadIds(ids);
+}
+function careerRandomSquadIds(free) {
+  var pool = ROSTER.filter(function (p) { return free || careerPlayerScore(p) <= CAREER_RANDOM_SQUAD_MAX_SCORE; });
   var keepers = pool.filter(function (p) { return p.posicion === 'Portero'; }).sort(function () { return Math.random() - 0.5; });
   var others = pool.filter(function (p) { return p.posicion !== 'Portero'; }).sort(function () { return Math.random() - 0.5; });
   var squad = keepers.slice(0, 2).concat(others).slice(0, 16);
@@ -1265,6 +1278,8 @@ function careerGenerateIncomingOffers(c) {
     var mode = Math.random() < 0.25 ? 'loan' : 'buy';
     var asking = careerNegotiationAskingValue(p, mode);
     var variance = 1 + (Math.random() * 2 - 1) * CAREER_INCOMING_OFFER_VARIANCE;
+    // Dinero loco: el precio de cada oferta es totalmente aleatorio, de 0.2 a 12 veces su valor.
+    if (c.crazyMoney) variance = Math.exp(Math.log(0.2) + Math.random() * (Math.log(12) - Math.log(0.2)));
     pending.push({
       id: uid(),
       playerId: p.id,
@@ -1290,6 +1305,8 @@ function careerFreshState(choices) {
   // confirmar la carrera y ya fija para siempre, igual que el resto de
   // elecciones de creación).
   var squadIds = choices.squadMode === 'custom' && (choices.customIds || []).length === 16 ? careerCustomSquadIds(choices.customIds)
+    : choices.squadMode === 'team' && choices.teamPick ? careerTeamSquadIds(choices.teamPick)
+    : choices.squadMode === 'randomFree' ? careerRandomSquadIds(true)
     : choices.squadMode === 'random' ? careerRandomSquadIds()
     : choices.squadMode === 'raimon' ? { starterIds: CAREER_MODE_RAIMON_STARTER_IDS, benchIds: CAREER_MODE_RAIMON_BENCH_IDS }
     : { starterIds: CAREER_MODE_STARTER_IDS, benchIds: CAREER_MODE_BENCH_IDS };
@@ -1346,6 +1363,7 @@ function careerFreshState(choices) {
     // Mercado de invierno activable/desactivable al crear la carrera, a
     // petición explícita -- el de pretemporada siempre está activo.
     winterMarket: choices.winterMarket !== false,
+    crazyMoney: !!choices.crazyMoney,
     fatigueOn: choices.fatigueOn !== false,
     coachOn: choices.coachOn !== false,
     foulStyle: 'medio',
@@ -1489,7 +1507,7 @@ function careerSerialize(c) {
     suspendedIds: c.suspendedIds || [], injuries: c.injuries || [], boostedIds: c.boostedIds || [],
     difficulty: c.difficulty || 'normal',
     negotiation: c.negotiation || 'duras',
-    hideProdigy: !!c.hideProdigy, boardStyle: c.boardStyle || 'normal', ironman: !!c.ironman, marketActivity: c.marketActivity || 'baja', fatigueOn: c.fatigueOn !== false, coachOn: c.coachOn !== false, winterMarket: c.winterMarket !== false, injuryFreq: c.injuryFreq || 'bajo', foulStyle: c.foulStyle || 'medio', intensity: c.intensity || 'media', redCardFreq: c.redCardFreq || 'bajo', seasonFilter: c.seasonFilter || TEAM_SEASON_ORDER.slice(),
+    hideProdigy: !!c.hideProdigy, boardStyle: c.boardStyle || 'normal', ironman: !!c.ironman, marketActivity: c.marketActivity || 'baja', crazyMoney: !!c.crazyMoney, fatigueOn: c.fatigueOn !== false, coachOn: c.coachOn !== false, winterMarket: c.winterMarket !== false, injuryFreq: c.injuryFreq || 'bajo', foulStyle: c.foulStyle || 'medio', intensity: c.intensity || 'media', redCardFreq: c.redCardFreq || 'bajo', seasonFilter: c.seasonFilter || TEAM_SEASON_ORDER.slice(),
     division: c.division || 2,
     divisionTeams: c.divisionTeams,
     league: c.league,
@@ -1574,7 +1592,7 @@ function careerDeserialize(data) {
     // ahí).
     difficulty: CAREER_DIFFICULTY_TIERS[data.difficulty] ? data.difficulty : 'normal',
     negotiation: CAREER_NEGOTIATION_MODES[data.negotiation] ? data.negotiation : 'duras',
-    hideProdigy: !!data.hideProdigy, boardStyle: data.boardStyle || 'normal', ironman: !!data.ironman, marketActivity: data.marketActivity || 'baja', fatigueOn: data.fatigueOn !== false, coachOn: data.coachOn !== false, winterMarket: data.winterMarket !== false, injuryFreq: data.injuryFreq || 'bajo', foulStyle: data.foulStyle || 'medio', intensity: data.intensity || 'media', coachId: (coachById(data.coachId) ? data.coachId : COACHES[Math.floor(Math.random() * COACHES.length)].id), redCardFreq: data.redCardFreq || 'bajo', seasonFilter: data.seasonFilter || TEAM_SEASON_ORDER.slice(),
+    hideProdigy: !!data.hideProdigy, boardStyle: data.boardStyle || 'normal', ironman: !!data.ironman, marketActivity: data.marketActivity || 'baja', crazyMoney: !!data.crazyMoney, fatigueOn: data.fatigueOn !== false, coachOn: data.coachOn !== false, winterMarket: data.winterMarket !== false, injuryFreq: data.injuryFreq || 'bajo', foulStyle: data.foulStyle || 'medio', intensity: data.intensity || 'media', coachId: (coachById(data.coachId) ? data.coachId : COACHES[Math.floor(Math.random() * COACHES.length)].id), redCardFreq: data.redCardFreq || 'bajo', seasonFilter: data.seasonFilter || TEAM_SEASON_ORDER.slice(),
     division: data.division || 1,
     divisionTeams: data.divisionTeams || careerInitialDivisionTeams(),
     league: data.league,
@@ -1716,7 +1734,7 @@ window.actionNewCareerInSlot = function (slot) {
 // explícita ("un equipo por defecto que es el que hay ahora, y un modo
 // aleatorio... todo esto con desplegable junto al resto de opciones").
 window.actionSetCareerSetupSquadMode = function (mode) {
-  if (mode !== 'default' && mode !== 'random' && mode !== 'raimon' && mode !== 'custom') return;
+  if (['default', 'random', 'randomFree', 'raimon', 'custom', 'team'].indexOf(mode) === -1) return;
   G.careerSetupChoices.squadMode = mode;
   render();
 };
@@ -1760,6 +1778,14 @@ window.actionSetCareerSetupMarketActivity = function (id) {
   G.careerSetupChoices.marketActivity = id;
   render();
 };
+window.actionSetCareerSetupTeamPick = function (name) {
+  var ch = G.careerSetupChoices;
+  ch.teamPick = name;
+  ch.clubShieldName = name;
+  if (!(ch.clubName || '').trim()) ch.clubName = name;
+  render();
+};
+window.actionSetCareerSetupCrazy = function (on) { G.careerSetupChoices.crazyMoney = !!on; render(); };
 window.actionSetCareerSetupFatigue = function (on) { G.careerSetupChoices.fatigueOn = !!on; render(); };
 window.actionSetCareerSetupCoach = function (on) { G.careerSetupChoices.coachOn = !!on; render(); };
 window.actionToggleCareerFatigue = function () { var c = G.career; c.fatigueOn = c.fatigueOn === false; if (c.fatigueOn === false) c.fatigue = {}; render(); };
@@ -1816,6 +1842,7 @@ window.actionConfirmCareerSetup = function () {
   if (!slot) return;
   var ch = G.careerSetupChoices;
   if (ch.squadMode === 'custom' && careerCustomSquadProblem(ch.customIds || [])) { render(); return; }
+  if (ch.squadMode === 'team' && !ch.teamPick) { render(); return; }
   G.career = careerFreshState(G.careerSetupChoices);
   G.careerActiveSlot = slot;
   saveCareerToSlot(slot);
@@ -1848,14 +1875,17 @@ function renderCareerSetup() {
   // Plantilla inicial: botones como el resto de opciones (antes un
   // desplegable, a petición explícita: "haz que salga también con
   // botones para elegir, así").
-  var squadMode = (choices.squadMode === 'random' || choices.squadMode === 'raimon' || choices.squadMode === 'custom') ? choices.squadMode : 'default';
+  var squadMode = ['random', 'randomFree', 'raimon', 'custom', 'team'].indexOf(choices.squadMode) !== -1 ? choices.squadMode : 'default';
+  var teamList = careerTeamPickList();
   var customCount = (choices.customIds || []).length;
   var squadModeBtnsHtml =
     '<button class="btn btn-tiny' + (squadMode === 'default' ? ' active' : '') + '" onclick="actionSetCareerSetupSquadMode(\'default\')">Por defecto</button>' +
-    '<button class="btn btn-tiny' + (squadMode === 'random' ? ' active' : '') + '" onclick="actionSetCareerSetupSquadMode(\'random\')">Aleatoria</button>' +
+    '<button class="btn btn-tiny' + (squadMode === 'random' ? ' active' : '') + '" onclick="actionSetCareerSetupSquadMode(\'random\')">Aleatoria con tope</button>' +
+    '<button class="btn btn-tiny' + (squadMode === 'randomFree' ? ' active' : '') + '" onclick="actionSetCareerSetupSquadMode(\'randomFree\')">Aleatoria sin tope</button>' +
     '<button class="btn btn-tiny' + (squadMode === 'raimon' ? ' active' : '') + '" onclick="actionSetCareerSetupSquadMode(\'raimon\')">Raimon</button>' +
-    '<button class="btn btn-tiny' + (squadMode === 'custom' ? ' active' : '') + '" onclick="actionSetCareerSetupSquadMode(\'custom\')">A mano</button>';
-  var squadModeDesc = squadMode === 'custom' ? 'Eliges tú los 16 jugadores, con un tope de media para la plantilla (' + CAREER_CUSTOM_MAX_AVG + ' de media).' : squadMode === 'random' ? '16 jugadores al azar, todos de 82 de nota o menos.'
+    '<button class="btn btn-tiny' + (squadMode === 'custom' ? ' active' : '') + '" onclick="actionSetCareerSetupSquadMode(\'custom\')">A mano</button>' +
+    '<button class="btn btn-tiny' + (squadMode === 'team' ? ' active' : '') + '" onclick="actionSetCareerSetupSquadMode(\'team\')">Elegir equipo</button>';
+  var squadModeDesc = squadMode === 'team' ? 'Empiezas con los jugadores de uno de tus equipos desbloqueados (con al menos 5 jugadores), y usas su escudo.' : squadMode === 'randomFree' ? '16 jugadores al azar de todo el roster, sin límite de media.' : squadMode === 'custom' ? 'Eliges tú los 16 jugadores, sin límite de media.' : squadMode === 'random' ? '16 jugadores al azar, todos de 82 de nota o menos.'
     : squadMode === 'raimon' ? 'El once real de Inazuma Eleven 1, con Jude/Bobby/Erik de refuerzo en el banquillo.'
     : 'Los mismos 16 jugadores de siempre.';
   // Nombre/escudo de TU club, a petición explícita ("elige nombre de
@@ -1887,8 +1917,7 @@ function renderCareerSetup() {
         '<h2 class="panel-title mt">Nueva partida, hueco ' + G.careerSetupSlot + '</h2>' +
         '<p class="dim small">Elige cómo quieres jugar esta carrera. No se puede cambiar después.</p>' +
       '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:4px">Tu club</h3>' +
+      setupFoldStart('career-tu-club', 'Tu club') +
         '<label class="dim small">Nombre del club</label>' +
         '<input class="select-field" type="text" maxlength="24" data-focus-key="career-setup-clubname" placeholder="Tu Equipo" value="' + escapeHtml(choices.clubName || '') + '" oninput="actionSetCareerSetupClubName(this.value)">' +
         '<p class="dim small mt">Escudo' + (myShields.length ? '' : ' (aún no has desbloqueado ninguno, se usará el de por defecto)') + (myShields.length ? (choices.clubShieldName ? ': ' + escapeHtml(choices.clubShieldName) : ': por defecto') : '') + '</p>' +
@@ -1896,54 +1925,48 @@ function renderCareerSetup() {
           ? '<button class="btn btn-outline btn-block btn-tiny" onclick="actionToggleCareerSetupShields()">' + (choices.shieldsExpanded ? 'Ocultar ▲' : 'Elegir ▼') + '</button>'
           : '') +
         (choices.shieldsExpanded || !myShields.length ? clubShieldOptionsHtml : '') +
-      '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:4px">Jugadores Prodigio</h3>' +
+      setupFoldEnd() +
+      setupFoldStart('career-jugadores-prodigio', 'Jugadores Prodigio') +
         '<p class="dim small">Visible: se ve qué jugadores son Prodigio (nivel de crecimiento máximo) con su flecha especial. Oculto: se disfrazan como un jugador normal de crecimiento alto, no sabrás quién es Prodigio hasta ver cómo progresa.</p>' +
         '<div class="btn-row mt">' + hideProdigyBtnsHtml + '</div>' +
-      '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:4px">Plantilla inicial</h3>' +
+      setupFoldEnd() +
+      setupFoldStart('career-plantilla-inicial', 'Plantilla inicial') +
         '<p class="dim small">' + squadModeDesc + '</p>' +
         '<div class="btn-row mt">' + squadModeBtnsHtml + '</div>' +
+        (squadMode === 'team' ? (teamList.length ? teamList.map(function (n) { var sel = choices.teamPick === n; return '<button class="shop-item" style="width:100%;text-align:left;margin-top:6px;border-color:' + (sel ? 'var(--accent-2)' : 'var(--border)') + '" onclick="actionSetCareerSetupTeamPick(\'' + n.replace(/'/g, '') + '\')"><img class="team-shield-inline" src="' + escapeHtml(teamShieldPath(n)) + '" alt=""><div style="flex:1"><strong>' + escapeHtml(n) + '</strong><div class="dim small">' + ROSTER.filter(function (p) { return p.equipo === n; }).length + ' jugadores</div></div>' + (sel ? '<span class="pill">Elegido</span>' : '') + '</button>'; }).join('') : '<p class="dim small" style="color:var(--danger)">Aún no tienes ningún escudo desbloqueado de un equipo con 5 jugadores o más.</p>') + (teamList.length && !choices.teamPick ? '<p class="dim small" style="color:var(--danger)">Elige un equipo para empezar.</p>' : '') : '') +
         (squadMode === 'custom' ? '<button class="btn btn-primary btn-block mt" onclick="actionOpenCareerSquadPicker()">Elegir jugadores, ' + customCount + ' de 16</button>' + (customCount !== 16 ? '<p class="dim small" style="color:var(--danger)">Elige exactamente 16 jugadores para empezar.</p>' : '') : '') +
-      '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:4px">División inicial</h3>' +
+      setupFoldEnd() +
+      setupFoldStart('career-divisi-n-inicial', 'División inicial') +
         '<p class="dim small">Segunda: empiezas desde abajo. Primera: arrancas ya en la máxima categoría, contra los mejores.</p>' +
         '<div class="btn-row mt">' +
           '<button class="btn btn-tiny' + ((choices.startDivision !== 1) ? ' active' : '') + '" onclick="actionSetCareerSetupStartDivision(2)">Segunda</button>' +
           '<button class="btn btn-tiny' + (choices.startDivision === 1 ? ' active' : '') + '" onclick="actionSetCareerSetupStartDivision(1)">Primera</button>' +
         '</div>' +
-      '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:4px">Estilo de directiva</h3>' +
+      setupFoldEnd() +
+      setupFoldStart('career-estilo-de-directiva', 'Estilo de directiva') +
         '<p class="dim small">Exigente: objetivo más alto y los resultados pesan más (para bien y para mal). Tranquila: más margen y menos castigo.</p>' +
         '<div class="btn-row mt">' +
           Object.keys(CAREER_BOARD_STYLES).map(function (id) {
             return '<button class="btn btn-tiny' + ((choices.boardStyle || 'normal') === id ? ' active' : '') + '" onclick="actionSetCareerSetupBoardStyle(\'' + id + '\')">' + CAREER_BOARD_STYLES[id].name + '</button>';
           }).join('') +
         '</div>' +
-      '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:4px">Modo Ironman</h3>' +
+      setupFoldEnd() +
+      setupFoldStart('career-modo-ironman', 'Modo Ironman') +
         '<p class="dim small">Si te despiden, se borra este hueco de guardado -- no podrás recargar la partida desde antes del despido.</p>' +
         '<div class="btn-row mt">' +
           '<button class="btn btn-tiny' + (!choices.ironman ? ' active' : '') + '" onclick="actionSetCareerSetupIronman(false)">No</button>' +
           '<button class="btn btn-tiny' + (choices.ironman ? ' active' : '') + '" onclick="actionSetCareerSetupIronman(true)">Sí</button>' +
         '</div>' +
-      '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:4px">Actividad de mercado</h3>' +
+      setupFoldEnd() +
+      setupFoldStart('career-actividad-de-mercado', 'Actividad de mercado') +
         '<p class="dim small">Baja: llegan de ' + CAREER_MARKET_ACTIVITY.baja.offersMin + ' a ' + CAREER_MARKET_ACTIVITY.baja.offersMax + ' ofertas por tus jugadores al día, y puedes fichar hasta ' + CAREER_MARKET_ACTIVITY.baja.maxSignings + ' al día. Alta: de ' + CAREER_MARKET_ACTIVITY.alta.offersMin + ' a ' + CAREER_MARKET_ACTIVITY.alta.offersMax + ' ofertas, hasta ' + CAREER_MARKET_ACTIVITY.alta.maxSignings + ' fichajes al día.</p>' +
         '<div class="btn-row mt">' +
           Object.keys(CAREER_MARKET_ACTIVITY).map(function (id) {
             return '<button class="btn btn-tiny' + ((choices.marketActivity || 'baja') === id ? ' active' : '') + '" onclick="actionSetCareerSetupMarketActivity(\'' + id + '\')">' + CAREER_MARKET_ACTIVITY[id].name + '</button>';
           }).join('') +
         '</div>' +
-      '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:4px">Temporadas de rivales</h3>' +
+      setupFoldEnd() +
+      setupFoldStart('career-temporadas-de-rivales', 'Temporadas de rivales') +
         '<p class="dim small">Qué temporadas/juegos pueden salir como equipos rivales (mínimo 1). Los equipos sin temporada conocida entran siempre igual.</p>' +
         '<div class="btn-row mt">' +
           TEAM_SEASON_ORDER.map(function (s) {
@@ -1951,63 +1974,62 @@ function renderCareerSetup() {
             return '<button class="btn btn-tiny' + (active ? ' active' : '') + '" onclick="actionToggleCareerSetupSeason(\'' + s + '\')">' + TEAM_SEASON_LABELS[s] + '</button>';
           }).join('') +
         '</div>' +
-      '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:4px">Frecuencia de lesiones</h3>' +
+      setupFoldEnd() +
+      setupFoldStart('career-frecuencia-de-lesiones', 'Frecuencia de lesiones') +
         '<p class="dim small">Un jugador lesionado se aparta del once una o varias jornadas, igual que uno expulsado.</p>' +
         '<div class="btn-row mt">' +
           CAREER_EVENT_FREQ_ORDER.map(function (f) {
             return '<button class="btn btn-tiny' + ((choices.injuryFreq || 'bajo') === f ? ' active' : '') + '" onclick="actionSetCareerSetupInjuryFreq(\'' + f + '\')">' + CAREER_EVENT_FREQ[f].name + '</button>';
           }).join('') +
         '</div>' +
-      '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:4px">Frecuencia de rojas</h3>' +
+      setupFoldEnd() +
+      setupFoldStart('career-frecuencia-de-rojas', 'Frecuencia de rojas') +
         '<p class="dim small">El expulsado no puede jugar de titular hasta cumplir un partido de sanción.</p>' +
         '<div class="btn-row mt">' +
           CAREER_EVENT_FREQ_ORDER.map(function (f) {
             return '<button class="btn btn-tiny' + ((choices.redCardFreq || 'bajo') === f ? ' active' : '') + '" onclick="actionSetCareerSetupRedCardFreq(\'' + f + '\')">' + CAREER_EVENT_FREQ[f].name + '</button>';
           }).join('') +
         '</div>' +
-      '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:4px">Cansancio</h3>' +
+      setupFoldEnd() +
+      setupFoldStart('career-dinero-loco', 'Dinero loco') +
+        '<p class="dim small">Todas las ofertas que te llegan por tus jugadores tienen un precio totalmente aleatorio, de casi regalado a una locura.</p>' +
+        '<div class="btn-row mt">' +
+          '<button class="btn btn-tiny' + (choices.crazyMoney ? ' active' : '') + '" onclick="actionSetCareerSetupCrazy(true)">Activado</button>' +
+          '<button class="btn btn-tiny' + (!choices.crazyMoney ? ' active' : '') + '" onclick="actionSetCareerSetupCrazy(false)">Desactivado</button>' +
+        '</div>' +
+      setupFoldEnd() +
+      setupFoldStart('career-cansancio', 'Cansancio') +
         '<p class="dim small">Los titulares se cansan cada jornada y bajan de media; se rota con los suplentes.</p>' +
         '<div class="btn-row mt">' +
           '<button class="btn btn-tiny' + (choices.fatigueOn !== false ? ' active' : '') + '" onclick="actionSetCareerSetupFatigue(true)">Activado</button>' +
           '<button class="btn btn-tiny' + (choices.fatigueOn === false ? ' active' : '') + '" onclick="actionSetCareerSetupFatigue(false)">Desactivado</button>' +
         '</div>' +
-      '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:4px">Entrenadores</h3>' +
+      setupFoldEnd() +
+      setupFoldStart('career-entrenadores', 'Entrenadores') +
         '<p class="dim small">Un entrenador que suma ataque y defensa, con su intensidad y estilo, y que se puede fichar en el mercado.</p>' +
         '<div class="btn-row mt">' +
           '<button class="btn btn-tiny' + (choices.coachOn !== false ? ' active' : '') + '" onclick="actionSetCareerSetupCoach(true)">Activado</button>' +
           '<button class="btn btn-tiny' + (choices.coachOn === false ? ' active' : '') + '" onclick="actionSetCareerSetupCoach(false)">Desactivado</button>' +
         '</div>' +
-      '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:4px">Mercado de invierno</h3>' +
+      setupFoldEnd() +
+      setupFoldStart('career-mercado-de-invierno', 'Mercado de invierno') +
         '<p class="dim small">Ventana de fichajes a mitad de temporada (jornada ' + CAREER_MIDSEASON_AT_MATCHDAY + '), aparte de la de pretemporada (que siempre está activa).</p>' +
         '<div class="btn-row mt">' +
           '<button class="btn btn-tiny' + (choices.winterMarket !== false ? ' active' : '') + '" onclick="actionSetCareerSetupWinterMarket(true)">Activado</button>' +
           '<button class="btn btn-tiny' + (choices.winterMarket === false ? ' active' : '') + '" onclick="actionSetCareerSetupWinterMarket(false)">Desactivado</button>' +
         '</div>' +
-      '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:4px">Dificultad</h3>' +
+      setupFoldEnd() +
+      setupFoldStart('career-dificultad', 'Dificultad') +
         '<p class="dim small">Cuánto se nivelan los rivales hacia arriba en Jornada y Copa (Fácil ' + CAREER_DIFFICULTY_TIERS.facil.rivalLevelTarget + ' · Normal ' + CAREER_DIFFICULTY_TIERS.normal.rivalLevelTarget + ' · Difícil ' + CAREER_DIFFICULTY_TIERS.dificil.rivalLevelTarget + ' · Muy difícil ' + CAREER_DIFFICULTY_TIERS.muy_dificil.rivalLevelTarget + ').</p>' +
         '<div class="btn-row mt">' + difficultyBtnsHtml + '</div>' +
-      '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:4px">Dinero inicial</h3>' +
+      setupFoldEnd() +
+      setupFoldStart('career-dinero-inicial', 'Dinero inicial') +
         '<div class="btn-row mt">' + budgetBtnsHtml + '</div>' +
-      '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:4px">Negociaciones</h3>' +
+      setupFoldEnd() +
+      setupFoldStart('career-negociaciones', 'Negociaciones') +
         '<p class="dim small">Duras: cuesta más conseguir un descuento al fichar. Blandas: es más fácil regatear el precio.</p>' +
         '<div class="btn-row mt">' + negotiationBtnsHtml + '</div>' +
-      '</div>' +
+      setupFoldEnd() +
       '<div class="panel center-text">' +
         '<button class="btn btn-primary btn-block" onclick="actionConfirmCareerSetup()">Empezar carrera</button>' +
       '</div>' +
@@ -3398,6 +3420,18 @@ function careerFoldPanel(c, key, title, bodyHtml, defOpen, count, sub) {
   var open = careerFoldOpen(c, key, defOpen);
   return '<div class="panel' + (open ? ' fold-open' : '') + '">' + careerFoldStart(c, key, title, defOpen, count, sub) + bodyHtml + careerFoldEnd() + '</div>';
 }
+// Plegables de las pantallas de preparación (Carrera y Mundial): G.setupFolds[key] = true si está abierto; por defecto todo cerrado.
+window.actionToggleSetupFold = function (key) { G.setupFolds = G.setupFolds || {}; G.setupFolds[key] = !G.setupFolds[key]; render(); };
+function setupFoldStart(key, title) {
+  var open = !!(G.setupFolds && G.setupFolds[key]);
+  var arrowStyle = 'width:38px;height:38px;flex:0 0 38px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1.5px solid ' + (open ? '#ffb020' : 'rgba(255,255,255,0.22)') + ';background:' + (open ? 'rgba(255,176,32,0.18)' : 'rgba(255,255,255,0.06)') + ';color:#ffb020;transition:transform 0.25s ease;transform:rotate(' + (open ? '0' : '-90') + 'deg)';
+  return '<div class="panel' + (open ? ' fold-open' : '') + '">' +
+    '<div role="button" tabindex="0" aria-expanded="' + open + '" onclick="actionToggleSetupFold(\'' + key + '\')" style="display:flex;align-items:center;gap:12px;width:100%;min-height:48px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none">' +
+      '<div style="flex:1 1 auto;min-width:0"><div style="font-family:Oswald,sans-serif;font-size:1.2rem;line-height:1.2">' + title + '</div>' + (open ? '' : '<div style="font-size:0.75rem;opacity:0.65;margin-top:2px">Toca para ver</div>') + '</div>' +
+      '<div style="' + arrowStyle + '" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" style="display:block"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' +
+    '</div><div' + (open ? '' : ' style="display:none"') + '>';
+}
+function setupFoldEnd() { return '</div></div>'; }
 function careerCoachPrice(co) { return (co.atk + co.def) * 6; }
 window.actionCareerHireCoach = function (id) {
   var c = G.career, co = coachById(id);

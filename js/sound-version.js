@@ -30,6 +30,7 @@ var APP_PATCH_NOTES = [
       'Modo Mundial Temporada 2 con el recorrido real (20 partidos, derrotas de guion, lesiones, salidas y fichajes por historia) y Temporada 3 con la plantilla de Inazuma Japón.',
       'Modo Mundial: lesiones y rojas con icono en el círculo del jugador; los no disponibles salen del once y no pueden jugar.',
       'Partido con puntitos: el goleador es el último jugador que llevaba el balón en el campo, y la asistencia, quien se lo pasó.',
+      'Carrera: plantilla A mano sin tope, Aleatoria con y sin tope, Elegir equipo (de tus escudos con 5 jugadores o más) y Dinero loco. Las opciones de preparación de Carrera y Mundial son plegables y empiezan cerradas.',
       'Mi perfil en el menú: partidos, victorias, goles y títulos de todos los modos.',
       'Menú: botón Continuar carrera con el resumen de tu club, y botón Novedades.',
       'Champions: cruces de ida y vuelta rediseñados con casillas de cada partido y el global.',

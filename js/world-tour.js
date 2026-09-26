@@ -323,49 +323,44 @@ function renderWorldTourSetup() {
         '<h2 class="panel-title mt">Modo Mundial</h2>' +
         '<p class="dim small">Recorre los equipos de Inazuma Eleven 1, empezando por el Occult. Cada victoria sube un poco tu media y te deja fichar a un jugador real del equipo derrotado (como un draft).</p>' +
       '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:8px" class="center-text">Temporada</h3>' +
+      setupFoldStart('mundial-temporada', 'Temporada') +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-tiny' + (worldTourSetupSeason() === 1 ? ' active' : '') + '" onclick="actionSetWorldTourSeason(1)">Temporada 1</button>' +
           '<button class="btn btn-tiny' + (worldTourSetupSeason() === 2 ? ' active' : '') + '" onclick="actionSetWorldTourSeason(2)">Temporada 2</button>' +
           '<button class="btn btn-tiny' + (worldTourSetupSeason() === 3 ? ' active' : '') + '" onclick="actionSetWorldTourSeason(3)">Temporada 3</button>' +
         '</div>' +
         '<p class="dim small center-text mt">' + (worldTourSetupSeason() === 1 ? 'Los equipos de Inazuma Eleven 1, del Occult al Equipo Ogro.' : worldTourSetupSeason() === 2 ? 'Los partidos de la Academia Alius de Inazuma Eleven 2, de Tormenta de Géminis a Caos.' : 'El torneo mundial de Inazuma Eleven 3, con Inazuma Japón, de los Leones del desierto a los Pequeños Gigantes.') + '</p>' +
-      '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:8px" class="center-text">Tu equipo</h3>' +
+      setupFoldEnd() +
+      setupFoldStart('mundial-tu-equipo', 'Tu equipo') +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-tiny' + (squadType === 'raimon' ? ' active' : '') + '" onclick="actionSetWorldTourSquadType(\'raimon\')">Raimon</button>' +
           '<button class="btn btn-tiny' + (squadType === 'random' ? ' active' : '') + '" onclick="actionSetWorldTourSquadType(\'random\')">Aleatorio</button>' +
         '</div>' +
         '<p class="dim small center-text mt">' + (squadType === 'raimon' ? 'El once base de Inazuma Eleven 1, todos por debajo de 75 de media.' : '11 jugadores al azar de toda la franquicia, también por debajo de 75.') + '</p>' +
-      '</div>' +
+      setupFoldEnd() +
       customNameHtml +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:8px" class="center-text">Al perder</h3>' +
+      setupFoldStart('mundial-al-perder', 'Al perder') +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-tiny' + (mode === 'libre' ? ' active' : '') + '" onclick="actionSetWorldTourSetupMode(\'libre\')">Reintentar</button>' +
           '<button class="btn btn-tiny' + (mode === 'duro' ? ' active' : '') + '" onclick="actionSetWorldTourSetupMode(\'duro\')">Racha</button>' +
           '<button class="btn btn-tiny' + (mode === 'dificil' ? ' active' : '') + '" onclick="actionSetWorldTourSetupMode(\'dificil\')">Difícil</button>' +
         '</div>' +
         '<p class="dim small center-text mt">' + (mode === 'libre' ? 'Si pierdes, te quedas en el mismo rival y lo repites.' : mode === 'duro' ? 'Si pierdes, vuelves al Occult, pero tu plantilla conserva la media y los fichajes ganados.' : 'Si pierdes, vuelves al Occult con la plantilla inicial de cero, sin ninguna mejora ni fichaje ganado.') + '</p>' +
-      '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:8px" class="center-text">Draft</h3>' +
+      setupFoldEnd() +
+      setupFoldStart('mundial-draft', 'Draft') +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-tiny' + (worldTourSetupDraftSize() === 3 ? ' active' : '') + '" onclick="actionSetWorldTourDraftSize(3)">1 de 3</button>' +
           '<button class="btn btn-tiny' + (worldTourSetupDraftSize() === 5 ? ' active' : '') + '" onclick="actionSetWorldTourDraftSize(5)">1 de 5</button>' +
         '</div>' +
         '<p class="dim small center-text mt">' + (worldTourSetupDraftSize() === 3 ? 'Menos opciones, más control sobre quién sale.' : 'Más variedad, menos control.') + '</p>' +
-      '</div>' +
-      '<div class="panel">' +
-        '<h3 style="margin-bottom:8px" class="center-text">Modo Leyenda</h3>' +
+      setupFoldEnd() +
+      setupFoldStart('mundial-modo-leyenda', 'Modo Leyenda') +
         '<div class="btn-row" style="justify-content:center">' +
           '<button class="btn btn-tiny' + (worldTourSetupLegend() ? ' active' : '') + '" onclick="actionSetWorldTourLegend(true)">Sí</button>' +
           '<button class="btn btn-tiny' + (!worldTourSetupLegend() ? ' active' : '') + '" onclick="actionSetWorldTourLegend(false)">No</button>' +
         '</div>' +
         '<p class="dim small center-text mt">Los rivales suben de fuerza con cada recorrido completo que ya hayas terminado (llevas ' + worldTourLegendWins() + ').</p>' +
-      '</div>' +
+      setupFoldEnd() +
       (squadType === 'raimon' ? (
       '<div class="panel">' +
         '<h3 style="margin-bottom:8px" class="center-text">Especiales</h3>' +
