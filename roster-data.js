@@ -1126,7 +1126,7 @@ var ROSTER = [
     locked: false, cost:152
   },
   {
-    id: 'r122', equipo:'Polvo de Diamante', nombre: 'Gocker', original: 'Gokukawa Kantarou',
+    id: 'r122', equipo: 'Caos', nombre: 'Gocker', original: 'Gokukawa Kantarou',
     posicion: 'Defensa', tipo: 'Montaña',
     tiro: 25, pase: 76, defensa: 86, especial: 80,
     hissatsu:['Rompehielos'],tipoTecnica:'defensa',
@@ -1134,7 +1134,7 @@ var ROSTER = [
     locked: false, cost:158
   },
   {
-    id: 'r123', equipo:'Prominence', nombre: 'Bomber', original: 'Honba Geki',
+    id: 'r123', equipo: 'Caos', nombre: 'Bomber', original: 'Honba Geki',
     posicion: 'Defensa', tipo: 'Fuego',
     tiro: 30, pase:75, defensa: 86, especial: 80,
     hissatsu:['Cortefuegos'],tipoTecnica:'defensa',
@@ -1150,7 +1150,7 @@ var ROSTER = [
     locked: false, cost:131
   },
   {
-    id: 'r125', equipo:'Prominence', nombre: 'Heat', original: 'Atsuishi Shigeto',
+    id: 'r125', equipo: 'Caos', nombre: 'Heat', original: 'Atsuishi Shigeto',
     posicion: 'Centrocampista', tipo: 'Fuego',
     tiro: 71, pase: 78, defensa: 74, especial: 74,
     hissatsu:['Lluvia de Meteoros'],tipoTecnica:'tiro',
@@ -2948,22 +2948,22 @@ var ROSTER = [
   desc:'Siempre llega primero al balón.',
   locked:false,cost:18
 },
-{
-  id:'r344', equipo:'Alpino', nombre:'Greene Beray', original:'Greene Beray',
-  posicion:'Delantero', tipo:'Bosque',
-  tiro:66,pase:58,defensa:33,especial:68,
-  hissatsu:['Cañonazo'],tipoTecnica:'tiro',
-  desc:'Delantero paciente que espera su momento.',
-  locked:false,cost:18
-},
-{
-  id:'r345', equipo:'Alpino', nombre:'Linda Shadey', original:'Linda Shadey',
-  posicion:'Delantero', tipo:'Viento',
-  tiro:67,pase:58,defensa:34,especial:62,
-  hissatsu:['Tiro Sónico'],tipoTecnica:'tiro',
-  desc:'Se desmarca sin que el rival la vea llegar.',
-  locked:false,cost:18
-},
+// {
+//   id:'r344', equipo:'Alpino', nombre:'Greene Beray', original:'Greene Beray',
+//   posicion:'Delantero', tipo:'Bosque',
+//   tiro:66,pase:58,defensa:33,especial:68,
+//   hissatsu:['Cañonazo'],tipoTecnica:'tiro',
+//   desc:'Delantero paciente que espera su momento.',
+//   locked:false,cost:18
+// },
+// {
+//   id:'r345', equipo:'Alpino', nombre:'Linda Shadey', original:'Linda Shadey',
+//   posicion:'Delantero', tipo:'Viento',
+//   tiro:67,pase:58,defensa:34,especial:62,
+//   hissatsu:['Tiro Sónico'],tipoTecnica:'tiro',
+//   desc:'Se desmarca sin que el rival la vea llegar.',
+//   locked:false,cost:18
+// },
 // Alpino (datos aproximados: nombre real, resto estimado)
 {
   id:'r346', equipo:'Alpino', nombre:'Adam Ropes', original:'Adam Ropes',
@@ -2975,15 +2975,15 @@ var ROSTER = [
 },
 {
   id:'r347', equipo:'Alpino', nombre:'Milton Bindings', original:'Milton Bindings',
-  posicion:'Defensa', tipo:'Montaña',
-  tiro:44,pase:68,defensa:71,especial:61,
+  posicion:'Defensa', tipo:'Aire',
+  tiro:44,pase:78,defensa:75,especial:72,
   hissatsu:['Muro de Hierro'],tipoTecnica:'defensa',
   desc:'Defensa del Alpino, aguanta cualquier embestida.',
   locked:false,cost:18
 },
 {
   id:'r348', equipo:'Alpino', nombre:'Spike Gleeson', original:'Spike Gleeson',
-  posicion:'Defensa', tipo:'Viento',
+  posicion:'Defensa', tipo:'Bosque',
   tiro:48,pase:61,defensa:72,especial:61,
   hissatsu:['Robo Rápido'],tipoTecnica:'defensa',
   desc:'Defensa del Alpino, duro y rápido en la entrada.',
@@ -2991,56 +2991,56 @@ var ROSTER = [
 },
 {
   id:'r349', equipo:'Alpino', nombre:'Joaquine Downtown', original:'Joaquine Downtown',
-  posicion:'Defensa', tipo:'Bosque',
-  tiro:50,pase:65,defensa:66,especial:64,
-  hissatsu:['Bloqueo'],tipoTecnica:'defensa',
+  posicion:'Defensa', tipo:'Fuego',
+  tiro:50,pase:75,defensa:76,especial:74,
+  hissatsu:['Paisaje Helado'],tipoTecnica:'defensa',
   desc:'Defensa del Alpino que sale jugando desde atrás.',
   locked:false,cost:18
 },
 {
   id:'r350', equipo:'Alpino', nombre:'Roland Climbstein', original:'Roland Climbstein',
-  posicion:'Defensa', tipo:'Montaña',
-  tiro:43,pase:61,defensa:74,especial:61,
-  hissatsu:['Cabeza Defensiva'],tipoTecnica:'defensa',
+  posicion:'Delantero', tipo:'Viento',
+  tiro:77,pase:72,defensa:54,especial:72,
+  hissatsu:['Chut congelante'],tipoTecnica:'tiro',
   desc:'Escalador nato, sube y baja la banda sin cansarse.',
   locked:false,cost:18
 },
 {
   id:'r351', equipo:'Alpino', nombre:'Kerry Bootgaiter', original:'Kerry Bootgaiter',
   posicion:'Centrocampista', tipo:'Viento',
-  tiro:66,pase:67,defensa:54,especial:70,
+  tiro:66,pase:67,defensa:64,especial:70,
   hissatsu:['Espejismo'],tipoTecnica:'regate',
   desc:'Centrocampista del Alpino, incansable en la nieve.',
   locked:false,cost:18
 },
 {
   id:'r352', equipo:'Alpino', nombre:'Maddox Rock', original:'Maddox Rock',
-  posicion:'Centrocampista', tipo:'Montaña',
+  posicion:'Centrocampista', tipo:'Bosque',
   tiro:66,pase:72,defensa:60,especial:65,
-  hissatsu:['Remate Giratorio'],tipoTecnica:'tiro',
+  hissatsu:['Truco de Magia'],tipoTecnica:'regate',
   desc:'Centrocampista sólido como una roca.',
   locked:false,cost:18
 },
 {
   id:'r353', equipo:'Alpino', nombre:'Quentin Rackner', original:'Quentin Rackner',
-  posicion:'Centrocampista', tipo:'Viento',
-  tiro:66,pase:67,defensa:54,especial:60,
-  hissatsu:['Danza del viento'],tipoTecnica:'regate',
-  desc:'Reparte juego con precisión desde el medio campo.',
+  posicion:'Delantero', tipo:'Bosque',
+  tiro:76,pase:71,defensa:54,especial:67,
+  hissatsu:['Chut congelante'],tipoTecnica:'tiro',
+  desc:'Reparte juego con precisión desde la mediapunta.',
   locked:false,cost:18
 },
 {
   id:'r354', equipo:'Alpino', nombre:'Sean Snowfield', original:'Sean Snowfield',
-  posicion:'Delantero', tipo:'Viento',
-  tiro:71,pase:58,defensa:44,especial:60,
+  posicion:'Defensa', tipo:'Montaña',
+  tiro:61,pase:74,defensa:77,especial:72,
   hissatsu:['Remate Giratorio'],tipoTecnica:'tiro',
-  desc:'Delantero del Alpino, frío ante la portería.',
+  desc:'Defensa del Alpino, frío ante la portería.',
   locked:false,cost:18
 },
 {
   id:'r355', equipo:'Alpino', nombre:'Robert Skipolson', original:'Robert Skipolson',
-  posicion:'Delantero', tipo:'Montaña',
-  tiro:71,pase:55,defensa:40,especial:70,
+  posicion:'Centrocampista', tipo:'Bosque',
+  tiro:71,pase:55,defensa:70,especial:70,
   hissatsu:['Tiro Sónico'],tipoTecnica:'tiro',
   desc:'Delantero del Alpino, potente y directo.',
   locked:false,cost:18
