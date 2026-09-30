@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inazuma Run</title>
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://inazumarun.es/">
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0d1512; color: #e8f0ec; font: 16px/1.5 system-ui, sans-serif; text-align: center; padding: 0 16px; }
+  a { color: #5ac8fa; }
+</style>
+</head>
+<body>
+<p>El juego se ha mudado a <a href="https://inazumarun.es/">inazumarun.es</a>.<br>Te llevamos allí con tus partidas…</p>
+<script>
+/* La web antigua. El navegador guarda las partidas por dirección, así que
+   se leen aquí, se comprimen y viajan a inazumarun.es en la dirección
+   (#importar=...), donde js/importar.js las guarda. Solo la primera vez:
+   después ya se va directo (?otra-vez para repetirlo). */
+(function () {
+  var DEST = 'https://inazumarun.es/';
+  var HECHO = 'inazumaRoguelike_migrado';
+  function ir(h) { location.replace(DEST + (h || '')); }
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function (rs) { rs.forEach(function (r) { if (r.scope.indexOf('/inazuma-eleven-roguelike/') !== -1) r.unregister(); }); }).catch(function () {});
+  }
+  try {
+    if (localStorage.getItem(HECHO) && location.search.indexOf('otra-vez') === -1) return ir();
+    var datos = {}, n = 0;
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (/^(inazumaRoguelike|worldTourRogue)/.test(k) && k !== HECHO) { datos[k] = localStorage.getItem(k); n++; }
+    }
+    if (!n || typeof CompressionStream === 'undefined') return ir();
+    new Response(new Blob([JSON.stringify(datos)]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer().then(function (buf) {
+      var u = new Uint8Array(buf), s = '';
+      for (var j = 0; j < u.length; j++) s += String.fromCharCode(u[j]);
+      var b64 = btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      localStorage.setItem(HECHO, '1');
+      ir('#importar=' + b64);
+    }).catch(function () { ir(); });
+  } catch (e) { ir(); }
+})();
+</script>
+</body>
+</html>
